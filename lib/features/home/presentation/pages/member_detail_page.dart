@@ -164,6 +164,9 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                     // 여론조사 섹션
                     _buildPollsSection(member),
                     const SizedBox(height: 24),
+                    // SNS 분석 섹션
+                    _buildSnsAnalysisSection(analysis),
+                    const SizedBox(height: 24),
                     // 강점 및 약점
                     _buildStrengthsAndWeaknesses(analysis),
                     const SizedBox(height: 24),
@@ -729,6 +732,253 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSnsAnalysisSection(AnalysisResult analysis) {
+    final snsAnalysis = analysis.snsAnalysis;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.secondary.withOpacity(0.3)),
+          color: AppColors.secondary.withOpacity(0.05),
+        ),
+        child: snsAnalysis == null
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        '📱 SNS 분석',
+                        style: AppTextStyles.headline3.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.darkGray,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'SNS 데이터 분석 중...',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.mediumGray,
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        '📱 SNS 분석',
+                        style: AppTextStyles.headline3.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.darkGray,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 전체 언급 수 및 감정 점수
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildSnsStatCard(
+                          '전체 언급',
+                          '${snsAnalysis.totalMentions}건',
+                          AppColors.secondary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildSnsStatCard(
+                          '감정 점수',
+                          '${(snsAnalysis.sentimentScore * 100).toStringAsFixed(1)}%',
+                          snsAnalysis.sentimentScore > 0.6
+                              ? AppColors.success
+                              : snsAnalysis.sentimentScore > 0.4
+                                  ? AppColors.secondary
+                                  : AppColors.danger,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 긍정/중립/부정 비율
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildSnsStatCard(
+                          '긍정',
+                          '${snsAnalysis.positiveMentions}건',
+                          AppColors.success,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildSnsStatCard(
+                          '중립',
+                          '${snsAnalysis.neutralMentions}건',
+                          AppColors.secondary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildSnsStatCard(
+                          '부정',
+                          '${snsAnalysis.negativeMentions}건',
+                          AppColors.danger,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 여론 추세
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.lightGray),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '여론 추세',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.darkGray,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: snsAnalysis.engagementTrend == '상승'
+                                ? AppColors.success.withOpacity(0.2)
+                                : AppColors.danger.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Text(
+                                snsAnalysis.engagementTrend == '상승' ? '📈' : '📉',
+                                style: AppTextStyles.bodyMedium,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                snsAnalysis.engagementTrend,
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: snsAnalysis.engagementTrend == '상승'
+                                      ? AppColors.success
+                                      : AppColors.danger,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 주요 키워드
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.lightGray),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '주요 키워드',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.darkGray,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        if (snsAnalysis.topMentions.isEmpty)
+                          Text(
+                            '주요 키워드 없음',
+                            style: AppTextStyles.labelSmall.copyWith(
+                              color: AppColors.mediumGray,
+                            ),
+                          )
+                        else
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: snsAnalysis.topMentions
+                                .map((keyword) => Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.secondary.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: AppColors.secondary.withOpacity(0.5),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        keyword,
+                                        style: AppTextStyles.labelSmall.copyWith(
+                                          color: AppColors.secondary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ))
+                                .toList(),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildSnsStatCard(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: color.withOpacity(0.1),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: color,
+            ),
+          ),
         ],
       ),
     );

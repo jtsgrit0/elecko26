@@ -417,7 +417,7 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
     // 언론 보도의 감정 분석 데이터를 SNS 데이터로 활용
     final sentimentTexts = <String>[];
     for (var report in member.pressReports) {
-      sentimentTexts.add(report.content.toLowerCase());
+      sentimentTexts.add(report.summary.toLowerCase());
       if (report.sentiment == 'positive') {
         positiveMentions++;
       } else if (report.sentiment == 'neutral') {
@@ -428,10 +428,11 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
     }
 
     // 감정 점수 계산 (-1 ~ 1 범위를 0 ~ 1로 정규화)
+    final denominator = totalMentions > 0 ? totalMentions.toDouble() : 1.0;
     final sentimentScore = ((positiveMentions * 1.0 - negativeMentions * 1.0 + neutralMentions * 0.3) /
-        totalMentions.clamp(1, double.infinity))
-        .clamp(-1, 1)
-        .clamp(0, 1);
+        denominator)
+        .clamp(-1.0, 1.0)
+        .clamp(0.0, 1.0);
 
     // 상위 언급 키워드 추출
     final topMentions = _extractTopKeywords(sentimentTexts, count: 5);
@@ -463,8 +464,8 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
     };
 
     for (final text in texts) {
-      final words = text.split(RegExp(r'\s+|[\p{P}&&[^']]+', unicode: true))
-          .where((w) => w.length > 2 && !stopWords.contains(w.toLowerCase()))
+      final words = text.split(RegExp(r'[^\w가-힣]+', multiLine: true))
+          .where((w) => w.isNotEmpty && w.length > 2 && !stopWords.contains(w.toLowerCase()))
           .toList();
       keywords.addAll(words);
     }
@@ -475,12 +476,12 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
       wordFreq[word] = (wordFreq[word] ?? 0) + 1;
     }
 
-    return wordFreq.entries
-        .toList()
-        ..sort((a, b) => b.value.compareTo(a.value))
-        ..take(count)
+    final sortedEntries = wordFreq.entries.toList();
+    sortedEntries.sort((a, b) => b.value.compareTo(a.value));
+    
+    return sortedEntries
+        .take(count)
         .map((e) => e.key)
         .toList();
   }
-
 }
