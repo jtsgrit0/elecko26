@@ -257,59 +257,36 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               (sum, m) =>
                   sum + m.polls.where((p) => p.id.startsWith('nesdc_')).length);
 
-          // 반응형 레이아웃: 768px 미만일 때 세로 정렬
-          final isMobileBreakpoint = MediaQuery.of(context).size.width < 768;
-
-          if (isMobileBreakpoint) {
-            // 모바일: 당선 가능성 TOP3 → 분석 중인 의원 → 여론조사심의위 반영 순으로 세로 정렬
-            return Column(
-              children: [
-                _buildTop3Card(members),
-                const SizedBox(height: 12),
-                _StatisticCard(
-                  title: '분석 중인 의원',
-                  value: members.length.toString(),
-                  icon: Icons.people,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(height: 12),
-                _StatisticCard(
-                  title: '여론조사심의위 반영 · $updateValue',
-                  value: '$nesdcCount건',
-                  icon: Icons.update,
-                  color: AppColors.secondary,
-                ),
-              ],
-            );
-          }
-
-          // 데스크톱: 가로 정렬
-          return Row(
+          // 반응형 레이아웃: TOP3는 전체 너비, 분석과 여론조사위는 3:7 비율로 가로 정렬
+          return Column(
             children: [
-              Expanded(
-                flex: 2,
-                child: _StatisticCard(
-                  title: '분석 중인 의원',
-                  value: members.length.toString(),
-                  icon: Icons.people,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 6,
-                child: _buildTop3Card(members),
-              ),
-              const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: _StatisticCard(
-                    title: '여론조사심의위 반영 · $updateValue',
-                    value: '$nesdcCount건',
-                    icon: Icons.update,
-                    color: AppColors.secondary,
+              // TOP3 카드 - 전체 너비
+              _buildTop3Card(members),
+              const SizedBox(height: 12),
+              // 분석과 여론조사위 - 3:7 비율 가로 정렬
+              Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: _StatisticCard(
+                      title: '분석 중인 의원',
+                      value: members.length.toString(),
+                      icon: Icons.people,
+                      color: AppColors.primary,
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 7,
+                    child: _StatisticCard(
+                      title: '여론조사심의위 반영 · $updateValue',
+                      value: '$nesdcCount건',
+                      icon: Icons.update,
+                      color: AppColors.secondary,
+                    ),
+                  ),
+                ],
+              ),
             ],
           );
         },
