@@ -1,3 +1,24 @@
+/// SNS 분석 결과
+class SnsAnalysis {
+  final int totalMentions;
+  final int positiveMentions;
+  final int neutralMentions;
+  final int negativeMentions;
+  final double sentimentScore;
+  final List<String> topMentions;
+  final String engagementTrend; // '상승' / '하락' / '보합'
+
+  SnsAnalysis({
+    required this.totalMentions,
+    required this.positiveMentions,
+    required this.neutralMentions,
+    required this.negativeMentions,
+    required this.sentimentScore,
+    required this.topMentions,
+    required this.engagementTrend,
+  });
+}
+
 /// AI 분석 결과 엔티티
 class AnalysisResult {
   final String memberId;
@@ -22,6 +43,9 @@ class AnalysisResult {
   
   // 추세 데이터
   final List<DailyPossibility> dailyTrends;
+  
+  // SNS 분석 데이터 (선택사항)
+  final SnsAnalysis? snsAnalysis;
 
   AnalysisResult({
     required this.memberId,
@@ -38,6 +62,7 @@ class AnalysisResult {
     required this.weaknesses,
     required this.analysisReport,
     required this.dailyTrends,
+    this.snsAnalysis,
   });
 }
 

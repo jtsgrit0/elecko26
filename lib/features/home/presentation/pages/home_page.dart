@@ -343,104 +343,97 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   ),
                 )
               else if (isMobileBreakpoint)
-                // 모바일: 세로 정렬
-                Column(
-                  children: List.generate(top3.length, (index) {
-                    final entry = top3[index];
-                    final member = entry.member;
-                    final rank = index + 1;
-                    return Padding(
-                      padding: EdgeInsets.only(bottom: index < top3.length - 1 ? 8 : 0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            flex: 1,
-                            child: Text(
-                              '${rank}위',
-                              style: AppTextStyles.labelSmall.copyWith(
-                                color: AppColors.mediumGray,
+                // 모바일: 카드 형식 수직 정렬 with 200x200 이미지
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: List.generate(top3.length, (index) {
+                      final entry = top3[index];
+                      final member = entry.member;
+                      final rank = index + 1;
+                      return Padding(
+                        padding: EdgeInsets.only(right: index < top3.length - 1 ? 12 : 0),
+                        child: Column(
+                          children: [
+                            // 200x200 원형 이미지
+                            Container(
+                              width: 200,
+                              height: 200,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.success.withOpacity(0.1),
+                                border: Border.all(
+                                  color: AppColors.success,
+                                  width: 2,
+                                ),
                               ),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 3,
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 8),
                               child: ClipOval(
                                 child: member.imageUrl.isNotEmpty
                                     ? Image.network(
                                         member.imageUrl,
-                                        width: 40,
-                                        height: 40,
                                         fit: BoxFit.cover,
                                         errorBuilder: (context, error, stackTrace) {
-                                          return Container(
-                                            width: 40,
-                                            height: 40,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color: AppColors.success.withOpacity(0.1),
-                                            ),
-                                            child: Center(
-                                              child: Text(
-                                                member.name.isNotEmpty ? member.name[0] : '?',
-                                                style: AppTextStyles.labelSmall.copyWith(
-                                                  color: AppColors.success,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
+                                          return Center(
+                                            child: Text(
+                                              member.name.isNotEmpty ? member.name[0] : '?',
+                                              style: AppTextStyles.bodySmall.copyWith(
+                                                color: AppColors.success,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 64,
                                               ),
                                             ),
                                           );
                                         },
                                       )
-                                    : Container(
-                                        width: 40,
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: AppColors.success.withOpacity(0.1),
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            member.name.isNotEmpty ? member.name[0] : '?',
-                                            style: AppTextStyles.labelSmall.copyWith(
-                                              color: AppColors.success,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                    : Center(
+                                        child: Text(
+                                          member.name.isNotEmpty ? member.name[0] : '?',
+                                          style: AppTextStyles.bodySmall.copyWith(
+                                            color: AppColors.success,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 64,
                                           ),
                                         ),
                                       ),
                               ),
                             ),
-                          ),
-                          Expanded(
-                            flex: 4,
-                            child: Text(
-                              member.name,
+                            const SizedBox(height: 12),
+                            // 순위 및 이름
+                            Text(
+                              '${rank}위',
                               style: AppTextStyles.labelSmall.copyWith(
-                                color: AppColors.darkGray,
-                                fontWeight: FontWeight.w600,
+                                color: AppColors.mediumGray,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: Text(
+                            const SizedBox(height: 4),
+                            SizedBox(
+                              width: 200,
+                              child: Text(
+                                member.name,
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.darkGray,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            // 당선 가능성 (bodySmall 사이즈)
+                            Text(
                               '${(entry.possibility * 100).toStringAsFixed(0)}%',
-                              style: AppTextStyles.labelSmall.copyWith(
+                              style: AppTextStyles.bodySmall.copyWith(
                                 color: AppColors.success,
                                 fontWeight: FontWeight.bold,
+                                fontSize: 20,
                               ),
-                              textAlign: TextAlign.right,
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
+                          ],
+                        ),
+                      );
+                    }),
+                  ),
                 )
               else
                 // 데스크톱: 가로 정렬

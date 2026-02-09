@@ -68,6 +68,7 @@ class CalculateElectionPossibilityUseCase {
       weaknesses: analysis['weaknesses']!,
       analysisReport: analysis['report']!,
       dailyTrends: dailyTrends,
+      snsAnalysis: _calculateSnsAnalysis(member),
     );
   }
 
@@ -398,6 +399,88 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
 
   double _normalizeScore(int actual, {required int maxValue}) {
     return (actual / maxValue).clamp(0, 1);
+  }
+
+  /// SNS 분석 계산 (감정분석 + 언급량)
+  SnsAnalysis? _calculateSnsAnalysis(Member member) {
+    // 언론 보도로부터 SNS 감정 데이터 추출
+    if (member.pressReports.isEmpty) {
+      // SNS 데이터가 없을 경우 null 또는 기본값 반환
+      return null;
+    }
+
+    int totalMentions = member.pressReports.length;
+    int positiveMentions = 0;
+    int neutralMentions = 0;
+    int negativeMentions = 0;
+
+    // 언론 보도의 감정 분석 데이터를 SNS 데이터로 활용
+    final sentimentTexts = <String>[];
+    for (var report in member.pressReports) {
+      sentimentTexts.add(report.content.toLowerCase());
+      if (report.sentiment == 'positive') {
+        positiveMentions++;
+      } else if (report.sentiment == 'neutral') {
+        neutralMentions++;
+      } else if (report.sentiment == 'negative') {
+        negativeMentions++;
+      }
+    }
+
+    // 감정 점수 계산 (-1 ~ 1 범위를 0 ~ 1로 정규화)
+    final sentimentScore = ((positiveMentions * 1.0 - negativeMentions * 1.0 + neutralMentions * 0.3) /
+        totalMentions.clamp(1, double.infinity))
+        .clamp(-1, 1)
+        .clamp(0, 1);
+
+    // 상위 언급 키워드 추출
+    final topMentions = _extractTopKeywords(sentimentTexts, count: 5);
+
+    // 추세 판단 (언론 보도 수 기반)
+    final recentReports = member.pressReports.length > 3
+        ? member.pressReports.sublist(member.pressReports.length - 3)
+        : member.pressReports;
+    final recentPositive = recentReports.where((r) => r.sentiment == 'positive').length;
+    final engagementTrend = recentPositive > recentReports.length ~/ 2 ? '상승' : '하락';
+
+    return SnsAnalysis(
+      totalMentions: totalMentions,
+      positiveMentions: positiveMentions,
+      neutralMentions: neutralMentions,
+      negativeMentions: negativeMentions,
+      sentimentScore: sentimentScore,
+      topMentions: topMentions,
+      engagementTrend: engagementTrend,
+    );
+  }
+
+  /// 텍스트에서 상위 키워드 추출
+  List<String> _extractTopKeywords(List<String> texts, {required int count}) {
+    final keywords = <String>[];
+    final stopWords = {
+      'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
+      '발표', '보도', '했', '한다', '입니다', '것', '수', '들', '등', '중'
+    };
+
+    for (final text in texts) {
+      final words = text.split(RegExp(r'\s+|[\p{P}&&[^']]+', unicode: true))
+          .where((w) => w.length > 2 && !stopWords.contains(w.toLowerCase()))
+          .toList();
+      keywords.addAll(words);
+    }
+
+    // 가장 빈번한 키워드 추출
+    final wordFreq = <String, int>{};
+    for (final word in keywords) {
+      wordFreq[word] = (wordFreq[word] ?? 0) + 1;
+    }
+
+    return wordFreq.entries
+        .toList()
+        ..sort((a, b) => b.value.compareTo(a.value))
+        ..take(count)
+        .map((e) => e.key)
+        .toList();
   }
 
 }
