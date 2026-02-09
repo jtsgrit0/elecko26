@@ -14,6 +14,9 @@ abstract class MemberRepository {
   /// 의원 정보 업데이트
   Future<void> updateMember(Member member);
   
+  /// 여러 의원 정보 일괄 업데이트
+  Future<void> updateMembers(List<Member> members);
+  
   /// 의원 추가
   Future<void> addMember(Member member);
   

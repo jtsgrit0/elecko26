@@ -1372,4 +1372,12 @@ class MemberRepositoryImpl implements MemberRepository {
     }
     return false;
   }
+
+  @override
+  Future<void> updateMembers(List<Member> members) async {
+    // 여러 멤버를 일괄 업데이트
+    for (final member in members) {
+      await updateMember(member);
+    }
+  }
 }

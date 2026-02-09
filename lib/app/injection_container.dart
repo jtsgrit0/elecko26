@@ -4,6 +4,7 @@ import 'package:flutter_application_1/domain/repositories/member_repository.dart
 import 'package:flutter_application_1/domain/usecases/member_usecases.dart';
 import 'package:flutter_application_1/domain/usecases/calculate_election_possibility_usecase.dart';
 import 'package:flutter_application_1/domain/usecases/export_election_data_usecase.dart';
+import 'package:flutter_application_1/domain/usecases/update_members_with_nesdc_usecase.dart';
 import 'package:flutter_application_1/data/datasources/github_datasource.dart';
 
 final sl = GetIt.instance;
@@ -60,6 +61,13 @@ Future<void> init() async {
     ExportElectionDataUseCase(
       memberRepository: sl<MemberRepository>(),
       calculateElectionPossibilityUseCase: sl<CalculateElectionPossibilityUseCase>(),
+    ),
+  );
+
+  // NESDC Update Use Case
+  sl.registerSingleton<UpdateMembersWithNesdcDataUseCase>(
+    UpdateMembersWithNesdcDataUseCase(
+      memberRepository: sl<MemberRepository>(),
     ),
   );
   
