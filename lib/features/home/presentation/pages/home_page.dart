@@ -5,8 +5,10 @@ import 'package:flutter_application_1/domain/entities/member.dart';
 import 'package:flutter_application_1/domain/repositories/member_repository.dart';
 import 'package:flutter_application_1/domain/usecases/calculate_election_possibility_usecase.dart';
 import 'package:flutter_application_1/domain/usecases/member_usecases.dart';
+import 'package:flutter_application_1/domain/usecases/export_election_data_usecase.dart';
 import 'package:flutter_application_1/app/injection_container.dart';
 import 'package:flutter_application_1/features/home/presentation/pages/member_detail_page.dart';
+import 'dart:async';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -18,6 +20,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   int _selectedIndex = 0;
   late Stream<List<Member>> _membersStream;
+  Timer? _dataExportTimer;
   
   @override
   void initState() {
@@ -25,6 +28,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _startMemberStream();
     _triggerNesdcRefresh();
+    _startDataExportTimer();
   }
 
   void _startMemberStream() {
@@ -41,6 +45,36 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         .refreshMembers()
         .then((_) => debugPrint('[NESDC] refreshMembers completed'))
         .catchError((e) => debugPrint('[NESDC] refreshMembers failed: $e'));
+  }
+
+  /// 1분마다 선거 데이터를 JSON으로 내보내고 GitHub에 저장
+  void _startDataExportTimer() {
+    // 첫 번째는 즉시 실행
+    _exportElectionData();
+    
+    // 이후 1분마다 반복
+    _dataExportTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) => _exportElectionData(),
+    );
+  }
+
+  /// 선거 데이터 내보내기
+  Future<void> _exportElectionData() async {
+    try {
+      final exportUseCase = sl<ExportElectionDataUseCase>();
+      final exportData = await exportUseCase.call();
+      
+      // 콘솔에 로그 출력
+      debugPrint('[ElectionData] Exported at: ${exportData.exportedAt}');
+      debugPrint('[ElectionData] Members analyzed: ${exportData.metadata.membersAnalyzed}');
+      debugPrint('[ElectionData] Average possibility: ${(exportData.metadata.averageElectionPossibility * 100).toStringAsFixed(1)}%');
+      
+      // JSON 생성 및 로컬 저장 (향후 GitHub Pages에서 서빙)
+      // TODO: GitHub API 또는 파일 시스템에 저장
+    } catch (e) {
+      debugPrint('[ElectionData] Export failed: $e');
+    }
   }
 
   @override
@@ -60,6 +94,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _dataExportTimer?.cancel();
     super.dispose();
   }
 
