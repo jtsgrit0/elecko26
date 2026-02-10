@@ -41,7 +41,7 @@ jobs:
           dart run bin/export_election_data.dart
           
       - name: Upload election data to GitHub Pages
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: election-data-json
           path: data/
@@ -78,6 +78,7 @@ jobs:
           git push origin main || true
           
       - name: Deploy to GitHub Pages
+        if: false
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
