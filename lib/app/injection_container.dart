@@ -9,6 +9,12 @@ import 'package:flutter_application_1/data/datasources/github_datasource.dart';
 
 final sl = GetIt.instance;
 
+// GitHub token from environment (must be const for web support)
+const String _githubToken = String.fromEnvironment(
+  'GITHUB_TOKEN',
+  defaultValue: '', // 기본값: 빈 문자열 (토큰이 없으면 기능 비활성화)
+);
+
 Future<void> init() async {
   //! Features - Member
   // Repository
@@ -41,17 +47,12 @@ Future<void> init() async {
     CalculateElectionPossibilityUseCase(repository: sl<MemberRepository>()),
   );
 
-  // GitHub DataSource (환경 변수에서 token 읽기)
-  final githubToken = String.fromEnvironment(
-    'GITHUB_TOKEN',
-    defaultValue: '', // 기본값: 빈 문자열 (토큰이 없으면 기능 비활성화)
-  );
-  
+  // GitHub DataSource
   sl.registerSingleton<GitHubDataSource>(
     GitHubDataSource(
       owner: 'jtsgrit0',
       repo: 'elecko26',
-      token: githubToken,
+      token: _githubToken,
       branch: 'main',
     ),
   );
