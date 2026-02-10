@@ -1,167 +1,110 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/core/theme/app_theme.dart';
 import 'package:flutter_application_1/domain/entities/analysis_result.dart';
-import 'package:flutter_application_1/domain/entities/member.dart';
-import 'package:flutter_application_1/domain/repositories/member_repository.dart';
-import 'package:flutter_application_1/domain/usecases/calculate_election_possibility_usecase.dart';
-import 'package:flutter_application_1/domain/usecases/member_usecases.dart';
-import 'package:flutter_application_1/domain/usecases/export_election_data_usecase.dart';
-import 'package:flutter_application_1/app/injection_container.dart';
-import 'package:flutter_application_1/features/home/presentation/pages/member_detail_page.dart';
-import 'dart:async';
-
-class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
-  int _selectedIndex = 0;
-  late Stream<List<Member>> _membersStream;
-  Timer? _dataExportTimer;
-  
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _startMemberStream();
-    _triggerNesdcRefresh();
-    _startDataExportTimer();
-  }
-
-  void _startMemberStream() {
-    _membersStream = sl<WatchMembersUseCase>().call().asBroadcastStream();
-  }
-
-  void _stopMemberStream() {
-    _membersStream = Stream<List<Member>>.empty();
-  }
-
-  void _triggerNesdcRefresh() {
-    // 강제 갱신 트리거: NESDC 데이터 갱신 시도
-    sl<MemberRepository>()
-        .refreshMembers()
-        .then((_) => debugPrint('[NESDC] refreshMembers completed'))
-        .catchError((e) => debugPrint('[NESDC] refreshMembers failed: $e'));
-  }
-
-  /// 1분마다 선거 데이터를 JSON으로 내보내고 GitHub에 저장
-  void _startDataExportTimer() {
-    // 첫 번째는 즉시 실행
-    _exportElectionData();
-    
-    // 이후 1분마다 반복
-    _dataExportTimer = Timer.periodic(
-      const Duration(minutes: 1),
-      (_) => _exportElectionData(),
-    );
-  }
-
-  /// 선거 데이터 내보내기
-  Future<void> _exportElectionData() async {
-    try {
-      final exportUseCase = sl<ExportElectionDataUseCase>();
-      final exportData = await exportUseCase.call();
-      
-      // 콘솔에 로그 출력
-      debugPrint('[ElectionData] Exported at: ${exportData.exportedAt}');
-      debugPrint('[ElectionData] Members analyzed: ${exportData.metadata.membersAnalyzed}');
-      debugPrint('[ElectionData] Average possibility: ${(exportData.metadata.averageElectionPossibility * 100).toStringAsFixed(1)}%');
-      
-      // JSON 생성 및 로컬 저장 (향후 GitHub Pages에서 서빙)
-      // TODO: GitHub API 또는 파일 시스템에 저장
-    } catch (e) {
-      debugPrint('[ElectionData] Export failed: $e');
-    }
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!mounted) {
-      return;
-    }
-    if (state == AppLifecycleState.resumed) {
-      setState(_startMemberStream);
-    } else if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
-      setState(_stopMemberStream);
-    }
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _dataExportTimer?.cancel();
+              else
     super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
-        child: _buildAppBar(),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // 2026 지방선거 배너
-            _buildElectionBanner(),
-            const SizedBox(height: 24),
-            // 주요 통계
-            _buildStatistics(),
-            const SizedBox(height: 24),
-            // 의원 목록 요약
-            _buildMemberListSection(),
-            const SizedBox(height: 24),
-            // 빠른 접근 메뉴
-            _buildQuickAccessMenu(),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
-      bottomNavigationBar: _buildBottomNavBar(),
-      floatingActionButton: _buildFloatingActionButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-    );
-  }
-
-  // 커스텀 앱바
-  Widget _buildAppBar() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '🐴 2026 지방선거',
-                        style: AppTextStyles.headline4.copyWith(
-                          color: AppColors.white,
+                // 변경: 메인 화면에선 세로 정렬로 3명이 가운데 정렬되도록 표시
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: List.generate(top3.length, (index) {
+                    final entry = top3[index];
+                    final member = entry.member;
+                    final rank = index + 1;
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: index < top3.length - 1 ? 12 : 0),
+                      child: Container(
+                        height: 140,
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // 순위 (분석 카드 숫자와 같은 크기, 빨간색)
+                            Text(
+                              '${rank}위',
+                              style: AppTextStyles.headline4.copyWith(
+                                color: AppColors.error,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            // 아바타
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.lightGrey,
+                                border: Border.all(color: AppColors.primary.withOpacity(0.08)),
+                              ),
+                              child: ClipOval(
+                                child: member.imageUrl.isNotEmpty
+                                    ? Image.network(
+                                        member.imageUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Center(
+                                            child: Text(
+                                              member.name.isNotEmpty ? member.name[0] : '?',
+                                              style: AppTextStyles.headline4.copyWith(
+                                                color: AppColors.primary,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      )
+                                    : Center(
+                                        child: Text(
+                                          member.name.isNotEmpty ? member.name[0] : '?',
+                                          style: AppTextStyles.headline4.copyWith(
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            // 이름 및 퍼센트
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    member.name,
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: AppColors.darkGray,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    '${(entry.possibility * 100).toStringAsFixed(0)}%',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: AppColors.success,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 4),
+                    );
+                  }),
+                ),
                       Text(
                         '붉은말의 해 - 국회의원 분석',
                         style: AppTextStyles.bodySmall.copyWith(
