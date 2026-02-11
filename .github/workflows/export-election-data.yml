@@ -38,11 +38,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          dart run bin/export_election_data.dart
+          ${FLUTTER_ROOT}/bin/dart run bin/export_election_data.dart
 
       - name: Export NESDC poll cache
+        env:
+          NESDC_PAGES: '2'
+          NESDC_LIMIT: '120'
         run: |
-          dart run bin/export_nesdc_polls.dart
+          ${FLUTTER_ROOT}/bin/dart run bin/export_nesdc_polls.dart
           
       - name: Upload election data to GitHub Pages
         uses: actions/upload-artifact@v4
