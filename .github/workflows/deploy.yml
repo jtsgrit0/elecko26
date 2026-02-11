@@ -33,6 +33,14 @@ jobs:
       - name: Build web app
         run: flutter build web --release --base-href=/elecko26/
 
+      - name: Copy data files
+        run: |
+          mkdir -p build/web/data
+          cp -f data/election_data.json build/web/data/election_data.json || true
+          cp -f data/election_data_pretty.json build/web/data/election_data_pretty.json || true
+          cp -f data/nesdc_polls.json build/web/data/nesdc_polls.json || true
+          cp -f data/nesdc_polls_pretty.json build/web/data/nesdc_polls_pretty.json || true
+
       - name: Ensure nojekyll
         run: |
           mkdir -p build/web

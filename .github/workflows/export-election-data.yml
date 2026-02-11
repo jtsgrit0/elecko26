@@ -1,9 +1,9 @@
-name: Export Election Data
+﻿name: Export Election Data
 
-# 1분마다 실행 (또는 push 할 때)
+# 1분마다 실행 (또는 push 시)
 on:
   schedule:
-    # 1분마다 실행 (GitHub Actions의 최소 간격)
+    # 1분마다 실행 (GitHub Actions 최소 간격)
     - cron: '*/1 * * * *'
   # 수동 트리거
   workflow_dispatch:
@@ -39,6 +39,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           dart run bin/export_election_data.dart
+
+      - name: Export NESDC poll cache
+        run: |
+          dart run bin/export_nesdc_polls.dart
           
       - name: Upload election data to GitHub Pages
         uses: actions/upload-artifact@v4
@@ -52,6 +56,8 @@ jobs:
           mkdir -p build/web/data
           cp -f data/election_data.json build/web/data/election_data.json || true
           cp -f data/election_data_pretty.json build/web/data/election_data_pretty.json || true
+          cp -f data/nesdc_polls.json build/web/data/nesdc_polls.json || true
+          cp -f data/nesdc_polls_pretty.json build/web/data/nesdc_polls_pretty.json || true
           
       - name: Commit data files
         run: |
@@ -61,10 +67,14 @@ jobs:
           # data 디렉토리 커밋
           git add data/election_data.json || true
           git add data/election_data_pretty.json || true
+          git add data/nesdc_polls.json || true
+          git add data/nesdc_polls_pretty.json || true
           
           # build/web/data 커밋
           git add build/web/data/election_data.json || true
           git add build/web/data/election_data_pretty.json || true
+          git add build/web/data/nesdc_polls.json || true
+          git add build/web/data/nesdc_polls_pretty.json || true
           
           # 변경사항이 있으면 커밋
           if git diff --cached --quiet; then
