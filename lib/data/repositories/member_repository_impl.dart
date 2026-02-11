@@ -2,7 +2,7 @@ import 'package:flutter_application_1/domain/entities/member.dart';
 import 'package:flutter_application_1/domain/entities/poll.dart';
 import 'package:flutter_application_1/domain/repositories/member_repository.dart';
 import 'package:flutter_application_1/data/datasources/nesdc_poll_data_source.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter_application_1/core/platform/platform_info.dart';
 
 /// 멤버 저장소 구현체 (데이터 레이어)
 class MemberRepositoryImpl implements MemberRepository {
