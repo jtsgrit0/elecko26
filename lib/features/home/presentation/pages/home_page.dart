@@ -21,6 +21,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   int _selectedIndex = 0;
   late Stream<List<Member>> _membersStream;
   Timer? _dataExportTimer;
+  List<Member> _cachedMembers = [];
+  List<_TopMember> _cachedTop3 = [];
+  List<_TopMember> _cachedRanked = [];
   
   @override
   void initState() {
@@ -280,7 +283,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       child: StreamBuilder<List<Member>>(
         stream: _membersStream,
         builder: (context, snapshot) {
-          final members = snapshot.data ?? [];
+          final freshMembers = snapshot.data ?? [];
+          if (freshMembers.isNotEmpty) {
+            _cachedMembers = freshMembers;
+          }
+          final members = freshMembers.isNotEmpty ? freshMembers : _cachedMembers;
           final latestAnalysis = members.isNotEmpty
               ? members
                   .map((m) => m.lastAnalysisDate)
@@ -333,7 +340,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return FutureBuilder<List<_TopMember>>(
       future: _loadTop3Members(members),
       builder: (context, snapshot) {
-        final top3 = snapshot.data ?? [];
+        final freshTop3 = snapshot.data ?? [];
+        if (freshTop3.isNotEmpty) {
+          _cachedTop3 = freshTop3;
+        }
+        final top3 = freshTop3.isNotEmpty ? freshTop3 : _cachedTop3;
 
         return Container(
           padding: const EdgeInsets.all(12),
@@ -362,7 +373,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ),
               ),
               const SizedBox(height: 8),
-              if (snapshot.connectionState == ConnectionState.waiting)
+              if (snapshot.connectionState == ConnectionState.waiting && top3.isEmpty)
                 Text(
                   '계산 중...',
                   style: AppTextStyles.labelSmall.copyWith(
@@ -541,7 +552,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           StreamBuilder<List<Member>>(
             stream: _membersStream,
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
+              if (snapshot.connectionState == ConnectionState.waiting && _cachedMembers.isEmpty) {
                 return Container(
                   height: 200,
                   decoration: BoxDecoration(
@@ -555,10 +566,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation(AppColors.primary),
-                        ),
-                        const SizedBox(height: 12),
                         Text(
                           '의원 데이터 로드 중...',
                           style: AppTextStyles.bodyMedium.copyWith(
@@ -592,7 +599,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 );
               }
               
-              final members = snapshot.data ?? [];
+              final freshMembers = snapshot.data ?? [];
+              if (freshMembers.isNotEmpty) {
+                _cachedMembers = freshMembers;
+              }
+              final members = freshMembers.isNotEmpty ? freshMembers : _cachedMembers;
               if (members.isEmpty) {
                 return Container(
                   height: 200,
@@ -617,7 +628,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               return FutureBuilder<List<_TopMember>>(
                 future: _loadTopMembers(members),
                 builder: (context, topSnapshot) {
-                  if (topSnapshot.connectionState == ConnectionState.waiting) {
+                  if (topSnapshot.connectionState == ConnectionState.waiting && _cachedRanked.isEmpty) {
                     return Container(
                       height: 200,
                       decoration: BoxDecoration(
@@ -631,10 +642,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation(AppColors.primary),
-                            ),
-                            const SizedBox(height: 12),
                             Text(
                               '당선 가능성 계산 중...',
                               style: AppTextStyles.bodyMedium.copyWith(
@@ -647,7 +654,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     );
                   }
 
-                  final ranked = topSnapshot.data ?? [];
+                  final freshRanked = topSnapshot.data ?? [];
+                  if (freshRanked.isNotEmpty) {
+                    _cachedRanked = freshRanked;
+                  }
+                  final ranked = freshRanked.isNotEmpty ? freshRanked : _cachedRanked;
                   if (ranked.isEmpty) {
                     return Container(
                       height: 200,
