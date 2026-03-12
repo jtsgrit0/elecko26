@@ -1,11 +1,11 @@
 {
-  "exportedAt": "2026-03-12T11:36:22.160955",
+  "exportedAt": "2026-03-12T11:59:00.198322",
   "version": "2.0",
-  "timestamp": 1773315382160,
+  "timestamp": 1773316740198,
   "metadata": {
     "totalMembers": 20,
     "membersAnalyzed": 20,
-    "averageElectionPossibility": "28.7",
+    "averageElectionPossibility": "28.8",
     "totalPolls": 17,
     "dataSourcesCount": 3,
     "membersByParty": {
@@ -22,12 +22,12 @@
       "name": "정청래",
       "party": "더불어민주당",
       "district": "서울 종로구",
-      "timestamp": 1773315372637,
-      "analyzedAt": "2026-03-12T11:36:12.637331",
-      "electionPossibility": "42.31",
-      "electionPossibilityPercent": "42.3",
-      "possibilityChange": "-0.84",
-      "possibilityChangePercent": "-0.8",
+      "timestamp": 1773316730676,
+      "analyzedAt": "2026-03-12T11:58:50.676790",
+      "electionPossibility": "43.26",
+      "electionPossibilityPercent": "43.3",
+      "possibilityChange": "-0.07",
+      "possibilityChangePercent": "-0.1",
       "scores": {
         "achievement": "30.0",
         "activity": "13.3",
@@ -125,154 +125,154 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:42.623091",
-            "timestamp": 1773314502623,
+            "date": "2026-03-12T11:44:20.663420",
+            "timestamp": 1773315860663,
             "possibility": "44.9"
           },
           {
-            "date": "2026-03-12T11:22:12.623091",
-            "timestamp": 1773314532623,
-            "possibility": "44.1"
+            "date": "2026-03-12T11:44:50.663420",
+            "timestamp": 1773315890663,
+            "possibility": "45.0"
           },
           {
-            "date": "2026-03-12T11:22:42.623091",
-            "timestamp": 1773314562623,
-            "possibility": "43.4"
-          },
-          {
-            "date": "2026-03-12T11:23:12.623091",
-            "timestamp": 1773314592623,
-            "possibility": "43.6"
-          },
-          {
-            "date": "2026-03-12T11:23:42.623091",
-            "timestamp": 1773314622623,
+            "date": "2026-03-12T11:45:20.663420",
+            "timestamp": 1773315920663,
             "possibility": "43.5"
           },
           {
-            "date": "2026-03-12T11:24:12.623091",
-            "timestamp": 1773314652623,
-            "possibility": "44.5"
+            "date": "2026-03-12T11:45:50.663420",
+            "timestamp": 1773315950663,
+            "possibility": "44.1"
           },
           {
-            "date": "2026-03-12T11:24:42.623091",
-            "timestamp": 1773314682623,
-            "possibility": "43.2"
-          },
-          {
-            "date": "2026-03-12T11:25:12.623091",
-            "timestamp": 1773314712623,
-            "possibility": "43.7"
-          },
-          {
-            "date": "2026-03-12T11:25:42.623091",
-            "timestamp": 1773314742623,
-            "possibility": "44.3"
-          },
-          {
-            "date": "2026-03-12T11:26:12.623091",
-            "timestamp": 1773314772623,
-            "possibility": "44.9"
-          },
-          {
-            "date": "2026-03-12T11:26:42.623091",
-            "timestamp": 1773314802623,
-            "possibility": "44.4"
-          },
-          {
-            "date": "2026-03-12T11:27:12.623091",
-            "timestamp": 1773314832623,
+            "date": "2026-03-12T11:46:20.663420",
+            "timestamp": 1773315980663,
             "possibility": "45.5"
           },
           {
-            "date": "2026-03-12T11:27:42.623091",
-            "timestamp": 1773314862623,
+            "date": "2026-03-12T11:46:50.663420",
+            "timestamp": 1773316010663,
+            "possibility": "45.2"
+          },
+          {
+            "date": "2026-03-12T11:47:20.663420",
+            "timestamp": 1773316040663,
+            "possibility": "46.0"
+          },
+          {
+            "date": "2026-03-12T11:47:50.663420",
+            "timestamp": 1773316070663,
+            "possibility": "46.4"
+          },
+          {
+            "date": "2026-03-12T11:48:20.663420",
+            "timestamp": 1773316100663,
             "possibility": "45.6"
           },
           {
-            "date": "2026-03-12T11:28:12.623091",
-            "timestamp": 1773314892623,
-            "possibility": "44.3"
+            "date": "2026-03-12T11:48:50.663420",
+            "timestamp": 1773316130663,
+            "possibility": "44.8"
           },
           {
-            "date": "2026-03-12T11:28:42.623091",
-            "timestamp": 1773314922623,
-            "possibility": "44.0"
+            "date": "2026-03-12T11:49:20.663420",
+            "timestamp": 1773316160663,
+            "possibility": "45.1"
           },
           {
-            "date": "2026-03-12T11:29:12.623091",
-            "timestamp": 1773314952623,
-            "possibility": "43.2"
+            "date": "2026-03-12T11:49:50.663420",
+            "timestamp": 1773316190663,
+            "possibility": "45.1"
           },
           {
-            "date": "2026-03-12T11:29:42.623091",
-            "timestamp": 1773314982623,
+            "date": "2026-03-12T11:50:20.663420",
+            "timestamp": 1773316220663,
+            "possibility": "44.7"
+          },
+          {
+            "date": "2026-03-12T11:50:50.663420",
+            "timestamp": 1773316250663,
+            "possibility": "45.8"
+          },
+          {
+            "date": "2026-03-12T11:51:20.663420",
+            "timestamp": 1773316280663,
+            "possibility": "45.5"
+          },
+          {
+            "date": "2026-03-12T11:51:50.663420",
+            "timestamp": 1773316310663,
+            "possibility": "46.4"
+          },
+          {
+            "date": "2026-03-12T11:52:20.663420",
+            "timestamp": 1773316340663,
+            "possibility": "47.1"
+          },
+          {
+            "date": "2026-03-12T11:52:50.663420",
+            "timestamp": 1773316370663,
+            "possibility": "48.1"
+          },
+          {
+            "date": "2026-03-12T11:53:20.663420",
+            "timestamp": 1773316400663,
+            "possibility": "47.9"
+          },
+          {
+            "date": "2026-03-12T11:53:50.663420",
+            "timestamp": 1773316430663,
+            "possibility": "47.2"
+          },
+          {
+            "date": "2026-03-12T11:54:20.663420",
+            "timestamp": 1773316460663,
+            "possibility": "46.1"
+          },
+          {
+            "date": "2026-03-12T11:54:50.663420",
+            "timestamp": 1773316490663,
+            "possibility": "46.7"
+          },
+          {
+            "date": "2026-03-12T11:55:20.663420",
+            "timestamp": 1773316520663,
+            "possibility": "46.3"
+          },
+          {
+            "date": "2026-03-12T11:55:50.663420",
+            "timestamp": 1773316550663,
+            "possibility": "45.3"
+          },
+          {
+            "date": "2026-03-12T11:56:20.663420",
+            "timestamp": 1773316580663,
+            "possibility": "43.8"
+          },
+          {
+            "date": "2026-03-12T11:56:50.663420",
+            "timestamp": 1773316610663,
+            "possibility": "42.8"
+          },
+          {
+            "date": "2026-03-12T11:57:20.663420",
+            "timestamp": 1773316640663,
             "possibility": "42.9"
           },
           {
-            "date": "2026-03-12T11:30:12.623091",
-            "timestamp": 1773315012623,
-            "possibility": "42.1"
+            "date": "2026-03-12T11:57:50.663420",
+            "timestamp": 1773316670663,
+            "possibility": "42.6"
           },
           {
-            "date": "2026-03-12T11:30:42.623091",
-            "timestamp": 1773315042623,
-            "possibility": "42.3"
+            "date": "2026-03-12T11:58:20.663420",
+            "timestamp": 1773316700663,
+            "possibility": "43.3"
           },
           {
-            "date": "2026-03-12T11:31:12.623091",
-            "timestamp": 1773315072623,
-            "possibility": "41.1"
-          },
-          {
-            "date": "2026-03-12T11:31:42.623091",
-            "timestamp": 1773315102623,
-            "possibility": "41.1"
-          },
-          {
-            "date": "2026-03-12T11:32:12.623091",
-            "timestamp": 1773315132623,
-            "possibility": "41.8"
-          },
-          {
-            "date": "2026-03-12T11:32:42.623091",
-            "timestamp": 1773315162623,
-            "possibility": "41.0"
-          },
-          {
-            "date": "2026-03-12T11:33:12.623091",
-            "timestamp": 1773315192623,
-            "possibility": "40.9"
-          },
-          {
-            "date": "2026-03-12T11:33:42.623091",
-            "timestamp": 1773315222623,
-            "possibility": "42.2"
-          },
-          {
-            "date": "2026-03-12T11:34:12.623091",
-            "timestamp": 1773315252623,
-            "possibility": "42.3"
-          },
-          {
-            "date": "2026-03-12T11:34:42.623091",
-            "timestamp": 1773315282623,
-            "possibility": "43.0"
-          },
-          {
-            "date": "2026-03-12T11:35:12.623091",
-            "timestamp": 1773315312623,
-            "possibility": "41.9"
-          },
-          {
-            "date": "2026-03-12T11:35:42.623091",
-            "timestamp": 1773315342623,
-            "possibility": "43.2"
-          },
-          {
-            "date": "2026-03-12T11:36:12.623091",
-            "timestamp": 1773315372623,
-            "possibility": "42.7"
+            "date": "2026-03-12T11:58:50.663420",
+            "timestamp": 1773316730663,
+            "possibility": "42.0"
           }
         ],
         "count": 30
@@ -283,12 +283,12 @@
       "name": "이준석",
       "party": "국민의힘",
       "district": "서울 강남구",
-      "timestamp": 1773315373139,
-      "analyzedAt": "2026-03-12T11:36:13.139897",
-      "electionPossibility": "38.56",
-      "electionPossibilityPercent": "38.6",
-      "possibilityChange": "0.93",
-      "possibilityChangePercent": "0.9",
+      "timestamp": 1773316731179,
+      "analyzedAt": "2026-03-12T11:58:51.179110",
+      "electionPossibility": "41.91",
+      "electionPossibilityPercent": "41.9",
+      "possibilityChange": "-1.78",
+      "possibilityChangePercent": "-1.8",
       "scores": {
         "achievement": "30.0",
         "activity": "13.3",
@@ -354,154 +354,154 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:43.139359",
-            "timestamp": 1773314503139,
+            "date": "2026-03-12T11:44:21.178651",
+            "timestamp": 1773315861178,
             "possibility": "42.0"
           },
           {
-            "date": "2026-03-12T11:22:13.139359",
-            "timestamp": 1773314533139,
-            "possibility": "40.8"
+            "date": "2026-03-12T11:44:51.178651",
+            "timestamp": 1773315891178,
+            "possibility": "42.7"
           },
           {
-            "date": "2026-03-12T11:22:43.139359",
-            "timestamp": 1773314563139,
-            "possibility": "40.2"
+            "date": "2026-03-12T11:45:21.178651",
+            "timestamp": 1773315921178,
+            "possibility": "43.5"
           },
           {
-            "date": "2026-03-12T11:23:13.139359",
-            "timestamp": 1773314593139,
-            "possibility": "39.9"
+            "date": "2026-03-12T11:45:51.178651",
+            "timestamp": 1773315951178,
+            "possibility": "44.1"
           },
           {
-            "date": "2026-03-12T11:23:43.139359",
-            "timestamp": 1773314623139,
-            "possibility": "39.3"
+            "date": "2026-03-12T11:46:21.178651",
+            "timestamp": 1773315981178,
+            "possibility": "43.0"
           },
           {
-            "date": "2026-03-12T11:24:13.139359",
-            "timestamp": 1773314653139,
-            "possibility": "38.0"
+            "date": "2026-03-12T11:46:51.178651",
+            "timestamp": 1773316011178,
+            "possibility": "42.0"
           },
           {
-            "date": "2026-03-12T11:24:43.139359",
-            "timestamp": 1773314683139,
-            "possibility": "38.4"
+            "date": "2026-03-12T11:47:21.178651",
+            "timestamp": 1773316041178,
+            "possibility": "41.7"
           },
           {
-            "date": "2026-03-12T11:25:13.139359",
-            "timestamp": 1773314713139,
-            "possibility": "37.7"
+            "date": "2026-03-12T11:47:51.178651",
+            "timestamp": 1773316071178,
+            "possibility": "42.1"
           },
           {
-            "date": "2026-03-12T11:25:43.139359",
-            "timestamp": 1773314743139,
-            "possibility": "37.1"
+            "date": "2026-03-12T11:48:21.178651",
+            "timestamp": 1773316101178,
+            "possibility": "42.6"
           },
           {
-            "date": "2026-03-12T11:26:13.139359",
-            "timestamp": 1773314773139,
-            "possibility": "37.0"
+            "date": "2026-03-12T11:48:51.178651",
+            "timestamp": 1773316131178,
+            "possibility": "43.5"
           },
           {
-            "date": "2026-03-12T11:26:43.139359",
-            "timestamp": 1773314803139,
-            "possibility": "36.6"
+            "date": "2026-03-12T11:49:21.178651",
+            "timestamp": 1773316161178,
+            "possibility": "44.6"
           },
           {
-            "date": "2026-03-12T11:27:13.139359",
-            "timestamp": 1773314833139,
-            "possibility": "38.4"
+            "date": "2026-03-12T11:49:51.178651",
+            "timestamp": 1773316191178,
+            "possibility": "43.8"
           },
           {
-            "date": "2026-03-12T11:27:43.139359",
-            "timestamp": 1773314863139,
-            "possibility": "39.2"
+            "date": "2026-03-12T11:50:21.178651",
+            "timestamp": 1773316221178,
+            "possibility": "43.8"
           },
           {
-            "date": "2026-03-12T11:28:13.139359",
-            "timestamp": 1773314893139,
-            "possibility": "40.1"
+            "date": "2026-03-12T11:50:51.178651",
+            "timestamp": 1773316251178,
+            "possibility": "43.3"
           },
           {
-            "date": "2026-03-12T11:28:43.139359",
-            "timestamp": 1773314923139,
+            "date": "2026-03-12T11:51:21.178651",
+            "timestamp": 1773316281178,
+            "possibility": "44.2"
+          },
+          {
+            "date": "2026-03-12T11:51:51.178651",
+            "timestamp": 1773316311178,
+            "possibility": "44.7"
+          },
+          {
+            "date": "2026-03-12T11:52:21.178651",
+            "timestamp": 1773316341178,
+            "possibility": "43.7"
+          },
+          {
+            "date": "2026-03-12T11:52:51.178651",
+            "timestamp": 1773316371178,
+            "possibility": "42.8"
+          },
+          {
+            "date": "2026-03-12T11:53:21.178651",
+            "timestamp": 1773316401178,
+            "possibility": "43.7"
+          },
+          {
+            "date": "2026-03-12T11:53:51.178651",
+            "timestamp": 1773316431178,
+            "possibility": "43.3"
+          },
+          {
+            "date": "2026-03-12T11:54:21.178651",
+            "timestamp": 1773316461178,
+            "possibility": "41.8"
+          },
+          {
+            "date": "2026-03-12T11:54:51.178651",
+            "timestamp": 1773316491178,
+            "possibility": "41.5"
+          },
+          {
+            "date": "2026-03-12T11:55:21.178651",
+            "timestamp": 1773316521178,
             "possibility": "41.1"
           },
           {
-            "date": "2026-03-12T11:29:13.139359",
-            "timestamp": 1773314953139,
-            "possibility": "40.0"
+            "date": "2026-03-12T11:55:51.178651",
+            "timestamp": 1773316551178,
+            "possibility": "40.1"
           },
           {
-            "date": "2026-03-12T11:29:43.139359",
-            "timestamp": 1773314983139,
-            "possibility": "40.2"
+            "date": "2026-03-12T11:56:21.178651",
+            "timestamp": 1773316581178,
+            "possibility": "40.6"
           },
           {
-            "date": "2026-03-12T11:30:13.139359",
-            "timestamp": 1773315013139,
-            "possibility": "38.9"
+            "date": "2026-03-12T11:56:51.178651",
+            "timestamp": 1773316611178,
+            "possibility": "41.7"
           },
           {
-            "date": "2026-03-12T11:30:43.139359",
-            "timestamp": 1773315043139,
-            "possibility": "38.6"
+            "date": "2026-03-12T11:57:21.178651",
+            "timestamp": 1773316641178,
+            "possibility": "41.5"
           },
           {
-            "date": "2026-03-12T11:31:13.139359",
-            "timestamp": 1773315073139,
-            "possibility": "37.7"
+            "date": "2026-03-12T11:57:51.178651",
+            "timestamp": 1773316671178,
+            "possibility": "42.4"
           },
           {
-            "date": "2026-03-12T11:31:43.139359",
-            "timestamp": 1773315103139,
-            "possibility": "38.0"
+            "date": "2026-03-12T11:58:21.178651",
+            "timestamp": 1773316701178,
+            "possibility": "43.7"
           },
           {
-            "date": "2026-03-12T11:32:13.139359",
-            "timestamp": 1773315133139,
-            "possibility": "38.1"
-          },
-          {
-            "date": "2026-03-12T11:32:43.139359",
-            "timestamp": 1773315163139,
-            "possibility": "39.1"
-          },
-          {
-            "date": "2026-03-12T11:33:13.139359",
-            "timestamp": 1773315193139,
-            "possibility": "40.4"
-          },
-          {
-            "date": "2026-03-12T11:33:43.139359",
-            "timestamp": 1773315223139,
-            "possibility": "40.0"
-          },
-          {
-            "date": "2026-03-12T11:34:13.139359",
-            "timestamp": 1773315253139,
-            "possibility": "39.0"
-          },
-          {
-            "date": "2026-03-12T11:34:43.139359",
-            "timestamp": 1773315283139,
-            "possibility": "38.5"
-          },
-          {
-            "date": "2026-03-12T11:35:13.139359",
-            "timestamp": 1773315313139,
-            "possibility": "37.5"
-          },
-          {
-            "date": "2026-03-12T11:35:43.139359",
-            "timestamp": 1773315343139,
-            "possibility": "37.6"
-          },
-          {
-            "date": "2026-03-12T11:36:13.139359",
-            "timestamp": 1773315373139,
-            "possibility": "36.9"
+            "date": "2026-03-12T11:58:51.178651",
+            "timestamp": 1773316731178,
+            "possibility": "43.3"
           }
         ],
         "count": 30
@@ -512,12 +512,12 @@
       "name": "박형준",
       "party": "국민의힘",
       "district": "부산광역시",
-      "timestamp": 1773315373641,
-      "analyzedAt": "2026-03-12T11:36:13.641069",
-      "electionPossibility": "48.48",
-      "electionPossibilityPercent": "48.5",
-      "possibilityChange": "0.14",
-      "possibilityChangePercent": "0.1",
+      "timestamp": 1773316731680,
+      "analyzedAt": "2026-03-12T11:58:51.680298",
+      "electionPossibility": "50.04",
+      "electionPossibilityPercent": "50.0",
+      "possibilityChange": "0.37",
+      "possibilityChangePercent": "0.4",
       "scores": {
         "achievement": "30.0",
         "activity": "13.3",
@@ -583,154 +583,154 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:43.640346",
-            "timestamp": 1773314503640,
+            "date": "2026-03-12T11:44:21.679682",
+            "timestamp": 1773315861679,
             "possibility": "46.8"
           },
           {
-            "date": "2026-03-12T11:22:13.640346",
-            "timestamp": 1773314533640,
+            "date": "2026-03-12T11:44:51.679682",
+            "timestamp": 1773315891679,
             "possibility": "47.8"
           },
           {
-            "date": "2026-03-12T11:22:43.640346",
-            "timestamp": 1773314563640,
-            "possibility": "46.4"
-          },
-          {
-            "date": "2026-03-12T11:23:13.640346",
-            "timestamp": 1773314593640,
-            "possibility": "47.7"
-          },
-          {
-            "date": "2026-03-12T11:23:43.640346",
-            "timestamp": 1773314623640,
-            "possibility": "49.2"
-          },
-          {
-            "date": "2026-03-12T11:24:13.640346",
-            "timestamp": 1773314653640,
-            "possibility": "49.6"
-          },
-          {
-            "date": "2026-03-12T11:24:43.640346",
-            "timestamp": 1773314683640,
-            "possibility": "48.5"
-          },
-          {
-            "date": "2026-03-12T11:25:13.640346",
-            "timestamp": 1773314713640,
-            "possibility": "48.1"
-          },
-          {
-            "date": "2026-03-12T11:25:43.640346",
-            "timestamp": 1773314743640,
-            "possibility": "48.3"
-          },
-          {
-            "date": "2026-03-12T11:26:13.640346",
-            "timestamp": 1773314773640,
-            "possibility": "48.1"
-          },
-          {
-            "date": "2026-03-12T11:26:43.640346",
-            "timestamp": 1773314803640,
-            "possibility": "47.3"
-          },
-          {
-            "date": "2026-03-12T11:27:13.640346",
-            "timestamp": 1773314833640,
-            "possibility": "46.5"
-          },
-          {
-            "date": "2026-03-12T11:27:43.640346",
-            "timestamp": 1773314863640,
-            "possibility": "46.8"
-          },
-          {
-            "date": "2026-03-12T11:28:13.640346",
-            "timestamp": 1773314893640,
-            "possibility": "46.6"
-          },
-          {
-            "date": "2026-03-12T11:28:43.640346",
-            "timestamp": 1773314923640,
-            "possibility": "45.8"
-          },
-          {
-            "date": "2026-03-12T11:29:13.640346",
-            "timestamp": 1773314953640,
-            "possibility": "46.3"
-          },
-          {
-            "date": "2026-03-12T11:29:43.640346",
-            "timestamp": 1773314983640,
-            "possibility": "46.3"
-          },
-          {
-            "date": "2026-03-12T11:30:13.640346",
-            "timestamp": 1773315013640,
-            "possibility": "47.9"
-          },
-          {
-            "date": "2026-03-12T11:30:43.640346",
-            "timestamp": 1773315043640,
-            "possibility": "49.2"
-          },
-          {
-            "date": "2026-03-12T11:31:13.640346",
-            "timestamp": 1773315073640,
-            "possibility": "47.6"
-          },
-          {
-            "date": "2026-03-12T11:31:43.640346",
-            "timestamp": 1773315103640,
-            "possibility": "48.1"
-          },
-          {
-            "date": "2026-03-12T11:32:13.640346",
-            "timestamp": 1773315133640,
-            "possibility": "47.0"
-          },
-          {
-            "date": "2026-03-12T11:32:43.640346",
-            "timestamp": 1773315163640,
-            "possibility": "46.5"
-          },
-          {
-            "date": "2026-03-12T11:33:13.640346",
-            "timestamp": 1773315193640,
-            "possibility": "47.9"
-          },
-          {
-            "date": "2026-03-12T11:33:43.640346",
-            "timestamp": 1773315223640,
-            "possibility": "47.7"
-          },
-          {
-            "date": "2026-03-12T11:34:13.640346",
-            "timestamp": 1773315253640,
-            "possibility": "49.0"
-          },
-          {
-            "date": "2026-03-12T11:34:43.640346",
-            "timestamp": 1773315283640,
-            "possibility": "49.0"
-          },
-          {
-            "date": "2026-03-12T11:35:13.640346",
-            "timestamp": 1773315313640,
+            "date": "2026-03-12T11:45:21.679682",
+            "timestamp": 1773315921679,
             "possibility": "48.2"
           },
           {
-            "date": "2026-03-12T11:35:43.640346",
-            "timestamp": 1773315343640,
-            "possibility": "48.3"
+            "date": "2026-03-12T11:45:51.679682",
+            "timestamp": 1773315951679,
+            "possibility": "49.4"
           },
           {
-            "date": "2026-03-12T11:36:13.640346",
-            "timestamp": 1773315373640,
+            "date": "2026-03-12T11:46:21.679682",
+            "timestamp": 1773315981679,
+            "possibility": "48.8"
+          },
+          {
+            "date": "2026-03-12T11:46:51.679682",
+            "timestamp": 1773316011679,
+            "possibility": "49.6"
+          },
+          {
+            "date": "2026-03-12T11:47:21.679682",
+            "timestamp": 1773316041679,
+            "possibility": "49.9"
+          },
+          {
+            "date": "2026-03-12T11:47:51.679682",
+            "timestamp": 1773316071679,
+            "possibility": "48.8"
+          },
+          {
+            "date": "2026-03-12T11:48:21.679682",
+            "timestamp": 1773316101679,
+            "possibility": "47.6"
+          },
+          {
+            "date": "2026-03-12T11:48:51.679682",
+            "timestamp": 1773316131679,
+            "possibility": "48.9"
+          },
+          {
+            "date": "2026-03-12T11:49:21.679682",
+            "timestamp": 1773316161679,
+            "possibility": "48.6"
+          },
+          {
+            "date": "2026-03-12T11:49:51.679682",
+            "timestamp": 1773316191679,
+            "possibility": "47.3"
+          },
+          {
+            "date": "2026-03-12T11:50:21.679682",
+            "timestamp": 1773316221679,
+            "possibility": "47.6"
+          },
+          {
+            "date": "2026-03-12T11:50:51.679682",
+            "timestamp": 1773316251679,
+            "possibility": "47.1"
+          },
+          {
+            "date": "2026-03-12T11:51:21.679682",
+            "timestamp": 1773316281679,
+            "possibility": "47.7"
+          },
+          {
+            "date": "2026-03-12T11:51:51.679682",
+            "timestamp": 1773316311679,
+            "possibility": "47.1"
+          },
+          {
+            "date": "2026-03-12T11:52:21.679682",
+            "timestamp": 1773316341679,
+            "possibility": "48.0"
+          },
+          {
+            "date": "2026-03-12T11:52:51.679682",
+            "timestamp": 1773316371679,
+            "possibility": "48.1"
+          },
+          {
+            "date": "2026-03-12T11:53:21.679682",
+            "timestamp": 1773316401679,
+            "possibility": "49.3"
+          },
+          {
+            "date": "2026-03-12T11:53:51.679682",
+            "timestamp": 1773316431679,
+            "possibility": "49.3"
+          },
+          {
+            "date": "2026-03-12T11:54:21.679682",
+            "timestamp": 1773316461679,
+            "possibility": "50.3"
+          },
+          {
+            "date": "2026-03-12T11:54:51.679682",
+            "timestamp": 1773316491679,
+            "possibility": "48.9"
+          },
+          {
+            "date": "2026-03-12T11:55:21.679682",
+            "timestamp": 1773316521679,
+            "possibility": "49.9"
+          },
+          {
+            "date": "2026-03-12T11:55:51.679682",
+            "timestamp": 1773316551679,
             "possibility": "49.2"
+          },
+          {
+            "date": "2026-03-12T11:56:21.679682",
+            "timestamp": 1773316581679,
+            "possibility": "50.1"
+          },
+          {
+            "date": "2026-03-12T11:56:51.679682",
+            "timestamp": 1773316611679,
+            "possibility": "50.2"
+          },
+          {
+            "date": "2026-03-12T11:57:21.679682",
+            "timestamp": 1773316641679,
+            "possibility": "49.9"
+          },
+          {
+            "date": "2026-03-12T11:57:51.679682",
+            "timestamp": 1773316671679,
+            "possibility": "51.1"
+          },
+          {
+            "date": "2026-03-12T11:58:21.679682",
+            "timestamp": 1773316701679,
+            "possibility": "49.7"
+          },
+          {
+            "date": "2026-03-12T11:58:51.679682",
+            "timestamp": 1773316731679,
+            "possibility": "50.1"
           }
         ],
         "count": 30
@@ -741,12 +741,12 @@
       "name": "강선우",
       "party": "국민의힘",
       "district": "인천광역시",
-      "timestamp": 1773315374143,
-      "analyzedAt": "2026-03-12T11:36:14.143300",
-      "electionPossibility": "30.45",
-      "electionPossibilityPercent": "30.4",
-      "possibilityChange": "0.51",
-      "possibilityChangePercent": "0.5",
+      "timestamp": 1773316732181,
+      "analyzedAt": "2026-03-12T11:58:52.181281",
+      "electionPossibility": "28.85",
+      "electionPossibilityPercent": "28.8",
+      "possibilityChange": "-0.39",
+      "possibilityChangePercent": "-0.4",
       "scores": {
         "achievement": "30.0",
         "activity": "13.3",
@@ -796,154 +796,154 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:44.142378",
-            "timestamp": 1773314504142,
+            "date": "2026-03-12T11:44:22.180688",
+            "timestamp": 1773315862180,
             "possibility": "29.1"
           },
           {
-            "date": "2026-03-12T11:22:14.142378",
-            "timestamp": 1773314534142,
-            "possibility": "29.2"
+            "date": "2026-03-12T11:44:52.180688",
+            "timestamp": 1773315892180,
+            "possibility": "28.6"
           },
           {
-            "date": "2026-03-12T11:22:44.142378",
-            "timestamp": 1773314564142,
+            "date": "2026-03-12T11:45:22.180688",
+            "timestamp": 1773315922180,
+            "possibility": "28.6"
+          },
+          {
+            "date": "2026-03-12T11:45:52.180688",
+            "timestamp": 1773315952180,
+            "possibility": "28.8"
+          },
+          {
+            "date": "2026-03-12T11:46:22.180688",
+            "timestamp": 1773315982180,
             "possibility": "29.3"
           },
           {
-            "date": "2026-03-12T11:23:14.142378",
-            "timestamp": 1773314594142,
-            "possibility": "29.9"
+            "date": "2026-03-12T11:46:52.180688",
+            "timestamp": 1773316012180,
+            "possibility": "30.6"
           },
           {
-            "date": "2026-03-12T11:23:44.142378",
-            "timestamp": 1773314624142,
-            "possibility": "30.9"
+            "date": "2026-03-12T11:47:22.180688",
+            "timestamp": 1773316042180,
+            "possibility": "29.0"
           },
           {
-            "date": "2026-03-12T11:24:14.142378",
-            "timestamp": 1773314654142,
-            "possibility": "31.9"
+            "date": "2026-03-12T11:47:52.180688",
+            "timestamp": 1773316072180,
+            "possibility": "28.3"
           },
           {
-            "date": "2026-03-12T11:24:44.142378",
-            "timestamp": 1773314684142,
-            "possibility": "32.9"
+            "date": "2026-03-12T11:48:22.180688",
+            "timestamp": 1773316102180,
+            "possibility": "29.1"
           },
           {
-            "date": "2026-03-12T11:25:14.142378",
-            "timestamp": 1773314714142,
-            "possibility": "33.3"
+            "date": "2026-03-12T11:48:52.180688",
+            "timestamp": 1773316132180,
+            "possibility": "28.4"
           },
           {
-            "date": "2026-03-12T11:25:44.142378",
-            "timestamp": 1773314744142,
-            "possibility": "33.7"
+            "date": "2026-03-12T11:49:22.180688",
+            "timestamp": 1773316162180,
+            "possibility": "28.7"
           },
           {
-            "date": "2026-03-12T11:26:14.142378",
-            "timestamp": 1773314774142,
-            "possibility": "34.1"
+            "date": "2026-03-12T11:49:52.180688",
+            "timestamp": 1773316192180,
+            "possibility": "29.7"
           },
           {
-            "date": "2026-03-12T11:26:44.142378",
-            "timestamp": 1773314804142,
-            "possibility": "32.3"
-          },
-          {
-            "date": "2026-03-12T11:27:14.142378",
-            "timestamp": 1773314834142,
-            "possibility": "31.0"
-          },
-          {
-            "date": "2026-03-12T11:27:44.142378",
-            "timestamp": 1773314864142,
-            "possibility": "31.5"
-          },
-          {
-            "date": "2026-03-12T11:28:14.142378",
-            "timestamp": 1773314894142,
+            "date": "2026-03-12T11:50:22.180688",
+            "timestamp": 1773316222180,
             "possibility": "30.2"
           },
           {
-            "date": "2026-03-12T11:28:44.142378",
-            "timestamp": 1773314924142,
-            "possibility": "31.4"
+            "date": "2026-03-12T11:50:52.180688",
+            "timestamp": 1773316252180,
+            "possibility": "30.9"
           },
           {
-            "date": "2026-03-12T11:29:14.142378",
-            "timestamp": 1773314954142,
-            "possibility": "30.8"
+            "date": "2026-03-12T11:51:22.180688",
+            "timestamp": 1773316282180,
+            "possibility": "30.4"
           },
           {
-            "date": "2026-03-12T11:29:44.142378",
-            "timestamp": 1773314984142,
-            "possibility": "30.6"
+            "date": "2026-03-12T11:51:52.180688",
+            "timestamp": 1773316312180,
+            "possibility": "29.5"
           },
           {
-            "date": "2026-03-12T11:30:14.142378",
-            "timestamp": 1773315014142,
+            "date": "2026-03-12T11:52:22.180688",
+            "timestamp": 1773316342180,
+            "possibility": "28.1"
+          },
+          {
+            "date": "2026-03-12T11:52:52.180688",
+            "timestamp": 1773316372180,
+            "possibility": "28.3"
+          },
+          {
+            "date": "2026-03-12T11:53:22.180688",
+            "timestamp": 1773316402180,
+            "possibility": "29.3"
+          },
+          {
+            "date": "2026-03-12T11:53:52.180688",
+            "timestamp": 1773316432180,
+            "possibility": "28.3"
+          },
+          {
+            "date": "2026-03-12T11:54:22.180688",
+            "timestamp": 1773316462180,
             "possibility": "29.8"
           },
           {
-            "date": "2026-03-12T11:30:44.142378",
-            "timestamp": 1773315044142,
-            "possibility": "29.9"
+            "date": "2026-03-12T11:54:52.180688",
+            "timestamp": 1773316492180,
+            "possibility": "28.6"
           },
           {
-            "date": "2026-03-12T11:31:14.142378",
-            "timestamp": 1773315074142,
-            "possibility": "31.1"
+            "date": "2026-03-12T11:55:22.180688",
+            "timestamp": 1773316522180,
+            "possibility": "27.3"
           },
           {
-            "date": "2026-03-12T11:31:44.142378",
-            "timestamp": 1773315104142,
-            "possibility": "31.7"
+            "date": "2026-03-12T11:55:52.180688",
+            "timestamp": 1773316552180,
+            "possibility": "28.6"
           },
           {
-            "date": "2026-03-12T11:32:14.142378",
-            "timestamp": 1773315134142,
-            "possibility": "32.9"
+            "date": "2026-03-12T11:56:22.180688",
+            "timestamp": 1773316582180,
+            "possibility": "28.5"
           },
           {
-            "date": "2026-03-12T11:32:44.142378",
-            "timestamp": 1773315164142,
-            "possibility": "31.5"
+            "date": "2026-03-12T11:56:52.180688",
+            "timestamp": 1773316612180,
+            "possibility": "28.2"
           },
           {
-            "date": "2026-03-12T11:33:14.142378",
-            "timestamp": 1773315194142,
-            "possibility": "31.4"
+            "date": "2026-03-12T11:57:22.180688",
+            "timestamp": 1773316642180,
+            "possibility": "28.6"
           },
           {
-            "date": "2026-03-12T11:33:44.142378",
-            "timestamp": 1773315224142,
-            "possibility": "30.8"
+            "date": "2026-03-12T11:57:52.180688",
+            "timestamp": 1773316672180,
+            "possibility": "29.1"
           },
           {
-            "date": "2026-03-12T11:34:14.142378",
-            "timestamp": 1773315254142,
-            "possibility": "30.1"
+            "date": "2026-03-12T11:58:22.180688",
+            "timestamp": 1773316702180,
+            "possibility": "29.2"
           },
           {
-            "date": "2026-03-12T11:34:44.142378",
-            "timestamp": 1773315284142,
-            "possibility": "29.8"
-          },
-          {
-            "date": "2026-03-12T11:35:14.142378",
-            "timestamp": 1773315314142,
-            "possibility": "30.6"
-          },
-          {
-            "date": "2026-03-12T11:35:44.142378",
-            "timestamp": 1773315344142,
-            "possibility": "29.9"
-          },
-          {
-            "date": "2026-03-12T11:36:14.142378",
-            "timestamp": 1773315374142,
-            "possibility": "30.6"
+            "date": "2026-03-12T11:58:52.180688",
+            "timestamp": 1773316732180,
+            "possibility": "29.6"
           }
         ],
         "count": 30
@@ -954,12 +954,12 @@
       "name": "신상진",
       "party": "더불어민주당",
       "district": "대전광역시",
-      "timestamp": 1773315374645,
-      "analyzedAt": "2026-03-12T11:36:14.645474",
-      "electionPossibility": "43.16",
-      "electionPossibilityPercent": "43.2",
-      "possibilityChange": "-1.02",
-      "possibilityChangePercent": "-1.0",
+      "timestamp": 1773316732682,
+      "analyzedAt": "2026-03-12T11:58:52.682532",
+      "electionPossibility": "39.41",
+      "electionPossibilityPercent": "39.4",
+      "possibilityChange": "-0.67",
+      "possibilityChangePercent": "-0.7",
       "scores": {
         "achievement": "30.0",
         "activity": "13.3",
@@ -1025,154 +1025,154 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:44.644331",
-            "timestamp": 1773314504644,
+            "date": "2026-03-12T11:44:22.681691",
+            "timestamp": 1773315862681,
             "possibility": "42.4"
           },
           {
-            "date": "2026-03-12T11:22:14.644331",
-            "timestamp": 1773314534644,
-            "possibility": "42.3"
+            "date": "2026-03-12T11:44:52.681691",
+            "timestamp": 1773315892681,
+            "possibility": "42.4"
           },
           {
-            "date": "2026-03-12T11:22:44.644331",
-            "timestamp": 1773314564644,
-            "possibility": "41.3"
-          },
-          {
-            "date": "2026-03-12T11:23:14.644331",
-            "timestamp": 1773314594644,
-            "possibility": "42.0"
-          },
-          {
-            "date": "2026-03-12T11:23:44.644331",
-            "timestamp": 1773314624644,
-            "possibility": "40.6"
-          },
-          {
-            "date": "2026-03-12T11:24:14.644331",
-            "timestamp": 1773314654644,
-            "possibility": "40.3"
-          },
-          {
-            "date": "2026-03-12T11:24:44.644331",
-            "timestamp": 1773314684644,
-            "possibility": "39.5"
-          },
-          {
-            "date": "2026-03-12T11:25:14.644331",
-            "timestamp": 1773314714644,
-            "possibility": "38.3"
-          },
-          {
-            "date": "2026-03-12T11:25:44.644331",
-            "timestamp": 1773314744644,
-            "possibility": "40.0"
-          },
-          {
-            "date": "2026-03-12T11:26:14.644331",
-            "timestamp": 1773314774644,
-            "possibility": "41.0"
-          },
-          {
-            "date": "2026-03-12T11:26:44.644331",
-            "timestamp": 1773314804644,
-            "possibility": "41.6"
-          },
-          {
-            "date": "2026-03-12T11:27:14.644331",
-            "timestamp": 1773314834644,
-            "possibility": "41.7"
-          },
-          {
-            "date": "2026-03-12T11:27:44.644331",
-            "timestamp": 1773314864644,
-            "possibility": "40.6"
-          },
-          {
-            "date": "2026-03-12T11:28:14.644331",
-            "timestamp": 1773314894644,
-            "possibility": "39.3"
-          },
-          {
-            "date": "2026-03-12T11:28:44.644331",
-            "timestamp": 1773314924644,
-            "possibility": "40.2"
-          },
-          {
-            "date": "2026-03-12T11:29:14.644331",
-            "timestamp": 1773314954644,
-            "possibility": "40.7"
-          },
-          {
-            "date": "2026-03-12T11:29:44.644331",
-            "timestamp": 1773314984644,
-            "possibility": "41.8"
-          },
-          {
-            "date": "2026-03-12T11:30:14.644331",
-            "timestamp": 1773315014644,
-            "possibility": "43.2"
-          },
-          {
-            "date": "2026-03-12T11:30:44.644331",
-            "timestamp": 1773315044644,
-            "possibility": "43.6"
-          },
-          {
-            "date": "2026-03-12T11:31:14.644331",
-            "timestamp": 1773315074644,
-            "possibility": "43.4"
-          },
-          {
-            "date": "2026-03-12T11:31:44.644331",
-            "timestamp": 1773315104644,
-            "possibility": "42.7"
-          },
-          {
-            "date": "2026-03-12T11:32:14.644331",
-            "timestamp": 1773315134644,
-            "possibility": "43.2"
-          },
-          {
-            "date": "2026-03-12T11:32:44.644331",
-            "timestamp": 1773315164644,
-            "possibility": "44.5"
-          },
-          {
-            "date": "2026-03-12T11:33:14.644331",
-            "timestamp": 1773315194644,
-            "possibility": "43.6"
-          },
-          {
-            "date": "2026-03-12T11:33:44.644331",
-            "timestamp": 1773315224644,
-            "possibility": "42.1"
-          },
-          {
-            "date": "2026-03-12T11:34:14.644331",
-            "timestamp": 1773315254644,
-            "possibility": "42.1"
-          },
-          {
-            "date": "2026-03-12T11:34:44.644331",
-            "timestamp": 1773315284644,
+            "date": "2026-03-12T11:45:22.681691",
+            "timestamp": 1773315922681,
             "possibility": "43.5"
           },
           {
-            "date": "2026-03-12T11:35:14.644331",
-            "timestamp": 1773315314644,
-            "possibility": "43.6"
+            "date": "2026-03-12T11:45:52.681691",
+            "timestamp": 1773315952681,
+            "possibility": "43.0"
           },
           {
-            "date": "2026-03-12T11:35:44.644331",
-            "timestamp": 1773315344644,
+            "date": "2026-03-12T11:46:22.681691",
+            "timestamp": 1773315982681,
+            "possibility": "44.0"
+          },
+          {
+            "date": "2026-03-12T11:46:52.681691",
+            "timestamp": 1773316012681,
+            "possibility": "45.1"
+          },
+          {
+            "date": "2026-03-12T11:47:22.681691",
+            "timestamp": 1773316042681,
             "possibility": "44.2"
           },
           {
-            "date": "2026-03-12T11:36:14.644331",
-            "timestamp": 1773315374644,
+            "date": "2026-03-12T11:47:52.681691",
+            "timestamp": 1773316072681,
+            "possibility": "43.7"
+          },
+          {
+            "date": "2026-03-12T11:48:22.681691",
+            "timestamp": 1773316102681,
             "possibility": "43.1"
+          },
+          {
+            "date": "2026-03-12T11:48:52.681691",
+            "timestamp": 1773316132681,
+            "possibility": "42.0"
+          },
+          {
+            "date": "2026-03-12T11:49:22.681691",
+            "timestamp": 1773316162681,
+            "possibility": "42.2"
+          },
+          {
+            "date": "2026-03-12T11:49:52.681691",
+            "timestamp": 1773316192681,
+            "possibility": "42.1"
+          },
+          {
+            "date": "2026-03-12T11:50:22.681691",
+            "timestamp": 1773316222681,
+            "possibility": "42.9"
+          },
+          {
+            "date": "2026-03-12T11:50:52.681691",
+            "timestamp": 1773316252681,
+            "possibility": "43.5"
+          },
+          {
+            "date": "2026-03-12T11:51:22.681691",
+            "timestamp": 1773316282681,
+            "possibility": "44.5"
+          },
+          {
+            "date": "2026-03-12T11:51:52.681691",
+            "timestamp": 1773316312681,
+            "possibility": "44.8"
+          },
+          {
+            "date": "2026-03-12T11:52:22.681691",
+            "timestamp": 1773316342681,
+            "possibility": "44.7"
+          },
+          {
+            "date": "2026-03-12T11:52:52.681691",
+            "timestamp": 1773316372681,
+            "possibility": "43.1"
+          },
+          {
+            "date": "2026-03-12T11:53:22.681691",
+            "timestamp": 1773316402681,
+            "possibility": "42.4"
+          },
+          {
+            "date": "2026-03-12T11:53:52.681691",
+            "timestamp": 1773316432681,
+            "possibility": "41.1"
+          },
+          {
+            "date": "2026-03-12T11:54:22.681691",
+            "timestamp": 1773316462681,
+            "possibility": "39.9"
+          },
+          {
+            "date": "2026-03-12T11:54:52.681691",
+            "timestamp": 1773316492681,
+            "possibility": "40.5"
+          },
+          {
+            "date": "2026-03-12T11:55:22.681691",
+            "timestamp": 1773316522681,
+            "possibility": "39.2"
+          },
+          {
+            "date": "2026-03-12T11:55:52.681691",
+            "timestamp": 1773316552681,
+            "possibility": "40.5"
+          },
+          {
+            "date": "2026-03-12T11:56:22.681691",
+            "timestamp": 1773316582681,
+            "possibility": "39.8"
+          },
+          {
+            "date": "2026-03-12T11:56:52.681691",
+            "timestamp": 1773316612681,
+            "possibility": "38.5"
+          },
+          {
+            "date": "2026-03-12T11:57:22.681691",
+            "timestamp": 1773316642681,
+            "possibility": "37.5"
+          },
+          {
+            "date": "2026-03-12T11:57:52.681691",
+            "timestamp": 1773316672681,
+            "possibility": "38.5"
+          },
+          {
+            "date": "2026-03-12T11:58:22.681691",
+            "timestamp": 1773316702681,
+            "possibility": "40.1"
+          },
+          {
+            "date": "2026-03-12T11:58:52.681691",
+            "timestamp": 1773316732681,
+            "possibility": "40.9"
           }
         ],
         "count": 30
@@ -1183,12 +1183,12 @@
       "name": "서영교",
       "party": "더불어민주당",
       "district": "서울특별시장",
-      "timestamp": 1773315375146,
-      "analyzedAt": "2026-03-12T11:36:15.146989",
-      "electionPossibility": "24.31",
-      "electionPossibilityPercent": "24.3",
-      "possibilityChange": "-0.69",
-      "possibilityChangePercent": "-0.7",
+      "timestamp": 1773316733184,
+      "analyzedAt": "2026-03-12T11:58:53.184410",
+      "electionPossibility": "21.56",
+      "electionPossibilityPercent": "21.6",
+      "possibilityChange": "-0.79",
+      "possibilityChangePercent": "-0.8",
       "scores": {
         "achievement": "5.0",
         "activity": "3.3",
@@ -1229,154 +1229,154 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:45.146521",
-            "timestamp": 1773314505146,
+            "date": "2026-03-12T11:44:23.183873",
+            "timestamp": 1773315863183,
             "possibility": "24.4"
           },
           {
-            "date": "2026-03-12T11:22:15.146521",
-            "timestamp": 1773314535146,
+            "date": "2026-03-12T11:44:53.183873",
+            "timestamp": 1773315893183,
             "possibility": "23.1"
           },
           {
-            "date": "2026-03-12T11:22:45.146521",
-            "timestamp": 1773314565146,
+            "date": "2026-03-12T11:45:23.183873",
+            "timestamp": 1773315923183,
+            "possibility": "23.9"
+          },
+          {
+            "date": "2026-03-12T11:45:53.183873",
+            "timestamp": 1773315953183,
             "possibility": "23.0"
           },
           {
-            "date": "2026-03-12T11:23:15.146521",
-            "timestamp": 1773314595146,
-            "possibility": "22.8"
+            "date": "2026-03-12T11:46:23.183873",
+            "timestamp": 1773315983183,
+            "possibility": "22.7"
           },
           {
-            "date": "2026-03-12T11:23:45.146521",
-            "timestamp": 1773314625146,
-            "possibility": "24.2"
-          },
-          {
-            "date": "2026-03-12T11:24:15.146521",
-            "timestamp": 1773314655146,
+            "date": "2026-03-12T11:46:53.183873",
+            "timestamp": 1773316013183,
             "possibility": "23.8"
           },
           {
-            "date": "2026-03-12T11:24:45.146521",
-            "timestamp": 1773314685146,
-            "possibility": "24.5"
-          },
-          {
-            "date": "2026-03-12T11:25:15.146521",
-            "timestamp": 1773314715146,
-            "possibility": "25.3"
-          },
-          {
-            "date": "2026-03-12T11:25:45.146521",
-            "timestamp": 1773314745146,
-            "possibility": "24.1"
-          },
-          {
-            "date": "2026-03-12T11:26:15.146521",
-            "timestamp": 1773314775146,
-            "possibility": "24.8"
-          },
-          {
-            "date": "2026-03-12T11:26:45.146521",
-            "timestamp": 1773314805146,
-            "possibility": "24.5"
-          },
-          {
-            "date": "2026-03-12T11:27:15.146521",
-            "timestamp": 1773314835146,
-            "possibility": "23.9"
-          },
-          {
-            "date": "2026-03-12T11:27:45.146521",
-            "timestamp": 1773314865146,
-            "possibility": "23.1"
-          },
-          {
-            "date": "2026-03-12T11:28:15.146521",
-            "timestamp": 1773314895146,
-            "possibility": "24.6"
-          },
-          {
-            "date": "2026-03-12T11:28:45.146521",
-            "timestamp": 1773314925146,
-            "possibility": "23.9"
-          },
-          {
-            "date": "2026-03-12T11:29:15.146521",
-            "timestamp": 1773314955146,
-            "possibility": "23.5"
-          },
-          {
-            "date": "2026-03-12T11:29:45.146521",
-            "timestamp": 1773314985146,
-            "possibility": "24.5"
-          },
-          {
-            "date": "2026-03-12T11:30:15.146521",
-            "timestamp": 1773315015146,
-            "possibility": "24.7"
-          },
-          {
-            "date": "2026-03-12T11:30:45.146521",
-            "timestamp": 1773315045146,
-            "possibility": "26.0"
-          },
-          {
-            "date": "2026-03-12T11:31:15.146521",
-            "timestamp": 1773315075146,
-            "possibility": "25.6"
-          },
-          {
-            "date": "2026-03-12T11:31:45.146521",
-            "timestamp": 1773315105146,
-            "possibility": "25.5"
-          },
-          {
-            "date": "2026-03-12T11:32:15.146521",
-            "timestamp": 1773315135146,
-            "possibility": "24.6"
-          },
-          {
-            "date": "2026-03-12T11:32:45.146521",
-            "timestamp": 1773315165146,
-            "possibility": "23.2"
-          },
-          {
-            "date": "2026-03-12T11:33:15.146521",
-            "timestamp": 1773315195146,
-            "possibility": "22.8"
-          },
-          {
-            "date": "2026-03-12T11:33:45.146521",
-            "timestamp": 1773315225146,
-            "possibility": "24.2"
-          },
-          {
-            "date": "2026-03-12T11:34:15.146521",
-            "timestamp": 1773315255146,
+            "date": "2026-03-12T11:47:23.183873",
+            "timestamp": 1773316043183,
             "possibility": "24.0"
           },
           {
-            "date": "2026-03-12T11:34:45.146521",
-            "timestamp": 1773315285146,
-            "possibility": "23.8"
+            "date": "2026-03-12T11:47:53.183873",
+            "timestamp": 1773316073183,
+            "possibility": "22.9"
           },
           {
-            "date": "2026-03-12T11:35:15.146521",
-            "timestamp": 1773315315146,
-            "possibility": "24.2"
+            "date": "2026-03-12T11:48:23.183873",
+            "timestamp": 1773316103183,
+            "possibility": "21.8"
           },
           {
-            "date": "2026-03-12T11:35:45.146521",
-            "timestamp": 1773315345146,
-            "possibility": "25.0"
+            "date": "2026-03-12T11:48:53.183873",
+            "timestamp": 1773316133183,
+            "possibility": "22.3"
           },
           {
-            "date": "2026-03-12T11:36:15.146521",
-            "timestamp": 1773315375146,
-            "possibility": "26.2"
+            "date": "2026-03-12T11:49:23.183873",
+            "timestamp": 1773316163183,
+            "possibility": "21.2"
+          },
+          {
+            "date": "2026-03-12T11:49:53.183873",
+            "timestamp": 1773316193183,
+            "possibility": "22.5"
+          },
+          {
+            "date": "2026-03-12T11:50:23.183873",
+            "timestamp": 1773316223183,
+            "possibility": "22.4"
+          },
+          {
+            "date": "2026-03-12T11:50:53.183873",
+            "timestamp": 1773316253183,
+            "possibility": "21.4"
+          },
+          {
+            "date": "2026-03-12T11:51:23.183873",
+            "timestamp": 1773316283183,
+            "possibility": "21.7"
+          },
+          {
+            "date": "2026-03-12T11:51:53.183873",
+            "timestamp": 1773316313183,
+            "possibility": "22.5"
+          },
+          {
+            "date": "2026-03-12T11:52:23.183873",
+            "timestamp": 1773316343183,
+            "possibility": "22.3"
+          },
+          {
+            "date": "2026-03-12T11:52:53.183873",
+            "timestamp": 1773316373183,
+            "possibility": "22.1"
+          },
+          {
+            "date": "2026-03-12T11:53:23.183873",
+            "timestamp": 1773316403183,
+            "possibility": "21.6"
+          },
+          {
+            "date": "2026-03-12T11:53:53.183873",
+            "timestamp": 1773316433183,
+            "possibility": "21.3"
+          },
+          {
+            "date": "2026-03-12T11:54:23.183873",
+            "timestamp": 1773316463183,
+            "possibility": "21.3"
+          },
+          {
+            "date": "2026-03-12T11:54:53.183873",
+            "timestamp": 1773316493183,
+            "possibility": "20.2"
+          },
+          {
+            "date": "2026-03-12T11:55:23.183873",
+            "timestamp": 1773316523183,
+            "possibility": "20.0"
+          },
+          {
+            "date": "2026-03-12T11:55:53.183873",
+            "timestamp": 1773316553183,
+            "possibility": "20.8"
+          },
+          {
+            "date": "2026-03-12T11:56:23.183873",
+            "timestamp": 1773316583183,
+            "possibility": "20.3"
+          },
+          {
+            "date": "2026-03-12T11:56:53.183873",
+            "timestamp": 1773316613183,
+            "possibility": "21.4"
+          },
+          {
+            "date": "2026-03-12T11:57:23.183873",
+            "timestamp": 1773316643183,
+            "possibility": "22.6"
+          },
+          {
+            "date": "2026-03-12T11:57:53.183873",
+            "timestamp": 1773316673183,
+            "possibility": "22.2"
+          },
+          {
+            "date": "2026-03-12T11:58:23.183873",
+            "timestamp": 1773316703183,
+            "possibility": "22.4"
+          },
+          {
+            "date": "2026-03-12T11:58:53.183873",
+            "timestamp": 1773316733183,
+            "possibility": "21.3"
           }
         ],
         "count": 30
@@ -1387,12 +1387,12 @@
       "name": "김교흥",
       "party": "더불어민주당",
       "district": "인천광역시장",
-      "timestamp": 1773315375647,
-      "analyzedAt": "2026-03-12T11:36:15.647872",
-      "electionPossibility": "22.91",
-      "electionPossibilityPercent": "22.9",
-      "possibilityChange": "-0.22",
-      "possibilityChangePercent": "-0.2",
+      "timestamp": 1773316733685,
+      "analyzedAt": "2026-03-12T11:58:53.685107",
+      "electionPossibility": "24.54",
+      "electionPossibilityPercent": "24.5",
+      "possibilityChange": "-1.16",
+      "possibilityChangePercent": "-1.2",
       "scores": {
         "achievement": "5.0",
         "activity": "3.3",
@@ -1433,154 +1433,154 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:45.647338",
-            "timestamp": 1773314505647,
+            "date": "2026-03-12T11:44:23.684655",
+            "timestamp": 1773315863684,
             "possibility": "24.4"
           },
           {
-            "date": "2026-03-12T11:22:15.647338",
-            "timestamp": 1773314535647,
-            "possibility": "25.1"
+            "date": "2026-03-12T11:44:53.684655",
+            "timestamp": 1773315893684,
+            "possibility": "24.1"
           },
           {
-            "date": "2026-03-12T11:22:45.647338",
-            "timestamp": 1773314565647,
-            "possibility": "26.5"
+            "date": "2026-03-12T11:45:23.684655",
+            "timestamp": 1773315923684,
+            "possibility": "23.8"
           },
           {
-            "date": "2026-03-12T11:23:15.647338",
-            "timestamp": 1773314595647,
-            "possibility": "27.1"
-          },
-          {
-            "date": "2026-03-12T11:23:45.647338",
-            "timestamp": 1773314625647,
-            "possibility": "26.3"
-          },
-          {
-            "date": "2026-03-12T11:24:15.647338",
-            "timestamp": 1773314655647,
-            "possibility": "27.0"
-          },
-          {
-            "date": "2026-03-12T11:24:45.647338",
-            "timestamp": 1773314685647,
-            "possibility": "27.7"
-          },
-          {
-            "date": "2026-03-12T11:25:15.647338",
-            "timestamp": 1773314715647,
-            "possibility": "27.7"
-          },
-          {
-            "date": "2026-03-12T11:25:45.647338",
-            "timestamp": 1773314745647,
-            "possibility": "26.0"
-          },
-          {
-            "date": "2026-03-12T11:26:15.647338",
-            "timestamp": 1773314775647,
-            "possibility": "24.5"
-          },
-          {
-            "date": "2026-03-12T11:26:45.647338",
-            "timestamp": 1773314805647,
-            "possibility": "25.9"
-          },
-          {
-            "date": "2026-03-12T11:27:15.647338",
-            "timestamp": 1773314835647,
-            "possibility": "26.9"
-          },
-          {
-            "date": "2026-03-12T11:27:45.647338",
-            "timestamp": 1773314865647,
-            "possibility": "26.5"
-          },
-          {
-            "date": "2026-03-12T11:28:15.647338",
-            "timestamp": 1773314895647,
-            "possibility": "27.0"
-          },
-          {
-            "date": "2026-03-12T11:28:45.647338",
-            "timestamp": 1773314925647,
-            "possibility": "28.2"
-          },
-          {
-            "date": "2026-03-12T11:29:15.647338",
-            "timestamp": 1773314955647,
-            "possibility": "27.6"
-          },
-          {
-            "date": "2026-03-12T11:29:45.647338",
-            "timestamp": 1773314985647,
-            "possibility": "26.7"
-          },
-          {
-            "date": "2026-03-12T11:30:15.647338",
-            "timestamp": 1773315015647,
-            "possibility": "26.1"
-          },
-          {
-            "date": "2026-03-12T11:30:45.647338",
-            "timestamp": 1773315045647,
-            "possibility": "26.4"
-          },
-          {
-            "date": "2026-03-12T11:31:15.647338",
-            "timestamp": 1773315075647,
-            "possibility": "25.3"
-          },
-          {
-            "date": "2026-03-12T11:31:45.647338",
-            "timestamp": 1773315105647,
-            "possibility": "26.1"
-          },
-          {
-            "date": "2026-03-12T11:32:15.647338",
-            "timestamp": 1773315135647,
-            "possibility": "25.2"
-          },
-          {
-            "date": "2026-03-12T11:32:45.647338",
-            "timestamp": 1773315165647,
-            "possibility": "24.0"
-          },
-          {
-            "date": "2026-03-12T11:33:15.647338",
-            "timestamp": 1773315195647,
-            "possibility": "22.7"
-          },
-          {
-            "date": "2026-03-12T11:33:45.647338",
-            "timestamp": 1773315225647,
-            "possibility": "23.3"
-          },
-          {
-            "date": "2026-03-12T11:34:15.647338",
-            "timestamp": 1773315255647,
+            "date": "2026-03-12T11:45:53.684655",
+            "timestamp": 1773315953684,
             "possibility": "23.5"
           },
           {
-            "date": "2026-03-12T11:34:45.647338",
-            "timestamp": 1773315285647,
-            "possibility": "22.4"
+            "date": "2026-03-12T11:46:23.684655",
+            "timestamp": 1773315983684,
+            "possibility": "22.7"
           },
           {
-            "date": "2026-03-12T11:35:15.647338",
-            "timestamp": 1773315315647,
-            "possibility": "23.0"
+            "date": "2026-03-12T11:46:53.684655",
+            "timestamp": 1773316013684,
+            "possibility": "23.6"
           },
           {
-            "date": "2026-03-12T11:35:45.647338",
-            "timestamp": 1773315345647,
-            "possibility": "23.1"
+            "date": "2026-03-12T11:47:23.684655",
+            "timestamp": 1773316043684,
+            "possibility": "23.5"
           },
           {
-            "date": "2026-03-12T11:36:15.647338",
-            "timestamp": 1773315375647,
+            "date": "2026-03-12T11:47:53.684655",
+            "timestamp": 1773316073684,
+            "possibility": "24.9"
+          },
+          {
+            "date": "2026-03-12T11:48:23.684655",
+            "timestamp": 1773316103684,
+            "possibility": "24.3"
+          },
+          {
+            "date": "2026-03-12T11:48:53.684655",
+            "timestamp": 1773316133684,
+            "possibility": "24.8"
+          },
+          {
+            "date": "2026-03-12T11:49:23.684655",
+            "timestamp": 1773316163684,
+            "possibility": "23.4"
+          },
+          {
+            "date": "2026-03-12T11:49:53.684655",
+            "timestamp": 1773316193684,
+            "possibility": "24.7"
+          },
+          {
+            "date": "2026-03-12T11:50:23.684655",
+            "timestamp": 1773316223684,
+            "possibility": "25.7"
+          },
+          {
+            "date": "2026-03-12T11:50:53.684655",
+            "timestamp": 1773316253684,
+            "possibility": "25.3"
+          },
+          {
+            "date": "2026-03-12T11:51:23.684655",
+            "timestamp": 1773316283684,
+            "possibility": "23.8"
+          },
+          {
+            "date": "2026-03-12T11:51:53.684655",
+            "timestamp": 1773316313684,
+            "possibility": "22.7"
+          },
+          {
+            "date": "2026-03-12T11:52:23.684655",
+            "timestamp": 1773316343684,
+            "possibility": "23.3"
+          },
+          {
+            "date": "2026-03-12T11:52:53.684655",
+            "timestamp": 1773316373684,
+            "possibility": "23.7"
+          },
+          {
+            "date": "2026-03-12T11:53:23.684655",
+            "timestamp": 1773316403684,
+            "possibility": "24.4"
+          },
+          {
+            "date": "2026-03-12T11:53:53.684655",
+            "timestamp": 1773316433684,
+            "possibility": "24.6"
+          },
+          {
+            "date": "2026-03-12T11:54:23.684655",
+            "timestamp": 1773316463684,
+            "possibility": "24.4"
+          },
+          {
+            "date": "2026-03-12T11:54:53.684655",
+            "timestamp": 1773316493684,
+            "possibility": "23.4"
+          },
+          {
+            "date": "2026-03-12T11:55:23.684655",
+            "timestamp": 1773316523684,
+            "possibility": "23.4"
+          },
+          {
+            "date": "2026-03-12T11:55:53.684655",
+            "timestamp": 1773316553684,
             "possibility": "22.3"
+          },
+          {
+            "date": "2026-03-12T11:56:23.684655",
+            "timestamp": 1773316583684,
+            "possibility": "23.2"
+          },
+          {
+            "date": "2026-03-12T11:56:53.684655",
+            "timestamp": 1773316613684,
+            "possibility": "24.3"
+          },
+          {
+            "date": "2026-03-12T11:57:23.684655",
+            "timestamp": 1773316643684,
+            "possibility": "25.3"
+          },
+          {
+            "date": "2026-03-12T11:57:53.684655",
+            "timestamp": 1773316673684,
+            "possibility": "24.4"
+          },
+          {
+            "date": "2026-03-12T11:58:23.684655",
+            "timestamp": 1773316703684,
+            "possibility": "25.7"
+          },
+          {
+            "date": "2026-03-12T11:58:53.684655",
+            "timestamp": 1773316733684,
+            "possibility": "26.6"
           }
         ],
         "count": 30
@@ -1591,12 +1591,12 @@
       "name": "전현희",
       "party": "더불어민주당",
       "district": "서울특별시장",
-      "timestamp": 1773315376148,
-      "analyzedAt": "2026-03-12T11:36:16.148709",
-      "electionPossibility": "27.80",
-      "electionPossibilityPercent": "27.8",
-      "possibilityChange": "0.04",
-      "possibilityChangePercent": "0.0",
+      "timestamp": 1773316734186,
+      "analyzedAt": "2026-03-12T11:58:54.186126",
+      "electionPossibility": "24.90",
+      "electionPossibilityPercent": "24.9",
+      "possibilityChange": "-1.02",
+      "possibilityChangePercent": "-1.0",
       "scores": {
         "achievement": "5.0",
         "activity": "3.3",
@@ -1637,154 +1637,154 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:46.148256",
-            "timestamp": 1773314506148,
+            "date": "2026-03-12T11:44:24.185658",
+            "timestamp": 1773315864185,
             "possibility": "24.4"
           },
           {
-            "date": "2026-03-12T11:22:16.148256",
-            "timestamp": 1773314536148,
-            "possibility": "25.6"
-          },
-          {
-            "date": "2026-03-12T11:22:46.148256",
-            "timestamp": 1773314566148,
+            "date": "2026-03-12T11:44:54.185658",
+            "timestamp": 1773315894185,
             "possibility": "25.5"
           },
           {
-            "date": "2026-03-12T11:23:16.148256",
-            "timestamp": 1773314596148,
-            "possibility": "24.3"
-          },
-          {
-            "date": "2026-03-12T11:23:46.148256",
-            "timestamp": 1773314626148,
-            "possibility": "25.5"
-          },
-          {
-            "date": "2026-03-12T11:24:16.148256",
-            "timestamp": 1773314656148,
-            "possibility": "26.3"
-          },
-          {
-            "date": "2026-03-12T11:24:46.148256",
-            "timestamp": 1773314686148,
-            "possibility": "27.3"
-          },
-          {
-            "date": "2026-03-12T11:25:16.148256",
-            "timestamp": 1773314716148,
+            "date": "2026-03-12T11:45:24.185658",
+            "timestamp": 1773315924185,
             "possibility": "25.7"
           },
           {
-            "date": "2026-03-12T11:25:46.148256",
-            "timestamp": 1773314746148,
-            "possibility": "26.7"
+            "date": "2026-03-12T11:45:54.185658",
+            "timestamp": 1773315954185,
+            "possibility": "26.0"
           },
           {
-            "date": "2026-03-12T11:26:16.148256",
-            "timestamp": 1773314776148,
-            "possibility": "27.3"
+            "date": "2026-03-12T11:46:24.185658",
+            "timestamp": 1773315984185,
+            "possibility": "25.6"
           },
           {
-            "date": "2026-03-12T11:26:46.148256",
-            "timestamp": 1773314806148,
-            "possibility": "28.3"
+            "date": "2026-03-12T11:46:54.185658",
+            "timestamp": 1773316014185,
+            "possibility": "24.5"
           },
           {
-            "date": "2026-03-12T11:27:16.148256",
-            "timestamp": 1773314836148,
-            "possibility": "26.5"
+            "date": "2026-03-12T11:47:24.185658",
+            "timestamp": 1773316044185,
+            "possibility": "23.2"
           },
           {
-            "date": "2026-03-12T11:27:46.148256",
-            "timestamp": 1773314866148,
-            "possibility": "26.9"
+            "date": "2026-03-12T11:47:54.185658",
+            "timestamp": 1773316074185,
+            "possibility": "23.6"
           },
           {
-            "date": "2026-03-12T11:28:16.148256",
-            "timestamp": 1773314896148,
-            "possibility": "27.6"
+            "date": "2026-03-12T11:48:24.185658",
+            "timestamp": 1773316104185,
+            "possibility": "24.6"
           },
           {
-            "date": "2026-03-12T11:28:46.148256",
-            "timestamp": 1773314926148,
-            "possibility": "28.0"
+            "date": "2026-03-12T11:48:54.185658",
+            "timestamp": 1773316134185,
+            "possibility": "23.2"
           },
           {
-            "date": "2026-03-12T11:29:16.148256",
-            "timestamp": 1773314956148,
-            "possibility": "28.6"
+            "date": "2026-03-12T11:49:24.185658",
+            "timestamp": 1773316164185,
+            "possibility": "23.3"
           },
           {
-            "date": "2026-03-12T11:29:46.148256",
-            "timestamp": 1773314986148,
-            "possibility": "28.9"
+            "date": "2026-03-12T11:49:54.185658",
+            "timestamp": 1773316194185,
+            "possibility": "23.0"
           },
           {
-            "date": "2026-03-12T11:30:16.148256",
-            "timestamp": 1773315016148,
-            "possibility": "27.7"
+            "date": "2026-03-12T11:50:24.185658",
+            "timestamp": 1773316224185,
+            "possibility": "23.0"
           },
           {
-            "date": "2026-03-12T11:30:46.148256",
-            "timestamp": 1773315046148,
-            "possibility": "26.9"
+            "date": "2026-03-12T11:50:54.185658",
+            "timestamp": 1773316254185,
+            "possibility": "24.2"
           },
           {
-            "date": "2026-03-12T11:31:16.148256",
-            "timestamp": 1773315076148,
-            "possibility": "27.1"
+            "date": "2026-03-12T11:51:24.185658",
+            "timestamp": 1773316284185,
+            "possibility": "25.4"
           },
           {
-            "date": "2026-03-12T11:31:46.148256",
-            "timestamp": 1773315106148,
-            "possibility": "27.5"
+            "date": "2026-03-12T11:51:54.185658",
+            "timestamp": 1773316314185,
+            "possibility": "26.1"
           },
           {
-            "date": "2026-03-12T11:32:16.148256",
-            "timestamp": 1773315136148,
-            "possibility": "26.7"
+            "date": "2026-03-12T11:52:24.185658",
+            "timestamp": 1773316344185,
+            "possibility": "26.1"
           },
           {
-            "date": "2026-03-12T11:32:46.148256",
-            "timestamp": 1773315166148,
-            "possibility": "27.6"
+            "date": "2026-03-12T11:52:54.185658",
+            "timestamp": 1773316374185,
+            "possibility": "25.2"
           },
           {
-            "date": "2026-03-12T11:33:16.148256",
-            "timestamp": 1773315196148,
-            "possibility": "28.0"
+            "date": "2026-03-12T11:53:24.185658",
+            "timestamp": 1773316404185,
+            "possibility": "25.4"
           },
           {
-            "date": "2026-03-12T11:33:46.148256",
-            "timestamp": 1773315226148,
-            "possibility": "27.0"
+            "date": "2026-03-12T11:53:54.185658",
+            "timestamp": 1773316434185,
+            "possibility": "25.0"
           },
           {
-            "date": "2026-03-12T11:34:16.148256",
-            "timestamp": 1773315256148,
-            "possibility": "27.5"
+            "date": "2026-03-12T11:54:24.185658",
+            "timestamp": 1773316464185,
+            "possibility": "23.9"
           },
           {
-            "date": "2026-03-12T11:34:46.148256",
-            "timestamp": 1773315286148,
-            "possibility": "27.8"
+            "date": "2026-03-12T11:54:54.185658",
+            "timestamp": 1773316494185,
+            "possibility": "24.3"
           },
           {
-            "date": "2026-03-12T11:35:16.148256",
-            "timestamp": 1773315316148,
-            "possibility": "28.2"
+            "date": "2026-03-12T11:55:24.185658",
+            "timestamp": 1773316524185,
+            "possibility": "24.7"
           },
           {
-            "date": "2026-03-12T11:35:46.148256",
-            "timestamp": 1773315346148,
-            "possibility": "27.8"
+            "date": "2026-03-12T11:55:54.185658",
+            "timestamp": 1773316554185,
+            "possibility": "24.4"
           },
           {
-            "date": "2026-03-12T11:36:16.148256",
-            "timestamp": 1773315376148,
-            "possibility": "28.4"
+            "date": "2026-03-12T11:56:24.185658",
+            "timestamp": 1773316584185,
+            "possibility": "24.3"
+          },
+          {
+            "date": "2026-03-12T11:56:54.185658",
+            "timestamp": 1773316614185,
+            "possibility": "24.3"
+          },
+          {
+            "date": "2026-03-12T11:57:24.185658",
+            "timestamp": 1773316644185,
+            "possibility": "23.7"
+          },
+          {
+            "date": "2026-03-12T11:57:54.185658",
+            "timestamp": 1773316674185,
+            "possibility": "25.2"
+          },
+          {
+            "date": "2026-03-12T11:58:24.185658",
+            "timestamp": 1773316704185,
+            "possibility": "25.9"
+          },
+          {
+            "date": "2026-03-12T11:58:54.185658",
+            "timestamp": 1773316734185,
+            "possibility": "26.3"
           }
         ],
         "count": 30
@@ -1795,12 +1795,12 @@
       "name": "박주민",
       "party": "더불어민주당",
       "district": "서울특별시장",
-      "timestamp": 1773315376649,
-      "analyzedAt": "2026-03-12T11:36:16.649767",
-      "electionPossibility": "21.48",
-      "electionPossibilityPercent": "21.5",
-      "possibilityChange": "-1.32",
-      "possibilityChangePercent": "-1.3",
+      "timestamp": 1773316734687,
+      "analyzedAt": "2026-03-12T11:58:54.687120",
+      "electionPossibility": "25.63",
+      "electionPossibilityPercent": "25.6",
+      "possibilityChange": "-0.79",
+      "possibilityChangePercent": "-0.8",
       "scores": {
         "achievement": "5.0",
         "activity": "3.3",
@@ -1841,154 +1841,154 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:46.649301",
-            "timestamp": 1773314506649,
+            "date": "2026-03-12T11:44:24.686658",
+            "timestamp": 1773315864686,
             "possibility": "24.4"
           },
           {
-            "date": "2026-03-12T11:22:16.649301",
-            "timestamp": 1773314536649,
-            "possibility": "23.5"
-          },
-          {
-            "date": "2026-03-12T11:22:46.649301",
-            "timestamp": 1773314566649,
-            "possibility": "24.3"
-          },
-          {
-            "date": "2026-03-12T11:23:16.649301",
-            "timestamp": 1773314596649,
-            "possibility": "24.3"
-          },
-          {
-            "date": "2026-03-12T11:23:46.649301",
-            "timestamp": 1773314626649,
+            "date": "2026-03-12T11:44:54.686658",
+            "timestamp": 1773315894686,
             "possibility": "25.0"
           },
           {
-            "date": "2026-03-12T11:24:16.649301",
-            "timestamp": 1773314656649,
-            "possibility": "24.3"
+            "date": "2026-03-12T11:45:24.686658",
+            "timestamp": 1773315924686,
+            "possibility": "25.2"
           },
           {
-            "date": "2026-03-12T11:24:46.649301",
-            "timestamp": 1773314686649,
-            "possibility": "22.9"
+            "date": "2026-03-12T11:45:54.686658",
+            "timestamp": 1773315954686,
+            "possibility": "25.9"
           },
           {
-            "date": "2026-03-12T11:25:16.649301",
-            "timestamp": 1773314716649,
-            "possibility": "22.7"
+            "date": "2026-03-12T11:46:24.686658",
+            "timestamp": 1773315984686,
+            "possibility": "27.0"
           },
           {
-            "date": "2026-03-12T11:25:46.649301",
-            "timestamp": 1773314746649,
+            "date": "2026-03-12T11:46:54.686658",
+            "timestamp": 1773316014686,
+            "possibility": "26.9"
+          },
+          {
+            "date": "2026-03-12T11:47:24.686658",
+            "timestamp": 1773316044686,
+            "possibility": "26.1"
+          },
+          {
+            "date": "2026-03-12T11:47:54.686658",
+            "timestamp": 1773316074686,
+            "possibility": "25.1"
+          },
+          {
+            "date": "2026-03-12T11:48:24.686658",
+            "timestamp": 1773316104686,
+            "possibility": "25.1"
+          },
+          {
+            "date": "2026-03-12T11:48:54.686658",
+            "timestamp": 1773316134686,
+            "possibility": "26.2"
+          },
+          {
+            "date": "2026-03-12T11:49:24.686658",
+            "timestamp": 1773316164686,
+            "possibility": "25.4"
+          },
+          {
+            "date": "2026-03-12T11:49:54.686658",
+            "timestamp": 1773316194686,
+            "possibility": "25.6"
+          },
+          {
+            "date": "2026-03-12T11:50:24.686658",
+            "timestamp": 1773316224686,
+            "possibility": "26.8"
+          },
+          {
+            "date": "2026-03-12T11:50:54.686658",
+            "timestamp": 1773316254686,
+            "possibility": "26.9"
+          },
+          {
+            "date": "2026-03-12T11:51:24.686658",
+            "timestamp": 1773316284686,
+            "possibility": "27.0"
+          },
+          {
+            "date": "2026-03-12T11:51:54.686658",
+            "timestamp": 1773316314686,
+            "possibility": "27.9"
+          },
+          {
+            "date": "2026-03-12T11:52:24.686658",
+            "timestamp": 1773316344686,
+            "possibility": "28.0"
+          },
+          {
+            "date": "2026-03-12T11:52:54.686658",
+            "timestamp": 1773316374686,
+            "possibility": "27.9"
+          },
+          {
+            "date": "2026-03-12T11:53:24.686658",
+            "timestamp": 1773316404686,
+            "possibility": "26.3"
+          },
+          {
+            "date": "2026-03-12T11:53:54.686658",
+            "timestamp": 1773316434686,
+            "possibility": "25.5"
+          },
+          {
+            "date": "2026-03-12T11:54:24.686658",
+            "timestamp": 1773316464686,
+            "possibility": "24.4"
+          },
+          {
+            "date": "2026-03-12T11:54:54.686658",
+            "timestamp": 1773316494686,
             "possibility": "24.1"
           },
           {
-            "date": "2026-03-12T11:26:16.649301",
-            "timestamp": 1773314776649,
-            "possibility": "24.0"
+            "date": "2026-03-12T11:55:24.686658",
+            "timestamp": 1773316524686,
+            "possibility": "23.4"
           },
           {
-            "date": "2026-03-12T11:26:46.649301",
-            "timestamp": 1773314806649,
-            "possibility": "23.7"
+            "date": "2026-03-12T11:55:54.686658",
+            "timestamp": 1773316554686,
+            "possibility": "24.8"
           },
           {
-            "date": "2026-03-12T11:27:16.649301",
-            "timestamp": 1773314836649,
-            "possibility": "24.3"
+            "date": "2026-03-12T11:56:24.686658",
+            "timestamp": 1773316584686,
+            "possibility": "24.5"
           },
           {
-            "date": "2026-03-12T11:27:46.649301",
-            "timestamp": 1773314866649,
-            "possibility": "24.6"
+            "date": "2026-03-12T11:56:54.686658",
+            "timestamp": 1773316614686,
+            "possibility": "24.5"
           },
           {
-            "date": "2026-03-12T11:28:16.649301",
-            "timestamp": 1773314896649,
-            "possibility": "24.2"
+            "date": "2026-03-12T11:57:24.686658",
+            "timestamp": 1773316644686,
+            "possibility": "25.8"
           },
           {
-            "date": "2026-03-12T11:28:46.649301",
-            "timestamp": 1773314926649,
-            "possibility": "24.7"
+            "date": "2026-03-12T11:57:54.686658",
+            "timestamp": 1773316674686,
+            "possibility": "25.9"
           },
           {
-            "date": "2026-03-12T11:29:16.649301",
-            "timestamp": 1773314956649,
-            "possibility": "24.0"
+            "date": "2026-03-12T11:58:24.686658",
+            "timestamp": 1773316704686,
+            "possibility": "26.4"
           },
           {
-            "date": "2026-03-12T11:29:46.649301",
-            "timestamp": 1773314986649,
-            "possibility": "24.0"
-          },
-          {
-            "date": "2026-03-12T11:30:16.649301",
-            "timestamp": 1773315016649,
-            "possibility": "23.1"
-          },
-          {
-            "date": "2026-03-12T11:30:46.649301",
-            "timestamp": 1773315046649,
-            "possibility": "22.4"
-          },
-          {
-            "date": "2026-03-12T11:31:16.649301",
-            "timestamp": 1773315076649,
-            "possibility": "22.1"
-          },
-          {
-            "date": "2026-03-12T11:31:46.649301",
-            "timestamp": 1773315106649,
-            "possibility": "21.5"
-          },
-          {
-            "date": "2026-03-12T11:32:16.649301",
-            "timestamp": 1773315136649,
-            "possibility": "21.3"
-          },
-          {
-            "date": "2026-03-12T11:32:46.649301",
-            "timestamp": 1773315166649,
-            "possibility": "20.2"
-          },
-          {
-            "date": "2026-03-12T11:33:16.649301",
-            "timestamp": 1773315196649,
-            "possibility": "20.0"
-          },
-          {
-            "date": "2026-03-12T11:33:46.649301",
-            "timestamp": 1773315226649,
-            "possibility": "21.2"
-          },
-          {
-            "date": "2026-03-12T11:34:16.649301",
-            "timestamp": 1773315256649,
-            "possibility": "21.0"
-          },
-          {
-            "date": "2026-03-12T11:34:46.649301",
-            "timestamp": 1773315286649,
-            "possibility": "21.0"
-          },
-          {
-            "date": "2026-03-12T11:35:16.649301",
-            "timestamp": 1773315316649,
-            "possibility": "21.4"
-          },
-          {
-            "date": "2026-03-12T11:35:46.649301",
-            "timestamp": 1773315346649,
-            "possibility": "22.8"
-          },
-          {
-            "date": "2026-03-12T11:36:16.649301",
-            "timestamp": 1773315376649,
-            "possibility": "22.9"
+            "date": "2026-03-12T11:58:54.686658",
+            "timestamp": 1773316734686,
+            "possibility": "27.4"
           }
         ],
         "count": 30
@@ -1999,12 +1999,12 @@
       "name": "권칠승",
       "party": "더불어민주당",
       "district": "경기도지사",
-      "timestamp": 1773315377150,
-      "analyzedAt": "2026-03-12T11:36:17.150835",
-      "electionPossibility": "24.67",
-      "electionPossibilityPercent": "24.7",
-      "possibilityChange": "1.90",
-      "possibilityChangePercent": "1.9",
+      "timestamp": 1773316735188,
+      "analyzedAt": "2026-03-12T11:58:55.188119",
+      "electionPossibility": "25.60",
+      "electionPossibilityPercent": "25.6",
+      "possibilityChange": "-0.45",
+      "possibilityChangePercent": "-0.4",
       "scores": {
         "achievement": "5.0",
         "activity": "3.3",
@@ -2045,154 +2045,154 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:47.150322",
-            "timestamp": 1773314507150,
+            "date": "2026-03-12T11:44:25.187659",
+            "timestamp": 1773315865187,
             "possibility": "24.4"
           },
           {
-            "date": "2026-03-12T11:22:17.150322",
-            "timestamp": 1773314537150,
-            "possibility": "24.0"
+            "date": "2026-03-12T11:44:55.187659",
+            "timestamp": 1773315895187,
+            "possibility": "25.6"
           },
           {
-            "date": "2026-03-12T11:22:47.150322",
-            "timestamp": 1773314567150,
-            "possibility": "24.1"
+            "date": "2026-03-12T11:45:25.187659",
+            "timestamp": 1773315925187,
+            "possibility": "26.2"
           },
           {
-            "date": "2026-03-12T11:23:17.150322",
-            "timestamp": 1773314597150,
-            "possibility": "23.1"
+            "date": "2026-03-12T11:45:55.187659",
+            "timestamp": 1773315955187,
+            "possibility": "24.6"
           },
           {
-            "date": "2026-03-12T11:23:47.150322",
-            "timestamp": 1773314627150,
-            "possibility": "21.9"
+            "date": "2026-03-12T11:46:25.187659",
+            "timestamp": 1773315985187,
+            "possibility": "23.7"
           },
           {
-            "date": "2026-03-12T11:24:17.150322",
-            "timestamp": 1773314657150,
-            "possibility": "22.9"
+            "date": "2026-03-12T11:46:55.187659",
+            "timestamp": 1773316015187,
+            "possibility": "23.4"
           },
           {
-            "date": "2026-03-12T11:24:47.150322",
-            "timestamp": 1773314687150,
-            "possibility": "21.9"
+            "date": "2026-03-12T11:47:25.187659",
+            "timestamp": 1773316045187,
+            "possibility": "23.7"
           },
           {
-            "date": "2026-03-12T11:25:17.150322",
-            "timestamp": 1773314717150,
-            "possibility": "22.6"
+            "date": "2026-03-12T11:47:55.187659",
+            "timestamp": 1773316075187,
+            "possibility": "23.2"
           },
           {
-            "date": "2026-03-12T11:25:47.150322",
-            "timestamp": 1773314747150,
-            "possibility": "22.1"
-          },
-          {
-            "date": "2026-03-12T11:26:17.150322",
-            "timestamp": 1773314777150,
-            "possibility": "21.9"
-          },
-          {
-            "date": "2026-03-12T11:26:47.150322",
-            "timestamp": 1773314807150,
-            "possibility": "21.8"
-          },
-          {
-            "date": "2026-03-12T11:27:17.150322",
-            "timestamp": 1773314837150,
-            "possibility": "23.1"
-          },
-          {
-            "date": "2026-03-12T11:27:47.150322",
-            "timestamp": 1773314867150,
-            "possibility": "22.7"
-          },
-          {
-            "date": "2026-03-12T11:28:17.150322",
-            "timestamp": 1773314897150,
-            "possibility": "24.3"
-          },
-          {
-            "date": "2026-03-12T11:28:47.150322",
-            "timestamp": 1773314927150,
-            "possibility": "25.4"
-          },
-          {
-            "date": "2026-03-12T11:29:17.150322",
-            "timestamp": 1773314957150,
-            "possibility": "24.3"
-          },
-          {
-            "date": "2026-03-12T11:29:47.150322",
-            "timestamp": 1773314987150,
-            "possibility": "23.1"
-          },
-          {
-            "date": "2026-03-12T11:30:17.150322",
-            "timestamp": 1773315017150,
+            "date": "2026-03-12T11:48:25.187659",
+            "timestamp": 1773316105187,
             "possibility": "22.4"
           },
           {
-            "date": "2026-03-12T11:30:47.150322",
-            "timestamp": 1773315047150,
-            "possibility": "21.3"
+            "date": "2026-03-12T11:48:55.187659",
+            "timestamp": 1773316135187,
+            "possibility": "22.6"
           },
           {
-            "date": "2026-03-12T11:31:17.150322",
-            "timestamp": 1773315077150,
-            "possibility": "22.5"
+            "date": "2026-03-12T11:49:25.187659",
+            "timestamp": 1773316165187,
+            "possibility": "22.2"
           },
           {
-            "date": "2026-03-12T11:31:47.150322",
-            "timestamp": 1773315107150,
-            "possibility": "23.8"
+            "date": "2026-03-12T11:49:55.187659",
+            "timestamp": 1773316195187,
+            "possibility": "22.3"
           },
           {
-            "date": "2026-03-12T11:32:17.150322",
-            "timestamp": 1773315137150,
-            "possibility": "24.8"
+            "date": "2026-03-12T11:50:25.187659",
+            "timestamp": 1773316225187,
+            "possibility": "23.7"
           },
           {
-            "date": "2026-03-12T11:32:47.150322",
-            "timestamp": 1773315167150,
-            "possibility": "25.9"
+            "date": "2026-03-12T11:50:55.187659",
+            "timestamp": 1773316255187,
+            "possibility": "24.1"
           },
           {
-            "date": "2026-03-12T11:33:17.150322",
-            "timestamp": 1773315197150,
-            "possibility": "25.3"
-          },
-          {
-            "date": "2026-03-12T11:33:47.150322",
-            "timestamp": 1773315227150,
-            "possibility": "26.5"
-          },
-          {
-            "date": "2026-03-12T11:34:17.150322",
-            "timestamp": 1773315257150,
-            "possibility": "25.1"
-          },
-          {
-            "date": "2026-03-12T11:34:47.150322",
-            "timestamp": 1773315287150,
-            "possibility": "25.5"
-          },
-          {
-            "date": "2026-03-12T11:35:17.150322",
-            "timestamp": 1773315317150,
-            "possibility": "24.2"
-          },
-          {
-            "date": "2026-03-12T11:35:47.150322",
-            "timestamp": 1773315347150,
+            "date": "2026-03-12T11:51:25.187659",
+            "timestamp": 1773316285187,
             "possibility": "22.8"
           },
           {
-            "date": "2026-03-12T11:36:17.150322",
-            "timestamp": 1773315377150,
-            "possibility": "23.3"
+            "date": "2026-03-12T11:51:55.187659",
+            "timestamp": 1773316315187,
+            "possibility": "24.2"
+          },
+          {
+            "date": "2026-03-12T11:52:25.187659",
+            "timestamp": 1773316345187,
+            "possibility": "23.2"
+          },
+          {
+            "date": "2026-03-12T11:52:55.187659",
+            "timestamp": 1773316375187,
+            "possibility": "23.7"
+          },
+          {
+            "date": "2026-03-12T11:53:25.187659",
+            "timestamp": 1773316405187,
+            "possibility": "22.3"
+          },
+          {
+            "date": "2026-03-12T11:53:55.187659",
+            "timestamp": 1773316435187,
+            "possibility": "21.1"
+          },
+          {
+            "date": "2026-03-12T11:54:25.187659",
+            "timestamp": 1773316465187,
+            "possibility": "20.8"
+          },
+          {
+            "date": "2026-03-12T11:54:55.187659",
+            "timestamp": 1773316495187,
+            "possibility": "21.1"
+          },
+          {
+            "date": "2026-03-12T11:55:25.187659",
+            "timestamp": 1773316525187,
+            "possibility": "22.3"
+          },
+          {
+            "date": "2026-03-12T11:55:55.187659",
+            "timestamp": 1773316555187,
+            "possibility": "23.8"
+          },
+          {
+            "date": "2026-03-12T11:56:25.187659",
+            "timestamp": 1773316585187,
+            "possibility": "25.2"
+          },
+          {
+            "date": "2026-03-12T11:56:55.187659",
+            "timestamp": 1773316615187,
+            "possibility": "26.2"
+          },
+          {
+            "date": "2026-03-12T11:57:25.187659",
+            "timestamp": 1773316645187,
+            "possibility": "26.0"
+          },
+          {
+            "date": "2026-03-12T11:57:55.187659",
+            "timestamp": 1773316675187,
+            "possibility": "26.7"
+          },
+          {
+            "date": "2026-03-12T11:58:25.187659",
+            "timestamp": 1773316705187,
+            "possibility": "26.0"
+          },
+          {
+            "date": "2026-03-12T11:58:55.187659",
+            "timestamp": 1773316735187,
+            "possibility": "25.3"
           }
         ],
         "count": 30
@@ -2203,12 +2203,12 @@
       "name": "김병주",
       "party": "더불어민주당",
       "district": "경기도지사",
-      "timestamp": 1773315377651,
-      "analyzedAt": "2026-03-12T11:36:17.651790",
-      "electionPossibility": "28.91",
-      "electionPossibilityPercent": "28.9",
-      "possibilityChange": "-0.55",
-      "possibilityChangePercent": "-0.5",
+      "timestamp": 1773316735689,
+      "analyzedAt": "2026-03-12T11:58:55.689116",
+      "electionPossibility": "22.70",
+      "electionPossibilityPercent": "22.7",
+      "possibilityChange": "-0.18",
+      "possibilityChangePercent": "-0.2",
       "scores": {
         "achievement": "5.0",
         "activity": "3.3",
@@ -2249,154 +2249,154 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:47.651267",
-            "timestamp": 1773314507651,
+            "date": "2026-03-12T11:44:25.688651",
+            "timestamp": 1773315865688,
             "possibility": "24.4"
           },
           {
-            "date": "2026-03-12T11:22:17.651267",
-            "timestamp": 1773314537651,
-            "possibility": "25.3"
+            "date": "2026-03-12T11:44:55.688651",
+            "timestamp": 1773315895688,
+            "possibility": "23.8"
           },
           {
-            "date": "2026-03-12T11:22:47.651267",
-            "timestamp": 1773314567651,
-            "possibility": "25.7"
+            "date": "2026-03-12T11:45:25.688651",
+            "timestamp": 1773315925688,
+            "possibility": "24.9"
           },
           {
-            "date": "2026-03-12T11:23:17.651267",
-            "timestamp": 1773314597651,
-            "possibility": "26.2"
+            "date": "2026-03-12T11:45:55.688651",
+            "timestamp": 1773315955688,
+            "possibility": "25.4"
           },
           {
-            "date": "2026-03-12T11:23:47.651267",
-            "timestamp": 1773314627651,
-            "possibility": "26.4"
+            "date": "2026-03-12T11:46:25.688651",
+            "timestamp": 1773315985688,
+            "possibility": "24.4"
           },
           {
-            "date": "2026-03-12T11:24:17.651267",
-            "timestamp": 1773314657651,
-            "possibility": "26.8"
+            "date": "2026-03-12T11:46:55.688651",
+            "timestamp": 1773316015688,
+            "possibility": "24.0"
           },
           {
-            "date": "2026-03-12T11:24:47.651267",
-            "timestamp": 1773314687651,
-            "possibility": "25.1"
-          },
-          {
-            "date": "2026-03-12T11:25:17.651267",
-            "timestamp": 1773314717651,
-            "possibility": "23.7"
-          },
-          {
-            "date": "2026-03-12T11:25:47.651267",
-            "timestamp": 1773314747651,
+            "date": "2026-03-12T11:47:25.688651",
+            "timestamp": 1773316045688,
             "possibility": "23.5"
           },
           {
-            "date": "2026-03-12T11:26:17.651267",
-            "timestamp": 1773314777651,
-            "possibility": "24.7"
+            "date": "2026-03-12T11:47:55.688651",
+            "timestamp": 1773316075688,
+            "possibility": "22.5"
           },
           {
-            "date": "2026-03-12T11:26:47.651267",
-            "timestamp": 1773314807651,
-            "possibility": "23.3"
+            "date": "2026-03-12T11:48:25.688651",
+            "timestamp": 1773316105688,
+            "possibility": "21.8"
           },
           {
-            "date": "2026-03-12T11:27:17.651267",
-            "timestamp": 1773314837651,
-            "possibility": "23.7"
+            "date": "2026-03-12T11:48:55.688651",
+            "timestamp": 1773316135688,
+            "possibility": "21.5"
           },
           {
-            "date": "2026-03-12T11:27:47.651267",
-            "timestamp": 1773314867651,
-            "possibility": "25.1"
+            "date": "2026-03-12T11:49:25.688651",
+            "timestamp": 1773316165688,
+            "possibility": "21.4"
           },
           {
-            "date": "2026-03-12T11:28:17.651267",
-            "timestamp": 1773314897651,
-            "possibility": "25.0"
+            "date": "2026-03-12T11:49:55.688651",
+            "timestamp": 1773316195688,
+            "possibility": "22.3"
           },
           {
-            "date": "2026-03-12T11:28:47.651267",
-            "timestamp": 1773314927651,
-            "possibility": "24.5"
+            "date": "2026-03-12T11:50:25.688651",
+            "timestamp": 1773316225688,
+            "possibility": "22.5"
           },
           {
-            "date": "2026-03-12T11:29:17.651267",
-            "timestamp": 1773314957651,
-            "possibility": "25.0"
+            "date": "2026-03-12T11:50:55.688651",
+            "timestamp": 1773316255688,
+            "possibility": "22.3"
           },
           {
-            "date": "2026-03-12T11:29:47.651267",
-            "timestamp": 1773314987651,
-            "possibility": "25.0"
+            "date": "2026-03-12T11:51:25.688651",
+            "timestamp": 1773316285688,
+            "possibility": "22.8"
           },
           {
-            "date": "2026-03-12T11:30:17.651267",
-            "timestamp": 1773315017651,
-            "possibility": "25.8"
+            "date": "2026-03-12T11:51:55.688651",
+            "timestamp": 1773316315688,
+            "possibility": "21.7"
           },
           {
-            "date": "2026-03-12T11:30:47.651267",
-            "timestamp": 1773315047651,
-            "possibility": "25.5"
+            "date": "2026-03-12T11:52:25.688651",
+            "timestamp": 1773316345688,
+            "possibility": "21.5"
           },
           {
-            "date": "2026-03-12T11:31:17.651267",
-            "timestamp": 1773315077651,
-            "possibility": "25.1"
+            "date": "2026-03-12T11:52:55.688651",
+            "timestamp": 1773316375688,
+            "possibility": "22.5"
           },
           {
-            "date": "2026-03-12T11:31:47.651267",
-            "timestamp": 1773315107651,
-            "possibility": "26.2"
+            "date": "2026-03-12T11:53:25.688651",
+            "timestamp": 1773316405688,
+            "possibility": "22.9"
           },
           {
-            "date": "2026-03-12T11:32:17.651267",
-            "timestamp": 1773315137651,
-            "possibility": "27.1"
+            "date": "2026-03-12T11:53:55.688651",
+            "timestamp": 1773316435688,
+            "possibility": "22.7"
           },
           {
-            "date": "2026-03-12T11:32:47.651267",
-            "timestamp": 1773315167651,
-            "possibility": "27.4"
+            "date": "2026-03-12T11:54:25.688651",
+            "timestamp": 1773316465688,
+            "possibility": "22.0"
           },
           {
-            "date": "2026-03-12T11:33:17.651267",
-            "timestamp": 1773315197651,
-            "possibility": "28.1"
+            "date": "2026-03-12T11:54:55.688651",
+            "timestamp": 1773316495688,
+            "possibility": "21.0"
           },
           {
-            "date": "2026-03-12T11:33:47.651267",
-            "timestamp": 1773315227651,
-            "possibility": "28.6"
+            "date": "2026-03-12T11:55:25.688651",
+            "timestamp": 1773316525688,
+            "possibility": "21.7"
           },
           {
-            "date": "2026-03-12T11:34:17.651267",
-            "timestamp": 1773315257651,
-            "possibility": "29.4"
+            "date": "2026-03-12T11:55:55.688651",
+            "timestamp": 1773316555688,
+            "possibility": "22.8"
           },
           {
-            "date": "2026-03-12T11:34:47.651267",
-            "timestamp": 1773315287651,
-            "possibility": "28.3"
+            "date": "2026-03-12T11:56:25.688651",
+            "timestamp": 1773316585688,
+            "possibility": "23.2"
           },
           {
-            "date": "2026-03-12T11:35:17.651267",
-            "timestamp": 1773315317651,
-            "possibility": "29.1"
+            "date": "2026-03-12T11:56:55.688651",
+            "timestamp": 1773316615688,
+            "possibility": "22.2"
           },
           {
-            "date": "2026-03-12T11:35:47.651267",
-            "timestamp": 1773315347651,
-            "possibility": "29.5"
+            "date": "2026-03-12T11:57:25.688651",
+            "timestamp": 1773316645688,
+            "possibility": "21.5"
           },
           {
-            "date": "2026-03-12T11:36:17.651267",
-            "timestamp": 1773315377651,
-            "possibility": "29.5"
+            "date": "2026-03-12T11:57:55.688651",
+            "timestamp": 1773316675688,
+            "possibility": "22.2"
+          },
+          {
+            "date": "2026-03-12T11:58:25.688651",
+            "timestamp": 1773316705688,
+            "possibility": "22.9"
+          },
+          {
+            "date": "2026-03-12T11:58:55.688651",
+            "timestamp": 1773316735688,
+            "possibility": "24.0"
           }
         ],
         "count": 30
@@ -2407,12 +2407,12 @@
       "name": "정이한",
       "party": "개혁신당",
       "district": "부산광역시장",
-      "timestamp": 1773315378152,
-      "analyzedAt": "2026-03-12T11:36:18.152891",
-      "electionPossibility": "26.47",
-      "electionPossibilityPercent": "26.5",
-      "possibilityChange": "0.17",
-      "possibilityChangePercent": "0.2",
+      "timestamp": 1773316736190,
+      "analyzedAt": "2026-03-12T11:58:56.190268",
+      "electionPossibility": "21.83",
+      "electionPossibilityPercent": "21.8",
+      "possibilityChange": "-1.58",
+      "possibilityChangePercent": "-1.6",
       "scores": {
         "achievement": "5.0",
         "activity": "3.3",
@@ -2453,154 +2453,154 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:48.152349",
-            "timestamp": 1773314508152,
+            "date": "2026-03-12T11:44:26.189707",
+            "timestamp": 1773315866189,
             "possibility": "24.4"
           },
           {
-            "date": "2026-03-12T11:22:18.152349",
-            "timestamp": 1773314538152,
-            "possibility": "25.9"
+            "date": "2026-03-12T11:44:56.189707",
+            "timestamp": 1773315896189,
+            "possibility": "23.7"
           },
           {
-            "date": "2026-03-12T11:22:48.152349",
-            "timestamp": 1773314568152,
-            "possibility": "26.0"
+            "date": "2026-03-12T11:45:26.189707",
+            "timestamp": 1773315926189,
+            "possibility": "24.6"
           },
           {
-            "date": "2026-03-12T11:23:18.152349",
-            "timestamp": 1773314598152,
-            "possibility": "25.7"
+            "date": "2026-03-12T11:45:56.189707",
+            "timestamp": 1773315956189,
+            "possibility": "23.3"
           },
           {
-            "date": "2026-03-12T11:23:48.152349",
-            "timestamp": 1773314628152,
-            "possibility": "26.9"
+            "date": "2026-03-12T11:46:26.189707",
+            "timestamp": 1773315986189,
+            "possibility": "24.0"
           },
           {
-            "date": "2026-03-12T11:24:18.152349",
-            "timestamp": 1773314658152,
-            "possibility": "26.0"
+            "date": "2026-03-12T11:46:56.189707",
+            "timestamp": 1773316016189,
+            "possibility": "23.4"
           },
           {
-            "date": "2026-03-12T11:24:48.152349",
-            "timestamp": 1773314688152,
-            "possibility": "25.1"
+            "date": "2026-03-12T11:47:26.189707",
+            "timestamp": 1773316046189,
+            "possibility": "22.9"
           },
           {
-            "date": "2026-03-12T11:25:18.152349",
-            "timestamp": 1773314718152,
-            "possibility": "26.5"
+            "date": "2026-03-12T11:47:56.189707",
+            "timestamp": 1773316076189,
+            "possibility": "21.8"
           },
           {
-            "date": "2026-03-12T11:25:48.152349",
-            "timestamp": 1773314748152,
-            "possibility": "26.9"
+            "date": "2026-03-12T11:48:26.189707",
+            "timestamp": 1773316106189,
+            "possibility": "20.9"
           },
           {
-            "date": "2026-03-12T11:26:18.152349",
-            "timestamp": 1773314778152,
-            "possibility": "27.7"
+            "date": "2026-03-12T11:48:56.189707",
+            "timestamp": 1773316136189,
+            "possibility": "20.2"
           },
           {
-            "date": "2026-03-12T11:26:48.152349",
-            "timestamp": 1773314808152,
-            "possibility": "27.3"
+            "date": "2026-03-12T11:49:26.189707",
+            "timestamp": 1773316166189,
+            "possibility": "20.3"
           },
           {
-            "date": "2026-03-12T11:27:18.152349",
-            "timestamp": 1773314838152,
-            "possibility": "26.7"
+            "date": "2026-03-12T11:49:56.189707",
+            "timestamp": 1773316196189,
+            "possibility": "20.0"
           },
           {
-            "date": "2026-03-12T11:27:48.152349",
-            "timestamp": 1773314868152,
-            "possibility": "26.5"
+            "date": "2026-03-12T11:50:26.189707",
+            "timestamp": 1773316226189,
+            "possibility": "21.5"
           },
           {
-            "date": "2026-03-12T11:28:18.152349",
-            "timestamp": 1773314898152,
-            "possibility": "25.6"
+            "date": "2026-03-12T11:50:56.189707",
+            "timestamp": 1773316256189,
+            "possibility": "21.0"
           },
           {
-            "date": "2026-03-12T11:28:48.152349",
-            "timestamp": 1773314928152,
-            "possibility": "24.9"
+            "date": "2026-03-12T11:51:26.189707",
+            "timestamp": 1773316286189,
+            "possibility": "21.8"
           },
           {
-            "date": "2026-03-12T11:29:18.152349",
-            "timestamp": 1773314958152,
-            "possibility": "25.0"
+            "date": "2026-03-12T11:51:56.189707",
+            "timestamp": 1773316316189,
+            "possibility": "21.7"
           },
           {
-            "date": "2026-03-12T11:29:48.152349",
-            "timestamp": 1773314988152,
-            "possibility": "26.3"
+            "date": "2026-03-12T11:52:26.189707",
+            "timestamp": 1773316346189,
+            "possibility": "20.9"
           },
           {
-            "date": "2026-03-12T11:30:18.152349",
-            "timestamp": 1773315018152,
-            "possibility": "27.5"
+            "date": "2026-03-12T11:52:56.189707",
+            "timestamp": 1773316376189,
+            "possibility": "22.5"
           },
           {
-            "date": "2026-03-12T11:30:48.152349",
-            "timestamp": 1773315048152,
-            "possibility": "26.2"
+            "date": "2026-03-12T11:53:26.189707",
+            "timestamp": 1773316406189,
+            "possibility": "22.4"
           },
           {
-            "date": "2026-03-12T11:31:18.152349",
-            "timestamp": 1773315078152,
-            "possibility": "26.8"
+            "date": "2026-03-12T11:53:56.189707",
+            "timestamp": 1773316436189,
+            "possibility": "22.9"
           },
           {
-            "date": "2026-03-12T11:31:48.152349",
-            "timestamp": 1773315108152,
-            "possibility": "26.0"
+            "date": "2026-03-12T11:54:26.189707",
+            "timestamp": 1773316466189,
+            "possibility": "21.7"
           },
           {
-            "date": "2026-03-12T11:32:18.152349",
-            "timestamp": 1773315138152,
-            "possibility": "24.7"
+            "date": "2026-03-12T11:54:56.189707",
+            "timestamp": 1773316496189,
+            "possibility": "23.0"
           },
           {
-            "date": "2026-03-12T11:32:48.152349",
-            "timestamp": 1773315168152,
-            "possibility": "26.0"
+            "date": "2026-03-12T11:55:26.189707",
+            "timestamp": 1773316526189,
+            "possibility": "21.6"
           },
           {
-            "date": "2026-03-12T11:33:18.152349",
-            "timestamp": 1773315198152,
-            "possibility": "25.8"
+            "date": "2026-03-12T11:55:56.189707",
+            "timestamp": 1773316556189,
+            "possibility": "20.7"
           },
           {
-            "date": "2026-03-12T11:33:48.152349",
-            "timestamp": 1773315228152,
-            "possibility": "25.5"
+            "date": "2026-03-12T11:56:26.189707",
+            "timestamp": 1773316586189,
+            "possibility": "20.0"
           },
           {
-            "date": "2026-03-12T11:34:18.152349",
-            "timestamp": 1773315258152,
-            "possibility": "26.8"
+            "date": "2026-03-12T11:56:56.189707",
+            "timestamp": 1773316616189,
+            "possibility": "21.1"
           },
           {
-            "date": "2026-03-12T11:34:48.152349",
-            "timestamp": 1773315288152,
-            "possibility": "27.1"
+            "date": "2026-03-12T11:57:26.189707",
+            "timestamp": 1773316646189,
+            "possibility": "21.7"
           },
           {
-            "date": "2026-03-12T11:35:18.152349",
-            "timestamp": 1773315318152,
-            "possibility": "27.6"
+            "date": "2026-03-12T11:57:56.189707",
+            "timestamp": 1773316676189,
+            "possibility": "22.5"
           },
           {
-            "date": "2026-03-12T11:35:48.152349",
-            "timestamp": 1773315348152,
-            "possibility": "26.3"
+            "date": "2026-03-12T11:58:26.189707",
+            "timestamp": 1773316706189,
+            "possibility": "23.4"
           },
           {
-            "date": "2026-03-12T11:36:18.152349",
-            "timestamp": 1773315378152,
-            "possibility": "26.2"
+            "date": "2026-03-12T11:58:56.189707",
+            "timestamp": 1773316736189,
+            "possibility": "23.4"
           }
         ],
         "count": 30
@@ -2611,12 +2611,12 @@
       "name": "이강덕",
       "party": "무소속",
       "district": "경북도지사",
-      "timestamp": 1773315378653,
-      "analyzedAt": "2026-03-12T11:36:18.653644",
-      "electionPossibility": "23.43",
-      "electionPossibilityPercent": "23.4",
-      "possibilityChange": "-0.53",
-      "possibilityChangePercent": "-0.5",
+      "timestamp": 1773316736691,
+      "analyzedAt": "2026-03-12T11:58:56.691065",
+      "electionPossibility": "25.43",
+      "electionPossibilityPercent": "25.4",
+      "possibilityChange": "-0.06",
+      "possibilityChangePercent": "-0.1",
       "scores": {
         "achievement": "5.0",
         "activity": "3.3",
@@ -2657,154 +2657,154 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:48.653257",
-            "timestamp": 1773314508653,
+            "date": "2026-03-12T11:44:26.690673",
+            "timestamp": 1773315866690,
             "possibility": "24.4"
           },
           {
-            "date": "2026-03-12T11:22:18.653257",
-            "timestamp": 1773314538653,
-            "possibility": "23.2"
+            "date": "2026-03-12T11:44:56.690673",
+            "timestamp": 1773315896690,
+            "possibility": "23.7"
           },
           {
-            "date": "2026-03-12T11:22:48.653257",
-            "timestamp": 1773314568653,
-            "possibility": "22.4"
+            "date": "2026-03-12T11:45:26.690673",
+            "timestamp": 1773315926690,
+            "possibility": "23.4"
           },
           {
-            "date": "2026-03-12T11:23:18.653257",
-            "timestamp": 1773314598653,
-            "possibility": "22.2"
+            "date": "2026-03-12T11:45:56.690673",
+            "timestamp": 1773315956690,
+            "possibility": "23.9"
           },
           {
-            "date": "2026-03-12T11:23:48.653257",
-            "timestamp": 1773314628653,
-            "possibility": "22.3"
+            "date": "2026-03-12T11:46:26.690673",
+            "timestamp": 1773315986690,
+            "possibility": "24.1"
           },
           {
-            "date": "2026-03-12T11:24:18.653257",
-            "timestamp": 1773314658653,
-            "possibility": "22.5"
-          },
-          {
-            "date": "2026-03-12T11:24:48.653257",
-            "timestamp": 1773314688653,
-            "possibility": "21.5"
-          },
-          {
-            "date": "2026-03-12T11:25:18.653257",
-            "timestamp": 1773314718653,
-            "possibility": "20.3"
-          },
-          {
-            "date": "2026-03-12T11:25:48.653257",
-            "timestamp": 1773314748653,
-            "possibility": "21.4"
-          },
-          {
-            "date": "2026-03-12T11:26:18.653257",
-            "timestamp": 1773314778653,
-            "possibility": "22.4"
-          },
-          {
-            "date": "2026-03-12T11:26:48.653257",
-            "timestamp": 1773314808653,
-            "possibility": "22.0"
-          },
-          {
-            "date": "2026-03-12T11:27:18.653257",
-            "timestamp": 1773314838653,
-            "possibility": "21.1"
-          },
-          {
-            "date": "2026-03-12T11:27:48.653257",
-            "timestamp": 1773314868653,
-            "possibility": "22.1"
-          },
-          {
-            "date": "2026-03-12T11:28:18.653257",
-            "timestamp": 1773314898653,
-            "possibility": "22.5"
-          },
-          {
-            "date": "2026-03-12T11:28:48.653257",
-            "timestamp": 1773314928653,
-            "possibility": "21.3"
-          },
-          {
-            "date": "2026-03-12T11:29:18.653257",
-            "timestamp": 1773314958653,
-            "possibility": "22.0"
-          },
-          {
-            "date": "2026-03-12T11:29:48.653257",
-            "timestamp": 1773314988653,
-            "possibility": "22.7"
-          },
-          {
-            "date": "2026-03-12T11:30:18.653257",
-            "timestamp": 1773315018653,
-            "possibility": "22.0"
-          },
-          {
-            "date": "2026-03-12T11:30:48.653257",
-            "timestamp": 1773315048653,
-            "possibility": "21.0"
-          },
-          {
-            "date": "2026-03-12T11:31:18.653257",
-            "timestamp": 1773315078653,
-            "possibility": "21.1"
-          },
-          {
-            "date": "2026-03-12T11:31:48.653257",
-            "timestamp": 1773315108653,
-            "possibility": "21.7"
-          },
-          {
-            "date": "2026-03-12T11:32:18.653257",
-            "timestamp": 1773315138653,
-            "possibility": "21.4"
-          },
-          {
-            "date": "2026-03-12T11:32:48.653257",
-            "timestamp": 1773315168653,
-            "possibility": "21.3"
-          },
-          {
-            "date": "2026-03-12T11:33:18.653257",
-            "timestamp": 1773315198653,
-            "possibility": "21.6"
-          },
-          {
-            "date": "2026-03-12T11:33:48.653257",
-            "timestamp": 1773315228653,
-            "possibility": "21.4"
-          },
-          {
-            "date": "2026-03-12T11:34:18.653257",
-            "timestamp": 1773315258653,
-            "possibility": "23.0"
-          },
-          {
-            "date": "2026-03-12T11:34:48.653257",
-            "timestamp": 1773315288653,
-            "possibility": "23.6"
-          },
-          {
-            "date": "2026-03-12T11:35:18.653257",
-            "timestamp": 1773315318653,
+            "date": "2026-03-12T11:46:56.690673",
+            "timestamp": 1773316016690,
             "possibility": "25.1"
           },
           {
-            "date": "2026-03-12T11:35:48.653257",
-            "timestamp": 1773315348653,
+            "date": "2026-03-12T11:47:26.690673",
+            "timestamp": 1773316046690,
+            "possibility": "25.7"
+          },
+          {
+            "date": "2026-03-12T11:47:56.690673",
+            "timestamp": 1773316076690,
+            "possibility": "24.8"
+          },
+          {
+            "date": "2026-03-12T11:48:26.690673",
+            "timestamp": 1773316106690,
+            "possibility": "24.7"
+          },
+          {
+            "date": "2026-03-12T11:48:56.690673",
+            "timestamp": 1773316136690,
+            "possibility": "24.3"
+          },
+          {
+            "date": "2026-03-12T11:49:26.690673",
+            "timestamp": 1773316166690,
+            "possibility": "24.5"
+          },
+          {
+            "date": "2026-03-12T11:49:56.690673",
+            "timestamp": 1773316196690,
+            "possibility": "24.4"
+          },
+          {
+            "date": "2026-03-12T11:50:26.690673",
+            "timestamp": 1773316226690,
+            "possibility": "23.2"
+          },
+          {
+            "date": "2026-03-12T11:50:56.690673",
+            "timestamp": 1773316256690,
             "possibility": "24.0"
           },
           {
-            "date": "2026-03-12T11:36:18.653257",
-            "timestamp": 1773315378653,
-            "possibility": "25.3"
+            "date": "2026-03-12T11:51:26.690673",
+            "timestamp": 1773316286690,
+            "possibility": "22.7"
+          },
+          {
+            "date": "2026-03-12T11:51:56.690673",
+            "timestamp": 1773316316690,
+            "possibility": "21.9"
+          },
+          {
+            "date": "2026-03-12T11:52:26.690673",
+            "timestamp": 1773316346690,
+            "possibility": "22.6"
+          },
+          {
+            "date": "2026-03-12T11:52:56.690673",
+            "timestamp": 1773316376690,
+            "possibility": "22.7"
+          },
+          {
+            "date": "2026-03-12T11:53:26.690673",
+            "timestamp": 1773316406690,
+            "possibility": "21.9"
+          },
+          {
+            "date": "2026-03-12T11:53:56.690673",
+            "timestamp": 1773316436690,
+            "possibility": "20.8"
+          },
+          {
+            "date": "2026-03-12T11:54:26.690673",
+            "timestamp": 1773316466690,
+            "possibility": "22.3"
+          },
+          {
+            "date": "2026-03-12T11:54:56.690673",
+            "timestamp": 1773316496690,
+            "possibility": "22.3"
+          },
+          {
+            "date": "2026-03-12T11:55:26.690673",
+            "timestamp": 1773316526690,
+            "possibility": "23.5"
+          },
+          {
+            "date": "2026-03-12T11:55:56.690673",
+            "timestamp": 1773316556690,
+            "possibility": "24.5"
+          },
+          {
+            "date": "2026-03-12T11:56:26.690673",
+            "timestamp": 1773316586690,
+            "possibility": "25.1"
+          },
+          {
+            "date": "2026-03-12T11:56:56.690673",
+            "timestamp": 1773316616690,
+            "possibility": "25.4"
+          },
+          {
+            "date": "2026-03-12T11:57:26.690673",
+            "timestamp": 1773316646690,
+            "possibility": "26.3"
+          },
+          {
+            "date": "2026-03-12T11:57:56.690673",
+            "timestamp": 1773316676690,
+            "possibility": "24.8"
+          },
+          {
+            "date": "2026-03-12T11:58:26.690673",
+            "timestamp": 1773316706690,
+            "possibility": "25.5"
+          },
+          {
+            "date": "2026-03-12T11:58:56.690673",
+            "timestamp": 1773316736690,
+            "possibility": "26.4"
           }
         ],
         "count": 30
@@ -2815,12 +2815,12 @@
       "name": "김재원",
       "party": "국민의힘",
       "district": "경북도지사",
-      "timestamp": 1773315379154,
-      "analyzedAt": "2026-03-12T11:36:19.154720",
-      "electionPossibility": "24.87",
-      "electionPossibilityPercent": "24.9",
-      "possibilityChange": "0.42",
-      "possibilityChangePercent": "0.4",
+      "timestamp": 1773316737191,
+      "analyzedAt": "2026-03-12T11:58:57.191971",
+      "electionPossibility": "30.05",
+      "electionPossibilityPercent": "30.1",
+      "possibilityChange": "-0.03",
+      "possibilityChangePercent": "-0.0",
       "scores": {
         "achievement": "5.0",
         "activity": "3.3",
@@ -2861,154 +2861,154 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:49.154294",
-            "timestamp": 1773314509154,
+            "date": "2026-03-12T11:44:27.191600",
+            "timestamp": 1773315867191,
             "possibility": "24.4"
           },
           {
-            "date": "2026-03-12T11:22:19.154294",
-            "timestamp": 1773314539154,
-            "possibility": "25.8"
-          },
-          {
-            "date": "2026-03-12T11:22:49.154294",
-            "timestamp": 1773314569154,
-            "possibility": "24.6"
-          },
-          {
-            "date": "2026-03-12T11:23:19.154294",
-            "timestamp": 1773314599154,
-            "possibility": "23.6"
-          },
-          {
-            "date": "2026-03-12T11:23:49.154294",
-            "timestamp": 1773314629154,
-            "possibility": "23.9"
-          },
-          {
-            "date": "2026-03-12T11:24:19.154294",
-            "timestamp": 1773314659154,
-            "possibility": "24.0"
-          },
-          {
-            "date": "2026-03-12T11:24:49.154294",
-            "timestamp": 1773314689154,
-            "possibility": "23.5"
-          },
-          {
-            "date": "2026-03-12T11:25:19.154294",
-            "timestamp": 1773314719154,
-            "possibility": "22.3"
-          },
-          {
-            "date": "2026-03-12T11:25:49.154294",
-            "timestamp": 1773314749154,
-            "possibility": "23.6"
-          },
-          {
-            "date": "2026-03-12T11:26:19.154294",
-            "timestamp": 1773314779154,
+            "date": "2026-03-12T11:44:57.191600",
+            "timestamp": 1773315897191,
             "possibility": "24.5"
           },
           {
-            "date": "2026-03-12T11:26:49.154294",
-            "timestamp": 1773314809154,
-            "possibility": "24.5"
+            "date": "2026-03-12T11:45:27.191600",
+            "timestamp": 1773315927191,
+            "possibility": "25.7"
           },
           {
-            "date": "2026-03-12T11:27:19.154294",
-            "timestamp": 1773314839154,
-            "possibility": "25.4"
+            "date": "2026-03-12T11:45:57.191600",
+            "timestamp": 1773315957191,
+            "possibility": "26.1"
           },
           {
-            "date": "2026-03-12T11:27:49.154294",
-            "timestamp": 1773314869154,
-            "possibility": "26.2"
+            "date": "2026-03-12T11:46:27.191600",
+            "timestamp": 1773315987191,
+            "possibility": "27.5"
           },
           {
-            "date": "2026-03-12T11:28:19.154294",
-            "timestamp": 1773314899154,
-            "possibility": "26.2"
+            "date": "2026-03-12T11:46:57.191600",
+            "timestamp": 1773316017191,
+            "possibility": "27.3"
           },
           {
-            "date": "2026-03-12T11:28:49.154294",
-            "timestamp": 1773314929154,
-            "possibility": "25.9"
+            "date": "2026-03-12T11:47:27.191600",
+            "timestamp": 1773316047191,
+            "possibility": "26.8"
           },
           {
-            "date": "2026-03-12T11:29:19.154294",
-            "timestamp": 1773314959154,
-            "possibility": "24.7"
+            "date": "2026-03-12T11:47:57.191600",
+            "timestamp": 1773316077191,
+            "possibility": "27.4"
           },
           {
-            "date": "2026-03-12T11:29:49.154294",
-            "timestamp": 1773314989154,
-            "possibility": "24.4"
+            "date": "2026-03-12T11:48:27.191600",
+            "timestamp": 1773316107191,
+            "possibility": "26.8"
           },
           {
-            "date": "2026-03-12T11:30:19.154294",
-            "timestamp": 1773315019154,
-            "possibility": "25.4"
+            "date": "2026-03-12T11:48:57.191600",
+            "timestamp": 1773316137191,
+            "possibility": "26.1"
           },
           {
-            "date": "2026-03-12T11:30:49.154294",
-            "timestamp": 1773315049154,
-            "possibility": "26.3"
+            "date": "2026-03-12T11:49:27.191600",
+            "timestamp": 1773316167191,
+            "possibility": "26.4"
           },
           {
-            "date": "2026-03-12T11:31:19.154294",
-            "timestamp": 1773315079154,
-            "possibility": "24.7"
+            "date": "2026-03-12T11:49:57.191600",
+            "timestamp": 1773316197191,
+            "possibility": "26.4"
           },
           {
-            "date": "2026-03-12T11:31:49.154294",
-            "timestamp": 1773315109154,
-            "possibility": "25.5"
+            "date": "2026-03-12T11:50:27.191600",
+            "timestamp": 1773316227191,
+            "possibility": "25.6"
           },
           {
-            "date": "2026-03-12T11:32:19.154294",
-            "timestamp": 1773315139154,
+            "date": "2026-03-12T11:50:57.191600",
+            "timestamp": 1773316257191,
+            "possibility": "26.5"
+          },
+          {
+            "date": "2026-03-12T11:51:27.191600",
+            "timestamp": 1773316287191,
+            "possibility": "26.5"
+          },
+          {
+            "date": "2026-03-12T11:51:57.191600",
+            "timestamp": 1773316317191,
+            "possibility": "27.3"
+          },
+          {
+            "date": "2026-03-12T11:52:27.191600",
+            "timestamp": 1773316347191,
+            "possibility": "26.4"
+          },
+          {
+            "date": "2026-03-12T11:52:57.191600",
+            "timestamp": 1773316377191,
             "possibility": "26.6"
           },
           {
-            "date": "2026-03-12T11:32:49.154294",
-            "timestamp": 1773315169154,
-            "possibility": "25.9"
+            "date": "2026-03-12T11:53:27.191600",
+            "timestamp": 1773316407191,
+            "possibility": "26.5"
           },
           {
-            "date": "2026-03-12T11:33:19.154294",
-            "timestamp": 1773315199154,
-            "possibility": "26.7"
+            "date": "2026-03-12T11:53:57.191600",
+            "timestamp": 1773316437191,
+            "possibility": "27.6"
           },
           {
-            "date": "2026-03-12T11:33:49.154294",
-            "timestamp": 1773315229154,
-            "possibility": "26.2"
+            "date": "2026-03-12T11:54:27.191600",
+            "timestamp": 1773316467191,
+            "possibility": "27.9"
           },
           {
-            "date": "2026-03-12T11:34:19.154294",
-            "timestamp": 1773315259154,
-            "possibility": "24.9"
+            "date": "2026-03-12T11:54:57.191600",
+            "timestamp": 1773316497191,
+            "possibility": "28.5"
           },
           {
-            "date": "2026-03-12T11:34:49.154294",
-            "timestamp": 1773315289154,
-            "possibility": "24.2"
+            "date": "2026-03-12T11:55:27.191600",
+            "timestamp": 1773316527191,
+            "possibility": "29.7"
           },
           {
-            "date": "2026-03-12T11:35:19.154294",
-            "timestamp": 1773315319154,
-            "possibility": "23.1"
+            "date": "2026-03-12T11:55:57.191600",
+            "timestamp": 1773316557191,
+            "possibility": "29.3"
           },
           {
-            "date": "2026-03-12T11:35:49.154294",
-            "timestamp": 1773315349154,
-            "possibility": "24.4"
+            "date": "2026-03-12T11:56:27.191600",
+            "timestamp": 1773316587191,
+            "possibility": "30.2"
           },
           {
-            "date": "2026-03-12T11:36:19.154294",
-            "timestamp": 1773315379154,
-            "possibility": "24.6"
+            "date": "2026-03-12T11:56:57.191600",
+            "timestamp": 1773316617191,
+            "possibility": "30.8"
+          },
+          {
+            "date": "2026-03-12T11:57:27.191600",
+            "timestamp": 1773316647191,
+            "possibility": "29.1"
+          },
+          {
+            "date": "2026-03-12T11:57:57.191600",
+            "timestamp": 1773316677191,
+            "possibility": "30.1"
+          },
+          {
+            "date": "2026-03-12T11:58:27.191600",
+            "timestamp": 1773316707191,
+            "possibility": "30.1"
+          },
+          {
+            "date": "2026-03-12T11:58:57.191600",
+            "timestamp": 1773316737191,
+            "possibility": "30.9"
           }
         ],
         "count": 30
@@ -3019,12 +3019,12 @@
       "name": "주호영",
       "party": "국민의힘",
       "district": "대구광역시장",
-      "timestamp": 1773315379655,
-      "analyzedAt": "2026-03-12T11:36:19.655705",
-      "electionPossibility": "23.66",
-      "electionPossibilityPercent": "23.7",
-      "possibilityChange": "0.52",
-      "possibilityChangePercent": "0.5",
+      "timestamp": 1773316737693,
+      "analyzedAt": "2026-03-12T11:58:57.693057",
+      "electionPossibility": "24.38",
+      "electionPossibilityPercent": "24.4",
+      "possibilityChange": "-0.40",
+      "possibilityChangePercent": "-0.4",
       "scores": {
         "achievement": "5.0",
         "activity": "3.3",
@@ -3065,154 +3065,154 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:49.655268",
-            "timestamp": 1773314509655,
+            "date": "2026-03-12T11:44:27.692661",
+            "timestamp": 1773315867692,
             "possibility": "24.4"
           },
           {
-            "date": "2026-03-12T11:22:19.655268",
-            "timestamp": 1773314539655,
-            "possibility": "23.5"
+            "date": "2026-03-12T11:44:57.692661",
+            "timestamp": 1773315897692,
+            "possibility": "25.0"
           },
           {
-            "date": "2026-03-12T11:22:49.655268",
-            "timestamp": 1773314569655,
-            "possibility": "23.4"
+            "date": "2026-03-12T11:45:27.692661",
+            "timestamp": 1773315927692,
+            "possibility": "26.0"
           },
           {
-            "date": "2026-03-12T11:23:19.655268",
-            "timestamp": 1773314599655,
-            "possibility": "23.0"
+            "date": "2026-03-12T11:45:57.692661",
+            "timestamp": 1773315957692,
+            "possibility": "26.8"
           },
           {
-            "date": "2026-03-12T11:23:49.655268",
-            "timestamp": 1773314629655,
-            "possibility": "23.9"
-          },
-          {
-            "date": "2026-03-12T11:24:19.655268",
-            "timestamp": 1773314659655,
-            "possibility": "24.8"
-          },
-          {
-            "date": "2026-03-12T11:24:49.655268",
-            "timestamp": 1773314689655,
-            "possibility": "23.8"
-          },
-          {
-            "date": "2026-03-12T11:25:19.655268",
-            "timestamp": 1773314719655,
-            "possibility": "24.7"
-          },
-          {
-            "date": "2026-03-12T11:25:49.655268",
-            "timestamp": 1773314749655,
-            "possibility": "25.8"
-          },
-          {
-            "date": "2026-03-12T11:26:19.655268",
-            "timestamp": 1773314779655,
-            "possibility": "24.6"
-          },
-          {
-            "date": "2026-03-12T11:26:49.655268",
-            "timestamp": 1773314809655,
-            "possibility": "25.5"
-          },
-          {
-            "date": "2026-03-12T11:27:19.655268",
-            "timestamp": 1773314839655,
-            "possibility": "26.5"
-          },
-          {
-            "date": "2026-03-12T11:27:49.655268",
-            "timestamp": 1773314869655,
-            "possibility": "25.7"
-          },
-          {
-            "date": "2026-03-12T11:28:19.655268",
-            "timestamp": 1773314899655,
-            "possibility": "25.4"
-          },
-          {
-            "date": "2026-03-12T11:28:49.655268",
-            "timestamp": 1773314929655,
-            "possibility": "24.7"
-          },
-          {
-            "date": "2026-03-12T11:29:19.655268",
-            "timestamp": 1773314959655,
-            "possibility": "25.7"
-          },
-          {
-            "date": "2026-03-12T11:29:49.655268",
-            "timestamp": 1773314989655,
+            "date": "2026-03-12T11:46:27.692661",
+            "timestamp": 1773315987692,
             "possibility": "25.6"
           },
           {
-            "date": "2026-03-12T11:30:19.655268",
-            "timestamp": 1773315019655,
-            "possibility": "24.3"
+            "date": "2026-03-12T11:46:57.692661",
+            "timestamp": 1773316017692,
+            "possibility": "26.9"
           },
           {
-            "date": "2026-03-12T11:30:49.655268",
-            "timestamp": 1773315049655,
+            "date": "2026-03-12T11:47:27.692661",
+            "timestamp": 1773316047692,
+            "possibility": "27.4"
+          },
+          {
+            "date": "2026-03-12T11:47:57.692661",
+            "timestamp": 1773316077692,
+            "possibility": "26.8"
+          },
+          {
+            "date": "2026-03-12T11:48:27.692661",
+            "timestamp": 1773316107692,
+            "possibility": "25.1"
+          },
+          {
+            "date": "2026-03-12T11:48:57.692661",
+            "timestamp": 1773316137692,
+            "possibility": "25.7"
+          },
+          {
+            "date": "2026-03-12T11:49:27.692661",
+            "timestamp": 1773316167692,
+            "possibility": "26.1"
+          },
+          {
+            "date": "2026-03-12T11:49:57.692661",
+            "timestamp": 1773316197692,
+            "possibility": "26.9"
+          },
+          {
+            "date": "2026-03-12T11:50:27.692661",
+            "timestamp": 1773316227692,
+            "possibility": "27.4"
+          },
+          {
+            "date": "2026-03-12T11:50:57.692661",
+            "timestamp": 1773316257692,
+            "possibility": "27.3"
+          },
+          {
+            "date": "2026-03-12T11:51:27.692661",
+            "timestamp": 1773316287692,
+            "possibility": "28.3"
+          },
+          {
+            "date": "2026-03-12T11:51:57.692661",
+            "timestamp": 1773316317692,
+            "possibility": "27.7"
+          },
+          {
+            "date": "2026-03-12T11:52:27.692661",
+            "timestamp": 1773316347692,
+            "possibility": "26.1"
+          },
+          {
+            "date": "2026-03-12T11:52:57.692661",
+            "timestamp": 1773316377692,
+            "possibility": "26.3"
+          },
+          {
+            "date": "2026-03-12T11:53:27.692661",
+            "timestamp": 1773316407692,
+            "possibility": "25.7"
+          },
+          {
+            "date": "2026-03-12T11:53:57.692661",
+            "timestamp": 1773316437692,
+            "possibility": "26.2"
+          },
+          {
+            "date": "2026-03-12T11:54:27.692661",
+            "timestamp": 1773316467692,
             "possibility": "25.3"
           },
           {
-            "date": "2026-03-12T11:31:19.655268",
-            "timestamp": 1773315079655,
-            "possibility": "24.3"
+            "date": "2026-03-12T11:54:57.692661",
+            "timestamp": 1773316497692,
+            "possibility": "24.4"
           },
           {
-            "date": "2026-03-12T11:31:49.655268",
-            "timestamp": 1773315109655,
-            "possibility": "23.1"
+            "date": "2026-03-12T11:55:27.692661",
+            "timestamp": 1773316527692,
+            "possibility": "25.8"
           },
           {
-            "date": "2026-03-12T11:32:19.655268",
-            "timestamp": 1773315139655,
-            "possibility": "24.3"
+            "date": "2026-03-12T11:55:57.692661",
+            "timestamp": 1773316557692,
+            "possibility": "24.6"
           },
           {
-            "date": "2026-03-12T11:32:49.655268",
-            "timestamp": 1773315169655,
-            "possibility": "23.3"
+            "date": "2026-03-12T11:56:27.692661",
+            "timestamp": 1773316587692,
+            "possibility": "23.2"
           },
           {
-            "date": "2026-03-12T11:33:19.655268",
-            "timestamp": 1773315199655,
+            "date": "2026-03-12T11:56:57.692661",
+            "timestamp": 1773316617692,
             "possibility": "24.7"
           },
           {
-            "date": "2026-03-12T11:33:49.655268",
-            "timestamp": 1773315229655,
-            "possibility": "23.8"
+            "date": "2026-03-12T11:57:27.692661",
+            "timestamp": 1773316647692,
+            "possibility": "25.4"
           },
           {
-            "date": "2026-03-12T11:34:19.655268",
-            "timestamp": 1773315259655,
+            "date": "2026-03-12T11:57:57.692661",
+            "timestamp": 1773316677692,
+            "possibility": "24.0"
+          },
+          {
+            "date": "2026-03-12T11:58:27.692661",
+            "timestamp": 1773316707692,
+            "possibility": "24.8"
+          },
+          {
+            "date": "2026-03-12T11:58:57.692661",
+            "timestamp": 1773316737692,
             "possibility": "23.9"
-          },
-          {
-            "date": "2026-03-12T11:34:49.655268",
-            "timestamp": 1773315289655,
-            "possibility": "24.2"
-          },
-          {
-            "date": "2026-03-12T11:35:19.655268",
-            "timestamp": 1773315319655,
-            "possibility": "22.7"
-          },
-          {
-            "date": "2026-03-12T11:35:49.655268",
-            "timestamp": 1773315349655,
-            "possibility": "23.1"
-          },
-          {
-            "date": "2026-03-12T11:36:19.655268",
-            "timestamp": 1773315379655,
-            "possibility": "23.2"
           }
         ],
         "count": 30
@@ -3223,12 +3223,12 @@
       "name": "윤재옥",
       "party": "국민의힘",
       "district": "대구광역시장",
-      "timestamp": 1773315380156,
-      "analyzedAt": "2026-03-12T11:36:20.156688",
-      "electionPossibility": "25.25",
-      "electionPossibilityPercent": "25.3",
-      "possibilityChange": "-0.36",
-      "possibilityChangePercent": "-0.4",
+      "timestamp": 1773316738194,
+      "analyzedAt": "2026-03-12T11:58:58.194152",
+      "electionPossibility": "25.45",
+      "electionPossibilityPercent": "25.5",
+      "possibilityChange": "0.12",
+      "possibilityChangePercent": "0.1",
       "scores": {
         "achievement": "5.0",
         "activity": "3.3",
@@ -3269,153 +3269,153 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:50.156279",
-            "timestamp": 1773314510156,
+            "date": "2026-03-12T11:44:28.193707",
+            "timestamp": 1773315868193,
             "possibility": "24.4"
           },
           {
-            "date": "2026-03-12T11:22:20.156279",
-            "timestamp": 1773314540156,
-            "possibility": "23.2"
-          },
-          {
-            "date": "2026-03-12T11:22:50.156279",
-            "timestamp": 1773314570156,
+            "date": "2026-03-12T11:44:58.193707",
+            "timestamp": 1773315898193,
             "possibility": "23.7"
           },
           {
-            "date": "2026-03-12T11:23:20.156279",
-            "timestamp": 1773314600156,
-            "possibility": "23.2"
+            "date": "2026-03-12T11:45:28.193707",
+            "timestamp": 1773315928193,
+            "possibility": "24.4"
           },
           {
-            "date": "2026-03-12T11:23:50.156279",
-            "timestamp": 1773314630156,
+            "date": "2026-03-12T11:45:58.193707",
+            "timestamp": 1773315958193,
+            "possibility": "25.0"
+          },
+          {
+            "date": "2026-03-12T11:46:28.193707",
+            "timestamp": 1773315988193,
             "possibility": "24.0"
           },
           {
-            "date": "2026-03-12T11:24:20.156279",
-            "timestamp": 1773314660156,
-            "possibility": "24.1"
+            "date": "2026-03-12T11:46:58.193707",
+            "timestamp": 1773316018193,
+            "possibility": "22.8"
           },
           {
-            "date": "2026-03-12T11:24:50.156279",
-            "timestamp": 1773314690156,
-            "possibility": "24.8"
-          },
-          {
-            "date": "2026-03-12T11:25:20.156279",
-            "timestamp": 1773314720156,
-            "possibility": "23.9"
-          },
-          {
-            "date": "2026-03-12T11:25:50.156279",
-            "timestamp": 1773314750156,
-            "possibility": "25.3"
-          },
-          {
-            "date": "2026-03-12T11:26:20.156279",
-            "timestamp": 1773314780156,
-            "possibility": "25.7"
-          },
-          {
-            "date": "2026-03-12T11:26:50.156279",
-            "timestamp": 1773314810156,
-            "possibility": "25.1"
-          },
-          {
-            "date": "2026-03-12T11:27:20.156279",
-            "timestamp": 1773314840156,
-            "possibility": "23.7"
-          },
-          {
-            "date": "2026-03-12T11:27:50.156279",
-            "timestamp": 1773314870156,
-            "possibility": "22.5"
-          },
-          {
-            "date": "2026-03-12T11:28:20.156279",
-            "timestamp": 1773314900156,
+            "date": "2026-03-12T11:47:28.193707",
+            "timestamp": 1773316048193,
             "possibility": "23.3"
           },
           {
-            "date": "2026-03-12T11:28:50.156279",
-            "timestamp": 1773314930156,
-            "possibility": "22.4"
+            "date": "2026-03-12T11:47:58.193707",
+            "timestamp": 1773316078193,
+            "possibility": "22.5"
           },
           {
-            "date": "2026-03-12T11:29:20.156279",
-            "timestamp": 1773314960156,
-            "possibility": "23.9"
+            "date": "2026-03-12T11:48:28.193707",
+            "timestamp": 1773316108193,
+            "possibility": "22.5"
           },
           {
-            "date": "2026-03-12T11:29:50.156279",
-            "timestamp": 1773314990156,
-            "possibility": "25.3"
-          },
-          {
-            "date": "2026-03-12T11:30:20.156279",
-            "timestamp": 1773315020156,
-            "possibility": "26.4"
-          },
-          {
-            "date": "2026-03-12T11:30:50.156279",
-            "timestamp": 1773315050156,
-            "possibility": "27.3"
-          },
-          {
-            "date": "2026-03-12T11:31:20.156279",
-            "timestamp": 1773315080156,
-            "possibility": "26.9"
-          },
-          {
-            "date": "2026-03-12T11:31:50.156279",
-            "timestamp": 1773315110156,
-            "possibility": "25.4"
-          },
-          {
-            "date": "2026-03-12T11:32:20.156279",
-            "timestamp": 1773315140156,
-            "possibility": "24.8"
-          },
-          {
-            "date": "2026-03-12T11:32:50.156279",
-            "timestamp": 1773315170156,
-            "possibility": "25.6"
-          },
-          {
-            "date": "2026-03-12T11:33:20.156279",
-            "timestamp": 1773315200156,
-            "possibility": "26.2"
-          },
-          {
-            "date": "2026-03-12T11:33:50.156279",
-            "timestamp": 1773315230156,
-            "possibility": "25.4"
-          },
-          {
-            "date": "2026-03-12T11:34:20.156279",
-            "timestamp": 1773315260156,
+            "date": "2026-03-12T11:48:58.193707",
+            "timestamp": 1773316138193,
             "possibility": "24.1"
           },
           {
-            "date": "2026-03-12T11:34:50.156279",
-            "timestamp": 1773315290156,
-            "possibility": "25.2"
+            "date": "2026-03-12T11:49:28.193707",
+            "timestamp": 1773316168193,
+            "possibility": "25.4"
           },
           {
-            "date": "2026-03-12T11:35:20.156279",
-            "timestamp": 1773315320156,
-            "possibility": "25.1"
+            "date": "2026-03-12T11:49:58.193707",
+            "timestamp": 1773316198193,
+            "possibility": "24.5"
           },
           {
-            "date": "2026-03-12T11:35:50.156279",
-            "timestamp": 1773315350156,
-            "possibility": "25.6"
+            "date": "2026-03-12T11:50:28.193707",
+            "timestamp": 1773316228193,
+            "possibility": "24.1"
           },
           {
-            "date": "2026-03-12T11:36:20.156279",
-            "timestamp": 1773315380156,
+            "date": "2026-03-12T11:50:58.193707",
+            "timestamp": 1773316258193,
+            "possibility": "24.7"
+          },
+          {
+            "date": "2026-03-12T11:51:28.193707",
+            "timestamp": 1773316288193,
+            "possibility": "25.4"
+          },
+          {
+            "date": "2026-03-12T11:51:58.193707",
+            "timestamp": 1773316318193,
+            "possibility": "26.5"
+          },
+          {
+            "date": "2026-03-12T11:52:28.193707",
+            "timestamp": 1773316348193,
+            "possibility": "26.1"
+          },
+          {
+            "date": "2026-03-12T11:52:58.193707",
+            "timestamp": 1773316378193,
+            "possibility": "26.4"
+          },
+          {
+            "date": "2026-03-12T11:53:28.193707",
+            "timestamp": 1773316408193,
+            "possibility": "27.1"
+          },
+          {
+            "date": "2026-03-12T11:53:58.193707",
+            "timestamp": 1773316438193,
+            "possibility": "26.6"
+          },
+          {
+            "date": "2026-03-12T11:54:28.193707",
+            "timestamp": 1773316468193,
+            "possibility": "25.7"
+          },
+          {
+            "date": "2026-03-12T11:54:58.193707",
+            "timestamp": 1773316498193,
+            "possibility": "26.8"
+          },
+          {
+            "date": "2026-03-12T11:55:28.193707",
+            "timestamp": 1773316528193,
+            "possibility": "26.0"
+          },
+          {
+            "date": "2026-03-12T11:55:58.193707",
+            "timestamp": 1773316558193,
+            "possibility": "24.8"
+          },
+          {
+            "date": "2026-03-12T11:56:28.193707",
+            "timestamp": 1773316588193,
+            "possibility": "26.2"
+          },
+          {
+            "date": "2026-03-12T11:56:58.193707",
+            "timestamp": 1773316618193,
+            "possibility": "26.7"
+          },
+          {
+            "date": "2026-03-12T11:57:28.193707",
+            "timestamp": 1773316648193,
+            "possibility": "25.8"
+          },
+          {
+            "date": "2026-03-12T11:57:58.193707",
+            "timestamp": 1773316678193,
+            "possibility": "24.3"
+          },
+          {
+            "date": "2026-03-12T11:58:28.193707",
+            "timestamp": 1773316708193,
+            "possibility": "25.3"
+          },
+          {
+            "date": "2026-03-12T11:58:58.193707",
+            "timestamp": 1773316738193,
             "possibility": "25.1"
           }
         ],
@@ -3427,12 +3427,12 @@
       "name": "추경호",
       "party": "국민의힘",
       "district": "대구광역시장",
-      "timestamp": 1773315380657,
-      "analyzedAt": "2026-03-12T11:36:20.657817",
-      "electionPossibility": "23.86",
-      "electionPossibilityPercent": "23.9",
-      "possibilityChange": "-0.48",
-      "possibilityChangePercent": "-0.5",
+      "timestamp": 1773316738695,
+      "analyzedAt": "2026-03-12T11:58:58.695083",
+      "electionPossibility": "24.19",
+      "electionPossibilityPercent": "24.2",
+      "possibilityChange": "0.19",
+      "possibilityChangePercent": "0.2",
       "scores": {
         "achievement": "5.0",
         "activity": "3.3",
@@ -3473,154 +3473,154 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:50.657348",
-            "timestamp": 1773314510657,
+            "date": "2026-03-12T11:44:28.694656",
+            "timestamp": 1773315868694,
             "possibility": "24.4"
           },
           {
-            "date": "2026-03-12T11:22:20.657348",
-            "timestamp": 1773314540657,
-            "possibility": "25.4"
+            "date": "2026-03-12T11:44:58.694656",
+            "timestamp": 1773315898694,
+            "possibility": "23.4"
           },
           {
-            "date": "2026-03-12T11:22:50.657348",
-            "timestamp": 1773314570657,
-            "possibility": "24.9"
-          },
-          {
-            "date": "2026-03-12T11:23:20.657348",
-            "timestamp": 1773314600657,
-            "possibility": "23.9"
-          },
-          {
-            "date": "2026-03-12T11:23:50.657348",
-            "timestamp": 1773314630657,
+            "date": "2026-03-12T11:45:28.694656",
+            "timestamp": 1773315928694,
             "possibility": "24.3"
           },
           {
-            "date": "2026-03-12T11:24:20.657348",
-            "timestamp": 1773314660657,
-            "possibility": "23.0"
-          },
-          {
-            "date": "2026-03-12T11:24:50.657348",
-            "timestamp": 1773314690657,
-            "possibility": "22.3"
-          },
-          {
-            "date": "2026-03-12T11:25:20.657348",
-            "timestamp": 1773314720657,
-            "possibility": "22.8"
-          },
-          {
-            "date": "2026-03-12T11:25:50.657348",
-            "timestamp": 1773314750657,
-            "possibility": "21.8"
-          },
-          {
-            "date": "2026-03-12T11:26:20.657348",
-            "timestamp": 1773314780657,
-            "possibility": "21.2"
-          },
-          {
-            "date": "2026-03-12T11:26:50.657348",
-            "timestamp": 1773314810657,
-            "possibility": "22.1"
-          },
-          {
-            "date": "2026-03-12T11:27:20.657348",
-            "timestamp": 1773314840657,
-            "possibility": "22.1"
-          },
-          {
-            "date": "2026-03-12T11:27:50.657348",
-            "timestamp": 1773314870657,
-            "possibility": "21.7"
-          },
-          {
-            "date": "2026-03-12T11:28:20.657348",
-            "timestamp": 1773314900657,
-            "possibility": "22.6"
-          },
-          {
-            "date": "2026-03-12T11:28:50.657348",
-            "timestamp": 1773314930657,
-            "possibility": "22.1"
-          },
-          {
-            "date": "2026-03-12T11:29:20.657348",
-            "timestamp": 1773314960657,
-            "possibility": "20.9"
-          },
-          {
-            "date": "2026-03-12T11:29:50.657348",
-            "timestamp": 1773314990657,
-            "possibility": "20.4"
-          },
-          {
-            "date": "2026-03-12T11:30:20.657348",
-            "timestamp": 1773315020657,
-            "possibility": "21.4"
-          },
-          {
-            "date": "2026-03-12T11:30:50.657348",
-            "timestamp": 1773315050657,
-            "possibility": "21.0"
-          },
-          {
-            "date": "2026-03-12T11:31:20.657348",
-            "timestamp": 1773315080657,
-            "possibility": "22.4"
-          },
-          {
-            "date": "2026-03-12T11:31:50.657348",
-            "timestamp": 1773315110657,
-            "possibility": "23.0"
-          },
-          {
-            "date": "2026-03-12T11:32:20.657348",
-            "timestamp": 1773315140657,
-            "possibility": "24.2"
-          },
-          {
-            "date": "2026-03-12T11:32:50.657348",
-            "timestamp": 1773315170657,
-            "possibility": "22.9"
-          },
-          {
-            "date": "2026-03-12T11:33:20.657348",
-            "timestamp": 1773315200657,
-            "possibility": "24.2"
-          },
-          {
-            "date": "2026-03-12T11:33:50.657348",
-            "timestamp": 1773315230657,
-            "possibility": "23.0"
-          },
-          {
-            "date": "2026-03-12T11:34:20.657348",
-            "timestamp": 1773315260657,
+            "date": "2026-03-12T11:45:58.694656",
+            "timestamp": 1773315958694,
             "possibility": "23.8"
           },
           {
-            "date": "2026-03-12T11:34:50.657348",
-            "timestamp": 1773315290657,
-            "possibility": "24.2"
+            "date": "2026-03-12T11:46:28.694656",
+            "timestamp": 1773315988694,
+            "possibility": "23.7"
           },
           {
-            "date": "2026-03-12T11:35:20.657348",
-            "timestamp": 1773315320657,
-            "possibility": "23.5"
-          },
-          {
-            "date": "2026-03-12T11:35:50.657348",
-            "timestamp": 1773315350657,
+            "date": "2026-03-12T11:46:58.694656",
+            "timestamp": 1773316018694,
             "possibility": "24.3"
           },
           {
-            "date": "2026-03-12T11:36:20.657348",
-            "timestamp": 1773315380657,
-            "possibility": "23.9"
+            "date": "2026-03-12T11:47:28.694656",
+            "timestamp": 1773316048694,
+            "possibility": "25.4"
+          },
+          {
+            "date": "2026-03-12T11:47:58.694656",
+            "timestamp": 1773316078694,
+            "possibility": "26.3"
+          },
+          {
+            "date": "2026-03-12T11:48:28.694656",
+            "timestamp": 1773316108694,
+            "possibility": "26.1"
+          },
+          {
+            "date": "2026-03-12T11:48:58.694656",
+            "timestamp": 1773316138694,
+            "possibility": "25.9"
+          },
+          {
+            "date": "2026-03-12T11:49:28.694656",
+            "timestamp": 1773316168694,
+            "possibility": "27.1"
+          },
+          {
+            "date": "2026-03-12T11:49:58.694656",
+            "timestamp": 1773316198694,
+            "possibility": "26.7"
+          },
+          {
+            "date": "2026-03-12T11:50:28.694656",
+            "timestamp": 1773316228694,
+            "possibility": "25.3"
+          },
+          {
+            "date": "2026-03-12T11:50:58.694656",
+            "timestamp": 1773316258694,
+            "possibility": "24.7"
+          },
+          {
+            "date": "2026-03-12T11:51:28.694656",
+            "timestamp": 1773316288694,
+            "possibility": "25.5"
+          },
+          {
+            "date": "2026-03-12T11:51:58.694656",
+            "timestamp": 1773316318694,
+            "possibility": "26.6"
+          },
+          {
+            "date": "2026-03-12T11:52:28.694656",
+            "timestamp": 1773316348694,
+            "possibility": "26.2"
+          },
+          {
+            "date": "2026-03-12T11:52:58.694656",
+            "timestamp": 1773316378694,
+            "possibility": "24.7"
+          },
+          {
+            "date": "2026-03-12T11:53:28.694656",
+            "timestamp": 1773316408694,
+            "possibility": "25.7"
+          },
+          {
+            "date": "2026-03-12T11:53:58.694656",
+            "timestamp": 1773316438694,
+            "possibility": "24.4"
+          },
+          {
+            "date": "2026-03-12T11:54:28.694656",
+            "timestamp": 1773316468694,
+            "possibility": "24.3"
+          },
+          {
+            "date": "2026-03-12T11:54:58.694656",
+            "timestamp": 1773316498694,
+            "possibility": "24.7"
+          },
+          {
+            "date": "2026-03-12T11:55:28.694656",
+            "timestamp": 1773316528694,
+            "possibility": "24.1"
+          },
+          {
+            "date": "2026-03-12T11:55:58.694656",
+            "timestamp": 1773316558694,
+            "possibility": "24.7"
+          },
+          {
+            "date": "2026-03-12T11:56:28.694656",
+            "timestamp": 1773316588694,
+            "possibility": "23.5"
+          },
+          {
+            "date": "2026-03-12T11:56:58.694656",
+            "timestamp": 1773316618694,
+            "possibility": "25.1"
+          },
+          {
+            "date": "2026-03-12T11:57:28.694656",
+            "timestamp": 1773316648694,
+            "possibility": "24.2"
+          },
+          {
+            "date": "2026-03-12T11:57:58.694656",
+            "timestamp": 1773316678694,
+            "possibility": "24.7"
+          },
+          {
+            "date": "2026-03-12T11:58:28.694656",
+            "timestamp": 1773316708694,
+            "possibility": "24.0"
+          },
+          {
+            "date": "2026-03-12T11:58:58.694656",
+            "timestamp": 1773316738694,
+            "possibility": "23.2"
           }
         ],
         "count": 30
@@ -3631,12 +3631,12 @@
       "name": "이현규",
       "party": "무소속",
       "district": "경남 창원시장",
-      "timestamp": 1773315381158,
-      "analyzedAt": "2026-03-12T11:36:21.158763",
-      "electionPossibility": "25.54",
-      "electionPossibilityPercent": "25.5",
-      "possibilityChange": "-0.68",
-      "possibilityChangePercent": "-0.7",
+      "timestamp": 1773316739196,
+      "analyzedAt": "2026-03-12T11:58:59.196096",
+      "electionPossibility": "23.00",
+      "electionPossibilityPercent": "23.0",
+      "possibilityChange": "0.54",
+      "possibilityChangePercent": "0.5",
       "scores": {
         "achievement": "5.0",
         "activity": "3.3",
@@ -3677,154 +3677,154 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:51.158314",
-            "timestamp": 1773314511158,
+            "date": "2026-03-12T11:44:29.195691",
+            "timestamp": 1773315869195,
             "possibility": "24.4"
           },
           {
-            "date": "2026-03-12T11:22:21.158314",
-            "timestamp": 1773314541158,
-            "possibility": "23.2"
+            "date": "2026-03-12T11:44:59.195691",
+            "timestamp": 1773315899195,
+            "possibility": "24.6"
           },
           {
-            "date": "2026-03-12T11:22:51.158314",
-            "timestamp": 1773314571158,
-            "possibility": "22.6"
+            "date": "2026-03-12T11:45:29.195691",
+            "timestamp": 1773315929195,
+            "possibility": "23.7"
           },
           {
-            "date": "2026-03-12T11:23:21.158314",
-            "timestamp": 1773314601158,
-            "possibility": "23.9"
+            "date": "2026-03-12T11:45:59.195691",
+            "timestamp": 1773315959195,
+            "possibility": "22.5"
           },
           {
-            "date": "2026-03-12T11:23:51.158314",
-            "timestamp": 1773314631158,
-            "possibility": "22.8"
+            "date": "2026-03-12T11:46:29.195691",
+            "timestamp": 1773315989195,
+            "possibility": "22.7"
           },
           {
-            "date": "2026-03-12T11:24:21.158314",
-            "timestamp": 1773314661158,
-            "possibility": "21.7"
+            "date": "2026-03-12T11:46:59.195691",
+            "timestamp": 1773316019195,
+            "possibility": "21.4"
           },
           {
-            "date": "2026-03-12T11:24:51.158314",
-            "timestamp": 1773314691158,
+            "date": "2026-03-12T11:47:29.195691",
+            "timestamp": 1773316049195,
             "possibility": "20.8"
           },
           {
-            "date": "2026-03-12T11:25:21.158314",
-            "timestamp": 1773314721158,
-            "possibility": "21.1"
+            "date": "2026-03-12T11:47:59.195691",
+            "timestamp": 1773316079195,
+            "possibility": "20.0"
           },
           {
-            "date": "2026-03-12T11:25:51.158314",
-            "timestamp": 1773314751158,
+            "date": "2026-03-12T11:48:29.195691",
+            "timestamp": 1773316109195,
+            "possibility": "20.7"
+          },
+          {
+            "date": "2026-03-12T11:48:59.195691",
+            "timestamp": 1773316139195,
+            "possibility": "21.8"
+          },
+          {
+            "date": "2026-03-12T11:49:29.195691",
+            "timestamp": 1773316169195,
+            "possibility": "22.7"
+          },
+          {
+            "date": "2026-03-12T11:49:59.195691",
+            "timestamp": 1773316199195,
             "possibility": "22.5"
           },
           {
-            "date": "2026-03-12T11:26:21.158314",
-            "timestamp": 1773314781158,
-            "possibility": "21.3"
+            "date": "2026-03-12T11:50:29.195691",
+            "timestamp": 1773316229195,
+            "possibility": "21.9"
           },
           {
-            "date": "2026-03-12T11:26:51.158314",
-            "timestamp": 1773314811158,
-            "possibility": "21.7"
+            "date": "2026-03-12T11:50:59.195691",
+            "timestamp": 1773316259195,
+            "possibility": "22.6"
           },
           {
-            "date": "2026-03-12T11:27:21.158314",
-            "timestamp": 1773314841158,
-            "possibility": "20.5"
+            "date": "2026-03-12T11:51:29.195691",
+            "timestamp": 1773316289195,
+            "possibility": "23.7"
           },
           {
-            "date": "2026-03-12T11:27:51.158314",
-            "timestamp": 1773314871158,
-            "possibility": "21.3"
+            "date": "2026-03-12T11:51:59.195691",
+            "timestamp": 1773316319195,
+            "possibility": "24.3"
           },
           {
-            "date": "2026-03-12T11:28:21.158314",
-            "timestamp": 1773314901158,
-            "possibility": "22.5"
-          },
-          {
-            "date": "2026-03-12T11:28:51.158314",
-            "timestamp": 1773314931158,
-            "possibility": "22.8"
-          },
-          {
-            "date": "2026-03-12T11:29:21.158314",
-            "timestamp": 1773314961158,
-            "possibility": "22.4"
-          },
-          {
-            "date": "2026-03-12T11:29:51.158314",
-            "timestamp": 1773314991158,
-            "possibility": "23.2"
-          },
-          {
-            "date": "2026-03-12T11:30:21.158314",
-            "timestamp": 1773315021158,
-            "possibility": "22.9"
-          },
-          {
-            "date": "2026-03-12T11:30:51.158314",
-            "timestamp": 1773315051158,
-            "possibility": "24.4"
-          },
-          {
-            "date": "2026-03-12T11:31:21.158314",
-            "timestamp": 1773315081158,
-            "possibility": "25.8"
-          },
-          {
-            "date": "2026-03-12T11:31:51.158314",
-            "timestamp": 1773315111158,
-            "possibility": "26.8"
-          },
-          {
-            "date": "2026-03-12T11:32:21.158314",
-            "timestamp": 1773315141158,
-            "possibility": "27.3"
-          },
-          {
-            "date": "2026-03-12T11:32:51.158314",
-            "timestamp": 1773315171158,
-            "possibility": "25.6"
-          },
-          {
-            "date": "2026-03-12T11:33:21.158314",
-            "timestamp": 1773315201158,
+            "date": "2026-03-12T11:52:29.195691",
+            "timestamp": 1773316349195,
             "possibility": "24.2"
           },
           {
-            "date": "2026-03-12T11:33:51.158314",
-            "timestamp": 1773315231158,
-            "possibility": "24.9"
+            "date": "2026-03-12T11:52:59.195691",
+            "timestamp": 1773316379195,
+            "possibility": "23.1"
           },
           {
-            "date": "2026-03-12T11:34:21.158314",
-            "timestamp": 1773315261158,
-            "possibility": "26.2"
+            "date": "2026-03-12T11:53:29.195691",
+            "timestamp": 1773316409195,
+            "possibility": "23.0"
           },
           {
-            "date": "2026-03-12T11:34:51.158314",
-            "timestamp": 1773315291158,
-            "possibility": "25.2"
+            "date": "2026-03-12T11:53:59.195691",
+            "timestamp": 1773316439195,
+            "possibility": "24.1"
           },
           {
-            "date": "2026-03-12T11:35:21.158314",
-            "timestamp": 1773315321158,
-            "possibility": "26.1"
+            "date": "2026-03-12T11:54:29.195691",
+            "timestamp": 1773316469195,
+            "possibility": "23.2"
           },
           {
-            "date": "2026-03-12T11:35:51.158314",
-            "timestamp": 1773315351158,
-            "possibility": "26.2"
+            "date": "2026-03-12T11:54:59.195691",
+            "timestamp": 1773316499195,
+            "possibility": "24.2"
           },
           {
-            "date": "2026-03-12T11:36:21.158314",
-            "timestamp": 1773315381158,
-            "possibility": "25.9"
+            "date": "2026-03-12T11:55:29.195691",
+            "timestamp": 1773316529195,
+            "possibility": "24.2"
+          },
+          {
+            "date": "2026-03-12T11:55:59.195691",
+            "timestamp": 1773316559195,
+            "possibility": "23.8"
+          },
+          {
+            "date": "2026-03-12T11:56:29.195691",
+            "timestamp": 1773316589195,
+            "possibility": "22.4"
+          },
+          {
+            "date": "2026-03-12T11:56:59.195691",
+            "timestamp": 1773316619195,
+            "possibility": "23.7"
+          },
+          {
+            "date": "2026-03-12T11:57:29.195691",
+            "timestamp": 1773316649195,
+            "possibility": "23.7"
+          },
+          {
+            "date": "2026-03-12T11:57:59.195691",
+            "timestamp": 1773316679195,
+            "possibility": "23.6"
+          },
+          {
+            "date": "2026-03-12T11:58:29.195691",
+            "timestamp": 1773316709195,
+            "possibility": "22.5"
+          },
+          {
+            "date": "2026-03-12T11:58:59.195691",
+            "timestamp": 1773316739195,
+            "possibility": "21.3"
           }
         ],
         "count": 30
@@ -3835,11 +3835,11 @@
       "name": "김수우",
       "party": "무소속",
       "district": "경기 평택시장",
-      "timestamp": 1773315381659,
-      "analyzedAt": "2026-03-12T11:36:21.659841",
-      "electionPossibility": "24.00",
-      "electionPossibilityPercent": "24.0",
-      "possibilityChange": "-1.07",
+      "timestamp": 1773316739697,
+      "analyzedAt": "2026-03-12T11:58:59.697004",
+      "electionPossibility": "26.35",
+      "electionPossibilityPercent": "26.3",
+      "possibilityChange": "-1.06",
       "possibilityChangePercent": "-1.1",
       "scores": {
         "achievement": "5.0",
@@ -3881,154 +3881,154 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:51.659375",
-            "timestamp": 1773314511659,
+            "date": "2026-03-12T11:44:29.696639",
+            "timestamp": 1773315869696,
             "possibility": "24.4"
           },
           {
-            "date": "2026-03-12T11:22:21.659375",
-            "timestamp": 1773314541659,
-            "possibility": "23.5"
-          },
-          {
-            "date": "2026-03-12T11:22:51.659375",
-            "timestamp": 1773314571659,
-            "possibility": "23.1"
-          },
-          {
-            "date": "2026-03-12T11:23:21.659375",
-            "timestamp": 1773314601659,
-            "possibility": "23.5"
-          },
-          {
-            "date": "2026-03-12T11:23:51.659375",
-            "timestamp": 1773314631659,
-            "possibility": "23.9"
-          },
-          {
-            "date": "2026-03-12T11:24:21.659375",
-            "timestamp": 1773314661659,
-            "possibility": "24.2"
-          },
-          {
-            "date": "2026-03-12T11:24:51.659375",
-            "timestamp": 1773314691659,
-            "possibility": "25.0"
-          },
-          {
-            "date": "2026-03-12T11:25:21.659375",
-            "timestamp": 1773314721659,
-            "possibility": "25.4"
-          },
-          {
-            "date": "2026-03-12T11:25:51.659375",
-            "timestamp": 1773314751659,
-            "possibility": "24.8"
-          },
-          {
-            "date": "2026-03-12T11:26:21.659375",
-            "timestamp": 1773314781659,
-            "possibility": "24.0"
-          },
-          {
-            "date": "2026-03-12T11:26:51.659375",
-            "timestamp": 1773314811659,
-            "possibility": "24.9"
-          },
-          {
-            "date": "2026-03-12T11:27:21.659375",
-            "timestamp": 1773314841659,
-            "possibility": "24.4"
-          },
-          {
-            "date": "2026-03-12T11:27:51.659375",
-            "timestamp": 1773314871659,
-            "possibility": "25.7"
-          },
-          {
-            "date": "2026-03-12T11:28:21.659375",
-            "timestamp": 1773314901659,
-            "possibility": "25.7"
-          },
-          {
-            "date": "2026-03-12T11:28:51.659375",
-            "timestamp": 1773314931659,
-            "possibility": "24.2"
-          },
-          {
-            "date": "2026-03-12T11:29:21.659375",
-            "timestamp": 1773314961659,
-            "possibility": "24.7"
-          },
-          {
-            "date": "2026-03-12T11:29:51.659375",
-            "timestamp": 1773314991659,
-            "possibility": "24.9"
-          },
-          {
-            "date": "2026-03-12T11:30:21.659375",
-            "timestamp": 1773315021659,
-            "possibility": "26.3"
-          },
-          {
-            "date": "2026-03-12T11:30:51.659375",
-            "timestamp": 1773315051659,
-            "possibility": "27.0"
-          },
-          {
-            "date": "2026-03-12T11:31:21.659375",
-            "timestamp": 1773315081659,
-            "possibility": "27.3"
-          },
-          {
-            "date": "2026-03-12T11:31:51.659375",
-            "timestamp": 1773315111659,
-            "possibility": "25.9"
-          },
-          {
-            "date": "2026-03-12T11:32:21.659375",
-            "timestamp": 1773315141659,
-            "possibility": "25.7"
-          },
-          {
-            "date": "2026-03-12T11:32:51.659375",
-            "timestamp": 1773315171659,
-            "possibility": "24.3"
-          },
-          {
-            "date": "2026-03-12T11:33:21.659375",
-            "timestamp": 1773315201659,
-            "possibility": "22.8"
-          },
-          {
-            "date": "2026-03-12T11:33:51.659375",
-            "timestamp": 1773315231659,
-            "possibility": "24.2"
-          },
-          {
-            "date": "2026-03-12T11:34:21.659375",
-            "timestamp": 1773315261659,
-            "possibility": "24.5"
-          },
-          {
-            "date": "2026-03-12T11:34:51.659375",
-            "timestamp": 1773315291659,
-            "possibility": "23.1"
-          },
-          {
-            "date": "2026-03-12T11:35:21.659375",
-            "timestamp": 1773315321659,
-            "possibility": "23.5"
-          },
-          {
-            "date": "2026-03-12T11:35:51.659375",
-            "timestamp": 1773315351659,
+            "date": "2026-03-12T11:44:59.696639",
+            "timestamp": 1773315899696,
             "possibility": "25.1"
           },
           {
-            "date": "2026-03-12T11:36:21.659375",
-            "timestamp": 1773315381659,
-            "possibility": "24.8"
+            "date": "2026-03-12T11:45:29.696639",
+            "timestamp": 1773315929696,
+            "possibility": "25.5"
+          },
+          {
+            "date": "2026-03-12T11:45:59.696639",
+            "timestamp": 1773315959696,
+            "possibility": "26.8"
+          },
+          {
+            "date": "2026-03-12T11:46:29.696639",
+            "timestamp": 1773315989696,
+            "possibility": "26.1"
+          },
+          {
+            "date": "2026-03-12T11:46:59.696639",
+            "timestamp": 1773316019696,
+            "possibility": "25.4"
+          },
+          {
+            "date": "2026-03-12T11:47:29.696639",
+            "timestamp": 1773316049696,
+            "possibility": "23.9"
+          },
+          {
+            "date": "2026-03-12T11:47:59.696639",
+            "timestamp": 1773316079696,
+            "possibility": "23.2"
+          },
+          {
+            "date": "2026-03-12T11:48:29.696639",
+            "timestamp": 1773316109696,
+            "possibility": "24.7"
+          },
+          {
+            "date": "2026-03-12T11:48:59.696639",
+            "timestamp": 1773316139696,
+            "possibility": "23.5"
+          },
+          {
+            "date": "2026-03-12T11:49:29.696639",
+            "timestamp": 1773316169696,
+            "possibility": "23.3"
+          },
+          {
+            "date": "2026-03-12T11:49:59.696639",
+            "timestamp": 1773316199696,
+            "possibility": "22.6"
+          },
+          {
+            "date": "2026-03-12T11:50:29.696639",
+            "timestamp": 1773316229696,
+            "possibility": "21.7"
+          },
+          {
+            "date": "2026-03-12T11:50:59.696639",
+            "timestamp": 1773316259696,
+            "possibility": "21.1"
+          },
+          {
+            "date": "2026-03-12T11:51:29.696639",
+            "timestamp": 1773316289696,
+            "possibility": "20.1"
+          },
+          {
+            "date": "2026-03-12T11:51:59.696639",
+            "timestamp": 1773316319696,
+            "possibility": "20.0"
+          },
+          {
+            "date": "2026-03-12T11:52:29.696639",
+            "timestamp": 1773316349696,
+            "possibility": "20.5"
+          },
+          {
+            "date": "2026-03-12T11:52:59.696639",
+            "timestamp": 1773316379696,
+            "possibility": "21.2"
+          },
+          {
+            "date": "2026-03-12T11:53:29.696639",
+            "timestamp": 1773316409696,
+            "possibility": "20.7"
+          },
+          {
+            "date": "2026-03-12T11:53:59.696639",
+            "timestamp": 1773316439696,
+            "possibility": "22.0"
+          },
+          {
+            "date": "2026-03-12T11:54:29.696639",
+            "timestamp": 1773316469696,
+            "possibility": "20.8"
+          },
+          {
+            "date": "2026-03-12T11:54:59.696639",
+            "timestamp": 1773316499696,
+            "possibility": "22.2"
+          },
+          {
+            "date": "2026-03-12T11:55:29.696639",
+            "timestamp": 1773316529696,
+            "possibility": "22.5"
+          },
+          {
+            "date": "2026-03-12T11:55:59.696639",
+            "timestamp": 1773316559696,
+            "possibility": "23.9"
+          },
+          {
+            "date": "2026-03-12T11:56:29.696639",
+            "timestamp": 1773316589696,
+            "possibility": "25.0"
+          },
+          {
+            "date": "2026-03-12T11:56:59.696639",
+            "timestamp": 1773316619696,
+            "possibility": "26.0"
+          },
+          {
+            "date": "2026-03-12T11:57:29.696639",
+            "timestamp": 1773316649696,
+            "possibility": "27.1"
+          },
+          {
+            "date": "2026-03-12T11:57:59.696639",
+            "timestamp": 1773316679696,
+            "possibility": "27.9"
+          },
+          {
+            "date": "2026-03-12T11:58:29.696639",
+            "timestamp": 1773316709696,
+            "possibility": "27.4"
+          },
+          {
+            "date": "2026-03-12T11:58:59.696639",
+            "timestamp": 1773316739696,
+            "possibility": "27.1"
           }
         ],
         "count": 30
@@ -4039,12 +4039,12 @@
       "name": "이춘희",
       "party": "더불어민주당",
       "district": "세종특별자치시장",
-      "timestamp": 1773315382160,
-      "analyzedAt": "2026-03-12T11:36:22.160745",
-      "electionPossibility": "22.95",
-      "electionPossibilityPercent": "22.9",
-      "possibilityChange": "-0.06",
-      "possibilityChangePercent": "-0.1",
+      "timestamp": 1773316740198,
+      "analyzedAt": "2026-03-12T11:59:00.198120",
+      "electionPossibility": "26.19",
+      "electionPossibilityPercent": "26.2",
+      "possibilityChange": "-0.71",
+      "possibilityChangePercent": "-0.7",
       "scores": {
         "achievement": "5.0",
         "activity": "3.3",
@@ -4085,154 +4085,154 @@
       "trends": {
         "recent": [
           {
-            "date": "2026-03-12T11:21:52.160308",
-            "timestamp": 1773314512160,
+            "date": "2026-03-12T11:44:30.197695",
+            "timestamp": 1773315870197,
             "possibility": "24.4"
           },
           {
-            "date": "2026-03-12T11:22:22.160308",
-            "timestamp": 1773314542160,
-            "possibility": "24.1"
+            "date": "2026-03-12T11:45:00.197695",
+            "timestamp": 1773315900197,
+            "possibility": "25.6"
           },
           {
-            "date": "2026-03-12T11:22:52.160308",
-            "timestamp": 1773314572160,
-            "possibility": "24.5"
+            "date": "2026-03-12T11:45:30.197695",
+            "timestamp": 1773315930197,
+            "possibility": "25.8"
           },
           {
-            "date": "2026-03-12T11:23:22.160308",
-            "timestamp": 1773314602160,
-            "possibility": "24.3"
+            "date": "2026-03-12T11:46:00.197695",
+            "timestamp": 1773315960197,
+            "possibility": "27.1"
           },
           {
-            "date": "2026-03-12T11:23:52.160308",
-            "timestamp": 1773314632160,
-            "possibility": "24.7"
+            "date": "2026-03-12T11:46:30.197695",
+            "timestamp": 1773315990197,
+            "possibility": "27.7"
           },
           {
-            "date": "2026-03-12T11:24:22.160308",
-            "timestamp": 1773314662160,
-            "possibility": "26.0"
+            "date": "2026-03-12T11:47:00.197695",
+            "timestamp": 1773316020197,
+            "possibility": "28.4"
           },
           {
-            "date": "2026-03-12T11:24:52.160308",
-            "timestamp": 1773314692160,
-            "possibility": "25.2"
+            "date": "2026-03-12T11:47:30.197695",
+            "timestamp": 1773316050197,
+            "possibility": "29.2"
           },
           {
-            "date": "2026-03-12T11:25:22.160308",
-            "timestamp": 1773314722160,
-            "possibility": "26.2"
+            "date": "2026-03-12T11:48:00.197695",
+            "timestamp": 1773316080197,
+            "possibility": "27.8"
           },
           {
-            "date": "2026-03-12T11:25:52.160308",
-            "timestamp": 1773314752160,
-            "possibility": "27.0"
+            "date": "2026-03-12T11:48:30.197695",
+            "timestamp": 1773316110197,
+            "possibility": "28.8"
           },
           {
-            "date": "2026-03-12T11:26:22.160308",
-            "timestamp": 1773314782160,
+            "date": "2026-03-12T11:49:00.197695",
+            "timestamp": 1773316140197,
+            "possibility": "28.8"
+          },
+          {
+            "date": "2026-03-12T11:49:30.197695",
+            "timestamp": 1773316170197,
+            "possibility": "28.0"
+          },
+          {
+            "date": "2026-03-12T11:50:00.197695",
+            "timestamp": 1773316200197,
+            "possibility": "28.4"
+          },
+          {
+            "date": "2026-03-12T11:50:30.197695",
+            "timestamp": 1773316230197,
             "possibility": "26.8"
           },
           {
-            "date": "2026-03-12T11:26:52.160308",
-            "timestamp": 1773314812160,
-            "possibility": "25.7"
+            "date": "2026-03-12T11:51:00.197695",
+            "timestamp": 1773316260197,
+            "possibility": "25.8"
           },
           {
-            "date": "2026-03-12T11:27:22.160308",
-            "timestamp": 1773314842160,
-            "possibility": "24.2"
+            "date": "2026-03-12T11:51:30.197695",
+            "timestamp": 1773316290197,
+            "possibility": "26.8"
           },
           {
-            "date": "2026-03-12T11:27:52.160308",
-            "timestamp": 1773314872160,
-            "possibility": "23.1"
+            "date": "2026-03-12T11:52:00.197695",
+            "timestamp": 1773316320197,
+            "possibility": "27.8"
           },
           {
-            "date": "2026-03-12T11:28:22.160308",
-            "timestamp": 1773314902160,
-            "possibility": "22.5"
+            "date": "2026-03-12T11:52:30.197695",
+            "timestamp": 1773316350197,
+            "possibility": "27.9"
           },
           {
-            "date": "2026-03-12T11:28:52.160308",
-            "timestamp": 1773314932160,
-            "possibility": "21.7"
+            "date": "2026-03-12T11:53:00.197695",
+            "timestamp": 1773316380197,
+            "possibility": "26.7"
           },
           {
-            "date": "2026-03-12T11:29:22.160308",
-            "timestamp": 1773314962160,
-            "possibility": "21.6"
+            "date": "2026-03-12T11:53:30.197695",
+            "timestamp": 1773316410197,
+            "possibility": "25.4"
           },
           {
-            "date": "2026-03-12T11:29:52.160308",
-            "timestamp": 1773314992160,
-            "possibility": "20.4"
+            "date": "2026-03-12T11:54:00.197695",
+            "timestamp": 1773316440197,
+            "possibility": "24.9"
           },
           {
-            "date": "2026-03-12T11:30:22.160308",
-            "timestamp": 1773315022160,
-            "possibility": "21.7"
+            "date": "2026-03-12T11:54:30.197695",
+            "timestamp": 1773316470197,
+            "possibility": "25.8"
           },
           {
-            "date": "2026-03-12T11:30:52.160308",
-            "timestamp": 1773315052160,
-            "possibility": "21.2"
+            "date": "2026-03-12T11:55:00.197695",
+            "timestamp": 1773316500197,
+            "possibility": "24.7"
           },
           {
-            "date": "2026-03-12T11:31:22.160308",
-            "timestamp": 1773315082160,
-            "possibility": "20.4"
+            "date": "2026-03-12T11:55:30.197695",
+            "timestamp": 1773316530197,
+            "possibility": "26.0"
           },
           {
-            "date": "2026-03-12T11:31:52.160308",
-            "timestamp": 1773315112160,
-            "possibility": "21.7"
+            "date": "2026-03-12T11:56:00.197695",
+            "timestamp": 1773316560197,
+            "possibility": "26.1"
           },
           {
-            "date": "2026-03-12T11:32:22.160308",
-            "timestamp": 1773315142160,
-            "possibility": "21.7"
+            "date": "2026-03-12T11:56:30.197695",
+            "timestamp": 1773316590197,
+            "possibility": "25.0"
           },
           {
-            "date": "2026-03-12T11:32:52.160308",
-            "timestamp": 1773315172160,
-            "possibility": "22.1"
+            "date": "2026-03-12T11:57:00.197695",
+            "timestamp": 1773316620197,
+            "possibility": "26.2"
           },
           {
-            "date": "2026-03-12T11:33:22.160308",
-            "timestamp": 1773315202160,
-            "possibility": "22.8"
+            "date": "2026-03-12T11:57:30.197695",
+            "timestamp": 1773316650197,
+            "possibility": "27.2"
           },
           {
-            "date": "2026-03-12T11:33:52.160308",
-            "timestamp": 1773315232160,
-            "possibility": "23.0"
+            "date": "2026-03-12T11:58:00.197695",
+            "timestamp": 1773316680197,
+            "possibility": "25.8"
           },
           {
-            "date": "2026-03-12T11:34:22.160308",
-            "timestamp": 1773315262160,
-            "possibility": "21.9"
+            "date": "2026-03-12T11:58:30.197695",
+            "timestamp": 1773316710197,
+            "possibility": "26.9"
           },
           {
-            "date": "2026-03-12T11:34:52.160308",
-            "timestamp": 1773315292160,
-            "possibility": "22.5"
-          },
-          {
-            "date": "2026-03-12T11:35:22.160308",
-            "timestamp": 1773315322160,
-            "possibility": "23.7"
-          },
-          {
-            "date": "2026-03-12T11:35:52.160308",
-            "timestamp": 1773315352160,
-            "possibility": "23.0"
-          },
-          {
-            "date": "2026-03-12T11:36:22.160308",
-            "timestamp": 1773315382160,
-            "possibility": "23.6"
+            "date": "2026-03-12T11:59:00.197695",
+            "timestamp": 1773316740197,
+            "possibility": "26.1"
           }
         ],
         "count": 30
@@ -4240,5 +4240,5 @@
     }
   ],
   "totalMembers": 20,
-  "lastUpdated": "2026-03-12T11:36:22.160955"
+  "lastUpdated": "2026-03-12T11:59:00.198322"
 }
