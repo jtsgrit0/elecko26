@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
+import 'package:flutter_application_1/data/models/member_model.dart';
 import 'package:flutter_application_1/domain/entities/member.dart';
 import 'package:flutter_application_1/domain/entities/poll.dart';
 import 'package:flutter_application_1/domain/repositories/member_repository.dart';
@@ -1159,6 +1163,31 @@ class MemberRepositoryImpl implements MemberRepository {
     _refreshInProgress = true;
     final now = DateTime.now();
     try {
+      try {
+        final rawUrl = 'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
+        final response = await http.get(Uri.parse(rawUrl)).timeout(const Duration(seconds: 5));
+        if (response.statusCode == 200) {
+          final List<dynamic> jsonList = json.decode(utf8.decode(response.bodyBytes));
+          for (var item in jsonList) {
+            try {
+              final newMember = MemberModel.fromJson(item as Map<String, dynamic>);
+              final idx = _dummyMembers.indexWhere((m) => m.name == newMember.name);
+              if (idx != -1) {
+                _dummyMembers[idx] = newMember.copyWith(polls: _dummyMembers[idx].polls);
+              } else {
+                if (!_dummyMembers.any((m) => m.id == newMember.id)) {
+                  _dummyMembers.add(newMember);
+                }
+              }
+            } catch (e) {
+              debugPrint('Member parse error: $e');
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('Crawling fetch failed: $e');
+      }
+
       final entries = await _nesdcPollDataSource.fetchLatest();
       if (!kReleaseMode) {
         debugPrint('[NESDC] fetched list entries: ${entries.length}');
