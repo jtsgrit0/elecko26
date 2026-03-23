@@ -199,6 +199,9 @@ class CalculateElectionPossibilityUseCase {
     Member member,
     Map<String, double> scores,
   ) {
+    final strengths = <String>[];
+    final weaknesses = <String>[];
+
     // 1. 강점 분석 (실제 데이터 기반)
     if (member.achievementsList.isNotEmpty) {
       // 가장 최근 성과를 강점으로 추출
