@@ -199,59 +199,44 @@ class CalculateElectionPossibilityUseCase {
     Member member,
     Map<String, double> scores,
   ) {
-    final strengths = <String>[];
-    final weaknesses = <String>[];
-
-    // 강점 분석
-    if (scores['achievement']! > 0.7) {
-      strengths.add('뛰어난 정치 경력과 성과');
+    // 1. 강점 분석 (실제 데이터 기반)
+    if (member.achievementsList.isNotEmpty) {
+      // 가장 최근 성과를 강점으로 추출
+      strengths.add('성과: ${member.achievementsList.first}');
     }
-    if (scores['activity']! > 0.7) {
-      strengths.add('높은 의정 활동도');
+    if (scores['poll']! > 0.6) {
+      strengths.add('지지율: 상대적으로 높은 여론조사 지지율 확보');
     }
-    if (scores['policy']! > 0.7) {
-      strengths.add('다양한 정책 제안');
-    }
-    if (scores['publicImage']! > 0.7) {
-      strengths.add('긍정적인 언론 평가');
-    }
-    if (scores['poll']! > 0.65) {
-      strengths.add('높은 여론조사 지지율');
+    // 긍정 보도 키워드 추출
+    final positivePress = member.pressReports.where((r) => r.sentiment == 'positive').toList();
+    if (positivePress.isNotEmpty) {
+      strengths.add('평판: 언론의 긍정적 평가 (${positivePress.first.title})');
     }
 
-    // 약점 분석
-    if (scores['achievement']! < 0.4) {
-      weaknesses.add('정치적 성과 미흡');
+    // 2. 약점 분석 (데이터 공백 및 부정 실적 기반)
+    if (member.policies.isEmpty) {
+      weaknesses.add('정책: 아직 구체적인 정책 공약이 발표되지 않음');
     }
-    if (scores['activity']! < 0.4) {
-      weaknesses.add('의정 활동도 부족');
+    final negativePress = member.pressReports.where((r) => r.sentiment == 'negative').toList();
+    if (negativePress.isNotEmpty) {
+      weaknesses.add('논란: 최근 부정적 이슈 감지 (${negativePress.first.title})');
     }
-    if (scores['policy']! < 0.4) {
-      weaknesses.add('정책 개발 필요');
-    }
-    if (scores['publicImage']! < 0.4) {
-      weaknesses.add('언론 신뢰도 개선 필요');
-    }
-    if (scores['poll']! < 0.50) {
-      weaknesses.add('여론조사 지지율 미흡');
+    if (scores['poll']! < 0.45) {
+      weaknesses.add('지지세: 중도층 및 지지 기반 확장 필요');
     }
 
-    // 개선점 제시
+    // 3. 개선점 제시 (JSON의 improvementPoints 필드 적극 활용)
     final improvements = <String>[];
-    if (scores['achievement']! < 0.6) {
-      improvements.add('${member.name} 의원의 주요 성과를 지속적으로 홍보하기');
-    }
-    if (scores['activity']! < 0.6) {
-      improvements.add('의정 활동 빈도와 범위를 확대하기');
-    }
-    if (scores['policy']! < 0.6) {
-      improvements.add('지역구 현안 해결을 위한 정책안 개발');
-    }
-    if (scores['publicImage']! < 0.6) {
-      improvements.add('긍정적인 언론 보도 확보');
-    }
-    if (scores['poll']! < 0.60) {
-      improvements.add('여론 확대를 위한 지역 소통 강화');
+    if (member.improvementPoints.isNotEmpty) {
+      improvements.addAll(member.improvementPoints);
+    } else {
+      // 데이터가 없을 경우에만 자동 생성
+      if (scores['activity']! < 0.6) {
+        improvements.add('SNS 및 오프라인 활동 빈도 확대 필요');
+      }
+      if (scores['policy']! < 0.6) {
+        improvements.add('유권자 체감형 생활 밀착 정책 개발 필요');
+      }
     }
 
     final report = '''
