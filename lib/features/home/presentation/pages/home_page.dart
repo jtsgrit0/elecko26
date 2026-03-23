@@ -21,6 +21,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   int _selectedIndex = 0;
   late Stream<List<Member>> _membersStream;
   Timer? _dataExportTimer;
+  Timer? _uiRefreshTimer;
+  bool _isLoading = false;
   List<Member> _cachedMembers = [];
   List<_TopMember> _cachedTop3 = [];
   List<_TopMember> _cachedRanked = [];
@@ -32,6 +34,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _startMemberStream();
     _triggerNesdcRefresh();
     _startDataExportTimer();
+    
+    // 1분마다 UI 데이터 새로고침
+    _uiRefreshTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) => _triggerNesdcRefresh(),
+    );
   }
 
   void _startMemberStream() {
@@ -43,11 +51,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   void _triggerNesdcRefresh() {
+    setState(() { _isLoading = true; });
     // 강제 갱신 트리거: NESDC 데이터 갱신 시도
     sl<MemberRepository>()
         .refreshMembers()
-        .then((_) => debugPrint('[NESDC] refreshMembers completed'))
-        .catchError((e) => debugPrint('[NESDC] refreshMembers failed: $e'));
+        .then((_) {
+          if (mounted) setState(() { _isLoading = false; });
+          debugPrint('[NESDC] refreshMembers completed');
+        })
+        .catchError((e) {
+          if (mounted) setState(() { _isLoading = false; });
+          debugPrint('[NESDC] refreshMembers failed: $e');
+        });
   }
 
   /// 1분마다 선거 데이터를 JSON으로 내보내고 GitHub에 저장
@@ -98,6 +113,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _dataExportTimer?.cancel();
+    _uiRefreshTimer?.cancel();
     super.dispose();
   }
 
@@ -111,6 +127,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       body: SingleChildScrollView(
         child: Column(
           children: [
+            if (_isLoading)
+              const LinearProgressIndicator(
+                backgroundColor: Colors.transparent,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                minHeight: 4,
+              ),
+            if (!_isLoading) const SizedBox(height: 4),
             // 2026 지방선거 배너
             _buildElectionBanner(),
             const SizedBox(height: 24),
@@ -566,6 +589,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 16),
                         Text(
                           '의원 데이터 로드 중...',
                           style: AppTextStyles.bodyMedium.copyWith(
@@ -642,6 +667,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                            const CircularProgressIndicator(),
+                            const SizedBox(height: 16),
                             Text(
                               '당선 가능성 계산 중...',
                               style: AppTextStyles.bodyMedium.copyWith(

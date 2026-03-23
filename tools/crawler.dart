@@ -8,7 +8,33 @@ import 'package:html/parser.dart' show parse;
 void main() async {
   print('🚀 크롤링을 시작합니다: 2026 지방선거 출마 선언 검색');
 
-  final candidates = await crawlCandidates();
+  // 다양한 소스 및 키워드로 검색 확장
+  final List<String> searchQueries = [
+    '2026 지방선거 출마',
+    '2026 지방선거 도전',
+    '2026 지방선거 선언',
+    '서울시장 출마',
+    '경기도지사 출마',
+    '부산시장 출마',
+    '인천시장 출마',
+  ];
+
+  List<Map<String, dynamic>> allCandidates = [];
+
+  for (final query in searchQueries) {
+    print('🔍 크롤링 중: $query');
+    final candidates = await crawlCandidates(query);
+    allCandidates.addAll(candidates);
+    // 서버 과부하 방지 약간의 딜레이
+    await Future.delayed(Duration(seconds: 1));
+  }
+
+  // 전체 수집된 후보 중 중복 제거 (이름 기준)
+  final uniqueCandidatesMap = <String, Map<String, dynamic>>{};
+  for (final c in allCandidates) {
+    uniqueCandidatesMap[c['name']] = c;
+  }
+  final candidates = uniqueCandidatesMap.values.toList();
   
   if (candidates.isEmpty) {
     print('⚠️ 새로 발견된 후보가 없습니다.');
@@ -35,7 +61,17 @@ void main() async {
   final existingNames = existingCandidates.map((c) => c['name']).toSet();
   final newCandidates = candidates.where((c) => !existingNames.contains(c['name'])).toList();
 
-  existingCandidates.addAll(newCandidates);
+  // 하차/탈락자 크롤링 및 명단 제거 로직
+  print('🔍 하차/탈락 의심 후보를 검색합니다...');
+  final dropouts = await crawlDropouts();
+  if (dropouts.isNotEmpty) {
+    final originalLength = existingCandidates.length;
+    existingCandidates.removeWhere((c) => dropouts.contains(c['name']));
+    final removedCount = originalLength - existingCandidates.length;
+    if (removedCount > 0) {
+      print('🗑️ 하차/탈락 키워드로 인해 $removedCount 명의 후보가 명단에서 제거성공되었습니다.');
+    }
+  }
 
   await file.writeAsString(json.encode(existingCandidates));
   
@@ -43,8 +79,37 @@ void main() async {
   print('전체 등록된 후보 수: ${existingCandidates.length}');
 }
 
-Future<List<Map<String, dynamic>>> crawlCandidates() async {
-  final query = Uri.encodeComponent('2026 지방선거 출마');
+Future<Set<String>> crawlDropouts() async {
+  final query = Uri.encodeComponent('2026 지방선거 불출마 OR 사퇴 OR 탈락');
+  final url = 'https://search.naver.com/search.naver?where=news&query=$query';
+
+  final response = await http.get(Uri.parse(url), headers: {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+  });
+
+  if (response.statusCode != 200) return {};
+
+  final document = parse(response.body);
+  final newsTitles = document.querySelectorAll('.news_tit');
+  final Set<String> dropoutNames = {};
+
+  for (int i = 0; i < newsTitles.length; i++) {
+    final title = newsTitles[i].text.trim();
+    if (title.contains('불출마') || title.contains('사퇴') || title.contains('탈락') || title.contains('포기')) {
+      final nameMatch = RegExp(r'^([가-힣]{2,4})\s').firstMatch(title);
+      if (nameMatch != null) {
+        final name = nameMatch.group(1)!;
+        if (name.length <= 4 && !name.contains('출마')) {
+          dropoutNames.add(name);
+        }
+      }
+    }
+  }
+  return dropoutNames;
+}
+
+Future<List<Map<String, dynamic>>> crawlCandidates(String searchKeyword) async {
+  final query = Uri.encodeComponent(searchKeyword);
   final url = 'https://search.naver.com/search.naver?where=news&query=$query';
 
   final response = await http.get(Uri.parse(url), headers: {
@@ -67,27 +132,38 @@ Future<List<Map<String, dynamic>>> crawlCandidates() async {
 
   for (int i = 0; i < newsTitles.length; i++) {
     final title = newsTitles[i].text.trim();
-    // 출마 의심 기사 판별 규칙
-    if (title.contains('출마') || title.contains('도전') || title.contains('선언')) {
-      // 제목에서 가장 앞에 나오는 3~4글자의 한글 단어를 임시 이름으로 추출 (실제론 NLP 형태소분석기 필요)
-      final nameMatch = RegExp(r'^([가-힣]{2,4})\s').firstMatch(title);
-      final name = nameMatch != null ? nameMatch.group(1) : '미상후보_$i';
+    final url = newsTitles[i].attributes['href'] ?? '';
+    
+    // 출마 의심 기사 판별 규칙 완화
+    if (title.contains('출마') || title.contains('도전') || title.contains('선언') || title.contains('후보')) {
+      // 좀 더 유연한 이름 추출: 뉴스 제목의 앞부분을 이름으로 추정
+      // 실무에서는 NLP 형태소분석기/NER 모델을 씁니다. 데모를 위해 규칙을 매우 느슨하게 가져갑니다.
+      final words = title.split(' ');
+      String? name;
+      
+      for(var w in words) {
+        final cleanWord = w.replaceAll(RegExp(r'[^가-힣]'), '');
+        // 보통 사람 이름은 한국어 2~4글자
+        if(cleanWord.length >= 2 && cleanWord.length <= 4 && !cleanWord.contains('출마') && !cleanWord.contains('선거') && !cleanWord.contains('도전')) {
+            name = cleanWord;
+            break;
+        }
+      }
 
-      if (name != null && name.length <= 4 && !name.contains('출마') && name != '미상후보_$i') {
-         // 키워드 추출 (특수문자 제거 후 2글자 이상 단어 최대 5개)
-         final keywords = title
-             .replaceAll(RegExp(r'[^\w\s가-힣]'), '')
-             .split(' ')
-             .where((w) => w.length >= 2 && !w.contains(name))
+      if (name != null) {
+         // 키워드 추출
+         final keywords = words
+             .map((w) => w.replaceAll(RegExp(r'[^\w\s가-힣]'), ''))
+             .where((w) => w.length >= 2 && w != name)
              .take(5)
              .toList();
              
          extracted.add({
           'id': 'candidate_${DateTime.now().millisecondsSinceEpoch}_$i',
-          'name': name.replaceAll(RegExp(r'[^가-힣]'), ''),
-          'party': title.contains('국민의힘') ? '국민의힘' : (title.contains('민주당') ? '더불어민주당' : '무소속'),
-          'district': title.contains('서울') ? '서울특별시' : (title.contains('경기') ? '경기도' : '미정'),
-          'imageUrl': 'https://via.placeholder.com/150', // 플레이스홀더
+          'name': name,
+          'party': title.contains('국민의힘') ? '국민의힘' : (title.contains('민주당') ? '더불어민주당' : (title.contains('개혁신당') ? '개혁신당' : '무소속')),
+          'district': title.contains('서울') ? '서울특별시장' : (title.contains('경기') ? '경기도지사' : (title.contains('부산') ? '부산광역시장' : '전국')),
+          'imageUrl': 'https://via.placeholder.com/150',
           'bio': '포털 뉴스 출마 확인. 주요 키워드: #${keywords.join(' #')}',
           'electionDate': '2026-06-03',
           'term': 0,
@@ -99,15 +175,15 @@ Future<List<Map<String, dynamic>>> crawlCandidates() async {
               'id': 'press_${DateTime.now().millisecondsSinceEpoch}_$i',
               'title': title,
               'source': '뉴스검색',
-              'url': newsTitles[i].attributes['href'] ?? '',
+              'url': url,
               'publishDate': DateTime.now().toIso8601String(),
               'summary': '주요 기사 키워드: ${keywords.join(', ')}',
               'sentiment': 'neutral'
             }
           ],
-          'electionPossibility': 30,
+          'electionPossibility': 50.0, // UI 호환성을 위해 double 타입 명시 
           'lastAnalysisDate': DateTime.now().toIso8601String(),
-          'improvementPoints': ['기반 추출 키워드: ${keywords.join(', ')}', '아직 구체적인 정책 공약이 부족합니다.'],
+          'improvementPoints': ['기반 추출 키워드: ${keywords.join(', ')}'],
         });
       }
     }
