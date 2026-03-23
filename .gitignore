@@ -30,6 +30,8 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
+# /build/ - excluding build folder except build/web which is needed for GitHub Pages
+!/build/web/
 /build/
 /coverage/
 

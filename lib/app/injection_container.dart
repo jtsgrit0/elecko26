@@ -3,8 +3,17 @@ import 'package:flutter_application_1/data/repositories/member_repository_impl.d
 import 'package:flutter_application_1/domain/repositories/member_repository.dart';
 import 'package:flutter_application_1/domain/usecases/member_usecases.dart';
 import 'package:flutter_application_1/domain/usecases/calculate_election_possibility_usecase.dart';
+import 'package:flutter_application_1/domain/usecases/export_election_data_usecase.dart';
+import 'package:flutter_application_1/domain/usecases/update_members_with_nesdc_usecase.dart';
+import 'package:flutter_application_1/data/datasources/github_datasource.dart';
 
 final sl = GetIt.instance;
+
+// GitHub token from environment (must be const for web support)
+const String _githubToken = String.fromEnvironment(
+  'GITHUB_TOKEN',
+  defaultValue: '', // 기본값: 빈 문자열 (토큰이 없으면 기능 비활성화)
+);
 
 Future<void> init() async {
   //! Features - Member
@@ -36,6 +45,31 @@ Future<void> init() async {
   
   sl.registerSingleton<CalculateElectionPossibilityUseCase>(
     CalculateElectionPossibilityUseCase(repository: sl<MemberRepository>()),
+  );
+
+  // GitHub DataSource
+  sl.registerSingleton<GitHubDataSource>(
+    GitHubDataSource(
+      owner: 'jtsgrit0',
+      repo: 'elecko26',
+      token: _githubToken,
+      branch: 'main',
+    ),
+  );
+
+  // Export Use Case
+  sl.registerSingleton<ExportElectionDataUseCase>(
+    ExportElectionDataUseCase(
+      memberRepository: sl<MemberRepository>(),
+      calculateElectionPossibilityUseCase: sl<CalculateElectionPossibilityUseCase>(),
+    ),
+  );
+
+  // NESDC Update Use Case
+  sl.registerSingleton<UpdateMembersWithNesdcDataUseCase>(
+    UpdateMembersWithNesdcDataUseCase(
+      memberRepository: sl<MemberRepository>(),
+    ),
   );
   
   //! Core

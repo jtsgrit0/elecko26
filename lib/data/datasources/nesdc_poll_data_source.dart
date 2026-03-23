@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter_application_1/core/platform/platform_info.dart';
 import 'package:html/dom.dart' as html_dom;
 import 'package:html/parser.dart' as html_parser;
 import 'package:http/http.dart' as http;
@@ -187,6 +188,13 @@ class NesdcPollDataSource {
   final Map<String, NesdcPollDetail> _detailCache = {};
 
   Future<List<NesdcPollEntry>> fetchLatest({int pages = kNesdcPagesToFetch}) async {
+    final webOverride = _resolveWebBackendOverride();
+    if (webOverride != null) {
+      final fromBackend = await _fetchLatestFromBackend(pages, baseOverride: webOverride);
+      if (fromBackend.isNotEmpty) {
+        return fromBackend;
+      }
+    }
     if (kNesdcBackendUrl.trim().isNotEmpty) {
       final fromBackend = await _fetchLatestFromBackend(pages);
       if (fromBackend.isNotEmpty) {
@@ -209,13 +217,12 @@ class NesdcPollDataSource {
     return entries;
   }
 
-  Future<List<NesdcPollEntry>> _fetchLatestFromBackend(int pages) async {
-    final base = Uri.parse(kNesdcBackendUrl);
-    final path = base.path.endsWith('/') ? '${base.path}polls' : '${base.path}/polls';
-    final url = base.replace(path: path, queryParameters: {
-      ...base.queryParameters,
-      'pages': '$pages',
-    });
+  Future<List<NesdcPollEntry>> _fetchLatestFromBackend(int pages, {Uri? baseOverride}) async {
+    final base = baseOverride ?? _resolveBackendBase();
+    if (base.toString().trim().isEmpty) {
+      return [];
+    }
+    final url = _buildBackendUrl(base, pages);
 
     final response = await _client.get(url, headers: const {
       'Accept': 'application/json',
@@ -225,11 +232,7 @@ class NesdcPollDataSource {
     }
 
     final decoded = jsonDecode(response.body);
-    if (decoded is! Map<String, dynamic>) {
-      return [];
-    }
-
-    final rawEntries = decoded['entries'];
+    final rawEntries = decoded is List ? decoded : (decoded is Map<String, dynamic> ? decoded['entries'] : null);
     if (rawEntries is! List) {
       return [];
     }
@@ -296,6 +299,17 @@ class NesdcPollDataSource {
       final fileResponse = await _client.get(_wrapProxy(fileTarget), headers: _defaultHeaders());
       if (fileResponse.statusCode == 200) {
         resultText = _tryExtractPdfText(fileResponse.bodyBytes);
+        if (!kReleaseMode) {
+          debugPrint('[NESDC] PDF extracted: url=$resultFileUrl bytes=${fileResponse.bodyBytes.length} textLen=${resultText?.length ?? 0}');
+        }
+      } else {
+        if (!kReleaseMode) {
+          debugPrint('[NESDC] PDF fetch failed: url=$resultFileUrl status=${fileResponse.statusCode}');
+        }
+      }
+    } else {
+      if (!kReleaseMode) {
+        debugPrint('[NESDC] No result file url for detail: $detailUrl');
       }
     }
 
@@ -311,6 +325,11 @@ class NesdcPollDataSource {
     );
 
     _detailCache[detailUrl] = detail;
+    if (!kReleaseMode) {
+      debugPrint(
+        '[NESDC] detail parsed: url=$detailUrl survey=${surveyDate?.toIso8601String()} sample=$sampleSize margin=$marginOfError resultUrl=${resultFileUrl ?? "-"}',
+      );
+    }
     return detail;
   }
 
@@ -331,6 +350,51 @@ class NesdcPollDataSource {
       return target;
     }
     return base.replace(queryParameters: {'url': target.toString()});
+  }
+
+  Uri _resolveBackendBase() {
+    final raw = kNesdcBackendUrl.trim();
+    if (raw.isEmpty) {
+      return Uri.parse(raw);
+    }
+    final base = Uri.parse(raw);
+    if (kIsWeb) {
+      return base;
+    }
+    if (defaultTargetPlatform == TargetPlatform.android &&
+        (base.host == 'localhost' || base.host == '127.0.0.1')) {
+      return base.replace(host: '10.0.2.2');
+    }
+    return base;
+  }
+
+  Uri? _resolveWebBackendOverride() {
+    if (!kIsWeb) {
+      return null;
+    }
+    if (kNesdcBackendUrl.trim().isNotEmpty) {
+      return null;
+    }
+    try {
+      return Uri.base.resolve('data/nesdc_polls.json');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Uri _buildBackendUrl(Uri base, int pages) {
+    if (_isJsonEndpoint(base)) {
+      return base;
+    }
+    final path = base.path.endsWith('/') ? '${base.path}polls' : '${base.path}/polls';
+    return base.replace(path: path, queryParameters: {
+      ...base.queryParameters,
+      'pages': '$pages',
+    });
+  }
+
+  bool _isJsonEndpoint(Uri base) {
+    return base.path.toLowerCase().endsWith('.json');
   }
 
   Uri _toTargetUri(String urlOrPath) {

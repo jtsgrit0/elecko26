@@ -1,5 +1,42 @@
 import 'package:flutter_application_1/domain/entities/analysis_result.dart';
 
+/// SnsAnalysis 모델
+class SnsAnalysisModel extends SnsAnalysis {
+  SnsAnalysisModel({
+    required super.totalMentions,
+    required super.positiveMentions,
+    required super.neutralMentions,
+    required super.negativeMentions,
+    required super.sentimentScore,
+    required super.topMentions,
+    required super.engagementTrend,
+  });
+
+  factory SnsAnalysisModel.fromJson(Map<String, dynamic> json) {
+    return SnsAnalysisModel(
+      totalMentions: json['totalMentions'] as int,
+      positiveMentions: json['positiveMentions'] as int,
+      neutralMentions: json['neutralMentions'] as int,
+      negativeMentions: json['negativeMentions'] as int,
+      sentimentScore: (json['sentimentScore'] as num).toDouble(),
+      topMentions: List<String>.from(json['topMentions'] as List? ?? []),
+      engagementTrend: json['engagementTrend'] as String,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'totalMentions': totalMentions,
+      'positiveMentions': positiveMentions,
+      'neutralMentions': neutralMentions,
+      'negativeMentions': negativeMentions,
+      'sentimentScore': sentimentScore,
+      'topMentions': topMentions,
+      'engagementTrend': engagementTrend,
+    };
+  }
+}
+
 /// AnalysisResult 모델 (API 응답용)
 class AnalysisResultModel extends AnalysisResult {
   AnalysisResultModel({
@@ -17,6 +54,7 @@ class AnalysisResultModel extends AnalysisResult {
     required super.weaknesses,
     required super.analysisReport,
     required super.dailyTrends,
+    super.snsAnalysis,
   });
 
   factory AnalysisResultModel.fromJson(Map<String, dynamic> json) {
@@ -37,6 +75,9 @@ class AnalysisResultModel extends AnalysisResult {
       dailyTrends: (json['dailyTrends'] as List)
           .map((e) => DailyPossibilityModel.fromJson(e as Map<String, dynamic>))
           .toList(),
+      snsAnalysis: json['snsAnalysis'] != null
+          ? SnsAnalysisModel.fromJson(json['snsAnalysis'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -56,6 +97,7 @@ class AnalysisResultModel extends AnalysisResult {
       'weaknesses': weaknesses,
       'analysisReport': analysisReport,
       'dailyTrends': dailyTrends.map((e) => (e as DailyPossibilityModel).toJson()).toList(),
+      'snsAnalysis': snsAnalysis != null ? (snsAnalysis as SnsAnalysisModel).toJson() : null,
     };
   }
 }

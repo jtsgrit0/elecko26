@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/core/theme/app_theme.dart';
 
 class AnalysisPage extends StatefulWidget {
-  const AnalysisPage({super.key});
+  const AnalysisPage({Key? key}) : super(key: key);
 
   @override
   State<AnalysisPage> createState() => _AnalysisPageState();
@@ -304,7 +304,7 @@ class _ScoreItem extends StatelessWidget {
                 ),
               ),
               Text(
-                score.toStringAsFixed(0),
+                '${score.toStringAsFixed(0)}',
                 style: AppTextStyles.labelSmall.copyWith(
                   fontWeight: FontWeight.bold,
                 ),

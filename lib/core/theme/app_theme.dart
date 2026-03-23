@@ -146,6 +146,8 @@ class AppTheme {
         tertiary: AppColors.accent,
         error: AppColors.error,
         onError: AppColors.white,
+        background: AppColors.background,
+        onBackground: AppColors.dark,
         surface: AppColors.surface,
         onSurface: AppColors.dark,
       ),

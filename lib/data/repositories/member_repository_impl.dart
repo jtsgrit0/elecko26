@@ -1,8 +1,12 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
+import 'package:flutter_application_1/data/models/member_model.dart';
 import 'package:flutter_application_1/domain/entities/member.dart';
 import 'package:flutter_application_1/domain/entities/poll.dart';
 import 'package:flutter_application_1/domain/repositories/member_repository.dart';
 import 'package:flutter_application_1/data/datasources/nesdc_poll_data_source.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter_application_1/core/platform/platform_info.dart';
 
 /// 멤버 저장소 구현체 (데이터 레이어)
 class MemberRepositoryImpl implements MemberRepository {
@@ -1159,6 +1163,31 @@ class MemberRepositoryImpl implements MemberRepository {
     _refreshInProgress = true;
     final now = DateTime.now();
     try {
+      try {
+        final rawUrl = 'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
+        final response = await http.get(Uri.parse(rawUrl)).timeout(const Duration(seconds: 5));
+        if (response.statusCode == 200) {
+          final List<dynamic> jsonList = json.decode(utf8.decode(response.bodyBytes));
+          for (var item in jsonList) {
+            try {
+              final newMember = MemberModel.fromJson(item as Map<String, dynamic>);
+              final idx = _dummyMembers.indexWhere((m) => m.name == newMember.name);
+              if (idx != -1) {
+                _dummyMembers[idx] = newMember.copyWith(polls: _dummyMembers[idx].polls);
+              } else {
+                if (!_dummyMembers.any((m) => m.id == newMember.id)) {
+                  _dummyMembers.add(newMember);
+                }
+              }
+            } catch (e) {
+              debugPrint('Member parse error: $e');
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('Crawling fetch failed: $e');
+      }
+
       final entries = await _nesdcPollDataSource.fetchLatest();
       if (!kReleaseMode) {
         debugPrint('[NESDC] fetched list entries: ${entries.length}');
@@ -1174,7 +1203,9 @@ class MemberRepositoryImpl implements MemberRepository {
 
         final newPolls = <Poll>[];
         var extractedCount = 0;
+        var partyExtractedCount = 0;
         final candidateNames = _candidateNameVariants(member);
+        final partyNames = _partyAliases(member.party);
         for (final entry in limitedEntries) {
           NesdcPollDetail? detail;
           try {
@@ -1182,7 +1213,15 @@ class MemberRepositoryImpl implements MemberRepository {
           } catch (_) {
             detail = null;
           }
-          final supportRate = detail?.findSupportRate(candidateNames);
+          double? supportRate = detail?.findSupportRate(candidateNames);
+          var supportSource = '후보';
+          if (supportRate == null) {
+            supportRate = detail?.findSupportRate(partyNames);
+            if (supportRate != null) {
+              supportSource = '정당';
+              partyExtractedCount++;
+            }
+          }
           if (supportRate != null) {
             extractedCount++;
           }
@@ -1203,7 +1242,7 @@ class MemberRepositoryImpl implements MemberRepository {
           if (supportRate == null) {
             noteParts.add('결과 미공개');
           } else {
-            noteParts.add('지지율 추출됨');
+            noteParts.add('$supportSource 지지율 추출됨');
           }
           if (resultUrl != null) {
             noteParts.add('결과 링크: $resultUrl');
@@ -1230,7 +1269,7 @@ class MemberRepositoryImpl implements MemberRepository {
           lastAnalysisDate: now,
         );
         if (!kReleaseMode) {
-          debugPrint('[NESDC] ${member.name} matched=${limitedEntries.length} extracted=$extractedCount');
+          debugPrint('[NESDC] ${member.name} matched=${limitedEntries.length} extracted=$extractedCount party=$partyExtractedCount');
         }
       }
     } catch (_) {
@@ -1361,5 +1400,13 @@ class MemberRepositoryImpl implements MemberRepository {
       return true;
     }
     return false;
+  }
+
+  @override
+  Future<void> updateMembers(List<Member> members) async {
+    // 여러 멤버를 일괄 업데이트
+    for (final member in members) {
+      await updateMember(member);
+    }
   }
 }

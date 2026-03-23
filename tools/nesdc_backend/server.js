@@ -146,6 +146,9 @@ async function parseDetail(html, includeText) {
     const pdfText = await tryExtractPdfText(resultFileUrl);
     if (pdfText && includeText) {
       resultText = pdfText;
+    } else if (includeText) {
+      const ocrText = await tryOcrExtract(resultFileUrl);
+      if (ocrText) resultText = ocrText;
     }
   }
 
@@ -373,8 +376,69 @@ async function tryExtractPdfText(url) {
     const response = await fetch(url);
     if (!response.ok) return null;
     const buffer = Buffer.from(await response.arrayBuffer());
-    const data = await pdfParse(buffer);
-    return data.text || null;
+    const data = await pdfParse(buffer, {
+      pagerender: renderPageWithLayout,
+    });
+    if (data.text && data.text.trim()) {
+      return data.text;
+    }
+    const fallback = await pdfParse(buffer);
+    return fallback.text || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function renderPageWithLayout(pageData) {
+  const textContent = await pageData.getTextContent();
+  const items = textContent.items || [];
+  const lines = [];
+  let currentY = null;
+  let line = [];
+
+  for (const item of items) {
+    const transform = item.transform || [];
+    const x = transform[4] || 0;
+    const y = transform[5] || 0;
+    const text = (item.str || '').trim();
+    if (!text) continue;
+
+    if (currentY === null || Math.abs(y - currentY) > 2) {
+      if (line.length) {
+        line.sort((a, b) => a.x - b.x);
+        lines.push(line.map((t) => t.text).join(' '));
+      }
+      line = [];
+      currentY = y;
+    }
+    line.push({ x, text });
+  }
+
+  if (line.length) {
+    line.sort((a, b) => a.x - b.x);
+    lines.push(line.map((t) => t.text).join(' '));
+  }
+
+  return lines.join('\n');
+}
+
+async function tryOcrExtract(url) {
+  const endpoint = process.env.NESDC_OCR_ENDPOINT;
+  if (!endpoint) return null;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const ocrResponse = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/pdf',
+      },
+      body: buffer,
+    });
+    if (!ocrResponse.ok) return null;
+    const text = await ocrResponse.text();
+    return text && text.trim() ? text : null;
   } catch (_) {
     return null;
   }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/core/theme/app_theme.dart';
 
 class MemberListPage extends StatefulWidget {
-  const MemberListPage({super.key});
+  const MemberListPage({Key? key}) : super(key: key);
 
   @override
   State<MemberListPage> createState() => _MemberListPageState();

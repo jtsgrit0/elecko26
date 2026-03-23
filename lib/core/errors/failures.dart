@@ -1,5 +1,4 @@
 /// 실패 클래스들 (usecase 결과용)
-library;
 
 abstract class Failure {
   final String message;
@@ -7,25 +6,25 @@ abstract class Failure {
 }
 
 class NetworkFailure extends Failure {
-  NetworkFailure(super.message);
+  NetworkFailure(String message) : super(message);
 }
 
 class CacheFailure extends Failure {
-  CacheFailure(super.message);
+  CacheFailure(String message) : super(message);
 }
 
 class DatabaseFailure extends Failure {
-  DatabaseFailure(super.message);
+  DatabaseFailure(String message) : super(message);
 }
 
 class CrawlingFailure extends Failure {
-  CrawlingFailure(super.message);
+  CrawlingFailure(String message) : super(message);
 }
 
 class AIAnalysisFailure extends Failure {
-  AIAnalysisFailure(super.message);
+  AIAnalysisFailure(String message) : super(message);
 }
 
 class ValidationFailure extends Failure {
-  ValidationFailure(super.message);
+  ValidationFailure(String message) : super(message);
 }

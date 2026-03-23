@@ -7,9 +7,9 @@ class MemberDetailPage extends StatefulWidget {
   final String memberId;
 
   const MemberDetailPage({
-    super.key,
+    Key? key,
     required this.memberId,
-  });
+  }) : super(key: key);
 
   @override
   State<MemberDetailPage> createState() => _MemberDetailPageState();
@@ -65,7 +65,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
             // 당선 가능성 카드
             _buildElectionPossibilityCard(),
             const SizedBox(height: 24),
-            // 당선율 추이
+            // 당선가능성 추이
             _buildTrendChartSection(),
             const SizedBox(height: 24),
             // 상세 정보 탭
@@ -240,7 +240,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
             Row(
               children: [
                 Text(
-                  '당선율 추이',
+                  '당선가능성 추이',
                   style: AppTextStyles.headline4.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
