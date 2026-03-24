@@ -76,21 +76,27 @@ class CalculateElectionPossibilityUseCase {
   /// 성과도(15%) + 활동도(15%) + 정책도(15%) + 언론도(15%) + 여론조사(40%)
   Map<String, double> _calculateMultiFactorScores(Member member) {
     // 1. 성과도 (0~1)
-    final achievementScore = _normalizeScore(
-      member.achievementsList.length,
+    final achievementScore = _calculateDetailScore(
+      member.achievementsList,
       maxValue: 20,
+      memberId: member.id,
+      seed: 1,
     );
 
     // 2. 활동도 (0~1)
-    final activityScore = _normalizeScore(
-      member.actions.length,
+    final activityScore = _calculateDetailScore(
+      member.actions,
       maxValue: 30,
+      memberId: member.id,
+      seed: 2,
     );
 
     // 3. 정책도 (0~1)
-    final policyScore = _normalizeScore(
-      member.policies.length,
+    final policyScore = _calculateDetailScore(
+      member.policies,
       maxValue: 15,
+      memberId: member.id,
+      seed: 3,
     );
 
     // 4. 언론도 + 감정 분석 (0~1)
@@ -104,7 +110,7 @@ class CalculateElectionPossibilityUseCase {
         (activityScore * 0.15) +
         (policyScore * 0.15) +
         (publicImageScore * 0.15) +
-        (pollScore * 0.40);  // 여론조사가 가장 중요함
+        (pollScore * 0.40);
 
     return {
       'achievement': achievementScore,
@@ -114,6 +120,30 @@ class CalculateElectionPossibilityUseCase {
       'poll': pollScore,
       'overall': overallScore,
     };
+  }
+
+  /// 상세 점수 계산 (개수 + 내용 길이 + 고유 변동치)
+  double _calculateDetailScore(
+    List<String> items, {
+    required int maxValue,
+    required String memberId,
+    required int seed,
+  }) {
+    if (items.isEmpty) return 0.2; // 최소 기본 점수
+
+    // 1. 개수 점수 (최대 70%)
+    final countScore = (items.length / maxValue).clamp(0.0, 1.0) * 0.7;
+
+    // 2. 내용 충실도 점수 (글자 수 기반, 최대 20%)
+    final totalLength = items.fold<int>(0, (sum, item) => sum + item.length);
+    final avgLength = totalLength / items.length;
+    final qualityScore = (avgLength / 50).clamp(0.0, 1.0) * 0.2;
+
+    // 3. 고유 변동치 (멤버 ID 기반 시뮬레이션, 최대 10%)
+    // 같은 데이터라도 멤버마다 AI가 판단하는 가중치가 다름을 시뮬레이션
+    final uniqueness = (memberId.hashCode + seed).abs() % 100 / 1000.0; // 0.0 ~ 0.1
+
+    return (countScore + qualityScore + uniqueness).clamp(0.05, 0.98);
   }
 
   /// B) 30초 간격 추세 생성/갱신
@@ -228,7 +258,17 @@ class CalculateElectionPossibilityUseCase {
       weaknesses.add('지지세: 중도층 및 지지 기반 확장 필요');
     }
 
-    // 3. 개선점 제시 (JSON의 improvementPoints 필드 적극 활용)
+    // 3. 개선 필요 사항을 약점으로 추가 (데이터 보강)
+    if (member.improvementPoints.isNotEmpty) {
+      // 개선점 중 핵심적인 내용을 약점/도전 과제로 포함
+      for (var point in member.improvementPoints.take(2)) {
+        if (!weaknesses.contains(point)) {
+          weaknesses.add(point);
+        }
+      }
+    }
+
+    // 4. 개선점 제시 (JSON의 improvementPoints 필드 적극 활용)
     final improvements = <String>[];
     if (member.improvementPoints.isNotEmpty) {
       improvements.addAll(member.improvementPoints);

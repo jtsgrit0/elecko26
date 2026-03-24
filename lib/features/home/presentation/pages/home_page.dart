@@ -27,6 +27,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   List<_TopMember> _cachedTop3 = [];
   List<_TopMember> _cachedRanked = [];
   
+  // 검색 관련 상태
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  
+  // 비교 관련 상태
+  final Set<String> _selectedCompareIds = {};
+  
   @override
   void initState() {
     super.initState();
@@ -114,6 +121,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _dataExportTimer?.cancel();
     _uiRefreshTimer?.cancel();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -124,34 +132,425 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         preferredSize: const Size.fromHeight(80),
         child: _buildAppBar(),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            if (_isLoading)
-              const LinearProgressIndicator(
-                backgroundColor: Colors.transparent,
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                minHeight: 4,
-              ),
-            if (!_isLoading) const SizedBox(height: 4),
-            // 2026 지방선거 배너
-            _buildElectionBanner(),
-            const SizedBox(height: 24),
-            // 주요 통계
-            _buildStatistics(),
-            const SizedBox(height: 24),
-            // 의원 목록 요약
-            _buildMemberListSection(),
-            const SizedBox(height: 24),
-            // 빠른 접근 메뉴
-            _buildQuickAccessMenu(),
-            const SizedBox(height: 24),
-          ],
+      body: _buildBody(),
+      bottomNavigationBar: _buildBottomNavBar(),
+    );
+  }
+
+  // 바디 위젯 필터リング
+  Widget _buildBody() {
+    switch (_selectedIndex) {
+      case 0:
+        return _buildHomeDashboard();
+      case 1:
+        return _buildSearchPage();
+      case 2:
+        return _buildFavoritesPage();
+      case 3:
+        return _buildComparisonPage();
+      default:
+        return _buildHomeDashboard();
+    }
+  }
+
+  // 홈 대시보드
+  Widget _buildHomeDashboard() {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          if (_isLoading)
+            const LinearProgressIndicator(
+              backgroundColor: Colors.transparent,
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+              minHeight: 4,
+            ),
+          if (!_isLoading) const SizedBox(height: 4),
+          // 2026 지방선거 배너
+          _buildElectionBanner(),
+          const SizedBox(height: 24),
+          // 주요 통계
+          _buildStatistics(),
+          const SizedBox(height: 24),
+          // 의원 목록 요약
+          _buildMemberListSection(),
+          const SizedBox(height: 24),
+          // 빠른 접근 메뉴
+          _buildQuickAccessMenu(),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  // 검색 페이지
+  Widget _buildSearchPage() {
+    return Column(
+      children: [
+        _buildSearchField(),
+        Expanded(
+          child: _buildSearchResults(),
+        ),
+      ],
+    );
+  }
+
+  // 검색 필드
+  Widget _buildSearchField() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value;
+          });
+        },
+        decoration: InputDecoration(
+          hintText: '후보자 이름으로 검색',
+          prefixIcon: const Icon(Icons.search, color: AppColors.primary),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear, color: AppColors.grey),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {
+                      _searchQuery = '';
+                    });
+                  },
+                )
+              : null,
+          filled: true,
+          fillColor: AppColors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.lightGray),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
-      floatingActionButton: _buildFloatingActionButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+
+  // 검색 결과 목록
+  Widget _buildSearchResults() {
+    return StreamBuilder<List<Member>>(
+      stream: _membersStream,
+      builder: (context, snapshot) {
+        final members = snapshot.data ?? _cachedMembers;
+        if (members.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final filteredMembers = members.where((m) {
+          final query = _searchQuery.toLowerCase();
+          return m.name.toLowerCase().contains(query) ||
+                 m.party.toLowerCase().contains(query) ||
+                 m.district.toLowerCase().contains(query);
+        }).toList();
+
+        if (filteredMembers.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.search_off, size: 64, color: AppColors.grey),
+                const SizedBox(height: 16),
+                Text(
+                  '검색 결과가 없습니다',
+                  style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: filteredMembers.length,
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _MemberCard(member: filteredMembers[index]),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // 즐겨찾기 페이지
+  Widget _buildFavoritesPage() {
+    return StreamBuilder<List<Member>>(
+      stream: _membersStream,
+      builder: (context, snapshot) {
+        final members = snapshot.data ?? _cachedMembers;
+        final favoriteMembers = members.where((m) => m.isFavorite).toList();
+
+        if (favoriteMembers.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.star_border, size: 64, color: AppColors.grey),
+                const SizedBox(height: 16),
+                Text(
+                  '즐겨찾기한 의원이 없습니다',
+                  style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: favoriteMembers.length,
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _MemberCard(member: favoriteMembers[index]),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // 비교 페이지
+  Widget _buildComparisonPage() {
+    return StreamBuilder<List<Member>>(
+      stream: _membersStream,
+      builder: (context, snapshot) {
+        final members = snapshot.data ?? _cachedMembers;
+        final favoriteMembers = members.where((m) => m.isFavorite).toList();
+
+        if (favoriteMembers.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'VS',
+                  style: TextStyle(
+                    fontSize: 72,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.grey.withOpacity(0.2),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '비교를 위해 먼저 즐겨찾기에 의원을 추가해주세요',
+                  style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (_selectedCompareIds.length == 2) {
+          final member1 = members.firstWhere((m) => m.id == _selectedCompareIds.first);
+          final member2 = members.firstWhere((m) => m.id == _selectedCompareIds.last);
+          return _buildComparisonResults(member1, member2);
+        }
+
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                '비교할 의원 2명을 선택해주세요 (${_selectedCompareIds.length}/2)',
+                style: AppTextStyles.headline4,
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: favoriteMembers.length,
+                itemBuilder: (context, index) {
+                  final member = favoriteMembers[index];
+                  final isSelected = _selectedCompareIds.contains(member.id);
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    color: isSelected ? AppColors.primary.withOpacity(0.05) : null,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: isSelected ? AppColors.primary : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                    child: CheckboxListTile(
+                      value: isSelected,
+                      title: Text(member.name, style: AppTextStyles.headline4),
+                      subtitle: Text('${member.party} • ${member.district}'),
+                      secondary: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: member.imageUrl.isNotEmpty
+                            ? Image.network(member.imageUrl, width: 40, height: 40, fit: BoxFit.cover)
+                            : Container(width: 40, height: 40, color: AppColors.lightGrey, child: const Icon(Icons.person)),
+                      ),
+                      onChanged: (bool? value) {
+                        setState(() {
+                          if (value == true) {
+                            if (_selectedCompareIds.length < 2) {
+                              _selectedCompareIds.add(member.id);
+                            }
+                          } else {
+                            _selectedCompareIds.remove(member.id);
+                          }
+                        });
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 비교 결과 화면
+  Widget _buildComparisonResults(Member m1, Member m2) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('후보자 비교', style: AppTextStyles.headline3),
+              TextButton(
+                onPressed: () => setState(() => _selectedCompareIds.clear()),
+                child: const Text('다시 선택'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(child: _buildSimpleMemberHeader(m1)),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Text('VS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: AppColors.grey)),
+              ),
+              Expanded(child: _buildSimpleMemberHeader(m2)),
+            ],
+          ),
+          const SizedBox(height: 24),
+          _buildComparisonRow('당선 가능성', m1.electionPossibility, m2.electionPossibility, isPercent: true),
+          const SizedBox(height: 16),
+          FutureBuilder<List<AnalysisResult>>(
+            future: Future.wait([
+              sl<CalculateElectionPossibilityUseCase>().call(m1.id),
+              sl<CalculateElectionPossibilityUseCase>().call(m2.id),
+            ]),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+              final a1 = snapshot.data![0];
+              final a2 = snapshot.data![1];
+
+              return Column(
+                children: [
+                  _buildComparisonRow('성과도', a1.achievementScore, a2.achievementScore),
+                  const SizedBox(height: 16),
+                  _buildComparisonRow('활동도', a1.activityScore, a2.activityScore),
+                  const SizedBox(height: 16),
+                  _buildComparisonRow('정책도', a1.policyScore, a2.policyScore),
+                  const SizedBox(height: 16),
+                  _buildComparisonRow('언론도', a1.publicImageScore, a2.publicImageScore),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSimpleMemberHeader(Member m) {
+    return Column(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(40),
+          child: m.imageUrl.isNotEmpty
+              ? Image.network(m.imageUrl, width: 80, height: 80, fit: BoxFit.cover)
+              : Container(width: 80, height: 80, color: AppColors.lightGrey, child: const Icon(Icons.person, size: 40)),
+        ),
+        const SizedBox(height: 8),
+        Text(m.name, style: AppTextStyles.headline4),
+        Text(m.party, style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary)),
+      ],
+    );
+  }
+
+  Widget _buildComparisonRow(String label, double v1, double v2, {bool isPercent = false}) {
+    final display1 = isPercent ? '${(v1 * 100).toStringAsFixed(1)}%' : (v1 * 100).toStringAsFixed(1);
+    final display2 = isPercent ? '${(v2 * 100).toStringAsFixed(1)}%' : (v2 * 100).toStringAsFixed(1);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Center(child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold))),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Text(display1, textAlign: TextAlign.right, style: TextStyle(
+                color: v1 > v2 ? AppColors.success : AppColors.darkGray,
+                fontWeight: v1 > v2 ? FontWeight.bold : FontWeight.normal,
+              )),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              flex: 4,
+              child: Stack(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: RotatedBox(
+                          quarterTurns: 2,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(2),
+                            child: LinearProgressIndicator(
+                              value: v1,
+                              backgroundColor: AppColors.lightGrey,
+                              valueColor: AlwaysStoppedAnimation(v1 > v2 ? AppColors.success : AppColors.grey),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: LinearProgressIndicator(
+                            value: v2,
+                            backgroundColor: AppColors.lightGrey,
+                            valueColor: AlwaysStoppedAnimation(v2 > v1 ? AppColors.success : AppColors.grey),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(display2, style: TextStyle(
+                color: v2 > v1 ? AppColors.success : AppColors.darkGray,
+                fontWeight: v2 > v1 ? FontWeight.bold : FontWeight.normal,
+              )),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -745,8 +1144,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               Expanded(
                 child: _QuickAccessButton(
                   label: '분석',
-                  icon: Icons.bar_chart,
-                  onPressed: () {},
+                  icon: const Text(
+                    'VS',
+                    style: TextStyle(
+                      color: AppColors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                  ),
+                  onPressed: () {
+                    setState(() => _selectedIndex = 3); // 비교 탭으로 이동
+                  },
                   backgroundColor: AppColors.primary,
                 ),
               ),
@@ -754,8 +1162,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               Expanded(
                 child: _QuickAccessButton(
                   label: '의원',
-                  icon: Icons.person_outline,
-                  onPressed: () {},
+                  icon: const Icon(Icons.person, color: AppColors.white, size: 28),
+                  onPressed: () {
+                    setState(() => _selectedIndex = 1); // 검색 탭으로 이동
+                  },
                   backgroundColor: AppColors.secondary,
                 ),
               ),
@@ -763,8 +1173,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               Expanded(
                 child: _QuickAccessButton(
                   label: '뉴스',
-                  icon: Icons.newspaper,
-                  onPressed: () {},
+                  icon: const Icon(Icons.newspaper, color: AppColors.white, size: 28),
+                  onPressed: () {
+                    _showIntegratedNewsFeed();
+                  },
                   backgroundColor: AppColors.accent,
                 ),
               ),
@@ -772,6 +1184,164 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ),
         ],
       ),
+    );
+  }
+
+  // 통합 뉴스 피드 팝업
+  void _showIntegratedNewsFeed() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StreamBuilder<List<Member>>(
+          stream: _membersStream,
+          builder: (context, snapshot) {
+            final members = snapshot.data ?? _cachedMembers;
+            final favorites = members.where((m) => m.isFavorite).toList();
+            
+            // 모든 즐겨찾기 의원의 뉴스를 수집하여 날짜순 정렬
+            final allNews = <Map<String, dynamic>>[];
+            for (var m in favorites) {
+              for (var report in m.pressReports) {
+                allNews.add({
+                  'member': m,
+                  'report': report,
+                });
+              }
+            }
+            allNews.sort((a, b) => (b['report'].publishDate as DateTime).compareTo(a['report'].publishDate));
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.8,
+              decoration: const BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Column(
+                children: [
+                  // 제목란 (News 탭과 동일한 노란색)
+                  Container(
+                    decoration: const BoxDecoration(
+                      color: AppColors.accent,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(color: AppColors.dark.withOpacity(0.2), borderRadius: BorderRadius.circular(2)),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.newspaper, color: AppColors.dark, size: 28),
+                                  const SizedBox(width: 12),
+                                  Text('통합 뉴스 피드', style: AppTextStyles.headline3.copyWith(color: AppColors.dark)),
+                                ],
+                              ),
+                              IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close, color: AppColors.dark)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (favorites.isEmpty)
+                    const Expanded(child: Center(child: Text('즐겨찾기한 의원이 없습니다.')))
+                  else if (allNews.isEmpty)
+                    const Expanded(child: Center(child: Text('최신 보도 자료가 없습니다.')))
+                  else
+                    Expanded(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: allNews.length,
+                        separatorBuilder: (context, index) => const Divider(height: 32),
+                        itemBuilder: (context, index) {
+                          final item = allNews[index];
+                          final Member m = item['member'];
+                          final report = item['report'];
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Column(
+                                    children: [
+                                      CircleAvatar(radius: 12, backgroundImage: m.imageUrl.isNotEmpty ? NetworkImage(m.imageUrl) : null, child: m.imageUrl.isEmpty ? const Icon(Icons.person, size: 12) : null),
+                                      const SizedBox(height: 4),
+                                      SizedBox(
+                                        width: 36,
+                                        child: AspectRatio(
+                                          aspectRatio: 3 / 1,
+                                          child: Image.asset(
+                                            _getPartyLogoUrl(m.party),
+                                            fit: BoxFit.contain,
+                                            errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(width: 8),
+                                  // 정당 마크 (텍스트 사이즈에 맞춘 사각형)
+                                  Container(
+                                    width: 12,
+                                    height: 12,
+                                    decoration: BoxDecoration(
+                                      color: _getPartyColor(m.party),
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text('${m.name} • ${m.party}', style: AppTextStyles.labelSmall.copyWith(color: AppColors.darkGray, fontWeight: FontWeight.bold)),
+                                  const Spacer(),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.calendar_today, size: 12, color: AppColors.grey),
+                                      const SizedBox(width: 4),
+                                      Text(report.publishDate.toString().split(' ')[0], style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey)),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Text(report.title, style: AppTextStyles.headline4.copyWith(color: AppColors.darkGray)),
+                              const SizedBox(height: 6),
+                              Text(report.summary, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.darkGray.withOpacity(0.8)), maxLines: 2, overflow: TextOverflow.ellipsis),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(color: AppColors.lightGrey, borderRadius: BorderRadius.circular(4)),
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.source, size: 12, color: AppColors.grey),
+                                        const SizedBox(width: 4),
+                                        Text(report.source, style: AppTextStyles.labelSmall.copyWith(color: AppColors.darkGray)),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -783,7 +1353,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       unselectedItemColor: AppColors.grey,
       backgroundColor: AppColors.white,
       elevation: 8,
-      items: const [
+      items: [
         BottomNavigationBarItem(
           icon: Icon(Icons.home),
           label: '홈',
@@ -797,8 +1367,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           label: '즐겨찾기',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: '프로필',
+          icon: Text(
+            'VS',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: _selectedIndex == 3 ? AppColors.primary : AppColors.grey,
+            ),
+          ),
+          label: '비교',
         ),
       ],
       onTap: (index) {
@@ -809,29 +1386,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  // FAB
-  Widget _buildFloatingActionButton() {
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.4),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: FloatingActionButton(
-        onPressed: () {
-          // 분석 시작
-        },
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.refresh),
-      ),
-    );
-  }
 }
 
 // 통계 카드 위젯
@@ -852,6 +1406,18 @@ class _StatisticCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final subtitleWidgets = subtitle == null
+        ? const <Widget>[]
+        : <Widget>[
+            const SizedBox(height: 2),
+            Text(
+              subtitle!,
+              style: AppTextStyles.labelSmall.copyWith(
+                color: AppColors.mediumGray,
+              ),
+            ),
+          ];
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -895,15 +1461,7 @@ class _StatisticCard extends StatelessWidget {
             title,
             style: AppTextStyles.bodySmall,
           ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 2),
-            Text(
-              subtitle!,
-              style: AppTextStyles.labelSmall.copyWith(
-                color: AppColors.mediumGray,
-              ),
-            ),
-          ],
+          ...subtitleWidgets,
         ],
       ),
     );
@@ -955,16 +1513,18 @@ class _MemberCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: member.imageUrl.isNotEmpty
-                  ? Image.network(
-                      member.imageUrl,
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
+            Column(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: member.imageUrl.isNotEmpty
+                      ? Image.network(
+                          member.imageUrl,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                        )
+                      : Container(
                           width: 60,
                           height: 60,
                           decoration: BoxDecoration(
@@ -986,32 +1546,21 @@ class _MemberCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                        );
-                      },
-                    )
-                  : Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.primary.withOpacity(0.8),
-                            AppColors.secondary.withOpacity(0.6),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
                         ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          member.name.isNotEmpty ? member.name[0] : '?',
-                          style: AppTextStyles.headline3.copyWith(
-                            color: AppColors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                ),
+                const SizedBox(height: 6),
+                SizedBox(
+                  width: 50,
+                  child: AspectRatio(
+                    aspectRatio: 3 / 1,
+                    child: Image.asset(
+                      _getPartyLogoUrl(member.party),
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => const SizedBox(),
                     ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -1069,6 +1618,16 @@ class _MemberCard extends StatelessWidget {
               color: AppColors.grey,
               size: 16,
             ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: Icon(
+                member.isFavorite ? Icons.star : Icons.star_border,
+                color: member.isFavorite ? Colors.amber : AppColors.grey,
+              ),
+              onPressed: () {
+                sl<ToggleFavoriteUseCase>().call(member.id);
+              },
+            ),
           ],
         ),
       ),
@@ -1079,7 +1638,7 @@ class _MemberCard extends StatelessWidget {
 // 빠른 접근 버튼
 class _QuickAccessButton extends StatelessWidget {
   final String label;
-  final IconData icon;
+  final Widget icon;
   final VoidCallback onPressed;
   final Color backgroundColor;
 
@@ -1112,10 +1671,9 @@ class _QuickAccessButton extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                color: AppColors.white,
-                size: 28,
+              SizedBox(
+                height: 28,
+                child: Center(child: icon),
               ),
               const SizedBox(height: 8),
               Text(
@@ -1141,4 +1699,27 @@ String _formatRelativeTime(DateTime date) {
   final min = local.minute.toString().padLeft(2, '0');
   final s = local.second.toString().padLeft(2, '0');
   return '$y-$m-$d $h:$min:$s';
+}
+
+// 정당별 로고 URL (가로 3:1 비율 PNG)
+String _getPartyLogoUrl(String party) {
+  if (party.contains('더불어민주당')) {
+    return 'assets/images/party/minjoo.png';
+  } else if (party.contains('국민의힘')) {
+    return 'assets/images/party/power.png';
+  } else if (party.contains('정의당')) {
+    return 'assets/images/party/justice.png';
+  } else if (party.contains('진보당')) {
+    return 'assets/images/party/progressive.png';
+  }
+  return ''; // 로고 없음
+}
+
+// 정당별 색상 도우미
+Color _getPartyColor(String party) {
+  if (party.contains('더불어민주당')) return const Color(0xFF004EA2);
+  if (party.contains('국민의힘')) return const Color(0xFFE61E2B);
+  if (party.contains('정의당')) return const Color(0xFFFFCC00);
+  if (party.contains('진보당')) return const Color(0xFFD6001C);
+  return AppColors.grey;
 }

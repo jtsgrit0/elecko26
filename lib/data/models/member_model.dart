@@ -20,6 +20,7 @@ class MemberModel extends Member {
     required super.electionPossibility,
     required super.lastAnalysisDate,
     required super.improvementPoints,
+    super.isFavorite,
   });
 
   factory MemberModel.fromJson(Map<String, dynamic> json) {
@@ -44,6 +45,7 @@ class MemberModel extends Member {
       electionPossibility: (json['electionPossibility'] as num).toDouble(),
       lastAnalysisDate: DateTime.parse(json['lastAnalysisDate'] as String),
       improvementPoints: List<String>.from(json['improvementPoints'] as List),
+      isFavorite: json['isFavorite'] as bool? ?? false,
     );
   }
 
@@ -77,6 +79,7 @@ class MemberModel extends Member {
       'electionPossibility': electionPossibility,
       'lastAnalysisDate': lastAnalysisDate.toIso8601String(),
       'improvementPoints': improvementPoints,
+      'isFavorite': isFavorite,
     };
   }
 }

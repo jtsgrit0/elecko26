@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_application_1/core/theme/app_theme.dart';
+import 'package:flutter_application_1/domain/entities/member.dart';
+import 'package:flutter_application_1/domain/usecases/member_usecases.dart';
+import 'package:flutter_application_1/app/injection_container.dart';
 
 class MemberListPage extends StatefulWidget {
   const MemberListPage({Key? key}) : super(key: key);
@@ -10,13 +11,16 @@ class MemberListPage extends StatefulWidget {
 
 class _MemberListPageState extends State<MemberListPage> {
   late TextEditingController _searchController;
+  late Stream<List<Member>> _membersStream;
   String _sortBy = 'name'; // name, party, possibility
   String _filterParty = 'all';
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+    _membersStream = sl<WatchMembersUseCase>().call();
   }
 
   @override
@@ -37,11 +41,49 @@ class _MemberListPageState extends State<MemberListPage> {
           _buildSearchFilterSection(),
           // 의원 리스트
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: 10,
-              itemBuilder: (context, index) {
-                return _MemberCard(index: index);
+            child: StreamBuilder<List<Member>>(
+              stream: _membersStream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                
+                var members = snapshot.data ?? [];
+                
+                // 검색 필터
+                if (_searchQuery.isNotEmpty) {
+                  members = members.where((m) => 
+                    m.name.contains(_searchQuery) || 
+                    m.district.contains(_searchQuery)
+                  ).toList();
+                }
+                
+                // 정당 필터
+                if (_filterParty != 'all') {
+                  members = members.where((m) {
+                    if (_filterParty == 'democratic') return m.party == '더불어민주당';
+                    if (_filterParty == 'power') return m.party == '국민의힘';
+                    if (_filterParty == 'other') return m.party != '더불어민주당' && m.party != '국민의힘';
+                    return true;
+                  }).toList();
+                }
+                
+                // 정렬
+                if (_sortBy == 'name') {
+                  members.sort((a, b) => a.name.compareTo(b.name));
+                } else if (_sortBy == 'party') {
+                  members.sort((a, b) => a.party.compareTo(b.party));
+                } else if (_sortBy == 'possibility') {
+                  members.sort((a, b) => b.electionPossibility.compareTo(a.electionPossibility));
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: members.length,
+                  itemBuilder: (context, index) {
+                    return _MemberCard(member: members[index]);
+                  },
+                );
               },
             ),
           ),
@@ -68,6 +110,11 @@ class _MemberListPageState extends State<MemberListPage> {
           // 검색바
           TextField(
             controller: _searchController,
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value;
+              });
+            },
             decoration: InputDecoration(
               hintText: '의원 이름, 지역구 검색',
               hintStyle: AppTextStyles.bodySmall,
@@ -162,15 +209,15 @@ class _MemberListPageState extends State<MemberListPage> {
               Navigator.pop(context);
             }),
             _FilterOption('더불어민주당', _filterParty == 'democratic', () {
-              setState(() => _filterParty = 'democratic');
+              setState(() => _filterParty == 'democratic');
               Navigator.pop(context);
             }),
             _FilterOption('국민의힘', _filterParty == 'power', () {
-              setState(() => _filterParty = 'power');
+              setState(() => _filterParty == 'power');
               Navigator.pop(context);
             }),
             _FilterOption('기타정당', _filterParty == 'other', () {
-              setState(() => _filterParty = 'other');
+              setState(() => _filterParty == 'other');
               Navigator.pop(context);
             }),
           ],
@@ -182,13 +229,13 @@ class _MemberListPageState extends State<MemberListPage> {
 
 // 의원 카드
 class _MemberCard extends StatelessWidget {
-  final int index;
+  final Member member;
 
-  const _MemberCard({required this.index});
+  const _MemberCard({required this.member});
 
   @override
   Widget build(BuildContext context) {
-    final possibility = (index * 10.5 + 35).clamp(0.0, 100.0);
+    final possibility = member.electionPossibility * 100;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -209,11 +256,24 @@ class _MemberCard extends StatelessWidget {
                   shape: BoxShape.circle,
                   gradient: AppColors.primaryGradient,
                 ),
-                child: const Icon(
-                  Icons.person,
-                  color: AppColors.white,
-                  size: 35,
-                ),
+                child: member.imageUrl.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(35),
+                        child: Image.network(
+                          member.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => const Icon(
+                            Icons.person,
+                            color: AppColors.white,
+                            size: 35,
+                          ),
+                        ),
+                      )
+                    : const Icon(
+                        Icons.person,
+                        color: AppColors.white,
+                        size: 35,
+                      ),
               ),
               const SizedBox(width: 12),
               // 의원 정보
@@ -222,7 +282,7 @@ class _MemberCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '의원 이름 $index',
+                      member.name,
                       style: AppTextStyles.headline4,
                     ),
                     const SizedBox(height: 4),
@@ -238,7 +298,7 @@ class _MemberCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(3),
                           ),
                           child: Text(
-                            '정당',
+                            member.party,
                             style: AppTextStyles.labelSmall.copyWith(
                               color: AppColors.primary,
                             ),
@@ -246,7 +306,7 @@ class _MemberCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '지역구',
+                          member.district,
                           style: AppTextStyles.bodySmall,
                         ),
                       ],
@@ -272,7 +332,7 @@ class _MemberCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // 당선율
+              // 당선율 및 별표
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -287,10 +347,27 @@ class _MemberCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: AppColors.grey,
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          member.isFavorite ? Icons.star : Icons.star_border,
+                          color: member.isFavorite ? Colors.amber : AppColors.grey,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          sl<ToggleFavoriteUseCase>().call(member.id);
+                        },
+                        constraints: const BoxConstraints(),
+                        padding: EdgeInsets.zero,
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: AppColors.grey,
+                      ),
+                    ],
                   ),
                 ],
               ),

@@ -157,13 +157,16 @@ Future<List<Map<String, dynamic>>> crawlCandidates(String searchKeyword) async {
              .where((w) => w.length >= 2 && w != name)
              .take(5)
              .toList();
+
+         print('📸 [$name] 프로필 이미지 검색 중...');
+         final imageUrl = await fetchProfileImageUrl(name);
              
          extracted.add({
           'id': 'candidate_${DateTime.now().millisecondsSinceEpoch}_$i',
           'name': name,
           'party': title.contains('국민의힘') ? '국민의힘' : (title.contains('민주당') ? '더불어민주당' : (title.contains('개혁신당') ? '개혁신당' : '무소속')),
           'district': title.contains('서울') ? '서울특별시장' : (title.contains('경기') ? '경기도지사' : (title.contains('부산') ? '부산광역시장' : '전국')),
-          'imageUrl': 'https://via.placeholder.com/150',
+          'imageUrl': imageUrl,
           'bio': '포털 뉴스 출마 확인. 주요 키워드: #${keywords.join(' #')}',
           'electionDate': '2026-06-03',
           'term': 0,
@@ -190,4 +193,27 @@ Future<List<Map<String, dynamic>>> crawlCandidates(String searchKeyword) async {
   }
 
   return extracted;
+}
+
+Future<String> fetchProfileImageUrl(String name) async {
+  try {
+    final query = Uri.encodeComponent(name);
+    final url = 'https://search.naver.com/search.naver?where=nexearch&query=$query';
+    final response = await http.get(Uri.parse(url), headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    });
+    if (response.statusCode == 200) {
+      final document = parse(response.body);
+      final img = document.querySelector('.profile_wrap img, .detail_info img, .wrap_thumb img, .thumb img');
+      if (img != null) {
+        final src = img.attributes['src'];
+        if (src != null && src.startsWith('http')) {
+          return src;
+        }
+      }
+    }
+  } catch (e) {
+    print('이미지 검색 실패 ($name): $e');
+  }
+  return 'https://via.placeholder.com/150';
 }

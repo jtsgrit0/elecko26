@@ -42,6 +42,10 @@ Future<void> init() async {
   sl.registerSingleton<WatchMemberByIdUseCase>(
     WatchMemberByIdUseCase(repository: sl<MemberRepository>()),
   );
+
+  sl.registerSingleton<ToggleFavoriteUseCase>(
+    ToggleFavoriteUseCase(repository: sl<MemberRepository>()),
+  );
   
   sl.registerSingleton<CalculateElectionPossibilityUseCase>(
     CalculateElectionPossibilityUseCase(repository: sl<MemberRepository>()),

@@ -17,31 +17,31 @@ class MemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<void> addMember(Member member) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 250));
     _dummyMembers.add(member);
   }
 
   @override
   Future<void> deleteMember(String memberId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 250));
     _dummyMembers.removeWhere((m) => m.id == memberId);
   }
 
   @override
   Future<List<Member>> getAllMembers() async {
-    await Future.delayed(const Duration(milliseconds: 800));
+    await Future.delayed(const Duration(milliseconds: 400));
     return _dummyMembers;
   }
 
   @override
   Future<List<Member>> getCachedMembers() async {
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 150));
     return _dummyMembers;
   }
 
   @override
   Future<Member> getMemberById(String memberId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 250));
     try {
       return _dummyMembers.firstWhere((m) => m.id == memberId);
     } catch (e) {
@@ -51,7 +51,7 @@ class MemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<List<Member>> searchMembers(String query) async {
-    await Future.delayed(const Duration(milliseconds: 600));
+    await Future.delayed(const Duration(milliseconds: 300));
     final lowerQuery = query.toLowerCase();
     return _dummyMembers
         .where((m) =>
@@ -63,7 +63,7 @@ class MemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<void> updateMember(Member member) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 250));
     final index = _dummyMembers.indexWhere((m) => m.id == member.id);
     if (index != -1) {
       _dummyMembers[index] = member;
@@ -88,7 +88,10 @@ class MemberRepositoryImpl implements MemberRepository {
               final newMember = MemberModel.fromJson(item as Map<String, dynamic>);
               final idx = _dummyMembers.indexWhere((m) => m.name == newMember.name);
               if (idx != -1) {
-                _dummyMembers[idx] = newMember.copyWith(polls: _dummyMembers[idx].polls);
+                _dummyMembers[idx] = newMember.copyWith(
+                  polls: _dummyMembers[idx].polls,
+                  isFavorite: _dummyMembers[idx].isFavorite,
+                );
               } else {
                 if (!_dummyMembers.any((m) => m.id == newMember.id)) {
                   _dummyMembers.add(newMember);
@@ -322,6 +325,15 @@ class MemberRepositoryImpl implements MemberRepository {
     // 여러 멤버를 일괄 업데이트
     for (final member in members) {
       await updateMember(member);
+    }
+  }
+
+  @override
+  Future<void> toggleFavorite(String memberId) async {
+    final index = _dummyMembers.indexWhere((m) => m.id == memberId);
+    if (index != -1) {
+      final member = _dummyMembers[index];
+      _dummyMembers[index] = member.copyWith(isFavorite: !member.isFavorite);
     }
   }
 }

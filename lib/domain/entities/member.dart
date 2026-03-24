@@ -24,6 +24,7 @@ class Member {
   final double electionPossibility;
   final DateTime lastAnalysisDate;
   final List<String> improvementPoints;
+  final bool isFavorite;
 
   Member({
     required this.id,
@@ -42,6 +43,7 @@ class Member {
     required this.electionPossibility,
     required this.lastAnalysisDate,
     required this.improvementPoints,
+    this.isFavorite = false,
   });
 
   Member copyWith({
@@ -61,6 +63,7 @@ class Member {
     double? electionPossibility,
     DateTime? lastAnalysisDate,
     List<String>? improvementPoints,
+    bool? isFavorite,
   }) {
     return Member(
       id: id ?? this.id,
@@ -79,6 +82,7 @@ class Member {
       electionPossibility: electionPossibility ?? this.electionPossibility,
       lastAnalysisDate: lastAnalysisDate ?? this.lastAnalysisDate,
       improvementPoints: improvementPoints ?? this.improvementPoints,
+      isFavorite: isFavorite ?? this.isFavorite,
     );
   }
 

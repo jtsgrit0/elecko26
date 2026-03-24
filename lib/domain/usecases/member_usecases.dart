@@ -63,3 +63,14 @@ class WatchMemberByIdUseCase {
     return repository.watchMemberById(memberId, interval: interval ?? defaultRefreshInterval());
   }
 }
+
+/// 즐겨찾기 상태 토글 UseCase
+class ToggleFavoriteUseCase {
+  final MemberRepository repository;
+
+  ToggleFavoriteUseCase({required this.repository});
+
+  Future<void> call(String memberId) async {
+    return await repository.toggleFavorite(memberId);
+  }
+}

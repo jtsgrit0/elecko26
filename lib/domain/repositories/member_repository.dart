@@ -34,4 +34,7 @@ abstract class MemberRepository {
 
   /// 외부 데이터 소스에서 최신 데이터 갱신
   Future<void> refreshMembers();
+
+  /// 즐겨찾기 상태 토글
+  Future<void> toggleFavorite(String memberId);
 }
