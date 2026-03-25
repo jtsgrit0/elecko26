@@ -6,6 +6,9 @@ import 'package:flutter_application_1/domain/usecases/calculate_election_possibi
 import 'package:flutter_application_1/domain/usecases/export_election_data_usecase.dart';
 import 'package:flutter_application_1/domain/usecases/update_members_with_nesdc_usecase.dart';
 import 'package:flutter_application_1/data/datasources/github_datasource.dart';
+import 'package:flutter_application_1/data/datasources/historical_election_data_source.dart';
+import 'package:flutter_application_1/data/repositories/historical_election_repository_impl.dart';
+import 'package:flutter_application_1/domain/repositories/historical_election_repository.dart';
 
 final sl = GetIt.instance;
 
@@ -22,6 +25,14 @@ Future<void> init() async {
     MemberRepositoryImpl(),
   );
   
+  // Historical election data
+  sl.registerSingleton<HistoricalElectionDataSource>(
+    HistoricalElectionDataSource(),
+  );
+  sl.registerSingleton<HistoricalElectionRepository>(
+    HistoricalElectionRepositoryImpl(sl<HistoricalElectionDataSource>()),
+  );
+
   // Use cases
   sl.registerSingleton<GetMembersUseCase>(
     GetMembersUseCase(repository: sl<MemberRepository>()),
@@ -48,7 +59,10 @@ Future<void> init() async {
   );
   
   sl.registerSingleton<CalculateElectionPossibilityUseCase>(
-    CalculateElectionPossibilityUseCase(repository: sl<MemberRepository>()),
+    CalculateElectionPossibilityUseCase(
+      repository: sl<MemberRepository>(),
+      historicalRepository: sl<HistoricalElectionRepository>(),
+    ),
   );
 
   // GitHub DataSource

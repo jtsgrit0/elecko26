@@ -4,10 +4,12 @@ import 'package:flutter_application_1/domain/entities/analysis_result.dart';
 import 'package:flutter_application_1/domain/entities/member.dart';
 import 'package:flutter_application_1/domain/entities/poll.dart';
 import 'package:flutter_application_1/domain/repositories/member_repository.dart';
+import 'package:flutter_application_1/domain/repositories/historical_election_repository.dart';
 
 /// 당선 가능성을 다각적으로 산정하는 UseCase
 class CalculateElectionPossibilityUseCase {
   final MemberRepository repository;
+  final HistoricalElectionRepository? historicalRepository;
   final Duration _trendInterval;
   final int _maxTrendPoints;
   final math.Random _random = math.Random();
@@ -15,6 +17,7 @@ class CalculateElectionPossibilityUseCase {
 
   CalculateElectionPossibilityUseCase({
     required this.repository,
+    this.historicalRepository,
     Duration trendInterval = const Duration(seconds: 30),
     int maxTrendPoints = 2880,
   })  : _trendInterval = trendInterval,
@@ -27,8 +30,29 @@ class CalculateElectionPossibilityUseCase {
       throw Exception('Member not found');
     }
 
+    // 0) 역대 선거 데이터에서 지역 기반 지지율 조회
+    double historicalBaseSupport = 0.5; // 기본값: 중립
+    String? historicalContext;
+    if (historicalRepository != null) {
+      try {
+        final region = _mapDistrictToRegion(member.district);
+        final averages = await historicalRepository!.getRegionalPartyAverages(region);
+        final partyRate = averages[member.party];
+        if (partyRate != null) {
+          historicalBaseSupport = (partyRate / 100.0).clamp(0.0, 1.0);
+          final dominant = await historicalRepository!.getDominantParty(region);
+          final gap = dominant != null && averages[dominant] != null
+              ? (averages[dominant]! - (partyRate)).abs()
+              : 0.0;
+          historicalContext = _buildHistoricalContext(
+            region, member.party, partyRate, dominant, gap,
+          );
+        }
+      } catch (_) {}
+    }
+
     // A) 다중 요소 가중치 방식 계산
-    final scores = _calculateMultiFactorScores(member);
+    final scores = _calculateMultiFactorScores(member, historicalBaseSupport);
 
     // B) 30초 간격 추세 생성/갱신
     final dailyTrends = _getOrUpdateTrends(
@@ -37,7 +61,7 @@ class CalculateElectionPossibilityUseCase {
     );
 
     // C) 상세 분석 데이터
-    final analysis = _performDetailedAnalysis(member, scores);
+    final analysis = _performDetailedAnalysis(member, scores, historicalContext);
 
     final recentSlice = dailyTrends.length > 7
         ? dailyTrends.sublist(dailyTrends.length - 7)
@@ -72,9 +96,9 @@ class CalculateElectionPossibilityUseCase {
     );
   }
 
-  /// A) 다중 요소 가중치 방식 (여론조사 포함)
-  /// 성과도(15%) + 활동도(15%) + 정책도(15%) + 언론도(15%) + 여론조사(40%)
-  Map<String, double> _calculateMultiFactorScores(Member member) {
+  /// A) 다중 요소 가중치 방식 (여론조사 + 역대 선거 포함)
+  /// 성과도(12%) + 활동도(12%) + 정책도(12%) + 언론도(12%) + 여론조사(32%) + 역대선거(20%)
+  Map<String, double> _calculateMultiFactorScores(Member member, double historicalBase) {
     // 1. 성과도 (0~1)
     final achievementScore = _calculateDetailScore(
       member.achievementsList,
@@ -105,12 +129,16 @@ class CalculateElectionPossibilityUseCase {
     // 5. 여론조사 평균 (0~1)
     final pollScore = _calculatePollScore(member);
 
-    // 가중치 평균 계산
-    final overallScore = (achievementScore * 0.15) +
-        (activityScore * 0.15) +
-        (policyScore * 0.15) +
-        (publicImageScore * 0.15) +
-        (pollScore * 0.40);
+    // 6. 역대 선거 지역 기반 지지율 (0~1)
+    final historicalScore = historicalBase;
+
+    // 가중치 평균 계산 (역대 선거 데이터 20% 반영)
+    final overallScore = (achievementScore * 0.12) +
+        (activityScore * 0.12) +
+        (policyScore * 0.12) +
+        (publicImageScore * 0.12) +
+        (pollScore * 0.32) +
+        (historicalScore * 0.20);
 
     return {
       'achievement': achievementScore,
@@ -118,6 +146,7 @@ class CalculateElectionPossibilityUseCase {
       'policy': policyScore,
       'publicImage': publicImageScore,
       'poll': pollScore,
+      'historical': historicalScore,
       'overall': overallScore,
     };
   }
@@ -227,8 +256,9 @@ class CalculateElectionPossibilityUseCase {
   /// C) 상세 분석 데이터
   Map<String, dynamic> _performDetailedAnalysis(
     Member member,
-    Map<String, double> scores,
-  ) {
+    Map<String, double> scores, [
+    String? historicalContext,
+  ]) {
     final strengths = <String>[];
     final weaknesses = <String>[];
 
@@ -282,6 +312,10 @@ class CalculateElectionPossibilityUseCase {
       }
     }
 
+    final historicalPct = scores['historical'] != null
+        ? (scores['historical']! * 100).toStringAsFixed(1)
+        : 'N/A';
+
     final report = '''
 【${member.name} 의원 당선 가능성 분석 보고서】
 
@@ -290,22 +324,23 @@ class CalculateElectionPossibilityUseCase {
 현재 당선 가능성: ${(scores['overall']! * 100).toStringAsFixed(1)}%
 
 2. 점수 분석
-- 성과도: ${(scores['achievement']! * 100).toStringAsFixed(1)}% (15%)
-- 활동도: ${(scores['activity']! * 100).toStringAsFixed(1)}% (15%)
-- 정책도: ${(scores['policy']! * 100).toStringAsFixed(1)}% (15%)
-- 언론도: ${(scores['publicImage']! * 100).toStringAsFixed(1)}% (15%)
-- 여론조사 지지율: ${(scores['poll']! * 100).toStringAsFixed(1)}% (40% - 가중치)
+- 성과도: ${(scores['achievement']! * 100).toStringAsFixed(1)}% (12%)
+- 활동도: ${(scores['activity']! * 100).toStringAsFixed(1)}% (12%)
+- 정책도: ${(scores['policy']! * 100).toStringAsFixed(1)}% (12%)
+- 언론도: ${(scores['publicImage']! * 100).toStringAsFixed(1)}% (12%)
+- 여론조사 지지율: ${(scores['poll']! * 100).toStringAsFixed(1)}% (32% - 가중치)
+- 역대 선거 지역 기반: $historicalPct% (20% - 가중치)
 
 3. 여론조사 현황
 ${_generatePollSummary(member)}
 
-4. 강점
+${historicalContext != null ? '4. 역대 선거 분석\n$historicalContext\n\n5. 강점' : '4. 강점'}
 ${strengths.isEmpty ? '• 주요 강점 분석 중' : strengths.map((s) => '• $s').join('\n')}
 
-5. 약점
+${historicalContext != null ? '6' : '5'}. 약점
 ${weaknesses.isEmpty ? '• 주요 약점 없음' : weaknesses.map((w) => '• $w').join('\n')}
 
-6. 권고사항
+${historicalContext != null ? '7' : '6'}. 권고사항
 ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i').join('\n')}
     ''';
 
@@ -511,5 +546,69 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
         .take(count)
         .map((e) => e.key)
         .toList();
+  }
+
+  /// 역대 선거 데이터 기반 맥락 텍스트 생성
+  String _buildHistoricalContext(
+    String region,
+    String party,
+    double partyRate,
+    String? dominantParty,
+    double gap,
+  ) {
+    final buffer = StringBuffer();
+    buffer.writeln('• 지역: $region');
+    buffer.writeln('• $party 과거 평균 득표율: ${partyRate.toStringAsFixed(1)}%');
+
+    if (dominantParty != null) {
+      if (dominantParty == party) {
+        buffer.writeln('• 해당 지역은 $party 강세 지역으로, 과거 선거에서 평균 ${partyRate.toStringAsFixed(1)}%의 득표율을 기록했습니다.');
+        if (partyRate > 60) {
+          buffer.writeln('• ⚡ 압도적 우위 지역: 상대 정당 대비 ${gap.toStringAsFixed(1)}%p 차이로 매우 유리한 기반입니다.');
+        } else {
+          buffer.writeln('• 경합 가능 지역: 상대 정당과의 격차가 ${gap.toStringAsFixed(1)}%p로, 선거 분위기에 따라 결과가 달라질 수 있습니다.');
+        }
+      } else {
+        buffer.writeln('• ⚠️ 해당 지역은 $dominantParty 강세 지역입니다. $party는 과거 평균 ${partyRate.toStringAsFixed(1)}% 득표에 그쳤습니다.');
+        if (gap > 20) {
+          buffer.writeln('• 열세 지역: $dominantParty 대비 ${gap.toStringAsFixed(1)}%p 뒤처져, 판세 전환을 위해 강력한 차별화 전략이 필요합니다.');
+        } else {
+          buffer.writeln('• 접전 가능 지역: $dominantParty와의 격차가 ${gap.toStringAsFixed(1)}%p로, 적극적인 유권자 공략 시 역전 가능성이 있습니다.');
+        }
+      }
+    }
+
+    return buffer.toString();
+  }
+
+  /// 지역구 문자열 → 광역 시·도명 매핑
+  String _mapDistrictToRegion(String district) {
+    final normalized = district.replaceAll(' ', '');
+    const regionMap = {
+      '서울': '서울특별시',
+      '부산': '부산광역시',
+      '대구': '대구광역시',
+      '인천': '인천광역시',
+      '광주': '광주광역시',
+      '대전': '대전광역시',
+      '울산': '울산광역시',
+      '세종': '세종특별자치시',
+      '경기': '경기도',
+      '강원': '강원도',
+      '충북': '충청북도',
+      '충남': '충청남도',
+      '전북': '전라북도',
+      '전남': '전라남도',
+      '경북': '경상북도',
+      '경남': '경상남도',
+      '제주': '제주특별자치도',
+    };
+
+    for (final entry in regionMap.entries) {
+      if (normalized.contains(entry.key)) {
+        return entry.value;
+      }
+    }
+    return '전국';
   }
 }
