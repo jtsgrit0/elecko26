@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart';
 import 'package:flutter_application_1/data/models/member_model.dart';
 import 'package:flutter_application_1/domain/entities/member.dart';
 import 'package:flutter_application_1/domain/entities/poll.dart';
