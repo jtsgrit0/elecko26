@@ -384,7 +384,27 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     child: CheckboxListTile(
                       value: isSelected,
                       title: Text(member.name, style: AppTextStyles.headline4),
-                      subtitle: Text('${member.party} • ${member.district}'),
+                      subtitle: RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: member.party,
+                              style: TextStyle(
+                                color: _getPartyColor(member.party),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            TextSpan(
+                              text: ' • ${member.district}',
+                              style: const TextStyle(
+                                color: AppColors.grey,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       secondary: ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: member.imageUrl.isNotEmpty
@@ -1213,7 +1233,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              Text('${m.name} • ${m.party}', style: AppTextStyles.labelSmall.copyWith(color: AppColors.darkGray, fontWeight: FontWeight.bold)),
+                              RichText(
+                                text: TextSpan(
+                                  children: [
+                                    TextSpan(text: '${m.name} • ', style: AppTextStyles.labelSmall.copyWith(color: AppColors.darkGray, fontWeight: FontWeight.bold)),
+                                    TextSpan(text: m.party, style: AppTextStyles.labelSmall.copyWith(color: _getPartyColor(m.party), fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                              ),
                               const Spacer(),
                               Row(
                                 children: [
@@ -1512,11 +1539,21 @@ class _MemberCardState extends State<_MemberCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    '${member.party} • ${member.district}',
-                    style: AppTextStyles.bodySmall,
+                  RichText(
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: member.party,
+                          style: AppTextStyles.bodySmall.copyWith(color: _getPartyColor(member.party), fontWeight: FontWeight.bold),
+                        ),
+                        TextSpan(
+                          text: ' • ${member.district}',
+                          style: AppTextStyles.bodySmall,
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Container(

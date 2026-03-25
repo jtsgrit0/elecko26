@@ -192,6 +192,14 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
     );
   }
 
+  Color _getPartyColor(String party) {
+    if (party.contains('더불어민주당')) return const Color(0xFF004EA2);
+    if (party.contains('국민의힘')) return const Color(0xFFE61E2B);
+    if (party.contains('정의당')) return const Color(0xFFFFCC00);
+    if (party.contains('진보당')) return const Color(0xFFD6001C);
+    return AppColors.grey;
+  }
+
   Widget _buildProfileSection(Member member) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -273,7 +281,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                 Text(
                   member.party,
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.primary,
+                    color: _getPartyColor(member.party),
                     fontWeight: FontWeight.w600,
                   ),
                 ),

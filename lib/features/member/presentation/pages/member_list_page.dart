@@ -233,6 +233,14 @@ class _MemberCard extends StatelessWidget {
 
   const _MemberCard({required this.member});
 
+  Color _getPartyColor(String party) {
+    if (party.contains('더불어민주당')) return const Color(0xFF004EA2);
+    if (party.contains('국민의힘')) return const Color(0xFFE61E2B);
+    if (party.contains('정의당')) return const Color(0xFFFFCC00);
+    if (party.contains('진보당')) return const Color(0xFFD6001C);
+    return AppColors.grey;
+  }
+
   @override
   Widget build(BuildContext context) {
     final possibility = member.electionPossibility * 100;
@@ -300,7 +308,7 @@ class _MemberCard extends StatelessWidget {
                           child: Text(
                             member.party,
                             style: AppTextStyles.labelSmall.copyWith(
-                              color: AppColors.primary,
+                              color: _getPartyColor(member.party),
                             ),
                           ),
                         ),
