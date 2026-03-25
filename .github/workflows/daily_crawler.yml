@@ -13,16 +13,17 @@ jobs:
       - name: 저장소 체크아웃
         uses: actions/checkout@v4
 
-      - name: Dart 환경 설정
-        uses: dart-lang/setup-dart@v1
+      - name: Flutter 환경 설정
+        uses: subosito/flutter-action@v2
         with:
-          sdk: stable
+          flutter-version: '3.38.9'
+          cache: true
 
       - name: 패키지 설치
-        run: dart pub get
+        run: flutter pub get
 
       - name: 크롤러 실행
-        run: dart run tools/crawler.dart
+        run: ${FLUTTER_ROOT}/bin/dart run tools/crawler.dart
 
       - name: 변경사항 커밋 및 푸시
         run: |
