@@ -1066,10 +1066,10 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.only(top: 10), // Adjust alignment since text is larger
             child: Container(
-              width: 6,
-              height: 6,
+              width: 8,
+              height: 8,
               decoration: BoxDecoration(
                 color: color,
                 shape: BoxShape.circle,
@@ -1083,6 +1083,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
               style: AppTextStyles.labelSmall.copyWith(
                 color: AppColors.darkGray,
                 height: 1.4,
+                fontSize: 14,
               ),
             ),
           ),
@@ -1291,6 +1292,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
               style: AppTextStyles.bodySmall.copyWith(
                 color: AppColors.darkGray,
                 height: 1.6,
+                fontSize: 18,
               ),
             ),
           ],

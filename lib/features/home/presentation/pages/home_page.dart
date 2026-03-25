@@ -147,6 +147,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       case 2:
         return _buildFavoritesPage();
       case 3:
+        return _buildIntegratedNewsPage();
+      case 4:
         return _buildComparisonPage();
       default:
         return _buildHomeDashboard();
@@ -173,9 +175,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           const SizedBox(height: 24),
           // 의원 목록 요약
           _buildMemberListSection(),
-          const SizedBox(height: 24),
-          // 빠른 접근 메뉴
-          _buildQuickAccessMenu(),
           const SizedBox(height: 24),
         ],
       ),
@@ -1127,219 +1126,131 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  // 빠른 접근 메뉴
-  Widget _buildQuickAccessMenu() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '빠른 접근',
-            style: AppTextStyles.headline4,
-          ),
-          const SizedBox(height: 12),
-          Row(
+  // 통합 뉴스 피드 페이지
+  Widget _buildIntegratedNewsPage() {
+    return StreamBuilder<List<Member>>(
+      stream: _membersStream,
+      builder: (context, snapshot) {
+        final members = snapshot.data ?? _cachedMembers;
+        final favorites = members.where((m) => m.isFavorite).toList();
+        
+        // 모든 즐겨찾기 의원의 뉴스를 수집하여 날짜순 정렬
+        final allNews = <Map<String, dynamic>>[];
+        for (var m in favorites) {
+          for (var report in m.pressReports) {
+            allNews.add({
+              'member': m,
+              'report': report,
+            });
+          }
+        }
+        allNews.sort((a, b) => (b['report'].publishDate as DateTime).compareTo(a['report'].publishDate));
+
+        return Container(
+          color: AppColors.white,
+          child: Column(
             children: [
-              Expanded(
-                child: _QuickAccessButton(
-                  label: '분석',
-                  icon: const Text(
-                    'VS',
-                    style: TextStyle(
-                      color: AppColors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                    ),
+              // 제목란 (News 탭과 동일한 노란색)
+              Container(
+                decoration: const BoxDecoration(
+                  color: AppColors.accent,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 16, bottom: 16, left: 16, right: 16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.newspaper, color: AppColors.dark, size: 28),
+                      const SizedBox(width: 12),
+                      Text('통합 뉴스 피드', style: AppTextStyles.headline3.copyWith(color: AppColors.dark)),
+                    ],
                   ),
-                  onPressed: () {
-                    setState(() => _selectedIndex = 3); // 비교 탭으로 이동
-                  },
-                  backgroundColor: AppColors.primary,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _QuickAccessButton(
-                  label: '의원',
-                  icon: const Icon(Icons.person, color: AppColors.white, size: 28),
-                  onPressed: () {
-                    setState(() => _selectedIndex = 1); // 검색 탭으로 이동
-                  },
-                  backgroundColor: AppColors.secondary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _QuickAccessButton(
-                  label: '뉴스',
-                  icon: const Icon(Icons.newspaper, color: AppColors.white, size: 28),
-                  onPressed: () {
-                    _showIntegratedNewsFeed();
-                  },
-                  backgroundColor: AppColors.accent,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 통합 뉴스 피드 팝업
-  void _showIntegratedNewsFeed() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return StreamBuilder<List<Member>>(
-          stream: _membersStream,
-          builder: (context, snapshot) {
-            final members = snapshot.data ?? _cachedMembers;
-            final favorites = members.where((m) => m.isFavorite).toList();
-            
-            // 모든 즐겨찾기 의원의 뉴스를 수집하여 날짜순 정렬
-            final allNews = <Map<String, dynamic>>[];
-            for (var m in favorites) {
-              for (var report in m.pressReports) {
-                allNews.add({
-                  'member': m,
-                  'report': report,
-                });
-              }
-            }
-            allNews.sort((a, b) => (b['report'].publishDate as DateTime).compareTo(a['report'].publishDate));
-
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.8,
-              decoration: const BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Column(
-                children: [
-                  // 제목란 (News 탭과 동일한 노란색)
-                  Container(
-                    decoration: const BoxDecoration(
-                      color: AppColors.accent,
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                    ),
-                    child: Column(
-                      children: [
-                        Container(
-                          margin: const EdgeInsets.only(top: 8),
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(color: AppColors.dark.withOpacity(0.2), borderRadius: BorderRadius.circular(2)),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              if (favorites.isEmpty)
+                const Expanded(child: Center(child: Text('즐겨찾기한 의원이 없습니다.')))
+              else if (allNews.isEmpty)
+                const Expanded(child: Center(child: Text('최신 보도 자료가 없습니다.')))
+              else
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: allNews.length,
+                    separatorBuilder: (context, index) => const Divider(height: 32),
+                    itemBuilder: (context, index) {
+                      final item = allNews[index];
+                      final Member m = item['member'];
+                      final report = item['report'];
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
-                              Row(
+                              Column(
                                 children: [
-                                  const Icon(Icons.newspaper, color: AppColors.dark, size: 28),
-                                  const SizedBox(width: 12),
-                                  Text('통합 뉴스 피드', style: AppTextStyles.headline3.copyWith(color: AppColors.dark)),
+                                  CircleAvatar(radius: 12, backgroundImage: m.imageUrl.isNotEmpty ? NetworkImage(m.imageUrl) : null, child: m.imageUrl.isEmpty ? const Icon(Icons.person, size: 12) : null),
+                                  const SizedBox(height: 4),
+                                  SizedBox(
+                                    width: 36,
+                                    child: AspectRatio(
+                                      aspectRatio: 3 / 1,
+                                      child: Image.asset(
+                                        _getPartyLogoUrl(m.party),
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
-                              IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close, color: AppColors.dark)),
+                              const SizedBox(width: 8),
+                              // 정당 마크 (텍스트 사이즈에 맞춘 사각형)
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: _getPartyColor(m.party),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text('${m.name} • ${m.party}', style: AppTextStyles.labelSmall.copyWith(color: AppColors.darkGray, fontWeight: FontWeight.bold)),
+                              const Spacer(),
+                              Row(
+                                children: [
+                                  const Icon(Icons.calendar_today, size: 12, color: AppColors.grey),
+                                  const SizedBox(width: 4),
+                                  Text(report.publishDate.toString().split(' ')[0], style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey)),
+                                ],
+                              ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (favorites.isEmpty)
-                    const Expanded(child: Center(child: Text('즐겨찾기한 의원이 없습니다.')))
-                  else if (allNews.isEmpty)
-                    const Expanded(child: Center(child: Text('최신 보도 자료가 없습니다.')))
-                  else
-                    Expanded(
-                      child: ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: allNews.length,
-                        separatorBuilder: (context, index) => const Divider(height: 32),
-                        itemBuilder: (context, index) {
-                          final item = allNews[index];
-                          final Member m = item['member'];
-                          final report = item['report'];
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          const SizedBox(height: 12),
+                          Text(report.title, style: AppTextStyles.headline4.copyWith(color: AppColors.darkGray)),
+                          const SizedBox(height: 6),
+                          Text(report.summary, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.darkGray.withOpacity(0.8)), maxLines: 2, overflow: TextOverflow.ellipsis),
+                          const SizedBox(height: 12),
+                          Row(
                             children: [
-                              Row(
-                                children: [
-                                  Column(
-                                    children: [
-                                      CircleAvatar(radius: 12, backgroundImage: m.imageUrl.isNotEmpty ? NetworkImage(m.imageUrl) : null, child: m.imageUrl.isEmpty ? const Icon(Icons.person, size: 12) : null),
-                                      const SizedBox(height: 4),
-                                      SizedBox(
-                                        width: 36,
-                                        child: AspectRatio(
-                                          aspectRatio: 3 / 1,
-                                          child: Image.asset(
-                                            _getPartyLogoUrl(m.party),
-                                            fit: BoxFit.contain,
-                                            errorBuilder: (context, error, stackTrace) => const SizedBox(),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(width: 8),
-                                  // 정당 마크 (텍스트 사이즈에 맞춘 사각형)
-                                  Container(
-                                    width: 12,
-                                    height: 12,
-                                    decoration: BoxDecoration(
-                                      color: _getPartyColor(m.party),
-                                      borderRadius: BorderRadius.circular(2),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text('${m.name} • ${m.party}', style: AppTextStyles.labelSmall.copyWith(color: AppColors.darkGray, fontWeight: FontWeight.bold)),
-                                  const Spacer(),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.calendar_today, size: 12, color: AppColors.grey),
-                                      const SizedBox(width: 4),
-                                      Text(report.publishDate.toString().split(' ')[0], style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey)),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Text(report.title, style: AppTextStyles.headline4.copyWith(color: AppColors.darkGray)),
-                              const SizedBox(height: 6),
-                              Text(report.summary, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.darkGray.withOpacity(0.8)), maxLines: 2, overflow: TextOverflow.ellipsis),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(color: AppColors.lightGrey, borderRadius: BorderRadius.circular(4)),
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.source, size: 12, color: AppColors.grey),
-                                        const SizedBox(width: 4),
-                                        Text(report.source, style: AppTextStyles.labelSmall.copyWith(color: AppColors.darkGray)),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(color: AppColors.lightGrey, borderRadius: BorderRadius.circular(4)),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.source, size: 12, color: AppColors.grey),
+                                    const SizedBox(width: 4),
+                                    Text(report.source, style: AppTextStyles.labelSmall.copyWith(color: AppColors.darkGray)),
+                                  ],
+                                ),
                               ),
                             ],
-                          );
-                        },
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
         );
       },
     );
@@ -1352,6 +1263,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       selectedItemColor: AppColors.primary,
       unselectedItemColor: AppColors.grey,
       backgroundColor: AppColors.white,
+      type: BottomNavigationBarType.fixed,
       elevation: 8,
       items: [
         BottomNavigationBarItem(
@@ -1367,12 +1279,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           label: '즐겨찾기',
         ),
         BottomNavigationBarItem(
+          icon: Icon(Icons.newspaper),
+          label: '뉴스',
+        ),
+        BottomNavigationBarItem(
           icon: Text(
             'VS',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
-              color: _selectedIndex == 3 ? AppColors.primary : AppColors.grey,
+              color: _selectedIndex == 4 ? AppColors.primary : AppColors.grey,
             ),
           ),
           label: '비교',
@@ -1480,13 +1396,35 @@ class _TopMember {
 }
 
 // 의원 카드 위젯
-class _MemberCard extends StatelessWidget {
+class _MemberCard extends StatefulWidget {
   final Member member;
 
   const _MemberCard({required this.member});
 
   @override
+  State<_MemberCard> createState() => _MemberCardState();
+}
+
+class _MemberCardState extends State<_MemberCard> {
+  late bool _isFavorite;
+
+  @override
+  void initState() {
+    super.initState();
+    _isFavorite = widget.member.isFavorite;
+  }
+
+  @override
+  void didUpdateWidget(_MemberCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.member.isFavorite != oldWidget.member.isFavorite) {
+      _isFavorite = widget.member.isFavorite;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final member = widget.member;
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
@@ -1621,10 +1559,13 @@ class _MemberCard extends StatelessWidget {
             const SizedBox(width: 8),
             IconButton(
               icon: Icon(
-                member.isFavorite ? Icons.star : Icons.star_border,
-                color: member.isFavorite ? Colors.amber : AppColors.grey,
+                _isFavorite ? Icons.star : Icons.star_border,
+                color: _isFavorite ? Colors.amber : AppColors.grey,
               ),
               onPressed: () {
+                setState(() {
+                  _isFavorite = !_isFavorite;
+                });
                 sl<ToggleFavoriteUseCase>().call(member.id);
               },
             ),
@@ -1635,60 +1576,6 @@ class _MemberCard extends StatelessWidget {
   }
 }
 
-// 빠른 접근 버튼
-class _QuickAccessButton extends StatelessWidget {
-  final String label;
-  final Widget icon;
-  final VoidCallback onPressed;
-  final Color backgroundColor;
-
-  const _QuickAccessButton({
-    required this.label,
-    required this.icon,
-    required this.onPressed,
-    required this.backgroundColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: backgroundColor.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(
-                height: 28,
-                child: Center(child: icon),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                style: AppTextStyles.labelMedium.copyWith(
-                  color: AppColors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 String _formatRelativeTime(DateTime date) {
   final local = date.toLocal();
