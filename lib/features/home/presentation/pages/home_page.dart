@@ -434,7 +434,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       secondary: ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: member.imageUrl.isNotEmpty
-                            ? Image.network(member.imageUrl, width: 40, height: 40, fit: BoxFit.cover)
+                            ? Image.network(
+                                member.imageUrl,
+                                width: 40,
+                                height: 40,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Container(
+                                  width: 40,
+                                  height: 40,
+                                  color: AppColors.lightGrey,
+                                  child: const Icon(Icons.person, size: 20),
+                                ),
+                              )
                             : Container(width: 40, height: 40, color: AppColors.lightGrey, child: const Icon(Icons.person)),
                       ),
                       onChanged: (bool? value) {
@@ -529,7 +540,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ClipRRect(
             borderRadius: BorderRadius.circular(40),
             child: m.imageUrl.isNotEmpty
-                ? Image.network(m.imageUrl, width: 80, height: 80, fit: BoxFit.cover)
+                ? Image.network(
+                    m.imageUrl,
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      width: 80,
+                      height: 80,
+                      color: AppColors.lightGrey,
+                      child: const Icon(Icons.person, size: 40),
+                    ),
+                  )
                 : Container(width: 80, height: 80, color: AppColors.lightGrey, child: const Icon(Icons.person, size: 40)),
           ),
           const SizedBox(height: 8),
