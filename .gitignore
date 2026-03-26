@@ -45,3 +45,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Data & Source files
+*.xlsx
+*.xls
+*.pdf
+data/pdf_texts/
+tools/*.pyc
+__pycache__/
