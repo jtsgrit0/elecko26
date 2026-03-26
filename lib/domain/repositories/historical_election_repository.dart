@@ -13,4 +13,6 @@ abstract class HistoricalElectionRepository {
 
   /// 특정 지역의 과거 우세 정당 정보
   Future<String?> getDominantParty(String region);
+  /// 특정 지역의 투표율/관심도 지표를 조회 (PDF 데이터 기반)
+  Future<double> getVoterInterest(String region);
 }

@@ -9,22 +9,41 @@ class HistoricalElectionDataSource {
 
   List<HistoricalElection>? _cachedElections;
 
-  /// 8회 지방선거 요약 데이터를 로드
+  /// 역대 선거 데이터를 모두 로드 (5회~8회)
   Future<List<HistoricalElection>> loadAll() async {
     if (_cachedElections != null) return _cachedElections!;
 
     final elections = <HistoricalElection>[];
+    final files = [
+      'historical_election_5th_summary.json',
+      'historical_election_6th_summary.json',
+      'historical_election_7th_summary.json',
+      'historical_election_8th_summary.json',
+    ];
 
-    // 8회 지방선거
-    try {
-      final data8 = await _fetchJson('historical_election_8th_summary.json');
-      if (data8 != null) {
-        elections.add(HistoricalElection.fromJson(data8));
+    for (final filename in files) {
+      try {
+        final data = await _fetchJson(filename);
+        if (data != null) {
+          elections.add(HistoricalElection.fromJson(data));
+        }
+      } catch (e) {
+        // Log error or skip
       }
-    } catch (_) {}
+    }
 
     _cachedElections = elections;
     return elections;
+  }
+
+  /// PDF에서 추출된 추가 지표(투표율, 관심도 등) 데이터를 로드
+  Future<Map<String, dynamic>> loadPdfData() async {
+    try {
+      final data = await _fetchJson('historical_pdf_data.json');
+      return data ?? {};
+    } catch (_) {
+      return {};
+    }
   }
 
   Future<Map<String, dynamic>?> _fetchJson(String filename) async {

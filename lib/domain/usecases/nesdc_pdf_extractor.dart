@@ -111,8 +111,9 @@ class NesdcPdfExtractor {
     
     for (final party in parties) {
       // 각 정당 섹션 찾기
+      // \s\S 대신 [\s\S]를 사용하거나 .와 DOTALL을 활용
       final pattern = RegExp(
-        '($party)[\\s\\S]*?(?=(?:${parties.where((p) => p != party).join('|')})|\\Z)',
+        '($party)[^]*?(?=(?:${parties.where((p) => p != party).join('|')})|\$)',
         unicode: true,
       );
       

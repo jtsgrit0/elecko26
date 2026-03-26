@@ -30,13 +30,16 @@ class CalculateElectionPossibilityUseCase {
       throw Exception('Member not found');
     }
 
-    // 0) 역대 선거 데이터에서 지역 기반 지지율 조회
-    double historicalBaseSupport = 0.5; // 기본값: 중립
+    // 0.1) 역대 선거 데이터에서 지역 기반 지지율 및 투표 관심도 조회
+    double historicalBaseSupport = 0.5;
+    double voterInterest = 0.5; // 기본값
     String? historicalContext;
     if (historicalRepository != null) {
       try {
         final region = _mapDistrictToRegion(member.district);
         final averages = await historicalRepository!.getRegionalPartyAverages(region);
+        voterInterest = await historicalRepository!.getVoterInterest(region);
+
         final partyRate = averages[member.party];
         if (partyRate != null) {
           historicalBaseSupport = (partyRate / 100.0).clamp(0.0, 1.0);
@@ -45,14 +48,18 @@ class CalculateElectionPossibilityUseCase {
               ? (averages[dominant]! - (partyRate)).abs()
               : 0.0;
           historicalContext = _buildHistoricalContext(
-            region, member.party, partyRate, dominant, gap,
+            region, member.party, partyRate, dominant, gap, voterInterest,
           );
         }
       } catch (_) {}
     }
 
     // A) 다중 요소 가중치 방식 계산
-    final scores = _calculateMultiFactorScores(member, historicalBaseSupport);
+    final scores = _calculateMultiFactorScores(
+      member, 
+      historicalBaseSupport,
+      voterInterest: voterInterest,
+    );
 
     // B) 30초 간격 추세 생성/갱신
     final dailyTrends = _getOrUpdateTrends(
@@ -98,7 +105,11 @@ class CalculateElectionPossibilityUseCase {
 
   /// A) 다중 요소 가중치 방식 (여론조사 + 역대 선거 포함)
   /// 성과도(12%) + 활동도(12%) + 정책도(12%) + 언론도(12%) + 여론조사(32%) + 역대선거(20%)
-  Map<String, double> _calculateMultiFactorScores(Member member, double historicalBase) {
+  Map<String, double> _calculateMultiFactorScores(
+    Member member,
+    double historicalBaseSupport, {
+    double voterInterest = 0.5,
+  }) {
     // 1. 성과도 (0~1)
     final achievementScore = _calculateDetailScore(
       member.achievementsList,
@@ -130,15 +141,19 @@ class CalculateElectionPossibilityUseCase {
     final pollScore = _calculatePollScore(member);
 
     // 6. 역대 선거 지역 기반 지지율 (0~1)
-    final historicalScore = historicalBase;
+    final historicalScore = historicalBaseSupport;
 
     // 가중치 평균 계산 (역대 선거 데이터 20% 반영)
-    final overallScore = (achievementScore * 0.12) +
+    double overall = (achievementScore * 0.12) +
         (activityScore * 0.12) +
         (policyScore * 0.12) +
         (publicImageScore * 0.12) +
         (pollScore * 0.32) +
         (historicalScore * 0.20);
+    
+    // PDF 기반 투표 관심도 조정 (관심도 높을수록 조직표/집중력 강화 효과, 최대 +/- 3%p)
+    final interestAdjustment = (voterInterest - 0.5) * 0.06;
+    overall = (overall + interestAdjustment).clamp(0.01, 0.99);
 
     return {
       'achievement': achievementScore,
@@ -147,7 +162,8 @@ class CalculateElectionPossibilityUseCase {
       'publicImage': publicImageScore,
       'poll': pollScore,
       'historical': historicalScore,
-      'overall': overallScore,
+      'overall': overall,
+      'voterInterest': voterInterest,
     };
   }
 
@@ -553,26 +569,17 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
     String region,
     String party,
     double partyRate,
-    String? dominantParty,
+    String? dominant,
     double gap,
+    double interest,
   ) {
-    final buffer = StringBuffer();
-    buffer.writeln('• 지역: $region');
-    buffer.writeln('• $party 과거 평균 득표율: ${partyRate.toStringAsFixed(1)}%');
+    final sb = StringBuffer();
+    sb.writeln('• 해당 지역은 $party의 역대 평균 지지율이 ${partyRate.toStringAsFixed(1)}%로 집계된 지역입니다.');
 
-    if (dominantParty != null) {
-      if (dominantParty == party) {
-        buffer.writeln('• 해당 지역은 $party 강세 지역으로, 과거 선거에서 평균 ${partyRate.toStringAsFixed(1)}%의 득표율을 기록했습니다.');
-        if (partyRate > 60) {
-          buffer.writeln('• ⚡ 압도적 우위 지역: 상대 정당 대비 ${gap.toStringAsFixed(1)}%p 차이로 매우 유리한 기반입니다.');
-        } else {
-          buffer.writeln('• 경합 가능 지역: 상대 정당과의 격차가 ${gap.toStringAsFixed(1)}%p로, 선거 분위기에 따라 결과가 달라질 수 있습니다.');
-        }
+    if (dominant == party) {
+      if (gap > 10) {
+        sb.writeln('  ⚡ 압도적 우위 지역: 상대 정당 대비 ${gap.toStringAsFixed(1)}%p 차이로 매우 유리한 기반을 보유하고 있습니다.');
       } else {
-        buffer.writeln('• ⚠️ 해당 지역은 $dominantParty 강세 지역입니다. $party는 과거 평균 ${partyRate.toStringAsFixed(1)}% 득표에 그쳤습니다.');
-        if (gap > 20) {
-          buffer.writeln('• 열세 지역: $dominantParty 대비 ${gap.toStringAsFixed(1)}%p 뒤처져, 판세 전환을 위해 강력한 차별화 전략이 필요합니다.');
-        } else {
           buffer.writeln('• 접전 가능 지역: $dominantParty와의 격차가 ${gap.toStringAsFixed(1)}%p로, 적극적인 유권자 공략 시 역전 가능성이 있습니다.');
         }
       }
