@@ -658,11 +658,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '🐴 2026 지방선거',
-                        style: AppTextStyles.headline4.copyWith(
-                          color: AppColors.white,
-                        ),
+                      Row(
+                        children: [
+                          Image.asset(
+                            'assets/images/horse_tiger_icon.png',
+                            width: 24,
+                            height: 24,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '2026 지방선거',
+                            style: AppTextStyles.headline4.copyWith(
+                              color: AppColors.white,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -748,9 +758,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     ),
                   ],
                 ),
-                Text(
-                  '🐴',
-                  style: AppTextStyles.headline1,
+                Image.asset(
+                  'assets/images/horse_tiger_icon.png',
+                  width: 60,
+                  height: 60,
                 ),
               ],
             ),
