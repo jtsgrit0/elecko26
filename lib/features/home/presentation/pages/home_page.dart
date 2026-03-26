@@ -1643,6 +1643,10 @@ String _getPartyLogoUrl(String party) {
     return 'assets/images/party/justice.png';
   } else if (party.contains('진보당')) {
     return 'assets/images/party/progressive.png';
+  } else if (party.contains('조국혁신당')) {
+    return 'assets/images/party/rebuilding.png';
+  } else if (party.contains('개혁신당')) {
+    return 'assets/images/party/reform.png';
   }
   return ''; // 로고 없음
 }
@@ -1653,5 +1657,7 @@ Color _getPartyColor(String party) {
   if (party.contains('국민의힘')) return const Color(0xFFE61E2B);
   if (party.contains('정의당')) return const Color(0xFFFFCC00);
   if (party.contains('진보당')) return const Color(0xFFD6001C);
+  if (party.contains('조국혁신당')) return const Color(0xFF00A0E2);
+  if (party.contains('개혁신당')) return const Color(0xFFFF7F00);
   return AppColors.grey;
 }
