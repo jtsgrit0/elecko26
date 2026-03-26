@@ -580,12 +580,13 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
       if (gap > 10) {
         sb.writeln('  ⚡ 압도적 우위 지역: 상대 정당 대비 ${gap.toStringAsFixed(1)}%p 차이로 매우 유리한 기반을 보유하고 있습니다.');
       } else {
-          buffer.writeln('• 접전 가능 지역: $dominantParty와의 격차가 ${gap.toStringAsFixed(1)}%p로, 적극적인 유권자 공략 시 역전 가능성이 있습니다.');
-        }
+        sb.writeln('• 유지/수성 필요 지역: 현재 우위를 점하고 있으나 격차가 크지 않아 적극적인 관리가 필요합니다.');
       }
+    } else if (dominant != null) {
+      sb.writeln('• 접전 및 탈환 가능 지역: $dominant와의 격차가 ${gap.toStringAsFixed(1)}%p로, 전략적 공략 시 승산이 있습니다.');
     }
 
-    return buffer.toString();
+    return sb.toString();
   }
 
   /// 지역구 문자열 → 광역 시·도명 매핑
