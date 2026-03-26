@@ -11,8 +11,9 @@ import 'package:flutter_application_1/app/injection_container.dart';
 
 class MemberDetailPage extends StatefulWidget {
   final Member member;
+  final VoidCallback? onBack;
 
-  const MemberDetailPage({Key? key, required this.member}) : super(key: key);
+  const MemberDetailPage({Key? key, required this.member, this.onBack}) : super(key: key);
 
   @override
   State<MemberDetailPage> createState() => _MemberDetailPageState();
@@ -88,6 +89,12 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
 
         return Scaffold(
           appBar: AppBar(
+            leading: widget.onBack != null
+                ? IconButton(
+                    icon: const Icon(Icons.arrow_back, color: AppColors.white),
+                    onPressed: widget.onBack,
+                  )
+                : null,
             title: Text(
               member.name,
               style: AppTextStyles.headline2.copyWith(

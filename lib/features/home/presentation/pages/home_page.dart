@@ -26,6 +26,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   List<Member> _cachedMembers = [];
   List<_TopMember> _cachedTop3 = [];
   List<_TopMember> _cachedRanked = [];
+  Member? _selectedMember;
   
   // 검색 관련 상태
   final TextEditingController _searchController = TextEditingController();
@@ -128,17 +129,36 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
-        child: _buildAppBar(),
+      appBar: _selectedMember == null 
+        ? PreferredSize(
+            preferredSize: const Size.fromHeight(80),
+            child: _buildAppBar(),
+          )
+        : null, // 상세 페이지는 자체 AppBar 사용
+      body: PopScope(
+        canPop: _selectedMember == null,
+        onPopInvokedWithResult: (bool didPop, dynamic result) {
+          if (!didPop && _selectedMember != null) {
+            setState(() {
+              _selectedMember = null;
+            });
+          }
+        },
+        child: _buildBody(),
       ),
-      body: _buildBody(),
       bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 
   // 바디 위젯 필터リング
   Widget _buildBody() {
+    if (_selectedMember != null) {
+      return MemberDetailPage(
+        member: _selectedMember!,
+        onBack: () => setState(() => _selectedMember = null),
+      );
+    }
+    
     switch (_selectedIndex) {
       case 0:
         return _buildHomeDashboard();
@@ -272,7 +292,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           itemBuilder: (context, index) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _MemberCard(member: filteredMembers[index]),
+              child: _MemberCard(
+                member: filteredMembers[index],
+                onTap: () => setState(() => _selectedMember = filteredMembers[index]),
+              ),
             );
           },
         );
@@ -310,7 +333,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           itemBuilder: (context, index) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _MemberCard(member: favoriteMembers[index]),
+              child: _MemberCard(
+                member: favoriteMembers[index],
+                onTap: () => setState(() => _selectedMember = favoriteMembers[index]),
+              ),
             );
           },
         );
@@ -496,18 +522,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Widget _buildSimpleMemberHeader(Member m) {
     final partyColor = _getPartyColor(m.party);
-    return Column(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(40),
-          child: m.imageUrl.isNotEmpty
-              ? Image.network(m.imageUrl, width: 80, height: 80, fit: BoxFit.cover)
-              : Container(width: 80, height: 80, color: AppColors.lightGrey, child: const Icon(Icons.person, size: 40)),
-        ),
-        const SizedBox(height: 8),
-        Text(m.name, style: AppTextStyles.headline4),
-        Text(m.party, style: AppTextStyles.labelSmall.copyWith(color: partyColor, fontWeight: FontWeight.bold)),
-      ],
+    return GestureDetector(
+      onTap: () => setState(() => _selectedMember = m),
+      child: Column(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(40),
+            child: m.imageUrl.isNotEmpty
+                ? Image.network(m.imageUrl, width: 80, height: 80, fit: BoxFit.cover)
+                : Container(width: 80, height: 80, color: AppColors.lightGrey, child: const Icon(Icons.person, size: 40)),
+          ),
+          const SizedBox(height: 8),
+          Text(m.name, style: AppTextStyles.headline4),
+          Text(m.party, style: AppTextStyles.labelSmall.copyWith(color: partyColor, fontWeight: FontWeight.bold)),
+        ],
+      ),
     );
   }
 
@@ -1141,7 +1170,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       final member = ranked[index].member;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: _MemberCard(member: member),
+                        child: _MemberCard(
+                          member: member,
+                          onTap: () => setState(() => _selectedMember = member),
+                        ),
                       );
                     },
                   );
@@ -1332,6 +1364,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       onTap: (index) {
         setState(() {
           _selectedIndex = index;
+          _selectedMember = null; // 탭 전환 시 상세 페이지 닫기
         });
       },
     );
@@ -1433,8 +1466,9 @@ class _TopMember {
 // 의원 카드 위젯
 class _MemberCard extends StatefulWidget {
   final Member member;
+  final VoidCallback? onTap;
 
-  const _MemberCard({required this.member});
+  const _MemberCard({required this.member, this.onTap});
 
   @override
   State<_MemberCard> createState() => _MemberCardState();
@@ -1461,13 +1495,7 @@ class _MemberCardState extends State<_MemberCard> {
   Widget build(BuildContext context) {
     final member = widget.member;
     return GestureDetector(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => MemberDetailPage(member: member),
-          ),
-        );
-      },
+      onTap: widget.onTap,
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
