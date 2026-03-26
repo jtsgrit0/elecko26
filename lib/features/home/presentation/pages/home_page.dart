@@ -661,7 +661,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       Row(
                         children: [
                           Image.asset(
-                            'assets/images/horse_tiger_icon.png',
+                            'assets/images/election_icon.png',
                             width: 24,
                             height: 24,
                           ),
@@ -759,7 +759,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   ],
                 ),
                 Image.asset(
-                  'assets/images/horse_tiger_icon.png',
+                  'assets/images/election_icon.png',
                   width: 60,
                   height: 60,
                 ),
