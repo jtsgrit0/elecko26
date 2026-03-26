@@ -46,10 +46,15 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Data & Source files
+# Raw Election Data (Excel, PDF, Zip)
 *.xlsx
 *.xls
 *.pdf
+*.zip
 data/pdf_texts/
-tools/*.pyc
+중앙선거관리위원회*/
+*.pyc
+
+# Local environment
+.env
 __pycache__/
