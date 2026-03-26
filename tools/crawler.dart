@@ -10,13 +10,15 @@ void main() async {
 
   // 다양한 소스 및 키워드로 검색 확장
   final List<String> searchQueries = [
-    '2026 지방선거 출마',
+    '2026 지방선거 출마 선언',
     '2026 지방선거 도전',
-    '2026 지방선거 선언',
-    '서울시장 출마',
-    '경기도지사 출마',
-    '부산시장 출마',
-    '인천시장 출마',
+    '서울시장 출마 선언',
+    '경기도지사 출마 선언',
+    '부산시장 출마 선언',
+    '대구시장 출마 선언',
+    '인천시장 출마 선언',
+    '제주도지사 출마 선언',
+    '지방선거 예비후보 등록',
   ];
 
   List<Map<String, dynamic>> allCandidates = [];
@@ -26,7 +28,7 @@ void main() async {
     final candidates = await crawlCandidates(query);
     allCandidates.addAll(candidates);
     // 서버 과부하 방지 약간의 딜레이
-    await Future.delayed(Duration(seconds: 1));
+    await Future.delayed(Duration(milliseconds: 500));
   }
 
   // 전체 수집된 후보 중 중복 제거 (이름 기준)
@@ -57,30 +59,55 @@ void main() async {
     } catch (e) {}
   }
 
-  // 간단한 중복 제거 (이름 기준)
-  final existingNames = existingCandidates.map((c) => c['name']).toSet();
-  final newCandidates = candidates.where((c) => !existingNames.contains(c['name'])).toList();
+  // 기존 후보 업데이트 및 신규 추가
+  final Map<String, dynamic> candidatePool = {
+    for (var c in existingCandidates) c['name']: c
+  };
+
+  int newCount = 0;
+  for (var c in candidates) {
+    if (!candidatePool.containsKey(c['name'])) {
+      candidatePool[c['name']] = c;
+      newCount++;
+    } else {
+      // 기존 후보 정보 업데이트 (이미지나 최신 기사 등)
+      final existing = candidatePool[c['name']]!;
+      if (existing['imageUrl'] == null || existing['imageUrl'].toString().contains('placeholder')) {
+        existing['imageUrl'] = c['imageUrl'];
+      }
+      // 최신 보도자료 추가 (중복 체크 생략/간소화)
+      if (existing['pressReports'] != null && c['pressReports'] != null) {
+        final List reports = existing['pressReports'];
+        final String newTitle = c['pressReports'][0]['title'];
+        if (!reports.any((r) => r['title'] == newTitle)) {
+          reports.insert(0, c['pressReports'][0]);
+          if (reports.length > 5) reports.removeLast();
+        }
+      }
+      existing['lastAnalysisDate'] = DateTime.now().toIso8601String();
+    }
+  }
 
   // 하차/탈락자 크롤링 및 명단 제거 로직
   print('🔍 하차/탈락 의심 후보를 검색합니다...');
   final dropouts = await crawlDropouts();
   if (dropouts.isNotEmpty) {
-    final originalLength = existingCandidates.length;
-    existingCandidates.removeWhere((c) => dropouts.contains(c['name']));
-    final removedCount = originalLength - existingCandidates.length;
+    final originalLength = candidatePool.length;
+    candidatePool.removeWhere((name, _) => dropouts.contains(name));
+    final removedCount = originalLength - candidatePool.length;
     if (removedCount > 0) {
-      print('🗑️ 하차/탈락 키워드로 인해 $removedCount 명의 후보가 명단에서 제거성공되었습니다.');
+      print('🗑️ 하차/탈락 키워드로 인해 $removedCount 명의 후보가 명단에서 제거되었습니다.');
     }
   }
 
-  await file.writeAsString(json.encode(existingCandidates));
+  await file.writeAsString(JsonEncoder.withIndent('  ').convert(candidatePool.values.toList()));
   
-  print('✅ 총 ${newCandidates.length}명의 새로운 후보가 업데이트 되었습니다.');
-  print('전체 등록된 후보 수: ${existingCandidates.length}');
+  print('✅ 총 $newCount 명의 새로운 후보가 추가되었습니다.');
+  print('전체 등록된 후보 수: ${candidatePool.length}');
 }
 
 Future<Set<String>> crawlDropouts() async {
-  final query = Uri.encodeComponent('2026 지방선거 불출마 OR 사퇴 OR 탈락');
+  final query = Uri.encodeComponent('2026 지방선거 "불출마" OR "사퇴" OR "탈락"');
   final url = 'https://search.naver.com/search.naver?where=news&query=$query';
 
   final response = await http.get(Uri.parse(url), headers: {
@@ -96,12 +123,10 @@ Future<Set<String>> crawlDropouts() async {
   for (int i = 0; i < newsTitles.length; i++) {
     final title = newsTitles[i].text.trim();
     if (title.contains('불출마') || title.contains('사퇴') || title.contains('탈락') || title.contains('포기')) {
-      final nameMatch = RegExp(r'^([가-힣]{2,4})\s').firstMatch(title);
+      // 이름 추출 최적화: "홍길동 불출마" 또는 "홍길동, 지방선거 사퇴" 등
+      final nameMatch = RegExp(r'([가-힣]{2,4})(?:\s|[,])(?:불출마|사퇴|탈락|포기|의원|시장|지사)').firstMatch(title);
       if (nameMatch != null) {
-        final name = nameMatch.group(1)!;
-        if (name.length <= 4 && !name.contains('출마')) {
-          dropoutNames.add(name);
-        }
+        dropoutNames.add(nameMatch.group(1)!);
       }
     }
   }
@@ -123,7 +148,6 @@ Future<List<Map<String, dynamic>>> crawlCandidates(String searchKeyword) async {
 
   final document = parse(response.body);
   final newsTitles = document.querySelectorAll('.news_tit');
-  final newsDescriptions = document.querySelectorAll('.dsc_txt_wrap'); // 수정 가능
   
   // 실제 서비스라면 LLM API(OpenAI/Gemini)에 본문을 통째로 넘겨 인물 정보를 추출하는 것이 정확합니다.
   // 이 예제에서는 데모를 위해 고유명사나 특정 키워드를 기반으로 간단한 모의 추출을 수행합니다.
@@ -134,24 +158,36 @@ Future<List<Map<String, dynamic>>> crawlCandidates(String searchKeyword) async {
     final title = newsTitles[i].text.trim();
     final url = newsTitles[i].attributes['href'] ?? '';
     
-    // 출마 의심 기사 판별 규칙 완화
-    if (title.contains('출마') || title.contains('도전') || title.contains('선언') || title.contains('후보')) {
-      // 좀 더 유연한 이름 추출: 뉴스 제목의 앞부분을 이름으로 추정
-      // 실무에서는 NLP 형태소분석기/NER 모델을 씁니다. 데모를 위해 규칙을 매우 느슨하게 가져갑니다.
-      final words = title.split(' ');
-      String? name;
+    // 출마 의심 기사 판별 규칙 강화
+    if (title.contains('출마') || title.contains('도전') || title.contains('선언') || title.contains('예비후보') || title.contains('도전장')) {
       
-      for(var w in words) {
-        final cleanWord = w.replaceAll(RegExp(r'[^가-힣]'), '');
-        // 보통 사람 이름은 한국어 2~4글자
-        if(cleanWord.length >= 2 && cleanWord.length <= 4 && !cleanWord.contains('출마') && !cleanWord.contains('선거') && !cleanWord.contains('도전')) {
-            name = cleanWord;
-            break;
+      // 고도화된 이름 추출 로직
+      // 1. "직함" 앞의 단어를 이름으로 추정 (예: 김부겸 전 총리 -> 김부겸)
+      // 2. "이름+출마" (예: 홍길동 출마 -> 홍길동)
+      final rankPattern = RegExp(r'([가-힣]{2,4})\s*(?:전\s*)?(?:총리|의원|지사|시장|구청장|장관|대표|부의장|부장|교수)');
+      final declarePattern = RegExp(r'([가-힣]{2,4})(?:\s|[,]|의)?\s*(?:출마|도전|선언|예비후보|등록)');
+      
+      String? name;
+      final rankMatch = rankPattern.firstMatch(title);
+      if (rankMatch != null) {
+        name = rankMatch.group(1);
+      } else {
+        final declareMatch = declarePattern.firstMatch(title);
+        if (declareMatch != null) {
+          name = declareMatch.group(1);
+        }
+      }
+
+      // 예외 이름 필터링 (조사 등이 섞인 경우 방지)
+      if (name != null) {
+        name = name.replaceAll(RegExp(r'[가-힣]+(이|가|은|는|의|를|을)$'), '');
+        if (name.length < 2 || name.length > 4 || ['지방', '선거', '국회', '정치', '민심', '출마', '도전'].contains(name)) {
+          name = null;
         }
       }
 
       if (name != null) {
-         // 키워드 추출
+         final words = title.split(' ');
          final keywords = words
              .map((w) => w.replaceAll(RegExp(r'[^\w\s가-힣]'), ''))
              .where((w) => w.length >= 2 && w != name)
@@ -160,15 +196,34 @@ Future<List<Map<String, dynamic>>> crawlCandidates(String searchKeyword) async {
 
          print('📸 [$name] 프로필 이미지 검색 중...');
          final imageUrl = await fetchProfileImageUrl(name);
+         
+         String party = '무소속';
+         if (title.contains('국민의힘') || title.contains('국힘')) party = '국민의힘';
+         else if (title.contains('민주당') || title.contains('더불어민주당')) party = '더불어민주당';
+         else if (title.contains('조국혁신당')) party = '조국혁신당';
+         else if (title.contains('개혁신당')) party = '개혁신당';
+         else if (title.contains('정의당')) party = '정의당';
+         else if (title.contains('진보당')) party = '진보당';
+
+         String district = '전국';
+         if (title.contains('서울')) district = '서울특별시장';
+         else if (title.contains('경기')) district = '경기도지사';
+         else if (title.contains('부산')) district = '부산광역시장';
+         else if (title.contains('대구')) district = '대구광역시장';
+         else if (title.contains('인천')) district = '인천광역시장';
+         else if (title.contains('광주')) district = '광주광역시장';
+         else if (title.contains('대전')) district = '대전광역시장';
+         else if (title.contains('울산')) district = '울산광역시장';
+         else if (title.contains('제주')) district = '제주특별자치도지사';
              
          extracted.add({
           'id': 'candidate_${DateTime.now().millisecondsSinceEpoch}_$i',
           'name': name,
-          'party': title.contains('국민의힘') ? '국민의힘' : (title.contains('민주당') ? '더불어민주당' : (title.contains('개혁신당') ? '개혁신당' : '무소속')),
-          'district': title.contains('서울') ? '서울특별시장' : (title.contains('경기') ? '경기도지사' : (title.contains('부산') ? '부산광역시장' : '전국')),
+          'party': party,
+          'district': district,
           'imageUrl': imageUrl,
-          'bio': '포털 뉴스 출마 확인. 주요 키워드: #${keywords.join(' #')}',
-          'electionDate': '2026-06-03',
+          'bio': '포털 뉴스 기반 생성. 주요 키워드: #${keywords.join(' #')}',
+          'electionDate': '2026-06-03T00:00:00.000',
           'term': 0,
           'achievementsList': [title],
           'actions': ['최근 행보 키워드: ${keywords.join(', ')}'],

@@ -435,6 +435,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   // 비교 결과 화면
   Widget _buildComparisonResults(Member m1, Member m2) {
+    final color1 = _getPartyColor(m1.party);
+    final color2 = _getPartyColor(m2.party);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -461,7 +464,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ],
           ),
           const SizedBox(height: 24),
-          _buildComparisonRow('당선 가능성', m1.electionPossibility, m2.electionPossibility, isPercent: true),
+          _buildComparisonRow('당선 가능성', m1.electionPossibility, m2.electionPossibility, color1, color2, isPercent: true),
           const SizedBox(height: 16),
           FutureBuilder<List<AnalysisResult>>(
             future: Future.wait([
@@ -475,13 +478,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
               return Column(
                 children: [
-                  _buildComparisonRow('성과도', a1.achievementScore, a2.achievementScore),
+                  _buildComparisonRow('성과도', a1.achievementScore, a2.achievementScore, color1, color2),
                   const SizedBox(height: 16),
-                  _buildComparisonRow('활동도', a1.activityScore, a2.activityScore),
+                  _buildComparisonRow('활동도', a1.activityScore, a2.activityScore, color1, color2),
                   const SizedBox(height: 16),
-                  _buildComparisonRow('정책도', a1.policyScore, a2.policyScore),
+                  _buildComparisonRow('정책도', a1.policyScore, a2.policyScore, color1, color2),
                   const SizedBox(height: 16),
-                  _buildComparisonRow('언론도', a1.publicImageScore, a2.publicImageScore),
+                  _buildComparisonRow('언론도', a1.publicImageScore, a2.publicImageScore, color1, color2),
                 ],
               );
             },
@@ -492,6 +495,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Widget _buildSimpleMemberHeader(Member m) {
+    final partyColor = _getPartyColor(m.party);
     return Column(
       children: [
         ClipRRect(
@@ -502,29 +506,30 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         ),
         const SizedBox(height: 8),
         Text(m.name, style: AppTextStyles.headline4),
-        Text(m.party, style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary)),
+        Text(m.party, style: AppTextStyles.labelSmall.copyWith(color: partyColor, fontWeight: FontWeight.bold)),
       ],
     );
   }
 
-  Widget _buildComparisonRow(String label, double v1, double v2, {bool isPercent = false}) {
+  Widget _buildComparisonRow(String label, double v1, double v2, Color c1, Color c2, {bool isPercent = false}) {
     final display1 = isPercent ? '${(v1 * 100).toStringAsFixed(1)}%' : (v1 * 100).toStringAsFixed(1);
     final display2 = isPercent ? '${(v2 * 100).toStringAsFixed(1)}%' : (v2 * 100).toStringAsFixed(1);
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Center(child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold))),
+        Center(child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
         const SizedBox(height: 8),
         Row(
           children: [
             Expanded(
               child: Text(display1, textAlign: TextAlign.right, style: TextStyle(
-                color: v1 > v2 ? AppColors.success : AppColors.darkGray,
-                fontWeight: v1 > v2 ? FontWeight.bold : FontWeight.normal,
+                color: c1,
+                fontWeight: v1 >= v2 ? FontWeight.bold : FontWeight.normal,
+                fontSize: 16,
               )),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               flex: 4,
               child: Stack(
@@ -535,23 +540,25 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         child: RotatedBox(
                           quarterTurns: 2,
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(2),
+                            borderRadius: BorderRadius.circular(4),
                             child: LinearProgressIndicator(
                               value: v1,
-                              backgroundColor: AppColors.lightGrey,
-                              valueColor: AlwaysStoppedAnimation(v1 > v2 ? AppColors.success : AppColors.grey),
+                              backgroundColor: AppColors.lightGrey.withOpacity(0.3),
+                              valueColor: AlwaysStoppedAnimation(c1.withOpacity(v1 >= v2 ? 1.0 : 0.4)),
+                              minHeight: 12,
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 2),
+                      const SizedBox(width: 4),
                       Expanded(
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: BorderRadius.circular(4),
                           child: LinearProgressIndicator(
                             value: v2,
-                            backgroundColor: AppColors.lightGrey,
-                            valueColor: AlwaysStoppedAnimation(v2 > v1 ? AppColors.success : AppColors.grey),
+                            backgroundColor: AppColors.lightGrey.withOpacity(0.3),
+                            valueColor: AlwaysStoppedAnimation(c2.withOpacity(v2 >= v1 ? 1.0 : 0.4)),
+                            minHeight: 12,
                           ),
                         ),
                       ),
@@ -560,11 +567,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ],
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(display2, style: TextStyle(
-                color: v2 > v1 ? AppColors.success : AppColors.darkGray,
-                fontWeight: v2 > v1 ? FontWeight.bold : FontWeight.normal,
+                color: c2,
+                fontWeight: v2 >= v1 ? FontWeight.bold : FontWeight.normal,
+                fontSize: 16,
               )),
             ),
           ],
