@@ -204,6 +204,7 @@ Future<List<Map<String, dynamic>>> crawlCandidates(String searchKeyword) async {
          else if (title.contains('개혁신당')) party = '개혁신당';
          else if (title.contains('정의당')) party = '정의당';
          else if (title.contains('진보당')) party = '진보당';
+         else if (title.contains('기본소득당')) party = '기본소득당';
 
          String district = '전국';
          if (title.contains('서울')) district = '서울특별시장';

@@ -1647,6 +1647,8 @@ String _getPartyLogoUrl(String party) {
     return 'assets/images/party/rebuilding.png';
   } else if (party.contains('개혁신당')) {
     return 'assets/images/party/reform.png';
+  } else if (party.contains('기본소득당')) {
+    return 'assets/images/party/basicincome.png';
   }
   return ''; // 로고 없음
 }
@@ -1659,5 +1661,6 @@ Color _getPartyColor(String party) {
   if (party.contains('진보당')) return const Color(0xFFD6001C);
   if (party.contains('조국혁신당')) return const Color(0xFF00A0E2);
   if (party.contains('개혁신당')) return const Color(0xFFFF7F00);
+  if (party.contains('기본소득당')) return const Color(0xFF00D2C3);
   return AppColors.grey;
 }
