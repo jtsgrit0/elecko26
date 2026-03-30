@@ -37,4 +37,5 @@ abstract class MemberRepository {
 
   /// 즐겨찾기 상태 토글
   Future<void> toggleFavorite(String memberId);
+  Future<void> resetSettings();
 }

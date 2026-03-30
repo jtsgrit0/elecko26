@@ -38,6 +38,7 @@ dependencies:
   http: ^1.2.2
   html: ^0.15.4
   syncfusion_flutter_pdf: ^31.2.18
+  shared_preferences: ^2.5.2
 
 dev_dependencies:
   flutter_test:

@@ -746,12 +746,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ],
           ),
           const SizedBox(height: 20),
-          _AnimatedDuelScene(
-            m1: m1,
-            m2: m2,
-            onComplete: () {
-              // 애니메이션 완료 후 추가 효과가 필요하면 여기에 구현
-            },
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Expanded(child: _buildSimpleMemberHeader(m1)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'VS',
+                  style: TextStyle(
+                    fontSize: 48,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.grey.withOpacity(0.2),
+                  ),
+                ),
+              ),
+              Expanded(child: _buildSimpleMemberHeader(m2)),
+            ],
           ),
           const SizedBox(height: 32),
           _buildComparisonRow('당선 가능성', m1.electionPossibility, m2.electionPossibility, color1, color2, isPercent: true),
@@ -810,17 +821,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           const SizedBox(height: 8),
           Text(m.name, style: AppTextStyles.headline4),
           Text(m.party, style: AppTextStyles.labelSmall.copyWith(color: partyColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 2),
+          Text(m.district, style: AppTextStyles.labelSmall.copyWith(color: AppColors.grey)),
         ],
       ),
     );
   }
 
   Widget _buildComparisonRow(String label, double v1, double v2, Color c1, Color c2, {bool isPercent = false}) {
-    // 일기토 애니메이션이 진행되는 동안은 0부터 시작하여 부드럽게 차오르도록 설정
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 2500),
-      curve: Curves.easeOutQuart,
+      duration: const Duration(milliseconds: 1500),
+      curve: Curves.easeOutCubic,
       builder: (context, animValue, child) {
         final currentV1 = v1 * animValue;
         final currentV2 = v2 * animValue;
@@ -831,78 +843,62 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(child: Text(label, style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold))),
+            Center(child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
             const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    display1, 
-                    textAlign: TextAlign.right, 
-                    style: TextStyle(
-                      color: c1,
-                      fontWeight: v1 >= v2 ? FontWeight.bold : FontWeight.normal,
-                      fontSize: 16,
-                      fontFamily: 'Roboto', // 수치 변화 시 글자 떨림 방지
-                    )
-                  ),
+                  child: Text(display1, textAlign: TextAlign.right, style: TextStyle(
+                    color: c1,
+                    fontWeight: v1 >= v2 ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 16,
+                  )),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   flex: 4,
-                  child: Container(
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: AppColors.lightGrey.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Stack(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: RotatedBox(
-                                quarterTurns: 2,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(6),
-                                  child: LinearProgressIndicator(
-                                    value: animValue > 0.2 ? (currentV1 / (v1 + 0.0001)).clamp(0.0, 1.0) * v1 : 0,
-                                    backgroundColor: Colors.transparent,
-                                    valueColor: AlwaysStoppedAnimation(c1.withOpacity(v1 >= v2 ? 1.0 : 0.6)),
-                                    minHeight: 12,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
+                  child: Stack(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: RotatedBox(
+                              quarterTurns: 2,
                               child: ClipRRect(
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: BorderRadius.circular(4),
                                 child: LinearProgressIndicator(
-                                  value: animValue > 0.2 ? (currentV2 / (v2 + 0.0001)).clamp(0.0, 1.0) * v2 : 0,
-                                  backgroundColor: Colors.transparent,
-                                  valueColor: AlwaysStoppedAnimation(c2.withOpacity(v2 >= v1 ? 1.0 : 0.6)),
+                                  value: currentV1,
+                                  backgroundColor: AppColors.lightGrey.withOpacity(0.3),
+                                  valueColor: AlwaysStoppedAnimation(c1.withOpacity(v1 >= v2 ? 1.0 : 0.4)),
                                   minHeight: 12,
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: currentV2,
+                                backgroundColor: AppColors.lightGrey.withOpacity(0.3),
+                                valueColor: AlwaysStoppedAnimation(c2.withOpacity(v2 >= v1 ? 1.0 : 0.4)),
+                                minHeight: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    display2, 
-                    style: TextStyle(
-                      color: c2,
-                      fontWeight: v2 >= v1 ? FontWeight.bold : FontWeight.normal,
-                      fontSize: 16,
-                      fontFamily: 'Roboto',
-                    )
-                  ),
+                  child: Text(display2, style: TextStyle(
+                    color: c2,
+                    fontWeight: v2 >= v1 ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 16,
+                  )),
                 ),
               ],
             ),
@@ -2009,261 +2005,4 @@ Color _getPartyColor(String party) {
   if (party.contains('개혁신당')) return const Color(0xFFFF7F00);
   if (party.contains('기본소득당')) return const Color(0xFF00D2C3);
   return AppColors.grey;
-}
-
-/// 일기토 애니메이션 씬 위젯
-class _AnimatedDuelScene extends StatefulWidget {
-  final Member m1;
-  final Member m2;
-  final VoidCallback? onComplete;
-
-  const _AnimatedDuelScene({
-    required this.m1,
-    required this.m2,
-    this.onComplete,
-  });
-
-  @override
-  State<_AnimatedDuelScene> createState() => _AnimatedDuelSceneState();
-}
-
-class _AnimatedDuelSceneState extends State<_AnimatedDuelScene> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _dashAnimation;
-  late Animation<double> _clashAnimation;
-  late Animation<double> _scaleAnimation;
-  bool _showExplosion = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 3000),
-      vsync: this,
-    );
-
-    // 대시 애니메이션 (양쪽에서 중앙으로)
-    _dashAnimation = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.0, end: 0.45).chain(CurveTween(curve: Curves.easeInQuint)),
-        weight: 60,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.45, end: 0.42).chain(CurveTween(curve: Curves.elasticOut)),
-        weight: 40,
-      ),
-    ]).animate(_controller);
-
-    // 충돌 시 흔들림 효과
-    _clashAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: ConstantTween<double>(0.0), weight: 60),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: -5.0, end: 5.0).chain(CurveTween(curve: Curves.bounceIn)),
-        weight: 10,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 5.0, end: 0.0),
-        weight: 30,
-      ),
-    ]).animate(_controller);
-
-    // 스케일 효과
-    _scaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: ConstantTween<double>(0.8), weight: 30),
-      TweenSequenceItem(tween: Tween<double>(begin: 0.8, end: 1.0), weight: 30),
-      TweenSequenceItem(tween: ConstantTween<double>(1.0), weight: 40),
-    ]).animate(_controller);
-
-    _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        widget.onComplete?.call();
-      }
-    });
-
-    _controller.addListener(() {
-      if (_controller.value > 0.58 && !_showExplosion) {
-        setState(() => _showExplosion = true);
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted) setState(() => _showExplosion = false);
-        });
-      }
-    });
-
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 240,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            AppColors.darkGray.withOpacity(0.08),
-            AppColors.darkGray.withOpacity(0.02),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.lightGrey.withOpacity(0.5)),
-      ),
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          final screenWidth = MediaQuery.of(context).size.width;
-          return Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // 중앙 VS 배경 장식
-              Center(
-                child: Opacity(
-                  opacity: _controller.value > 0.5 ? 0.8 : _controller.value,
-                  child: Transform.scale(
-                    scale: 1.0 + (1.0 - _controller.value) * 1.5,
-                    child: Text(
-                      'VS',
-                      style: TextStyle(
-                        fontSize: 100,
-                        fontWeight: FontWeight.w900,
-                        foreground: Paint()
-                          ..style = PaintingStyle.stroke
-                          ..strokeWidth = 2
-                          ..color = AppColors.primary.withOpacity(0.1),
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // 좌측 기마병 (후보 1)
-              Positioned(
-                left: -120 + (screenWidth * _dashAnimation.value),
-                top: 30 + _clashAnimation.value,
-                child: Transform.scale(
-                  scale: _scaleAnimation.value,
-                  child: _buildRider(widget.m1, isLeft: true),
-                ),
-              ),
-
-              // 우측 기마병 (후보 2)
-              Positioned(
-                right: -120 + (screenWidth * _dashAnimation.value),
-                top: 35 - _clashAnimation.value,
-                child: Transform.scale(
-                  scale: _scaleAnimation.value,
-                  child: _buildRider(widget.m2, isLeft: false),
-                ),
-              ),
-
-              // 충돌 효과 (스파크)
-              if (_showExplosion)
-                Center(
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0.0, end: 1.0),
-                    duration: const Duration(milliseconds: 200),
-                    builder: (context, value, child) {
-                      return Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Transform.scale(
-                            scale: value * 4,
-                            child: Opacity(
-                              opacity: 1.0 - value,
-                              child: const Icon(Icons.flash_on, color: Colors.amber, size: 40),
-                            ),
-                          ),
-                          Transform.scale(
-                            scale: value * 2,
-                            child: Opacity(
-                              opacity: 1.0 - value,
-                              child: Container(
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white.withOpacity(0.5),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildRider(Member member, {required bool isLeft}) {
-    final imagePath = isLeft ? 'assets/images/duel/rider_left.png' : 'assets/images/duel/rider_right.png';
-    // 기마 캐릭터 이미지 내의 얼굴 좌표 (에셋 비중에 맞춰 조정)
-    final double faceTop = isLeft ? 45 : 48;
-    final double faceSide = isLeft ? 104 : 101;
-
-    return SizedBox(
-      width: 220,
-      height: 220,
-      child: Stack(
-        children: [
-          // 캐릭터 본체
-          Image.asset(
-            imagePath,
-            width: 220,
-            height: 220,
-            fit: BoxFit.contain,
-          ),
-          
-          // 후보자 얼굴 오버레이
-          Positioned(
-            top: faceTop,
-            left: isLeft ? faceSide : null,
-            right: !isLeft ? faceSide : null,
-            child: Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 6, spreadRadius: 1),
-                ],
-              ),
-              child: ClipOval(
-                child: member.imageUrl.isNotEmpty
-                    ? Image.network(
-                        member.imageUrl,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(color: AppColors.lightGrey);
-                        },
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: AppColors.lightGrey,
-                          child: const Icon(Icons.person, size: 20),
-                        ),
-                      )
-                    : Container(
-                        color: AppColors.lightGrey,
-                        child: const Icon(Icons.person, size: 20),
-                      ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

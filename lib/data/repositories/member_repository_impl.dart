@@ -6,6 +6,9 @@ import 'package:flutter_application_1/domain/entities/poll.dart';
 import 'package:flutter_application_1/domain/repositories/member_repository.dart';
 import 'package:flutter_application_1/data/datasources/nesdc_poll_data_source.dart';
 import 'package:flutter_application_1/core/platform/platform_info.dart';
+import 'package:flutter_application_1/app/injection_container.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
 /// 멤버 저장소 구현체 (데이터 레이어)
 class MemberRepositoryImpl implements MemberRepository {
@@ -56,7 +59,11 @@ class MemberRepositoryImpl implements MemberRepository {
         .where((m) =>
             m.name.toLowerCase().contains(lowerQuery) ||
             m.party.toLowerCase().contains(lowerQuery) ||
-            m.district.toLowerCase().contains(lowerQuery))
+            m.district.toLowerCase().contains(lowerQuery) ||
+            m.bio.toLowerCase().contains(lowerQuery) ||
+            m.policies.any((p) => p.toLowerCase().contains(lowerQuery)) ||
+            m.achievementsList.any((a) => a.toLowerCase().contains(lowerQuery)) ||
+            m.improvementPoints.any((i) => i.toLowerCase().contains(lowerQuery)))
         .toList();
   }
 
@@ -76,6 +83,9 @@ class MemberRepositoryImpl implements MemberRepository {
     }
     _refreshInProgress = true;
     final now = DateTime.now();
+    final prefs = sl<SharedPreferences>();
+    final favoriteIds = prefs.getStringList('favorite_member_ids') ?? [];
+
     try {
       try {
         final rawUrl = 'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
@@ -86,14 +96,17 @@ class MemberRepositoryImpl implements MemberRepository {
             try {
               final newMember = MemberModel.fromJson(item as Map<String, dynamic>);
               final idx = _dummyMembers.indexWhere((m) => m.name == newMember.name);
+              
+              final isFavorite = favoriteIds.contains(newMember.id);
+              
               if (idx != -1) {
                 _dummyMembers[idx] = newMember.copyWith(
                   polls: _dummyMembers[idx].polls,
-                  isFavorite: _dummyMembers[idx].isFavorite,
+                  isFavorite: isFavorite,
                 );
               } else {
                 if (!_dummyMembers.any((m) => m.id == newMember.id)) {
-                  _dummyMembers.add(newMember);
+                  _dummyMembers.add(newMember.copyWith(isFavorite: isFavorite));
                 }
               }
             } catch (e) {
@@ -332,7 +345,33 @@ class MemberRepositoryImpl implements MemberRepository {
     final index = _dummyMembers.indexWhere((m) => m.id == memberId);
     if (index != -1) {
       final member = _dummyMembers[index];
-      _dummyMembers[index] = member.copyWith(isFavorite: !member.isFavorite);
+      final newFavoriteStatus = !member.isFavorite;
+      _dummyMembers[index] = member.copyWith(isFavorite: newFavoriteStatus);
+      
+      // SharedPreferences에 저장
+      final prefs = sl<SharedPreferences>();
+      final List<String> favoriteIds = prefs.getStringList('favorite_member_ids') ?? [];
+      
+      if (newFavoriteStatus) {
+        if (!favoriteIds.contains(memberId)) {
+          favoriteIds.add(memberId);
+        }
+      } else {
+        favoriteIds.remove(memberId);
+      }
+      
+      await prefs.setStringList('favorite_member_ids', favoriteIds);
+    }
+  }
+
+  @override
+  Future<void> resetSettings() async {
+    final prefs = sl<SharedPreferences>();
+    await prefs.clear(); // 모든 저장된 데이터 삭제 (지역 정보 포함)
+    
+    // 메모리 내 즐겨찾기 상태 초기화
+    for (var i = 0; i < _dummyMembers.length; i++) {
+      _dummyMembers[i] = _dummyMembers[i].copyWith(isFavorite: false);
     }
   }
 }

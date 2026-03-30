@@ -1,6 +1,9 @@
 import 'package:flutter_application_1/domain/entities/member.dart';
 import 'package:flutter_application_1/domain/usecases/member_usecases.dart';
 import 'package:flutter_application_1/app/injection_container.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_application_1/core/theme/app_theme.dart';
+import 'package:flutter/material.dart';
 
 class MemberListPage extends StatefulWidget {
   const MemberListPage({Key? key}) : super(key: key);
@@ -12,15 +15,24 @@ class MemberListPage extends StatefulWidget {
 class _MemberListPageState extends State<MemberListPage> {
   late TextEditingController _searchController;
   late Stream<List<Member>> _membersStream;
-  String _sortBy = 'name'; // name, party, possibility
+  String _sortBy = 'possibility'; // name, party, possibility (당선 가능성 높은 순 기본)
   String _filterParty = 'all';
   String _searchQuery = '';
+  String _userRegion = '전국';
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
     _membersStream = sl<WatchMembersUseCase>().call();
+    _loadUserRegion();
+  }
+
+  Future<void> _loadUserRegion() async {
+    final prefs = sl<SharedPreferences>();
+    setState(() {
+      _userRegion = prefs.getString('user_selected_region') ?? '전국';
+    });
   }
 
   @override
@@ -50,11 +62,26 @@ class _MemberListPageState extends State<MemberListPage> {
                 
                 var members = snapshot.data ?? [];
                 
+                // 지역 필터링
+                if (_userRegion != '전국') {
+                  String shortRegion = _userRegion.substring(0, 2);
+                  if (_userRegion == '세종특별자치시') shortRegion = '세종';
+                  if (_userRegion == '제주특별자치도') shortRegion = '제주';
+                  if (_userRegion == '전북특별자치도') shortRegion = '전북';
+                  
+                  members = members.where((m) => m.district.contains(shortRegion)).toList();
+                }
+                
                 // 검색 필터
                 if (_searchQuery.isNotEmpty) {
+                  final query = _searchQuery.toLowerCase();
                   members = members.where((m) => 
-                    m.name.contains(_searchQuery) || 
-                    m.district.contains(_searchQuery)
+                    m.name.toLowerCase().contains(query) || 
+                    m.party.toLowerCase().contains(query) ||
+                    m.district.toLowerCase().contains(query) ||
+                    m.bio.toLowerCase().contains(query) ||
+                    m.policies.any((p) => p.toLowerCase().contains(query)) ||
+                    m.achievementsList.any((a) => a.toLowerCase().contains(query))
                   ).toList();
                 }
                 
@@ -116,7 +143,7 @@ class _MemberListPageState extends State<MemberListPage> {
               });
             },
             decoration: InputDecoration(
-              hintText: '의원 이름, 지역구 검색',
+              hintText: '의원 이름, 정당, 지역, 약력 검색',
               hintStyle: AppTextStyles.bodySmall,
               prefixIcon: const Icon(Icons.search),
               contentPadding: const EdgeInsets.symmetric(vertical: 10),

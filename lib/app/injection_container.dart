@@ -10,6 +10,8 @@ import 'package:flutter_application_1/data/datasources/historical_election_data_
 import 'package:flutter_application_1/data/repositories/historical_election_repository_impl.dart';
 import 'package:flutter_application_1/domain/repositories/historical_election_repository.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 final sl = GetIt.instance;
 
 // GitHub token from environment (must be const for web support)
@@ -19,6 +21,10 @@ const String _githubToken = String.fromEnvironment(
 );
 
 Future<void> init() async {
+  //! External
+  final sharedPreferences = await SharedPreferences.getInstance();
+  sl.registerLazySingleton(() => sharedPreferences);
+
   //! Features - Member
   // Repository
   sl.registerSingleton<MemberRepository>(
