@@ -1144,4 +1144,89 @@
       "전체 대전 시정에 대한 거시적 안목 입증"
     ]
   }
+,
+  {
+    "id": "member_hoyoung",
+    "name": "주호영",
+    "party": "국민의힘 (현 컷오프 상태)",
+    "district": "대구광역시장",
+    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/4/4b/Joo_Ho-young%27s_Portrait_%282024%29.jpg",
+    "bio": "6선 국회의원, 전 국민의힘 원내대표, 전 특임장관. 대구의 자존심과 정치력을 상징하는 인물.",
+    "electionDate": "2026-06-03T00:00:00.000",
+    "term": 22,
+    "achievementsList": [
+      "22대 국회 부의장 역임",
+      "국민의힘 원내대표 2회 역임 (갈등 조정의 달인)",
+      "세월호 3법 및 주요 여야 합의 주도"
+    ],
+    "actions": [
+      "대구시장 출마 선언 및 공천 부당성 법적 대응",
+      "무소속 출마 가능성 시사하며 지역 바닥 민심 공략"
+    ],
+    "policies": [
+      "대구 미래 5대 산업 육성 및 규제 혁파",
+      "중앙정부와의 협상력을 바탕으로 한 대구 예산 확보 및 현안 해결"
+    ],
+    "pressReports": [
+      {
+        "id": "press_hoyoung_1",
+        "title": "주호영, '공천 배제 불복' 대구시장 무소속 출마 시사",
+        "source": "중앙일보",
+        "url": "https://example.com/jhy1",
+        "publishDate": "2026-03-24T00:00:00.000",
+        "summary": "여론조사 1위 후보의 컷오프에 대한 지역민 반발 및 독자의 길 예고",
+        "sentiment": "neutral"
+      }
+    ],
+    "snsAnalysis": "페이스북을 통한 실시간 소통 강점. 컷오프 이후 당 지도부에 대한 비판 여론이 지지층 사이에서 급증하고 있으며 대구 내 동정론 확산.",
+    "electionPossibility": 0.52,
+    "lastAnalysisDate": "2026-03-30T21:40:00.000",
+    "improvementPoints": [
+      "무소속 출마 시 조직력을 보완하기 위한 시민 조직 구축",
+      "강경 보수 이미지를 넘어선 중도 확장 정책 보강"
+    ],
+    "polls": []
+  },
+  {
+    "id": "member_jinsook",
+    "name": "이진숙",
+    "party": "국민의힘 (현 컷오프 상태)",
+    "district": "대구광역시장",
+    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/9/93/Lee_Jin-sook.jpg",
+    "bio": "전 방송통신위원장, MBC 기자/보도본부장 출신. '보수의 전사'로 불리는 선명한 보수 정치인.",
+    "electionDate": "2026-06-03T00:00:00.000",
+    "term": 0,
+    "achievementsList": [
+      "방송통신위원회 위원장 역임",
+      "MBC 최초 여성 종군기자 및 보도본부장 역임",
+      "대전MBC 사장 역임"
+    ],
+    "actions": [
+      "대구시장 예비후보 등록 및 강경 보수 선명성 행보",
+      "공천 배제 이후 재심 청구 및 부당성 항의 지속"
+    ],
+    "policies": [
+      "미디어 혁신 및 대구 중심의 보수 가치 재정립",
+      "대구 경제의 스마트화 및 미디어 산업 특화"
+    ],
+    "pressReports": [
+      {
+        "id": "press_jinsook_1",
+        "title": "이진숙 예비후보, '컷오프는 비민주적' 재심 요구",
+        "source": "대구MBC",
+        "url": "https://example.com/ljs1",
+        "publishDate": "2026-03-22T00:00:00.000",
+        "summary": "자신을 '보수의 전사'로 지칭하며 정의로운 공천을 촉구하는 성명 발표",
+        "sentiment": "negative"
+      }
+    ],
+    "snsAnalysis": "유튜브 지지층(강경 보수)의 절대적인 지지를 받고 있음. 탄핵 국면에서의 태도가 SNS상에서 긍정적 키워드로 작용하며 강력한 결집력 과시.",
+    "electionPossibility": 0.35,
+    "lastAnalysisDate": "2026-03-30T21:40:00.000",
+    "improvementPoints": [
+      "강경 이미지를 넘어 보수 전 지층을 아우르는 확장성 확보",
+      "대구 지역의 구체적인 민생 문제에 대한 정책 보강"
+    ],
+    "polls": []
+  }
 ]
