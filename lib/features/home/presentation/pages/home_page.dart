@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/core/utils/image_util.dart';
 import 'package:flutter_application_1/core/theme/app_theme.dart';
 import 'package:flutter_application_1/domain/entities/analysis_result.dart';
 import 'package:flutter_application_1/domain/entities/member.dart';
@@ -691,7 +692,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         borderRadius: BorderRadius.circular(20),
                         child: member.imageUrl.isNotEmpty
                             ? Image.network(
-                                member.imageUrl,
+                                ImageUtil.getProxyUrl(member.imageUrl),
                                 width: 40,
                                 height: 40,
                                 fit: BoxFit.cover,
@@ -805,7 +806,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             borderRadius: BorderRadius.circular(40),
             child: m.imageUrl.isNotEmpty
                 ? Image.network(
-                    m.imageUrl,
+                    ImageUtil.getProxyUrl(m.imageUrl),
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,
@@ -1222,7 +1223,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               child: ClipOval(
                                 child: member.imageUrl.isNotEmpty
                                     ? Image.network(
-                                        member.imageUrl,
+                                        ImageUtil.getProxyUrl(member.imageUrl),
                                         fit: BoxFit.cover,
                                         errorBuilder: (context, error, stackTrace) {
                                           return Center(

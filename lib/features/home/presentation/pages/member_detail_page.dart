@@ -8,6 +8,7 @@ import 'package:flutter_application_1/domain/entities/poll.dart';
 import 'package:flutter_application_1/domain/usecases/calculate_election_possibility_usecase.dart';
 import 'package:flutter_application_1/domain/usecases/member_usecases.dart';
 import 'package:flutter_application_1/app/injection_container.dart';
+import 'package:flutter_application_1/core/utils/image_util.dart';
 
 class MemberDetailPage extends StatefulWidget {
   final Member member;
@@ -224,7 +225,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
             borderRadius: BorderRadius.circular(12),
             child: member.imageUrl.isNotEmpty
                 ? Image.network(
-                    member.imageUrl,
+                    ImageUtil.getProxyUrl(member.imageUrl),
                     width: 100,
                     height: 100,
                     fit: BoxFit.cover,

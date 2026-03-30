@@ -1,9 +1,11 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_application_1/core/utils/image_util.dart';
 import 'package:flutter_application_1/domain/entities/member.dart';
 import 'package:flutter_application_1/domain/usecases/member_usecases.dart';
 import 'package:flutter_application_1/app/injection_container.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application_1/core/theme/app_theme.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter_application_1/domain/repositories/member_repository.dart';
 
 class MemberListPage extends StatefulWidget {
   const MemberListPage({Key? key}) : super(key: key);
@@ -295,7 +297,7 @@ class _MemberCard extends StatelessWidget {
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(35),
                         child: Image.network(
-                          member.imageUrl,
+                          ImageUtil.getProxyUrl(member.imageUrl),
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) => const Icon(
                             Icons.person,

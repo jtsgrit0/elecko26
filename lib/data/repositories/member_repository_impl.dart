@@ -89,9 +89,12 @@ class MemberRepositoryImpl implements MemberRepository {
     try {
       try {
         final rawUrl = 'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
-        final response = await http.get(Uri.parse(rawUrl)).timeout(const Duration(seconds: 5));
+        final response = await http.get(Uri.parse(rawUrl)).timeout(const Duration(seconds: 10));
+        
         if (response.statusCode == 200) {
-          final List<dynamic> jsonList = json.decode(utf8.decode(response.bodyBytes));
+          final decodedBody = utf8.decode(response.bodyBytes);
+          final List<dynamic> jsonList = json.decode(decodedBody);
+          
           for (var item in jsonList) {
             try {
               final newMember = MemberModel.fromJson(item as Map<String, dynamic>);
@@ -110,12 +113,14 @@ class MemberRepositoryImpl implements MemberRepository {
                 }
               }
             } catch (e) {
-              debugPrint('Member parse error: $e');
+              debugPrint('[MemberRepo] Member parse error for ${item['name']}: $e');
             }
           }
+        } else {
+          debugPrint('[MemberRepo] Fetch failed with status: ${response.statusCode}');
         }
       } catch (e) {
-        debugPrint('Crawling fetch failed: $e');
+        debugPrint('[MemberRepo] Crawling fetch failed: $e');
       }
 
       final entries = await _nesdcPollDataSource.fetchLatest();
