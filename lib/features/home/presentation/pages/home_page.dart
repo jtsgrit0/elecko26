@@ -1562,7 +1562,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             children: [
                               Column(
                                 children: [
-                                  CircleAvatar(radius: 12, backgroundImage: m.imageUrl.isNotEmpty ? NetworkImage(m.imageUrl) : null, child: m.imageUrl.isEmpty ? const Icon(Icons.person, size: 12) : null),
+                                  CircleAvatar(
+                                    radius: 12,
+                                    backgroundColor: AppColors.lightGrey,
+                                    child: m.imageUrl.isNotEmpty
+                                        ? ClipOval(
+                                            child: Image.network(
+                                              ImageUtil.getProxyUrl(m.imageUrl),
+                                              width: 24,
+                                              height: 24,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, size: 12),
+                                            ),
+                                          )
+                                        : const Icon(Icons.person, size: 12),
+                                  ),
                                   const SizedBox(height: 4),
                                   SizedBox(
                                     width: 36,
@@ -1835,10 +1849,33 @@ class _MemberCardState extends State<_MemberCard> {
                   borderRadius: BorderRadius.circular(8),
                   child: member.imageUrl.isNotEmpty
                       ? Image.network(
-                          member.imageUrl,
+                          ImageUtil.getProxyUrl(member.imageUrl),
                           width: 60,
                           height: 60,
                           fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.primary.withOpacity(0.8),
+                                  AppColors.secondary.withOpacity(0.6),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                member.name.isNotEmpty ? member.name[0] : '?',
+                                style: AppTextStyles.headline3.copyWith(
+                                  color: AppColors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
                         )
                       : Container(
                           width: 60,
