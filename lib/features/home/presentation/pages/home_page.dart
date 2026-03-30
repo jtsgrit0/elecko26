@@ -8,6 +8,7 @@ import 'package:flutter_application_1/domain/usecases/member_usecases.dart';
 import 'package:flutter_application_1/domain/usecases/export_election_data_usecase.dart';
 import 'package:flutter_application_1/app/injection_container.dart';
 import 'package:flutter_application_1/features/home/presentation/pages/member_detail_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
 class HomePage extends StatefulWidget {
@@ -35,10 +36,242 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // 비교 관련 상태
   final Set<String> _selectedCompareIds = {};
   
+  // 유저 상단 설정 상태
+  String _userRegion = '전국';
+  
+  static const List<String> _regions = [
+    '전국', '서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시',
+    '세종특별자치시', '경기도', '강원도', '충청북도', '충청남도', '전라북도', '전라남도', '경상북도', '경상남도', '제주특별자치도'
+  ];
+
+  void _showSettingsModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.75,
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: DefaultTabController(
+          length: 2,
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.lightGrey,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const TabBar(
+                labelColor: AppColors.primary,
+                unselectedLabelColor: AppColors.grey,
+                indicatorColor: AppColors.primary,
+                indicatorWeight: 3,
+                tabs: [
+                  Tab(text: '지역 설정', icon: Icon(Icons.location_on_outlined)),
+                  Tab(text: '즐겨찾기', icon: Icon(Icons.star_outline)),
+                ],
+              ),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    _buildRegionSettingTab(),
+                    _buildFavoritesTab(),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: TextButton.icon(
+                  onPressed: () => _showResetConfirmation(),
+                  icon: const Icon(Icons.refresh, color: Colors.redAccent),
+                  label: const Text(
+                    '설정 및 데이터 초기화',
+                    style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                  ),
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 50),
+                    backgroundColor: Colors.redAccent.withOpacity(0.05),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showResetConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('설정 초기화'),
+        content: const Text('지역 설정과 즐겨찾기 목록이 모두 삭제됩니다. 정말로 초기화하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소', style: TextStyle(color: AppColors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await sl<MemberRepository>().resetSettings();
+              setState(() {
+                _userRegion = '전국';
+              });
+              if (mounted) {
+                Navigator.pop(context); // 팝업 닫기
+                Navigator.pop(context); // 설정 모달 닫기
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('모든 설정이 초기화되었습니다.'),
+                    backgroundColor: Colors.black87,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('초기화', style: TextStyle(color: AppColors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRegionSettingTab() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _regions.length,
+      itemBuilder: (context, index) {
+        final region = _regions[index];
+        final isSelected = _userRegion == region;
+        
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primary.withOpacity(0.05) : AppColors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? AppColors.primary : AppColors.lightGrey.withOpacity(0.5),
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: ListTile(
+            title: Text(
+              region,
+              style: AppTextStyles.bodyLarge.copyWith(
+                color: isSelected ? AppColors.primary : AppColors.dark,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            trailing: isSelected 
+              ? const Icon(Icons.check_circle, color: AppColors.primary)
+              : null,
+            onTap: () async {
+              setState(() {
+                _userRegion = region;
+              });
+              
+              // SharedPreferences에 저장
+              final prefs = sl<SharedPreferences>();
+              await prefs.setString('user_selected_region', region);
+              
+              if (mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('$region으로 지역이 설정되었습니다.'),
+                    backgroundColor: AppColors.primary,
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
+              }
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  List<Member> _getFilteredMembers(List<Member> members) {
+    if (_userRegion == '전국') return members;
+    
+    // 지역명 정규화 (예: '서울특별시' -> '서울', '경기도' -> '경기')
+    String shortRegion = _userRegion.substring(0, 2);
+    // 특수지역 대응
+    if (_userRegion == '세종특별자치시') shortRegion = '세종';
+    if (_userRegion == '제주특별자치도') shortRegion = '제주';
+    if (_userRegion == '전북특별자치도') shortRegion = '전북';
+
+    return members.where((m) => m.district.contains(shortRegion)).toList();
+  }
+
+  Widget _buildFavoritesTab() {
+    return StreamBuilder<List<Member>>(
+      stream: _membersStream,
+      builder: (context, snapshot) {
+        final members = snapshot.data ?? _cachedMembers;
+        final favorites = members.where((m) => m.isFavorite).toList();
+        
+        if (favorites.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.star_outline, size: 64, color: AppColors.grey.withOpacity(0.3)),
+                const SizedBox(height: 16),
+                Text(
+                  '즐겨찾기한 의원이 없습니다.',
+                  style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: favorites.length,
+          itemBuilder: (context, index) {
+            final member = favorites[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _MemberCard(
+                member: member,
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() => _selectedMember = member);
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+  
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _loadUserSettings();
     _startMemberStream();
     _triggerNesdcRefresh();
     _startDataExportTimer();
@@ -48,6 +281,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       const Duration(minutes: 1),
       (_) => _triggerNesdcRefresh(),
     );
+  }
+
+  Future<void> _loadUserSettings() async {
+    final prefs = sl<SharedPreferences>();
+    setState(() {
+      _userRegion = prefs.getString('user_selected_region') ?? '전국';
+    });
   }
 
   void _startMemberStream() {
@@ -225,7 +465,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           });
         },
         decoration: InputDecoration(
-          hintText: '후보자 이름으로 검색',
+          hintText: '후보자 이름, 정당, 지역 등으로 검색',
           prefixIcon: const Icon(Icons.search, color: AppColors.primary),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
@@ -258,17 +498,33 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return StreamBuilder<List<Member>>(
       stream: _membersStream,
       builder: (context, snapshot) {
-        final members = snapshot.data ?? _cachedMembers;
-        if (members.isEmpty) {
+        final allMembers = snapshot.data ?? _cachedMembers;
+        if (allMembers.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final filteredMembers = members.where((m) {
+        final filteredMembers = allMembers.where((m) {
+          // 지역 필터링 먼저 적용
+          if (_userRegion != '전국') {
+            String shortRegion = _userRegion.substring(0, 2);
+            if (_userRegion == '세종특별자치시') shortRegion = '세종';
+            if (_userRegion == '제주특별자치도') shortRegion = '제주';
+            if (_userRegion == '전북특별자치도') shortRegion = '전북';
+            
+            if (!m.district.contains(shortRegion)) return false;
+          }
+
           final query = _searchQuery.toLowerCase();
           return m.name.toLowerCase().contains(query) ||
                  m.party.toLowerCase().contains(query) ||
-                 m.district.toLowerCase().contains(query);
+                 m.district.toLowerCase().contains(query) ||
+                 m.bio.toLowerCase().contains(query) ||
+                 m.policies.any((p) => p.toLowerCase().contains(query)) ||
+                 m.achievementsList.any((a) => a.toLowerCase().contains(query));
         }).toList();
+
+        // 당선 가능성 높은 순으로 정렬
+        filteredMembers.sort((a, b) => b.electionPossibility.compareTo(a.electionPossibility));
 
         if (filteredMembers.isEmpty) {
           return Center(
@@ -490,17 +746,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ],
           ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(child: _buildSimpleMemberHeader(m1)),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Text('VS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: AppColors.grey)),
-              ),
-              Expanded(child: _buildSimpleMemberHeader(m2)),
-            ],
+          _AnimatedDuelScene(
+            m1: m1,
+            m2: m2,
+            onComplete: () {
+              // 애니메이션 완료 후 추가 효과가 필요하면 여기에 구현
+            },
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
           _buildComparisonRow('당선 가능성', m1.electionPossibility, m2.electionPossibility, color1, color2, isPercent: true),
           const SizedBox(height: 16),
           FutureBuilder<List<AnalysisResult>>(
@@ -563,72 +816,99 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Widget _buildComparisonRow(String label, double v1, double v2, Color c1, Color c2, {bool isPercent = false}) {
-    final display1 = isPercent ? '${(v1 * 100).toStringAsFixed(1)}%' : (v1 * 100).toStringAsFixed(1);
-    final display2 = isPercent ? '${(v2 * 100).toStringAsFixed(1)}%' : (v2 * 100).toStringAsFixed(1);
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Center(child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-        const SizedBox(height: 8),
-        Row(
+    // 일기토 애니메이션이 진행되는 동안은 0부터 시작하여 부드럽게 차오르도록 설정
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 2500),
+      curve: Curves.easeOutQuart,
+      builder: (context, animValue, child) {
+        final currentV1 = v1 * animValue;
+        final currentV2 = v2 * animValue;
+        
+        final display1 = isPercent ? '${(currentV1 * 100).toStringAsFixed(1)}%' : (currentV1 * 100).toStringAsFixed(1);
+        final display2 = isPercent ? '${(currentV2 * 100).toStringAsFixed(1)}%' : (currentV2 * 100).toStringAsFixed(1);
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Text(display1, textAlign: TextAlign.right, style: TextStyle(
-                color: c1,
-                fontWeight: v1 >= v2 ? FontWeight.bold : FontWeight.normal,
-                fontSize: 16,
-              )),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 4,
-              child: Stack(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: RotatedBox(
-                          quarterTurns: 2,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: v1,
-                              backgroundColor: AppColors.lightGrey.withOpacity(0.3),
-                              valueColor: AlwaysStoppedAnimation(c1.withOpacity(v1 >= v2 ? 1.0 : 0.4)),
-                              minHeight: 12,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: v2,
-                            backgroundColor: AppColors.lightGrey.withOpacity(0.3),
-                            valueColor: AlwaysStoppedAnimation(c2.withOpacity(v2 >= v1 ? 1.0 : 0.4)),
-                            minHeight: 12,
-                          ),
-                        ),
-                      ),
-                    ],
+            Center(child: Text(label, style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold))),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    display1, 
+                    textAlign: TextAlign.right, 
+                    style: TextStyle(
+                      color: c1,
+                      fontWeight: v1 >= v2 ? FontWeight.bold : FontWeight.normal,
+                      fontSize: 16,
+                      fontFamily: 'Roboto', // 수치 변화 시 글자 떨림 방지
+                    )
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(display2, style: TextStyle(
-                color: c2,
-                fontWeight: v2 >= v1 ? FontWeight.bold : FontWeight.normal,
-                fontSize: 16,
-              )),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 4,
+                  child: Container(
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: AppColors.lightGrey.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Stack(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: RotatedBox(
+                                quarterTurns: 2,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: LinearProgressIndicator(
+                                    value: animValue > 0.2 ? (currentV1 / (v1 + 0.0001)).clamp(0.0, 1.0) * v1 : 0,
+                                    backgroundColor: Colors.transparent,
+                                    valueColor: AlwaysStoppedAnimation(c1.withOpacity(v1 >= v2 ? 1.0 : 0.6)),
+                                    minHeight: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: LinearProgressIndicator(
+                                  value: animValue > 0.2 ? (currentV2 / (v2 + 0.0001)).clamp(0.0, 1.0) * v2 : 0,
+                                  backgroundColor: Colors.transparent,
+                                  valueColor: AlwaysStoppedAnimation(c2.withOpacity(v2 >= v1 ? 1.0 : 0.6)),
+                                  minHeight: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    display2, 
+                    style: TextStyle(
+                      color: c2,
+                      fontWeight: v2 >= v1 ? FontWeight.bold : FontWeight.normal,
+                      fontSize: 16,
+                      fontFamily: 'Roboto',
+                    )
+                  ),
+                ),
+              ],
             ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -667,7 +947,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            '2026 지방선거',
+                            '2026 지방선거 당선 예측기',
                             style: AppTextStyles.headline4.copyWith(
                               color: AppColors.white,
                             ),
@@ -676,23 +956,26 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '붉은말의 해 - 국회의원 분석',
+                        '누가 적토마에 올라탈 것인가!',
                         style: AppTextStyles.bodySmall.copyWith(
                           color: AppColors.white.withOpacity(0.9),
                         ),
                       ),
                     ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.settings,
-                      color: AppColors.white,
-                      size: 24,
+                  GestureDetector(
+                    onTap: () => _showSettingsModal(),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.settings,
+                        color: AppColors.white,
+                        size: 24,
+                      ),
                     ),
                   ),
                 ],
@@ -744,7 +1027,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '2026 지방선거',
+                      '2026 지방선거 당선 예측기',
                       style: AppTextStyles.headline3.copyWith(
                         color: AppColors.white,
                       ),
@@ -798,7 +1081,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           if (freshMembers.isNotEmpty) {
             _cachedMembers = freshMembers;
           }
-          final members = freshMembers.isNotEmpty ? freshMembers : _cachedMembers;
+          final allMembers = freshMembers.isNotEmpty ? freshMembers : _cachedMembers;
+          final members = _getFilteredMembers(allMembers);
           final latestAnalysis = members.isNotEmpty
               ? members
                   .map((m) => m.lastAnalysisDate)
@@ -1049,7 +1333,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 style: AppTextStyles.headline4,
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: () => setState(() => _selectedIndex = 1), // 검색 탭으로 이동
                 child: Text(
                   '전체보기',
                   style: AppTextStyles.labelSmall.copyWith(
@@ -1116,7 +1400,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               if (freshMembers.isNotEmpty) {
                 _cachedMembers = freshMembers;
               }
-              final members = freshMembers.isNotEmpty ? freshMembers : _cachedMembers;
+              final allMembers = freshMembers.isNotEmpty ? freshMembers : _cachedMembers;
+              final members = _getFilteredMembers(allMembers);
               if (members.isEmpty) {
                 return Container(
                   height: 200,
@@ -1724,4 +2009,261 @@ Color _getPartyColor(String party) {
   if (party.contains('개혁신당')) return const Color(0xFFFF7F00);
   if (party.contains('기본소득당')) return const Color(0xFF00D2C3);
   return AppColors.grey;
+}
+
+/// 일기토 애니메이션 씬 위젯
+class _AnimatedDuelScene extends StatefulWidget {
+  final Member m1;
+  final Member m2;
+  final VoidCallback? onComplete;
+
+  const _AnimatedDuelScene({
+    required this.m1,
+    required this.m2,
+    this.onComplete,
+  });
+
+  @override
+  State<_AnimatedDuelScene> createState() => _AnimatedDuelSceneState();
+}
+
+class _AnimatedDuelSceneState extends State<_AnimatedDuelScene> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _dashAnimation;
+  late Animation<double> _clashAnimation;
+  late Animation<double> _scaleAnimation;
+  bool _showExplosion = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 3000),
+      vsync: this,
+    );
+
+    // 대시 애니메이션 (양쪽에서 중앙으로)
+    _dashAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.0, end: 0.45).chain(CurveTween(curve: Curves.easeInQuint)),
+        weight: 60,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.45, end: 0.42).chain(CurveTween(curve: Curves.elasticOut)),
+        weight: 40,
+      ),
+    ]).animate(_controller);
+
+    // 충돌 시 흔들림 효과
+    _clashAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: ConstantTween<double>(0.0), weight: 60),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: -5.0, end: 5.0).chain(CurveTween(curve: Curves.bounceIn)),
+        weight: 10,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 5.0, end: 0.0),
+        weight: 30,
+      ),
+    ]).animate(_controller);
+
+    // 스케일 효과
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: ConstantTween<double>(0.8), weight: 30),
+      TweenSequenceItem(tween: Tween<double>(begin: 0.8, end: 1.0), weight: 30),
+      TweenSequenceItem(tween: ConstantTween<double>(1.0), weight: 40),
+    ]).animate(_controller);
+
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        widget.onComplete?.call();
+      }
+    });
+
+    _controller.addListener(() {
+      if (_controller.value > 0.58 && !_showExplosion) {
+        setState(() => _showExplosion = true);
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) setState(() => _showExplosion = false);
+        });
+      }
+    });
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 240,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.darkGray.withOpacity(0.08),
+            AppColors.darkGray.withOpacity(0.02),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.lightGrey.withOpacity(0.5)),
+      ),
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final screenWidth = MediaQuery.of(context).size.width;
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // 중앙 VS 배경 장식
+              Center(
+                child: Opacity(
+                  opacity: _controller.value > 0.5 ? 0.8 : _controller.value,
+                  child: Transform.scale(
+                    scale: 1.0 + (1.0 - _controller.value) * 1.5,
+                    child: Text(
+                      'VS',
+                      style: TextStyle(
+                        fontSize: 100,
+                        fontWeight: FontWeight.w900,
+                        foreground: Paint()
+                          ..style = PaintingStyle.stroke
+                          ..strokeWidth = 2
+                          ..color = AppColors.primary.withOpacity(0.1),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // 좌측 기마병 (후보 1)
+              Positioned(
+                left: -120 + (screenWidth * _dashAnimation.value),
+                top: 30 + _clashAnimation.value,
+                child: Transform.scale(
+                  scale: _scaleAnimation.value,
+                  child: _buildRider(widget.m1, isLeft: true),
+                ),
+              ),
+
+              // 우측 기마병 (후보 2)
+              Positioned(
+                right: -120 + (screenWidth * _dashAnimation.value),
+                top: 35 - _clashAnimation.value,
+                child: Transform.scale(
+                  scale: _scaleAnimation.value,
+                  child: _buildRider(widget.m2, isLeft: false),
+                ),
+              ),
+
+              // 충돌 효과 (스파크)
+              if (_showExplosion)
+                Center(
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 200),
+                    builder: (context, value, child) {
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Transform.scale(
+                            scale: value * 4,
+                            child: Opacity(
+                              opacity: 1.0 - value,
+                              child: const Icon(Icons.flash_on, color: Colors.amber, size: 40),
+                            ),
+                          ),
+                          Transform.scale(
+                            scale: value * 2,
+                            child: Opacity(
+                              opacity: 1.0 - value,
+                              child: Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withOpacity(0.5),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildRider(Member member, {required bool isLeft}) {
+    final imagePath = isLeft ? 'assets/images/duel/rider_left.png' : 'assets/images/duel/rider_right.png';
+    // 기마 캐릭터 이미지 내의 얼굴 좌표 (에셋 비중에 맞춰 조정)
+    final double faceTop = isLeft ? 45 : 48;
+    final double faceSide = isLeft ? 104 : 101;
+
+    return SizedBox(
+      width: 220,
+      height: 220,
+      child: Stack(
+        children: [
+          // 캐릭터 본체
+          Image.asset(
+            imagePath,
+            width: 220,
+            height: 220,
+            fit: BoxFit.contain,
+          ),
+          
+          // 후보자 얼굴 오버레이
+          Positioned(
+            top: faceTop,
+            left: isLeft ? faceSide : null,
+            right: !isLeft ? faceSide : null,
+            child: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 6, spreadRadius: 1),
+                ],
+              ),
+              child: ClipOval(
+                child: member.imageUrl.isNotEmpty
+                    ? Image.network(
+                        member.imageUrl,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(color: AppColors.lightGrey);
+                        },
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: AppColors.lightGrey,
+                          child: const Icon(Icons.person, size: 20),
+                        ),
+                      )
+                    : Container(
+                        color: AppColors.lightGrey,
+                        child: const Icon(Icons.person, size: 20),
+                      ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
