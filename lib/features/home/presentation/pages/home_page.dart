@@ -693,7 +693,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         borderRadius: BorderRadius.circular(20),
                         child: member.imageUrl.isNotEmpty
                             ? CachedNetworkImage(
-                                imageUrl: '${ImageUtil.getProxyUrl(member.imageUrl, width: 100, height: 100)}&v=1',
+                                imageUrl: '${ImageUtil.getProxyUrl(member.imageUrl, width: 100, height: 100)}&v=2',
                                 width: 40,
                                 height: 40,
                                 fit: BoxFit.cover,
@@ -808,7 +808,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             borderRadius: BorderRadius.circular(40),
             child: m.imageUrl.isNotEmpty
                 ? CachedNetworkImage(
-                    imageUrl: '${ImageUtil.getProxyUrl(m.imageUrl, width: 200, height: 200)}&v=1',
+                    imageUrl: '${ImageUtil.getProxyUrl(m.imageUrl, width: 200, height: 200)}&v=2',
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,
@@ -1226,7 +1226,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               child: ClipOval(
                                 child: member.imageUrl.isNotEmpty
                                     ? CachedNetworkImage(
-                                        imageUrl: '${ImageUtil.getProxyUrl(member.imageUrl, width: 200, height: 200)}&v=1',
+                                        imageUrl: '${ImageUtil.getProxyUrl(member.imageUrl, width: 200, height: 200)}&v=2',
                                         fit: BoxFit.cover,
                                         placeholder: (context, url) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                                         errorWidget: (context, url, error) {
@@ -1854,7 +1854,7 @@ class _MemberCardState extends State<_MemberCard> {
                   borderRadius: BorderRadius.circular(8),
                   child: member.imageUrl.isNotEmpty
                       ? CachedNetworkImage(
-                          imageUrl: '${ImageUtil.getProxyUrl(member.imageUrl, width: 160, height: 160)}&v=1',
+                          imageUrl: '${ImageUtil.getProxyUrl(member.imageUrl, width: 160, height: 160)}&v=2',
                           width: 60,
                           height: 60,
                           fit: BoxFit.cover,
