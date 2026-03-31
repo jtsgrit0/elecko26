@@ -6,9 +6,12 @@ import 'package:flutter_application_1/domain/entities/poll.dart';
 import 'package:flutter_application_1/domain/repositories/member_repository.dart';
 import 'package:flutter_application_1/data/datasources/nesdc_poll_data_source.dart';
 import 'package:flutter_application_1/core/platform/platform_info.dart';
-import 'package:flutter_application_1/app/injection_container.dart';
+import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart';
+
+final sl = GetIt.instance;
+// import 'package:flutter/foundation.dart'; // CLI 호환성을 위해 제거
+const bool _kReleaseMode = bool.fromEnvironment('dart.vm.product');
 
 /// 멤버 저장소 구현체 (데이터 레이어)
 class MemberRepositoryImpl implements MemberRepository {
@@ -83,8 +86,13 @@ class MemberRepositoryImpl implements MemberRepository {
     }
     _refreshInProgress = true;
     final now = DateTime.now();
-    final prefs = sl<SharedPreferences>();
-    final favoriteIds = prefs.getStringList('favorite_member_ids') ?? [];
+    
+    // CLI 환경(initMinimal)에서는 SharedPreferences가 비어있을 수 있으므로 예외 처리
+    List<String> favoriteIds = [];
+    if (sl.isRegistered<SharedPreferences>()) {
+      final prefs = sl<SharedPreferences>();
+      favoriteIds = prefs.getStringList('favorite_member_ids') ?? [];
+    }
 
     try {
       try {
@@ -113,19 +121,19 @@ class MemberRepositoryImpl implements MemberRepository {
                 }
               }
             } catch (e) {
-              debugPrint('[MemberRepo] Member parse error for ${item['name']}: $e');
+              print('[MemberRepo] Member parse error for ${item[\'name\']}: $e');
             }
           }
         } else {
-          debugPrint('[MemberRepo] Fetch failed with status: ${response.statusCode}');
+          print('[MemberRepo] Fetch failed with status: ${response.statusCode}');
         }
       } catch (e) {
-        debugPrint('[MemberRepo] Crawling fetch failed: $e');
+        print('[MemberRepo] Crawling fetch failed: $e');
       }
 
       final entries = await _nesdcPollDataSource.fetchLatest();
-      if (!kReleaseMode) {
-        debugPrint('[NESDC] fetched list entries: ${entries.length}');
+      if (!_kReleaseMode) {
+        print('[NESDC] fetched list entries: ${entries.length}');
       }
       for (var i = 0; i < _dummyMembers.length; i++) {
         final member = _dummyMembers[i];
@@ -203,8 +211,8 @@ class MemberRepositoryImpl implements MemberRepository {
           polls: mergedPolls,
           lastAnalysisDate: now,
         );
-        if (!kReleaseMode) {
-          debugPrint('[NESDC] ${member.name} matched=${limitedEntries.length} extracted=$extractedCount party=$partyExtractedCount');
+        if (!_kReleaseMode) {
+          print('[NESDC] ${member.name} matched=${limitedEntries.length} extracted=$extractedCount party=$partyExtractedCount');
         }
       }
     } catch (_) {
@@ -353,26 +361,30 @@ class MemberRepositoryImpl implements MemberRepository {
       final newFavoriteStatus = !member.isFavorite;
       _dummyMembers[index] = member.copyWith(isFavorite: newFavoriteStatus);
       
-      // SharedPreferences에 저장
-      final prefs = sl<SharedPreferences>();
-      final List<String> favoriteIds = prefs.getStringList('favorite_member_ids') ?? [];
-      
-      if (newFavoriteStatus) {
-        if (!favoriteIds.contains(memberId)) {
-          favoriteIds.add(memberId);
+      // SharedPreferences에 저장 (등록된 경우에만)
+      if (sl.isRegistered<SharedPreferences>()) {
+        final prefs = sl<SharedPreferences>();
+        final List<String> favoriteIds = prefs.getStringList('favorite_member_ids') ?? [];
+        
+        if (newFavoriteStatus) {
+          if (!favoriteIds.contains(memberId)) {
+            favoriteIds.add(memberId);
+          }
+        } else {
+          favoriteIds.remove(memberId);
         }
-      } else {
-        favoriteIds.remove(memberId);
+        
+        await prefs.setStringList('favorite_member_ids', favoriteIds);
       }
-      
-      await prefs.setStringList('favorite_member_ids', favoriteIds);
     }
   }
 
   @override
   Future<void> resetSettings() async {
-    final prefs = sl<SharedPreferences>();
-    await prefs.clear(); // 모든 저장된 데이터 삭제 (지역 정보 포함)
+    if (sl.isRegistered<SharedPreferences>()) {
+      final prefs = sl<SharedPreferences>();
+      await prefs.clear(); // 모든 저장된 데이터 삭제 (지역 정보 포함)
+    }
     
     // 메모리 내 즐겨찾기 상태 초기화
     for (var i = 0; i < _dummyMembers.length; i++) {

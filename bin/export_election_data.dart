@@ -2,7 +2,7 @@
 /// 사용: dart run bin/export_election_data.dart
 /// 또는: flutter pub get && dart run bin/export_election_data.dart
 
-import 'package:flutter_application_1/app/injection_container.dart' as di;
+import 'package:flutter_application_1/core/di/cli_injection_container.dart' as di;
 import 'package:flutter_application_1/domain/usecases/export_election_data_usecase.dart';
 import 'package:flutter_application_1/data/datasources/github_datasource.dart';
 import 'dart:convert';
@@ -10,11 +10,11 @@ import 'dart:io';
 
 Future<void> main(List<String> args) async {
   try {
-    print('🚀 Starting election data export...');
+    print('🚀 Starting election data export (CLI Mode)...');
     print('⏰ ${DateTime.now()}');
 
-    // 의존성 초기화
-    await di.init();
+    // 의존성 순수 다트 버전으로 초기화
+    await di.initCli();
 
     // 데이터 내보내기
     final exportUseCase = di.sl<ExportElectionDataUseCase>();

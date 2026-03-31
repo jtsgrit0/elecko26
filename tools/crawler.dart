@@ -9,23 +9,28 @@ void main() async {
   print('🚀 다중 소스 크롤링을 시작합니다: 2026 지방선거 후보자 발굴');
 
   final List<String> searchQueries = [
-    '2026 지방선거 출마 선언',
-    '2026 지방선거 도전',
-    '지방선거 예비후보 등록',
-    '서울시장 출마 선언',
-    '경기도지사 출마 선언',
-    '부산시장 출마 선언',
-    '대구시장 출마 선언',
-    '인천시장 출마 선언',
-    '제주도지사 출마 선언',
+    '2026 지방선거 출마',
+    '2026 지방선거 예비후보',
+    '2026 지방선거 공천',
+    '2026 지방선거 경선',
+    '지방선거 차출론',
+    '지방선거 유력 후보',
+    '서울시장 후보군',
+    '경기도지사 후보군',
+    '인천시장 후보군',
+    '부산시장 후보군',
+    '제주도지사 후보군',
+    '구청장 출마 선언',
+    '시장 후보 물망',
   ];
 
   // SNS 검색용 쿼리 (특정 사이트 타겟팅)
   final List<String> snsQueries = [
-    'site:twitter.com "출마 선언" 2026',
-    'site:facebook.com "출마 선언" 2026',
-    'site:instagram.com "출마 선언" 2026',
-    'site:blog.naver.com "출마 선언" 2026',
+    'site:twitter.com "지방선거" "출마" 2026',
+    'site:facebook.com "지방선거" "공천" 2026',
+    'site:instagram.com "지방선거" "예비후보" 2026',
+    'site:blog.naver.com "지방선거" "차출" 2026',
+    'site:youtube.com "지방선거" "출마 선언" 2026',
   ];
 
   List<Map<String, dynamic>> allCandidates = [];
@@ -167,8 +172,16 @@ Future<List<Map<String, dynamic>>> _crawlPortalNews(String url, {required String
 }
 
 bool _isCandidacyRelated(String title) {
-  final keywords = ['출마', '도전', '선언', '예비후보', '지방선거', '시장', '지사', '구청장'];
-  return keywords.any((k) => title.contains(k)) && !title.contains('불출마') && !title.contains('사퇴');
+  final keywords = [
+    '출마', '도전', '선언', '예비후보', '지방선거', '시장', '지사', '구청장', 
+    '차출', '물망', '공천', '경선', '전략공천', '단일화', '대항마', '유력', 
+    '등판', '출사표', '후보군', '인재영입'
+  ];
+  return keywords.any((k) => title.contains(k)) && 
+         !title.contains('불출마') && 
+         !title.contains('사퇴') &&
+         !title.contains('구속') &&
+         !title.contains('재판');
 }
 
 String? _extractNameFromTitle(String title) {
@@ -273,33 +286,6 @@ Future<void> _saveCandidatesToFile(List<Map<String, dynamic>> candidates) async 
 
   await file.writeAsString(JsonEncoder.withIndent('  ').convert(pool.values.toList()));
   print('✅ 업데이트 완료. 현재 총 후보 수: ${pool.length}');
-}
-s.join(' #')}',
-          'electionDate': '2026-06-03T00:00:00.000',
-          'term': 0,
-          'achievementsList': [title],
-          'actions': ['최근 행보 키워드: ${keywords.join(', ')}'],
-          'policies': [],
-          'pressReports': [
-            {
-              'id': 'press_${DateTime.now().millisecondsSinceEpoch}_$i',
-              'title': title,
-              'source': '뉴스검색',
-              'url': url,
-              'publishDate': DateTime.now().toIso8601String(),
-              'summary': '주요 기사 키워드: ${keywords.join(', ')}',
-              'sentiment': 'neutral'
-            }
-          ],
-          'electionPossibility': 50.0, // UI 호환성을 위해 double 타입 명시 
-          'lastAnalysisDate': DateTime.now().toIso8601String(),
-          'improvementPoints': ['기반 추출 키워드: ${keywords.join(', ')}'],
-        });
-      }
-    }
-  }
-
-  return extracted;
 }
 
 Future<String> fetchProfileImageUrl(String name) async {
