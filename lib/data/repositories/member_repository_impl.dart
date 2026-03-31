@@ -121,7 +121,7 @@ class MemberRepositoryImpl implements MemberRepository {
                 }
               }
             } catch (e) {
-              print('[MemberRepo] Member parse error for ${item[\'name\']}: $e');
+              print("[MemberRepo] Member parse error for ${item['name']}: $e");
             }
           }
         } else {
