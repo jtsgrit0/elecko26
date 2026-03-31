@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/core/theme/app_theme.dart';
 import 'package:flutter_application_1/domain/entities/analysis_result.dart';
@@ -224,12 +225,13 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: member.imageUrl.isNotEmpty
-                ? Image.network(
-                    ImageUtil.getProxyUrl(member.imageUrl),
+                ? CachedNetworkImage(
+                    imageUrl: ImageUtil.getProxyUrl(member.imageUrl, width: 200, height: 200),
                     width: 100,
                     height: 100,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
+                    placeholder: (context, url) => Container(width: 100, height: 100, color: AppColors.lightGrey),
+                    errorWidget: (context, url, error) {
                       return Container(
                         width: 100,
                         height: 100,

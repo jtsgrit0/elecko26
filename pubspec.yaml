@@ -39,6 +39,7 @@ dependencies:
   html: ^0.15.4
   syncfusion_flutter_pdf: ^31.2.18
   shared_preferences: ^2.5.2
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:

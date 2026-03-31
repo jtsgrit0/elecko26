@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/core/utils/image_util.dart';
 import 'package:flutter_application_1/core/theme/app_theme.dart';
@@ -691,12 +692,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       secondary: ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: member.imageUrl.isNotEmpty
-                            ? Image.network(
-                                ImageUtil.getProxyUrl(member.imageUrl),
+                            ? CachedNetworkImage(
+                                imageUrl: ImageUtil.getProxyUrl(member.imageUrl, width: 80, height: 80),
                                 width: 40,
                                 height: 40,
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => Container(
+                                placeholder: (context, url) => Container(width: 40, height: 40, color: AppColors.lightGrey),
+                                errorWidget: (context, url, error) => Container(
                                   width: 40,
                                   height: 40,
                                   color: AppColors.lightGrey,
@@ -805,12 +807,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ClipRRect(
             borderRadius: BorderRadius.circular(40),
             child: m.imageUrl.isNotEmpty
-                ? Image.network(
-                    ImageUtil.getProxyUrl(m.imageUrl),
+                ? CachedNetworkImage(
+                    imageUrl: ImageUtil.getProxyUrl(m.imageUrl, width: 160, height: 160),
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
+                    placeholder: (context, url) => Container(width: 80, height: 80, color: AppColors.lightGrey),
+                    errorWidget: (context, url, error) => Container(
                       width: 80,
                       height: 80,
                       color: AppColors.lightGrey,
@@ -1222,10 +1225,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               ),
                               child: ClipOval(
                                 child: member.imageUrl.isNotEmpty
-                                    ? Image.network(
-                                        ImageUtil.getProxyUrl(member.imageUrl),
+                                    ? CachedNetworkImage(
+                                        imageUrl: ImageUtil.getProxyUrl(member.imageUrl, width: 160, height: 160),
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
+                                        placeholder: (context, url) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                        errorWidget: (context, url, error) {
                                           return Center(
                                             child: Text(
                                               member.name.isNotEmpty ? member.name[0] : '?',
@@ -1567,12 +1571,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                     backgroundColor: AppColors.lightGrey,
                                     child: m.imageUrl.isNotEmpty
                                         ? ClipOval(
-                                            child: Image.network(
-                                              ImageUtil.getProxyUrl(m.imageUrl),
+                                            child: CachedNetworkImage(
+                                              imageUrl: ImageUtil.getProxyUrl(m.imageUrl, width: 48, height: 48),
                                               width: 24,
                                               height: 24,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, size: 12),
+                                              placeholder: (context, url) => Container(width: 24, height: 24, color: AppColors.lightGrey),
+                                              errorWidget: (context, url, error) => const Icon(Icons.person, size: 12),
                                             ),
                                           )
                                         : const Icon(Icons.person, size: 12),
@@ -1848,12 +1853,13 @@ class _MemberCardState extends State<_MemberCard> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: member.imageUrl.isNotEmpty
-                      ? Image.network(
-                          ImageUtil.getProxyUrl(member.imageUrl),
+                      ? CachedNetworkImage(
+                          imageUrl: ImageUtil.getProxyUrl(member.imageUrl, width: 120, height: 120),
                           width: 60,
                           height: 60,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
+                          placeholder: (context, url) => Container(width: 60, height: 60, color: AppColors.lightGrey),
+                          errorWidget: (context, url, error) => Container(
                             width: 60,
                             height: 60,
                             decoration: BoxDecoration(

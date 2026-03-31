@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/core/utils/image_util.dart';
 import 'package:flutter_application_1/domain/entities/member.dart';
@@ -296,10 +297,11 @@ class _MemberCard extends StatelessWidget {
                 child: member.imageUrl.isNotEmpty
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(35),
-                        child: Image.network(
-                          ImageUtil.getProxyUrl(member.imageUrl),
+                        child: CachedNetworkImage(
+                          imageUrl: ImageUtil.getProxyUrl(member.imageUrl, width: 140, height: 140),
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => const Icon(
+                          placeholder: (context, url) => Container(color: AppColors.lightGrey.withOpacity(0.3)),
+                          errorWidget: (context, url, error) => const Icon(
                             Icons.person,
                             color: AppColors.white,
                             size: 35,
