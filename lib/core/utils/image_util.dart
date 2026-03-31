@@ -4,9 +4,10 @@ class ImageUtil {
   static String getProxyUrl(String url, {int? width, int? height}) {
     if (url.isEmpty) return url;
     
-    // 모든 외부 이미지에 대해 최적화 프록시 적용
+    // 모든 외부 이미지에 대해 프록시 적용 (CORS 및 리사이징)
     final encodedUrl = Uri.encodeComponent(url);
-    String proxyUrl = 'https://wsrv.nl/?url=$encodedUrl&output=webp&q=75';
+    // 강제 WebP 변환 옵션을 제거하여 안정성 확보 (PNG 등 포맷 존중)
+    String proxyUrl = 'https://wsrv.nl/?url=$encodedUrl';
     
     if (width != null) {
       proxyUrl += '&w=$width';
