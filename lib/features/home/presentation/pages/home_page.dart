@@ -300,19 +300,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _membersStream = Stream<List<Member>>.empty();
   }
 
-  void _triggerNesdcRefresh() {
+  Future<void> _triggerNesdcRefresh() async {
     setState(() { _isLoading = true; });
-    // 강제 갱신 트리거: NESDC 데이터 갱신 시도
-    sl<MemberRepository>()
-        .refreshMembers()
-        .then((_) {
-          if (mounted) setState(() { _isLoading = false; });
-          debugPrint('[NESDC] refreshMembers completed');
-        })
-        .catchError((e) {
-          if (mounted) setState(() { _isLoading = false; });
-          debugPrint('[NESDC] refreshMembers failed: $e');
-        });
+    // 강제 갱신 트리거: 최신 후보자 JSON 및 시스템 데이터 스크랩
+    try {
+      await sl<MemberRepository>().refreshMembers();
+      debugPrint('[Refresh] Data sync completed');
+    } catch (e) {
+      debugPrint('[Refresh] Data sync failed: $e');
+    } finally {
+      if (mounted) setState(() { _isLoading = false; });
+    }
   }
 
   /// 1분마다 선거 데이터를 JSON으로 내보내고 GitHub에 저장
@@ -419,26 +417,31 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   // 홈 대시보드
   Widget _buildHomeDashboard() {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          if (_isLoading)
-            const LinearProgressIndicator(
-              backgroundColor: Colors.transparent,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-              minHeight: 4,
-            ),
-          if (!_isLoading) const SizedBox(height: 4),
-          // 2026 지방선거 배너
-          _buildElectionBanner(),
-          const SizedBox(height: 24),
-          // 주요 통계
-          _buildStatistics(),
-          const SizedBox(height: 24),
-          // 의원 목록 요약
-          _buildMemberListSection(),
-          const SizedBox(height: 24),
-        ],
+    return RefreshIndicator(
+      onRefresh: _triggerNesdcRefresh,
+      color: AppColors.primary,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          children: [
+            if (_isLoading)
+              const LinearProgressIndicator(
+                backgroundColor: Colors.transparent,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                minHeight: 4,
+              ),
+            if (!_isLoading) const SizedBox(height: 4),
+            // 2026 지방선거 배너
+            _buildElectionBanner(),
+            const SizedBox(height: 24),
+            // 주요 통계
+            _buildStatistics(),
+            const SizedBox(height: 24),
+            // 의원 목록 요약
+            _buildMemberListSection(),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
