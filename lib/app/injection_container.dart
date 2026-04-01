@@ -11,6 +11,8 @@ import 'package:flutter_application_1/data/repositories/historical_election_repo
 import 'package:flutter_application_1/domain/repositories/historical_election_repository.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_application_1/data/datasources/local_storage_service.dart';
+import 'package:flutter_application_1/data/datasources/shared_prefs_local_storage_service.dart';
 
 final sl = GetIt.instance;
 
@@ -24,6 +26,9 @@ Future<void> init() async {
   //! External
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => sharedPreferences);
+  sl.registerLazySingleton<LocalStorageService>(
+    () => SharedPreferencesService(sl<SharedPreferences>()),
+  );
 
   //! Features - Member
   // Repository

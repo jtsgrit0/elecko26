@@ -5,9 +5,8 @@ import 'package:flutter_application_1/domain/entities/member.dart';
 import 'package:flutter_application_1/domain/entities/poll.dart';
 import 'package:flutter_application_1/domain/repositories/member_repository.dart';
 import 'package:flutter_application_1/data/datasources/nesdc_poll_data_source.dart';
-import 'package:flutter_application_1/core/platform/platform_info.dart';
 import 'package:get_it/get_it.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_application_1/data/datasources/local_storage_service.dart';
 
 final sl = GetIt.instance;
 // import 'package:flutter/foundation.dart'; // CLI 호환성을 위해 제거
@@ -87,10 +86,9 @@ class MemberRepositoryImpl implements MemberRepository {
     _refreshInProgress = true;
     final now = DateTime.now();
     
-    // CLI 환경(initMinimal)에서는 SharedPreferences가 비어있을 수 있으므로 예외 처리
     List<String> favoriteIds = [];
-    if (sl.isRegistered<SharedPreferences>()) {
-      final prefs = sl<SharedPreferences>();
+    if (sl.isRegistered<LocalStorageService>()) {
+      final prefs = sl<LocalStorageService>();
       favoriteIds = prefs.getStringList('favorite_member_ids') ?? [];
     }
 
@@ -361,9 +359,9 @@ class MemberRepositoryImpl implements MemberRepository {
       final newFavoriteStatus = !member.isFavorite;
       _dummyMembers[index] = member.copyWith(isFavorite: newFavoriteStatus);
       
-      // SharedPreferences에 저장 (등록된 경우에만)
-      if (sl.isRegistered<SharedPreferences>()) {
-        final prefs = sl<SharedPreferences>();
+      // LocalStorage 에 저장 (등록된 경우에만)
+      if (sl.isRegistered<LocalStorageService>()) {
+        final prefs = sl<LocalStorageService>();
         final List<String> favoriteIds = prefs.getStringList('favorite_member_ids') ?? [];
         
         if (newFavoriteStatus) {
@@ -381,8 +379,8 @@ class MemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<void> resetSettings() async {
-    if (sl.isRegistered<SharedPreferences>()) {
-      final prefs = sl<SharedPreferences>();
+    if (sl.isRegistered<LocalStorageService>()) {
+      final prefs = sl<LocalStorageService>();
       await prefs.clear(); // 모든 저장된 데이터 삭제 (지역 정보 포함)
     }
     
