@@ -52,7 +52,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
   Stream<AnalysisResult> _analysisTicker(String memberId) async* {
     while (true) {
       yield await sl<CalculateElectionPossibilityUseCase>().call(memberId);
-      await Future.delayed(const Duration(seconds: 30));
+      await Future.delayed(const Duration(minutes: 1));
     }
   }
 
@@ -1180,7 +1180,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '30초 간격',
+                    '1분 간격',
                     style: AppTextStyles.labelSmall.copyWith(
                       color: AppColors.mediumGray,
                       fontWeight: FontWeight.w600,
