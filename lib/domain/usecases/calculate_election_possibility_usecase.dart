@@ -143,13 +143,25 @@ class CalculateElectionPossibilityUseCase {
     // 6. 역대 선거 지역 기반 지지율 (0~1)
     final historicalScore = historicalBaseSupport;
 
-    // 가중치 평균 계산 (역대 선거 데이터 20% 반영)
-    double overall = (achievementScore * 0.12) +
-        (activityScore * 0.12) +
-        (policyScore * 0.12) +
-        (publicImageScore * 0.12) +
-        (pollScore * 0.32) +
-        (historicalScore * 0.20);
+    // 가중치 동적 재분배 시스템
+    double overall;
+    if (pollScore != null) {
+      // (1) 여론조사가 있는 경우: 기존 가중치 유지 (Poll 32%)
+      overall = (achievementScore * 0.12) +
+          (activityScore * 0.12) +
+          (policyScore * 0.12) +
+          (publicImageScore * 0.12) +
+          (pollScore * 0.32) +
+          (historicalScore * 0.20);
+    } else {
+      // (2) 여론조사가 미공개인 경우: 32%의 비중을 다른 데이터로 재분배
+      // History(20->40), Media(12->15), Achievement/Activity/Policy(각 12->15)
+      overall = (achievementScore * 0.15) +
+          (activityScore * 0.15) +
+          (policyScore * 0.15) +
+          (publicImageScore * 0.15) +
+          (historicalScore * 0.40);
+    }
     
     // PDF 기반 투표 관심도 조정 (관심도 높을수록 조직표/집중력 강화 효과, 최대 +/- 3%p)
     final interestAdjustment = (voterInterest - 0.5) * 0.06;
@@ -160,7 +172,7 @@ class CalculateElectionPossibilityUseCase {
       'activity': activityScore,
       'policy': policyScore,
       'publicImage': publicImageScore,
-      'poll': pollScore,
+      'poll': pollScore ?? -1.0, // UI 호환성을 위해 null 대신 특수값 사용 시 고려
       'historical': historicalScore,
       'overall': overall,
       'voterInterest': voterInterest,
@@ -344,9 +356,9 @@ class CalculateElectionPossibilityUseCase {
 - 활동도: ${(scores['activity']! * 100).toStringAsFixed(1)}% (12%)
 - 정책도: ${(scores['policy']! * 100).toStringAsFixed(1)}% (12%)
 - 언론도: ${(scores['publicImage']! * 100).toStringAsFixed(1)}% (12%)
-- 여론조사 지지율: ${(scores['poll']! * 100).toStringAsFixed(1)}% (32% - 가중치)
-- 역대 선거 지역 기반: $historicalPct% (20% - 가중치)
-
+- 여론조사 지지율: ${scores['poll']! < 0 ? '미공개(데이터 부재)' : '${(scores['poll']! * 100).toStringAsFixed(1)}% (32% - 가중치)'}
+- 역대 선거 지역 기반: $historicalPct% (${scores['poll']! < 0 ? '40% - 보정 가중치' : '20% - 가중치'})
+${scores['poll']! < 0 ? '\n※ 공표용 여론조사 부재로 지역 성향 및 성과 중심 예측 모델 가동 중\n' : ''}
 3. 여론조사 현황
 ${_generatePollSummary(member)}
 
@@ -428,9 +440,10 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
 
   /// 0~1 범위로 점수 정규화
   /// 여론조사 점수 계산 (최근 여론조사 평균)
-  double _calculatePollScore(Member member) {
+  /// 수치가 모두 미공개인 경우 null을 반환하여 가중치 재분배를 유도함
+  double? _calculatePollScore(Member member) {
     if (member.polls.isEmpty) {
-      return 0.5; // 여론조사가 없으면 중립
+      return null; 
     }
 
     // 최근 여론조사부터 최대 5개만 사용 (최근성 반영)
@@ -443,7 +456,7 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
         .whereType<double>()
         .toList();
     if (validRates.isEmpty) {
-      return 0.5;
+      return null;
     }
 
     final averageSupportRate =
