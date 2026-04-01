@@ -10,7 +10,14 @@ class Member {
   final String bio;
   final DateTime electionDate;
   final int term;
-  
+  final List<String> achievementsList;
+  final List<String> actions;
+  final List<String> policies;
+  final List<PressReport> pressReports;
+  final List<Poll> polls;
+  final double electionPossibility;
+  final DateTime lastAnalysisDate;
+  final List<String> improvementPoints;
   final List<SocialContribution> socialContributions;
   final bool isFavorite;
 
