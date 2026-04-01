@@ -23,6 +23,7 @@ class AppColors {
   static const Color darkGrey = Color(0xFF4B5563);
   static const Color darkGray = Color(0xFF4B5563);
   static const Color dark = Color(0xFF1F2937);
+  static const Color black = Color(0xFF000000);
 
   // 상태 색상
   static const Color success = Color(0xFF00B894); // 초록
@@ -199,7 +200,7 @@ class AppTheme {
           textStyle: AppTextStyles.labelMedium,
         ),
       ),
-      cardTheme: CardThemeData(
+      cardTheme: CardTheme(
         color: AppColors.white,
         elevation: 2,
         shape: RoundedRectangleBorder(
@@ -254,7 +255,7 @@ class AppTheme {
         thickness: 1,
         space: 16,
       ),
-      tabBarTheme: TabBarThemeData(
+      tabBarTheme: TabBarTheme(
         labelColor: AppColors.primary,
         unselectedLabelColor: AppColors.grey,
         indicator: UnderlineTabIndicator(

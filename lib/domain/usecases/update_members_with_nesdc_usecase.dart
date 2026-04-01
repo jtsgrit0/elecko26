@@ -102,6 +102,7 @@ class UpdateMembersWithNesdcDataUseCase {
       electionPossibility: member.electionPossibility,
       lastAnalysisDate: DateTime.now(),
       improvementPoints: member.improvementPoints,
+      socialContributions: member.socialContributions,
     );
   }
 
