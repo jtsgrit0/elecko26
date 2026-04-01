@@ -200,14 +200,7 @@ class AppTheme {
           textStyle: AppTextStyles.labelMedium,
         ),
       ),
-      cardTheme: CardTheme(
-        color: AppColors.white,
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        margin: const EdgeInsets.all(0),
-      ),
+
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.lightGrey,
         disabledColor: AppColors.grey.withOpacity(0.4),
@@ -255,15 +248,7 @@ class AppTheme {
         thickness: 1,
         space: 16,
       ),
-      tabBarTheme: TabBarTheme(
-        labelColor: AppColors.primary,
-        unselectedLabelColor: AppColors.grey,
-        indicator: UnderlineTabIndicator(
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
-        ),
-        labelStyle: AppTextStyles.labelMedium,
-        unselectedLabelStyle: AppTextStyles.labelSmall,
-      ),
+
       iconTheme: const IconThemeData(
         color: AppColors.dark,
         size: 24,
