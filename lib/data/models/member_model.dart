@@ -20,6 +20,7 @@ class MemberModel extends Member {
     required super.electionPossibility,
     required super.lastAnalysisDate,
     required super.improvementPoints,
+    required super.socialContributions,
     super.isFavorite,
   });
 
@@ -45,6 +46,9 @@ class MemberModel extends Member {
       electionPossibility: (json['electionPossibility'] as num).toDouble(),
       lastAnalysisDate: DateTime.parse(json['lastAnalysisDate'] as String),
       improvementPoints: List<String>.from(json['improvementPoints'] as List),
+      socialContributions: (json['socialContributions'] as List? ?? [])
+          .map((e) => SocialContributionModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
       isFavorite: json['isFavorite'] as bool? ?? false,
     );
   }
@@ -79,6 +83,9 @@ class MemberModel extends Member {
       'electionPossibility': electionPossibility,
       'lastAnalysisDate': lastAnalysisDate.toIso8601String(),
       'improvementPoints': improvementPoints,
+      'socialContributions': socialContributions
+          .map((e) => (e as SocialContributionModel).toJson())
+          .toList(),
       'isFavorite': isFavorite,
     };
   }
@@ -162,6 +169,35 @@ class PressReportModel extends PressReport {
       'publishDate': publishDate.toIso8601String(),
       'summary': summary,
       'sentiment': sentiment,
+    };
+  }
+}
+class SocialContributionModel extends SocialContribution {
+  SocialContributionModel({
+    required super.title,
+    required super.date,
+    required super.type,
+    super.amount,
+    required super.summary,
+  });
+
+  factory SocialContributionModel.fromJson(Map<String, dynamic> json) {
+    return SocialContributionModel(
+      title: json['title'] as String,
+      date: DateTime.parse(json['date'] as String),
+      type: json['type'] as String,
+      amount: json['amount'] as String?,
+      summary: json['summary'] as String,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'date': date.toIso8601String(),
+      'type': type,
+      'amount': amount,
+      'summary': summary,
     };
   }
 }

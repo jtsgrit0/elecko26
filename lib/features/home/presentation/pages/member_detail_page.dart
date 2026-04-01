@@ -184,6 +184,10 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                     _buildImprovementsSection(analysis),
                     const SizedBox(height: 24),
 
+                    // 사회적 책임 (Social Noblesse)
+                    _buildSocialContributionsSection(member),
+                    const SizedBox(height: 24),
+
                     // 당선가능성 추이 그래프
                     _buildTrendChartSection(analysis),
                     const SizedBox(height: 24),
@@ -428,6 +432,12 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
             '언론도',
             analysis.publicImageScore,
             '언론 평가 및 신뢰도',
+          ),
+          const SizedBox(height: 12),
+          _buildScoreItem(
+            '사회공헌도',
+            analysis.socialContributionScore,
+            '기부/봉사 등 사회적 책임 실천',
           ),
         ],
       ),
@@ -1319,6 +1329,133 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
     );
   }
 
+  Widget _buildSocialContributionsSection(Member member) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                '🤝 사회적 책임 (Social Noblesse)',
+                style: AppTextStyles.headline3.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.darkGray,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${member.socialContributions.length}건',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.success,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (member.socialContributions.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.lightGray.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(
+                  '공식 확인된 사회공헌 내역이 없습니다.',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.mediumGray,
+                  ),
+                ),
+              ),
+            )
+          else
+            ...member.socialContributions.map((contrib) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.lightGray),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.black.withOpacity(0.03),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            contrib.type,
+                            style: AppTextStyles.labelSmall.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          contrib.date.toString().split(' ')[0],
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: AppColors.mediumGray,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      contrib.title,
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.darkGray,
+                      ),
+                    ),
+                    if (contrib.amount != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '규모: ${contrib.amount}',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.secondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Text(
+                      contrib.summary,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.mediumGray,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+        ],
+      ),
+    );
+  }
 }
 
 class _StockChartPainter extends CustomPainter {

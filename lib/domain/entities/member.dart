@@ -11,19 +11,7 @@ class Member {
   final DateTime electionDate;
   final int term;
   
-  // 이력 및 경력
-  final List<String> achievementsList;
-  final List<String> actions;
-  final List<String> policies;
-  final List<PressReport> pressReports;
-  
-  // 여론조사 데이터
-  final List<Poll> polls;
-  
-  // 분석 관련
-  final double electionPossibility;
-  final DateTime lastAnalysisDate;
-  final List<String> improvementPoints;
+  final List<SocialContribution> socialContributions;
   final bool isFavorite;
 
   Member({
@@ -43,6 +31,7 @@ class Member {
     required this.electionPossibility,
     required this.lastAnalysisDate,
     required this.improvementPoints,
+    required this.socialContributions,
     this.isFavorite = false,
   });
 
@@ -63,6 +52,7 @@ class Member {
     double? electionPossibility,
     DateTime? lastAnalysisDate,
     List<String>? improvementPoints,
+    List<SocialContribution>? socialContributions,
     bool? isFavorite,
   }) {
     return Member(
@@ -82,6 +72,7 @@ class Member {
       electionPossibility: electionPossibility ?? this.electionPossibility,
       lastAnalysisDate: lastAnalysisDate ?? this.lastAnalysisDate,
       improvementPoints: improvementPoints ?? this.improvementPoints,
+      socialContributions: socialContributions ?? this.socialContributions,
       isFavorite: isFavorite ?? this.isFavorite,
     );
   }
@@ -114,5 +105,20 @@ class PressReport {
     required this.publishDate,
     required this.summary,
     required this.sentiment,
+  });
+}
+class SocialContribution {
+  final String title;
+  final DateTime date;
+  final String type; // 기부, 봉사, 노블레스, 기타
+  final String? amount; // "1억원", "500시간" 등
+  final String summary;
+
+  SocialContribution({
+    required this.title,
+    required this.date,
+    required this.type,
+    this.amount,
+    required this.summary,
   });
 }

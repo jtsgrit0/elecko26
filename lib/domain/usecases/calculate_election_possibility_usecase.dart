@@ -94,6 +94,7 @@ class CalculateElectionPossibilityUseCase {
       activityScore: scores['activity']!,
       policyScore: scores['policy']!,
       publicImageScore: scores['publicImage']!,
+      socialContributionScore: scores['socialContribution']!,
       improvements: analysis['improvements']!,
       strengths: analysis['strengths']!,
       weaknesses: analysis['weaknesses']!,
@@ -143,23 +144,27 @@ class CalculateElectionPossibilityUseCase {
     // 6. 역대 선거 지역 기반 지지율 (0~1)
     final historicalScore = historicalBaseSupport;
 
-    // 가중치 동적 재분배 시스템
+    // 7. 사회적 헌신도 (기부, 봉사 등)
+    final socialScore = _calculateSocialScore(member);
+
+    // 가중치 동적 재분배 시스템 (사회적 헌신도 10~12% 반영)
     double overall;
     if (pollScore != null) {
-      // (1) 여론조사가 있는 경우: 기존 가중치 유지 (Poll 32%)
+      // (1) 여론조사가 있는 경우 (Poll 30%, Social 10%)
+      overall = (achievementScore * 0.10) +
+          (activityScore * 0.10) +
+          (policyScore * 0.10) +
+          (publicImageScore * 0.10) +
+          (socialScore * 0.10) +
+          (pollScore * 0.30) +
+          (historicalScore * 0.20);
+    } else {
+      // (2) 여론조사가 미공개인 경우 (Social 12%, History 40%)
       overall = (achievementScore * 0.12) +
           (activityScore * 0.12) +
           (policyScore * 0.12) +
           (publicImageScore * 0.12) +
-          (pollScore * 0.32) +
-          (historicalScore * 0.20);
-    } else {
-      // (2) 여론조사가 미공개인 경우: 32%의 비중을 다른 데이터로 재분배
-      // History(20->40), Media(12->15), Achievement/Activity/Policy(각 12->15)
-      overall = (achievementScore * 0.15) +
-          (activityScore * 0.15) +
-          (policyScore * 0.15) +
-          (publicImageScore * 0.15) +
+          (socialScore * 0.12) +
           (historicalScore * 0.40);
     }
     
@@ -172,7 +177,8 @@ class CalculateElectionPossibilityUseCase {
       'activity': activityScore,
       'policy': policyScore,
       'publicImage': publicImageScore,
-      'poll': pollScore ?? -1.0, // UI 호환성을 위해 null 대신 특수값 사용 시 고려
+      'socialContribution': socialScore,
+      'poll': pollScore ?? -1.0, 
       'historical': historicalScore,
       'overall': overall,
       'voterInterest': voterInterest,
@@ -352,13 +358,16 @@ class CalculateElectionPossibilityUseCase {
 현재 당선 가능성: ${(scores['overall']! * 100).toStringAsFixed(1)}%
 
 2. 점수 분석
-- 성과도: ${(scores['achievement']! * 100).toStringAsFixed(1)}% (12%)
-- 활동도: ${(scores['activity']! * 100).toStringAsFixed(1)}% (12%)
-- 정책도: ${(scores['policy']! * 100).toStringAsFixed(1)}% (12%)
-- 언론도: ${(scores['publicImage']! * 100).toStringAsFixed(1)}% (12%)
-- 여론조사 지지율: ${scores['poll']! < 0 ? '미반영 (지지율 미공개)' : '${(scores['poll']! * 100).toStringAsFixed(1)}% (32% - 가중치)'}
+- 성과지수: ${(scores['achievement']! * 100).toStringAsFixed(1)}% (10~12%)
+- 활동도: ${(scores['activity']! * 100).toStringAsFixed(1)}% (10~12%)
+- 정책도: ${(scores['policy']! * 100).toStringAsFixed(1)}% (10~12%)
+- 언론도: ${(scores['publicImage']! * 100).toStringAsFixed(1)}% (10~12%)
+- 사회공헌: ${(scores['socialContribution']! * 100).toStringAsFixed(1)}% (10~12% - 신설)
+- 여론조사 지지율: ${scores['poll']! < 0 ? '미반영 (지지율 미공개)' : '${(scores['poll']! * 100).toStringAsFixed(1)}% (30% - 가중치)'}
 - 역대 선거 지역 기반: $historicalPct% (${scores['poll']! < 0 ? '40% - 미반영분 재분배' : '20% - 가중치'})
 ${scores['poll']! < 0 ? '\n※ 여론조사 미반영에 따라 지역 성향 및 실적 중심의 예측 모델로 보정되었습니다.\n' : ''}
+${_generateSocialSummary(member)}
+
 3. 여론조사 현황
 ${_generatePollSummary(member)}
 
@@ -436,6 +445,50 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
         member.pressReports.length.clamp(1, double.infinity);
 
     return ((countScore * 0.6) + (sentimentScore.clamp(0, 1) * 0.4)).clamp(0, 1);
+  }
+
+  /// 사회적 헌신도 점수 계산
+  double _calculateSocialScore(Member member) {
+    if (member.socialContributions.isEmpty) return 0.3; // 기본 도덕성 점수
+
+    // 1. 공헌 횟수 (최대 50%)
+    final countScore = (member.socialContributions.length / 5).clamp(0.0, 1.0) * 0.5;
+
+    // 2. 내용 진정성 (유형별 가중치, 최대 30%)
+    double typeScore = 0.0;
+    for (var contrib in member.socialContributions) {
+      if (contrib.type.contains('기부')) typeScore += 0.1;
+      if (contrib.type.contains('노블레스')) typeScore += 0.15;
+      if (contrib.type.contains('봉사')) typeScore += 0.05;
+    }
+    typeScore = typeScore.clamp(0.0, 0.3);
+
+    // 3. 최근성 (최근 3년 내 데이터 비중 상향, 최대 20%)
+    final now = DateTime.now();
+    double recencyScore = 0.0;
+    for (var contrib in member.socialContributions) {
+      final yearsDiff = now.difference(contrib.date).inDays / 365;
+      if (yearsDiff <= 3) recencyScore += 0.05;
+    }
+    recencyScore = recencyScore.clamp(0.0, 0.2);
+
+    return (countScore + typeScore + recencyScore).clamp(0.1, 0.99);
+  }
+
+  /// 사회 공헌 요약 리포트 생성
+  String _generateSocialSummary(Member member) {
+    if (member.socialContributions.isEmpty) {
+      return '• 사회 공헌: 공식적으로 확인된 기부/봉사 내역이 부족합니다. (도덕성 보강 필요)';
+    }
+
+    final latest = member.socialContributions.first;
+    final buffer = StringBuffer();
+    buffer.writeln('• 사회적 책임: ${member.socialContributions.length}건의 공헌 내역 확인');
+    buffer.writeln('  - 최근 활동: ${latest.title} (${latest.type})');
+    if (latest.amount != null) {
+      buffer.writeln('  - 규모/성과: ${latest.amount}');
+    }
+    return buffer.toString();
   }
 
   /// 0~1 범위로 점수 정규화

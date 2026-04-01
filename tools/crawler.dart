@@ -232,6 +232,7 @@ Map<String, dynamic> _createCandidateTemplate(String name, String title, String 
     'lastAnalysisDate': DateTime.now().toIso8601String(),
     'improvementPoints': ['자동 수집 키워드: $title'],
     'polls': [],
+    'socialContributions': [],
   };
 }
 

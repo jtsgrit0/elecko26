@@ -34,6 +34,7 @@ class AnalysisResult {
   final double activityScore;
   final double policyScore;
   final double publicImageScore;
+  final double socialContributionScore;
   
   // AI 분석 결과
   final List<String> improvements;
@@ -57,6 +58,7 @@ class AnalysisResult {
     required this.activityScore,
     required this.policyScore,
     required this.publicImageScore,
+    required this.socialContributionScore,
     required this.improvements,
     required this.strengths,
     required this.weaknesses,
