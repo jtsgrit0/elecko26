@@ -210,7 +210,7 @@ Map<String, dynamic> _createCandidateTemplate(String name, String title, String 
     'name': name,
     'party': _extractParty(title),
     'district': _extractDistrict(title),
-    'imageUrl': 'https://via.placeholder.com/150', // 위키백과 등에서 나중에 보강 가능
+    'imageUrl': '', // 사용자가 직접 등록하기 전까지 기본 아이콘 유지
     'bio': '포털($source) 검색 기반 자동 생성 정보입니다.',
     'electionDate': '2026-06-03T00:00:00.000',
     'term': 0,
