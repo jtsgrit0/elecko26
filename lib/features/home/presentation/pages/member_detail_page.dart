@@ -593,7 +593,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
   String _formatAverageSupport(List<Poll> polls) {
     final validRates = polls.map((p) => p.supportRate).whereType<double>().toList();
     if (validRates.isEmpty) {
-      return '미공개';
+      return '미반영';
     }
     final avgRate = validRates.fold<double>(0, (sum, r) => sum + r) / validRates.length;
     return '${(avgRate * 100).toStringAsFixed(1)}%';

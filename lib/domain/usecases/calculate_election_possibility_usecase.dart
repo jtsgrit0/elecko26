@@ -356,9 +356,9 @@ class CalculateElectionPossibilityUseCase {
 - 활동도: ${(scores['activity']! * 100).toStringAsFixed(1)}% (12%)
 - 정책도: ${(scores['policy']! * 100).toStringAsFixed(1)}% (12%)
 - 언론도: ${(scores['publicImage']! * 100).toStringAsFixed(1)}% (12%)
-- 여론조사 지지율: ${scores['poll']! < 0 ? '미공개(데이터 부재)' : '${(scores['poll']! * 100).toStringAsFixed(1)}% (32% - 가중치)'}
-- 역대 선거 지역 기반: $historicalPct% (${scores['poll']! < 0 ? '40% - 보정 가중치' : '20% - 가중치'})
-${scores['poll']! < 0 ? '\n※ 공표용 여론조사 부재로 지역 성향 및 성과 중심 예측 모델 가동 중\n' : ''}
+- 여론조사 지지율: ${scores['poll']! < 0 ? '미반영 (지지율 미공개)' : '${(scores['poll']! * 100).toStringAsFixed(1)}% (32% - 가중치)'}
+- 역대 선거 지역 기반: $historicalPct% (${scores['poll']! < 0 ? '40% - 미반영분 재분배' : '20% - 가중치'})
+${scores['poll']! < 0 ? '\n※ 여론조사 미반영에 따라 지역 성향 및 실적 중심의 예측 모델로 보정되었습니다.\n' : ''}
 3. 여론조사 현황
 ${_generatePollSummary(member)}
 
@@ -398,12 +398,12 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
     final buffer = StringBuffer();
     buffer.writeln('• 최신 조사: ${latestPoll.pollAgency} (${latestPoll.surveyDate.toString().split(' ')[0]})');
     final latestSupport = latestPoll.supportRate == null
-        ? '결과 미공개'
+        ? '미반영 (결과 미공개)'
         : '${(latestPoll.supportRate! * 100).toStringAsFixed(1)}%';
     final sampleText = latestPoll.sampleSize == null ? '미공개' : '${latestPoll.sampleSize}명';
     buffer.writeln('• 지지율: $latestSupport (표본: $sampleText)');
     if (avgRate == null) {
-      buffer.writeln('• 평균 지지율: 결과 미공개 (${member.polls.length}건 조사 기준)');
+      buffer.writeln('• 평균 지지율: 미반영 (결과 미공개, ${member.polls.length}건 조사 기준)');
     } else {
       buffer.writeln('• 평균 지지율: ${(avgRate * 100).toStringAsFixed(1)}% (${member.polls.length}건 조사 기준)');
     }
