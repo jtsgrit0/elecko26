@@ -78,7 +78,7 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('대한민국 선거 지도'),
+        title: const Text('예상 득표율 지도'),
         backgroundColor: Theme.of(context).primaryColor,
       ),
       body: _buildBody(),
