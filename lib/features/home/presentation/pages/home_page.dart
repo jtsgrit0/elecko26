@@ -968,22 +968,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     ],
                   ),
                   GestureDetector(
-                    onTap: () => _showSettingsModal(),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.settings,
-                        color: AppColors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 1), // 1px 간격
-                  GestureDetector(
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const MapScreen()),
@@ -996,6 +980,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                       child: const Icon(
                         Icons.map,
+                        color: AppColors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 1), // 1px 간격
+                  GestureDetector(
+                    onTap: () => _showSettingsModal(),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.settings,
                         color: AppColors.white,
                         size: 24,
                       ),
