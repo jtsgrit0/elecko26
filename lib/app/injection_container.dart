@@ -9,6 +9,8 @@ import 'package:flutter_application_1/data/datasources/github_datasource.dart';
 import 'package:flutter_application_1/data/datasources/historical_election_data_source.dart';
 import 'package:flutter_application_1/data/repositories/historical_election_repository_impl.dart';
 import 'package:flutter_application_1/domain/repositories/historical_election_repository.dart';
+import 'package:flutter_application_1/features/map/data/repositories/map_repository.dart';
+import 'package:flutter_application_1/features/map/domain/usecases/get_election_map_data_usecase.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application_1/data/datasources/local_storage_service.dart';
@@ -99,6 +101,15 @@ Future<void> init() async {
     UpdateMembersWithNesdcDataUseCase(
       memberRepository: sl<MemberRepository>(),
     ),
+  );
+  
+  //! Features - Map
+  sl.registerSingleton<MapRepository>(
+    MapRepositoryImpl(),
+  );
+  
+  sl.registerSingleton<GetElectionMapDataUseCase>(
+    GetElectionMapDataUseCase(sl<MapRepository>()),
   );
   
   //! Core

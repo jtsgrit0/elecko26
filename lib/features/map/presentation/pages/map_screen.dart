@@ -3,7 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_application_1/features/map/domain/entities/election_map.dart';
 import 'package:flutter_application_1/features/map/domain/usecases/get_election_map_data_usecase.dart';
-import 'package:flutter_application_1/features/map/data/repositories/map_repository.dart';
+import 'package:flutter_application_1/app/injection_container.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);
@@ -21,7 +21,7 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
-    _useCase = GetElectionMapDataUseCase(MapRepositoryImpl());
+    _useCase = sl<GetElectionMapDataUseCase>();
     _loadData();
   }
 
