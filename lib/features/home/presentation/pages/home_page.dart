@@ -982,7 +982,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10), // 10px 간격
+                  const SizedBox(width: 1), // 1px 간격
                   GestureDetector(
                     onTap: () => Navigator.push(
                       context,
