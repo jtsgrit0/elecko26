@@ -27,11 +27,16 @@ const String _githubToken = String.fromEnvironment(
 
 Future<void> init() async {
   //! External
-  final sharedPreferences = await SharedPreferences.getInstance();
-  sl.registerLazySingleton(() => sharedPreferences);
-  sl.registerLazySingleton<LocalStorageService>(
-    () => SharedPreferencesService(sl<SharedPreferences>()),
-  );
+  try {
+    final sharedPreferences = await SharedPreferences.getInstance();
+    sl.registerLazySingleton(() => sharedPreferences);
+    sl.registerLazySingleton<LocalStorageService>(
+      () => SharedPreferencesService(sl<SharedPreferences>()),
+    );
+  } catch (e) {
+    print('⚠️  SharedPreferences 로드 실패 (웹에서는 정상): $e');
+    // 웹 환경에서는 SharedPreferences가 없을 수 있으므로 무시
+  }
 
   //! Features - Member
   // Repository
