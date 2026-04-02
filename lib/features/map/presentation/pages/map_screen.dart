@@ -16,6 +16,7 @@ class _MapScreenState extends State<MapScreen> {
   late final GetElectionMapDataUseCase _useCase;
   ElectionMapData? _mapData;
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -27,18 +28,22 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _loadData() async {
     try {
       final data = await _useCase();
-      setState(() {
-        _mapData = data;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      // 에러 처리
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('데이터 로드 실패: $e')),
-      );
+      if (mounted) {
+        setState(() {
+          _mapData = data;
+          _isLoading = false;
+          print('✅ 지도 데이터 로드 성공: ${data.regions.length}개 지역');
+        });
+      }
+    } catch (e, stackTrace) {
+      print('❌ 에러 발생: $e');
+      print('스택트레이스: $stackTrace');
+      if (mounted) {
+        setState(() {
+          _errorMessage = '데이터 로드 실패: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -64,46 +69,164 @@ class _MapScreenState extends State<MapScreen> {
         title: const Text('대한민국 선거 지도'),
         backgroundColor: Theme.of(context).primaryColor,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : FlutterMap(
-              options: const MapOptions(
-                initialCenter: LatLng(36.5, 127.5), // 대한민국 중심
-                initialZoom: 7.0,
-              ),
-              children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.example.app',
-                ),
-                if (_mapData != null)
-                  MarkerLayer(
-                    markers: _mapData!.regions.map((region) {
-                      // 간단하게 지역별 마커 표시 (실제로는 폴리곤이 좋음)
-                      final center = _getRegionCenter(region.region);
-                      return Marker(
-                        point: center,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: _getPartyColor(region.dominantParty).withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '${region.region}\n${region.dominantParty}',
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('지도 데이터 로드 중...'),
+          ],
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(_errorMessage!, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _isLoading = true;
+                  _errorMessage = null;
+                });
+                _loadData();
+              },
+              child: const Text('다시 시도'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_mapData == null) {
+      return const Center(child: Text('데이터가 없습니다'));
+    }
+
+    return FlutterMap(
+      options: const MapOptions(
+        initialCenter: LatLng(36.5, 127.5), // 대한민국 중심
+        initialZoom: 7.0,
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.example.app',
+        ),
+        MarkerLayer(
+          markers: _mapData!.regions.map((region) {
+            final center = _getRegionCenter(region.region);
+            return Marker(
+              point: center,
+              width: 120,
+              height: 80,
+              child: GestureDetector(
+                onTap: () => _showRegionInfo(region),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _getPartyColor(region.dominantParty).withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 4,
+                          )
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            region.region,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
                             textAlign: TextAlign.center,
+                            maxLines: 1,
                           ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-              ],
-            ),
+                          Text(
+                            region.dominantParty,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                            ),
+                            maxLines: 1,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.location_on,
+                      color: Colors.red,
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  void _showRegionInfo(RegionalPartyData region) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(region.region),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Text(
+                '우세 정당: ${region.dominantParty}',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              Text(
+                '득표율: ${region.dominantPercentage.toStringAsFixed(2)}%',
+                style: const TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '정당별 득표율:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              ...region.partyPercentages.entries.map((entry) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Text('${entry.key}: ${entry.value.toStringAsFixed(2)}%'),
+                );
+              }).toList(),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('닫기'),
+          ),
+        ],
+      ),
     );
   }
 
