@@ -276,12 +276,12 @@ class _MapScreenState extends State<MapScreen> {
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               Text(
-                '득표율: ${region.dominantPercentage.toStringAsFixed(2)}%',
+                '예상 득표율: ${region.dominantPercentage.toStringAsFixed(2)}%',
                 style: const TextStyle(fontSize: 14),
               ),
               const SizedBox(height: 16),
               const Text(
-                '정당별 득표율:',
+                '정당별 예상 득표율:',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               ...region.partyPercentages.entries.map((entry) {
