@@ -10,6 +10,7 @@ import 'package:flutter_application_1/domain/usecases/member_usecases.dart';
 import 'package:flutter_application_1/domain/usecases/export_election_data_usecase.dart';
 import 'package:flutter_application_1/app/injection_container.dart';
 import 'package:flutter_application_1/features/home/presentation/pages/member_detail_page.dart';
+import 'package:flutter_application_1/features/map/presentation/pages/map_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
@@ -976,6 +977,25 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                       child: const Icon(
                         Icons.settings,
+                        color: AppColors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10), // 10px 간격
+                  GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const MapScreen()),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.map,
                         color: AppColors.white,
                         size: 24,
                       ),
