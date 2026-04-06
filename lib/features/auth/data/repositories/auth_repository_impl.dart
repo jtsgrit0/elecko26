@@ -1,34 +1,71 @@
-import 'package:firebase_auth/firebase_auth.dart' as firebase;
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 
-/// Firebase Auth를 사용한 인증 리포지토리 구현
+/// 로컬 스토리지를 사용하는 이메일 인증 리포지토리 구현
 class AuthRepositoryImpl implements AuthRepository {
-  final firebase.FirebaseAuth _firebaseAuth;
+  static const _accountsKey = 'auth_accounts_v1';
+  static const _currentUserKey = 'auth_current_user_v1';
 
-  AuthRepositoryImpl({
-    firebase.FirebaseAuth? firebaseAuth,
-  }) : _firebaseAuth = firebaseAuth ?? firebase.FirebaseAuth.instance;
+  final StreamController<User?> _authStateController =
+      StreamController<User?>.broadcast();
+
+  Future<SharedPreferences> get _prefs async => SharedPreferences.getInstance();
 
   @override
   Future<User?> getCurrentUser() async {
-    final firebaseUser = _firebaseAuth.currentUser;
-    if (firebaseUser == null) return null;
+    final prefs = await _prefs;
+    final raw = prefs.getString(_currentUserKey);
+    if (raw == null || raw.isEmpty) {
+      return null;
+    }
 
-    return _firebaseUserToUser(firebaseUser);
+    try {
+      return _userFromJson(json.decode(raw) as Map<String, dynamic>);
+    } catch (_) {
+      await prefs.remove(_currentUserKey);
+      return null;
+    }
   }
 
   @override
   Future<AuthResult> signInWithEmail(String email, String password) async {
+    final normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail.isEmpty || password.isEmpty) {
+      return AuthResult.failure('이메일과 비밀번호를 입력해주세요.');
+    }
+
     try {
-      final result = await _firebaseAuth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
+      final prefs = await _prefs;
+      final accounts = await _loadAccounts();
+      final account = accounts[normalizedEmail];
+      if (account == null) {
+        return AuthResult.failure('등록되지 않은 이메일입니다.');
+      }
+      if ((account['password'] as String?) != password) {
+        return AuthResult.failure('잘못된 비밀번호입니다.');
+      }
+
+      final now = DateTime.now();
+      final user = User(
+        id: account['id'] as String,
+        email: normalizedEmail,
+        displayName: account['displayName'] as String?,
+        provider: AuthProvider.email,
+        createdAt: DateTime.tryParse(account['createdAt'] as String? ?? '') ?? now,
+        lastLoginAt: now,
       );
-      final user = _firebaseUserToUser(result.user!);
+
+      account['lastLoginAt'] = now.toIso8601String();
+      accounts[normalizedEmail] = account;
+      await prefs.setString(_accountsKey, json.encode(accounts));
+      await prefs.setString(_currentUserKey, json.encode(_userToJson(user)));
+      _authStateController.add(user);
       return AuthResult.success(user);
-    } on firebase.FirebaseAuthException catch (e) {
-      return AuthResult.failure(_getFirebaseErrorMessage(e));
     } catch (e) {
       return AuthResult.failure('로그인 중 오류가 발생했습니다: $e');
     }
@@ -36,15 +73,44 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<AuthResult> signUpWithEmail(String email, String password) async {
+    final normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail.isEmpty || password.isEmpty) {
+      return AuthResult.failure('이메일과 비밀번호를 입력해주세요.');
+    }
+    if (password.length < 6) {
+      return AuthResult.failure('비밀번호는 6자 이상이어야 합니다.');
+    }
+
     try {
-      final result = await _firebaseAuth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
+      final prefs = await _prefs;
+      final accounts = await _loadAccounts();
+      if (accounts.containsKey(normalizedEmail)) {
+        return AuthResult.failure('이미 사용 중인 이메일입니다.');
+      }
+
+      final now = DateTime.now();
+      final user = User(
+        id: 'local_${now.microsecondsSinceEpoch}',
+        email: normalizedEmail,
+        displayName: normalizedEmail.split('@').first,
+        provider: AuthProvider.email,
+        createdAt: now,
+        lastLoginAt: now,
       );
-      final user = _firebaseUserToUser(result.user!);
+
+      accounts[normalizedEmail] = {
+        'id': user.id,
+        'email': normalizedEmail,
+        'password': password,
+        'displayName': user.displayName,
+        'createdAt': now.toIso8601String(),
+        'lastLoginAt': now.toIso8601String(),
+      };
+
+      await prefs.setString(_accountsKey, json.encode(accounts));
+      await prefs.setString(_currentUserKey, json.encode(_userToJson(user)));
+      _authStateController.add(user);
       return AuthResult.success(user);
-    } on firebase.FirebaseAuthException catch (e) {
-      return AuthResult.failure(_getFirebaseErrorMessage(e));
     } catch (e) {
       return AuthResult.failure('회원가입 중 오류가 발생했습니다: $e');
     }
@@ -72,80 +138,78 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> signOut() async {
-    await _firebaseAuth.signOut();
+    final prefs = await _prefs;
+    await prefs.remove(_currentUserKey);
+    _authStateController.add(null);
   }
 
   @override
   Future<void> deleteAccount() async {
-    final user = _firebaseAuth.currentUser;
-    if (user != null) {
-      await user.delete();
+    final currentUser = await getCurrentUser();
+    if (currentUser == null || currentUser.email == null) {
+      return;
     }
+
+    final prefs = await _prefs;
+    final accounts = await _loadAccounts();
+    accounts.remove(currentUser.email!.toLowerCase());
+    await prefs.setString(_accountsKey, json.encode(accounts));
+    await prefs.remove(_currentUserKey);
+    _authStateController.add(null);
   }
 
   @override
   Stream<User?> get authStateChanges {
-    return _firebaseAuth.authStateChanges().map((firebaseUser) {
-      return firebaseUser != null ? _firebaseUserToUser(firebaseUser) : null;
+    return Stream<User?>.multi((controller) async {
+      controller.add(await getCurrentUser());
+      final sub = _authStateController.stream.listen(
+        controller.add,
+        onError: controller.addError,
+      );
+      controller.onCancel = () => sub.cancel();
     });
   }
 
-  /// Firebase User를 도메인 User로 변환
-  User _firebaseUserToUser(firebase.User firebaseUser) {
-    AuthProvider provider = AuthProvider.anonymous;
-
-    // 제공자 확인
-    if (firebaseUser.providerData.isNotEmpty) {
-      final providerId = firebaseUser.providerData.first.providerId;
-      switch (providerId) {
-        case 'google.com':
-          provider = AuthProvider.google;
-          break;
-        case 'apple.com':
-          provider = AuthProvider.apple;
-          break;
-        case 'facebook.com':
-          provider = AuthProvider.facebook;
-          break;
-        case 'oidc.kakao':
-          provider = AuthProvider.kakao;
-          break;
-        case 'password':
-          provider = AuthProvider.email;
-          break;
-      }
+  Future<Map<String, Map<String, dynamic>>> _loadAccounts() async {
+    final prefs = await _prefs;
+    final raw = prefs.getString(_accountsKey);
+    if (raw == null || raw.isEmpty) {
+      return {};
     }
 
-    return User(
-      id: firebaseUser.uid,
-      email: firebaseUser.email,
-      displayName: firebaseUser.displayName,
-      photoUrl: firebaseUser.photoURL,
-      provider: provider,
-      createdAt: firebaseUser.metadata.creationTime ?? DateTime.now(),
-      lastLoginAt: firebaseUser.metadata.lastSignInTime ?? DateTime.now(),
+    final decoded = json.decode(raw) as Map<String, dynamic>;
+    return decoded.map(
+      (key, value) => MapEntry(
+        key,
+        Map<String, dynamic>.from(value as Map),
+      ),
     );
   }
 
-  /// Firebase 에러 메시지 변환
-  String _getFirebaseErrorMessage(firebase.FirebaseAuthException e) {
-    switch (e.code) {
-      case 'user-not-found':
-        return '등록되지 않은 이메일입니다.';
-      case 'wrong-password':
-        return '잘못된 비밀번호입니다.';
-      case 'email-already-in-use':
-        return '이미 사용 중인 이메일입니다.';
-      case 'weak-password':
-        return '비밀번호가 너무 약합니다.';
-      case 'invalid-email':
-        return '유효하지 않은 이메일 형식입니다.';
-      case 'user-disabled':
-        return '비활성화된 계정입니다.';
-      case 'too-many-requests':
-        return '너무 많은 요청이 있었습니다. 잠시 후 다시 시도해주세요.';
-      default:
-        return '인증 오류가 발생했습니다: ${e.message}';
-    }
+  Map<String, dynamic> _userToJson(User user) {
+    return {
+      'id': user.id,
+      'email': user.email,
+      'displayName': user.displayName,
+      'photoUrl': user.photoUrl,
+      'provider': user.provider.name,
+      'createdAt': user.createdAt.toIso8601String(),
+      'lastLoginAt': user.lastLoginAt.toIso8601String(),
+    };
+  }
+
+  User _userFromJson(Map<String, dynamic> jsonMap) {
+    return User(
+      id: jsonMap['id'] as String,
+      email: jsonMap['email'] as String?,
+      displayName: jsonMap['displayName'] as String?,
+      photoUrl: jsonMap['photoUrl'] as String?,
+      provider: AuthProvider.values.firstWhere(
+        (provider) => provider.name == jsonMap['provider'],
+        orElse: () => AuthProvider.email,
+      ),
+      createdAt: DateTime.tryParse(jsonMap['createdAt'] as String? ?? '') ?? DateTime.now(),
+      lastLoginAt: DateTime.tryParse(jsonMap['lastLoginAt'] as String? ?? '') ?? DateTime.now(),
+    );
   }
 }

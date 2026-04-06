@@ -11,6 +11,8 @@ import 'package:flutter_application_1/domain/usecases/member_usecases.dart';
 import 'package:flutter_application_1/domain/usecases/export_election_data_usecase.dart';
 import 'package:flutter_application_1/app/injection_container.dart';
 import 'package:flutter_application_1/features/auth/presentation/pages/auth_gate.dart';
+import 'package:flutter_application_1/features/auth/domain/entities/user.dart' as auth;
+import 'package:flutter_application_1/features/auth/domain/usecases/auth_usecases.dart';
 import 'package:flutter_application_1/features/home/presentation/pages/member_detail_page.dart';
 import 'package:flutter_application_1/features/map/presentation/pages/map_screen.dart';
 import 'dart:async';
@@ -32,6 +34,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   List<_TopMember> _cachedTop3 = [];
   List<_TopMember> _cachedRanked = [];
   Member? _selectedMember;
+  auth.User? _currentUser;
   
   // 검색 관련 상태
   final TextEditingController _searchController = TextEditingController();
@@ -272,6 +275,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _loadCurrentUser();
     _loadUserSettings();
     _startMemberStream();
     _triggerNesdcRefresh();
@@ -297,6 +301,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _loadCurrentUser() async {
+    try {
+      final user = await sl<GetCurrentUserUseCase>().execute();
+      if (mounted) {
+        setState(() {
+          _currentUser = user;
+        });
+      }
+    } catch (e) {
+      debugPrint('[HomePage] Failed to load current user: $e');
+    }
+  }
+
   void _startMemberStream() {
     try {
       _membersStream = sl<WatchMembersUseCase>().call().asBroadcastStream();
@@ -312,9 +329,27 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Future<void> _handleBottomNavTap(int index) async {
     if (index == 5) {
-      await Navigator.of(context).push(
+      if (_currentUser != null) {
+        setState(() {
+          _selectedIndex = index;
+          _selectedMember = null;
+        });
+        return;
+      }
+
+      final result = await Navigator.of(context).push<bool>(
         MaterialPageRoute(builder: (_) => const AuthGate()),
       );
+      await _loadCurrentUser();
+      if (!mounted) {
+        return;
+      }
+      if (result == true && _currentUser != null) {
+        setState(() {
+          _selectedIndex = index;
+          _selectedMember = null;
+        });
+      }
       return;
     }
 
@@ -435,7 +470,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       case 4:
         return _buildComparisonPage();
       case 5:
-        return const Center(child: Text('로컬 웹에서는 투표 기능이 비활성화되어 있습니다.'));
+        if (_currentUser == null) {
+          return const Center(child: Text('투표 기능은 로그인 후 이용할 수 있습니다.'));
+        }
+        return Center(
+          child: Text('${_currentUser!.email ?? _currentUser!.id} 계정으로 로그인되었습니다.'),
+        );
       case 6:
         return const Center(child: Text('로컬 웹에서는 프로필 기능이 비활성화되어 있습니다.'));
       default:

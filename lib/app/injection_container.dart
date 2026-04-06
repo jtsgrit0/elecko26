@@ -13,6 +13,9 @@ import 'package:flutter_application_1/domain/repositories/historical_election_re
 import 'package:flutter_application_1/features/map/domain/repositories/map_repository.dart';
 import 'package:flutter_application_1/features/map/data/repositories/map_repository.dart' as map_repo_impl;
 import 'package:flutter_application_1/features/map/domain/usecases/get_election_map_data_usecase.dart';
+import 'package:flutter_application_1/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:flutter_application_1/features/auth/domain/repositories/auth_repository.dart';
+import 'package:flutter_application_1/features/auth/domain/usecases/auth_usecases.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application_1/data/datasources/local_storage_service.dart';
@@ -46,6 +49,26 @@ Future<void> init() async {
   // }
 
   //! Features - Member
+  sl.registerSingleton<AuthRepository>(
+    AuthRepositoryImpl(),
+  );
+
+  sl.registerSingleton<GetCurrentUserUseCase>(
+    GetCurrentUserUseCase(sl<AuthRepository>()),
+  );
+
+  sl.registerSingleton<SignInWithEmailUseCase>(
+    SignInWithEmailUseCase(sl<AuthRepository>()),
+  );
+
+  sl.registerSingleton<SignUpWithEmailUseCase>(
+    SignUpWithEmailUseCase(sl<AuthRepository>()),
+  );
+
+  sl.registerSingleton<SignOutUseCase>(
+    SignOutUseCase(sl<AuthRepository>()),
+  );
+
   // Repository
   sl.registerSingleton<MemberRepository>(
     MemberRepositoryImpl(),
@@ -138,6 +161,26 @@ Future<void> initMinimal() async {
       sl.isRegistered<MapRepository>()) {
     await sl.reset();
   }
+
+  sl.registerSingleton<AuthRepository>(
+    AuthRepositoryImpl(),
+  );
+
+  sl.registerSingleton<GetCurrentUserUseCase>(
+    GetCurrentUserUseCase(sl<AuthRepository>()),
+  );
+
+  sl.registerSingleton<SignInWithEmailUseCase>(
+    SignInWithEmailUseCase(sl<AuthRepository>()),
+  );
+
+  sl.registerSingleton<SignUpWithEmailUseCase>(
+    SignUpWithEmailUseCase(sl<AuthRepository>()),
+  );
+
+  sl.registerSingleton<SignOutUseCase>(
+    SignOutUseCase(sl<AuthRepository>()),
+  );
 
   // Repository (SharedPreferences 의존성 없이 작동하도록 내부 로직에서 체크 필요)
   sl.registerSingleton<MemberRepository>(
