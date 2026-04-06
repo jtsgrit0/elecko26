@@ -1,21 +1,14 @@
 import 'package:firebase_auth/firebase_auth.dart' as firebase;
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
-import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart' as kakao;
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 
 /// Firebase Auth를 사용한 인증 리포지토리 구현
 class AuthRepositoryImpl implements AuthRepository {
   final firebase.FirebaseAuth _firebaseAuth;
-  final GoogleSignIn _googleSignIn;
 
   AuthRepositoryImpl({
     firebase.FirebaseAuth? firebaseAuth,
-    GoogleSignIn? googleSignIn,
-  })  : _firebaseAuth = firebaseAuth ?? firebase.FirebaseAuth.instance,
-        _googleSignIn = googleSignIn ?? GoogleSignIn();
+  }) : _firebaseAuth = firebaseAuth ?? firebase.FirebaseAuth.instance;
 
   @override
   Future<User?> getCurrentUser() async {
@@ -59,98 +52,27 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<AuthResult> signInWithGoogle() async {
-    try {
-      final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        return AuthResult.failure('구글 로그인이 취소되었습니다.');
-      }
-
-      final googleAuth = await googleUser.authentication;
-      final credential = firebase.GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final result = await _firebaseAuth.signInWithCredential(credential);
-      final user = _firebaseUserToUser(result.user!);
-      return AuthResult.success(user);
-    } catch (e) {
-      return AuthResult.failure('구글 로그인 중 오류가 발생했습니다: $e');
-    }
+    return AuthResult.failure('구글 로그인은 현재 비활성화되어 있습니다.');
   }
 
   @override
   Future<AuthResult> signInWithApple() async {
-    try {
-      final appleCredential = await SignInWithApple.getAppleIDCredential(
-        scopes: [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ],
-      );
-
-      final oauthCredential = firebase.OAuthProvider('apple.com').credential(
-        idToken: appleCredential.identityToken,
-        accessToken: appleCredential.authorizationCode,
-      );
-
-      final result = await _firebaseAuth.signInWithCredential(oauthCredential);
-      final user = _firebaseUserToUser(result.user!);
-      return AuthResult.success(user);
-    } catch (e) {
-      return AuthResult.failure('Apple 로그인 중 오류가 발생했습니다: $e');
-    }
+    return AuthResult.failure('Apple 로그인은 현재 비활성화되어 있습니다.');
   }
 
   @override
   Future<AuthResult> signInWithFacebook() async {
-    try {
-      final result = await FacebookAuth.instance.login();
-      if (result.status != LoginStatus.success) {
-        return AuthResult.failure('페이스북 로그인이 취소되었습니다.');
-      }
-
-      final credential = firebase.FacebookAuthProvider.credential(result.accessToken!.tokenString);
-      final authResult = await _firebaseAuth.signInWithCredential(credential);
-      final user = _firebaseUserToUser(authResult.user!);
-      return AuthResult.success(user);
-    } catch (e) {
-      return AuthResult.failure('페이스북 로그인 중 오류가 발생했습니다: $e');
-    }
+    return AuthResult.failure('페이스북 로그인은 현재 비활성화되어 있습니다.');
   }
 
   @override
   Future<AuthResult> signInWithKakao() async {
-    try {
-      // 카카오톡 설치 여부 확인
-      final isKakaoTalkInstalled = await kakao.isKakaoTalkInstalled();
-
-      kakao.OAuthToken token;
-      if (isKakaoTalkInstalled) {
-        token = await kakao.UserApi.instance.loginWithKakaoTalk();
-      } else {
-        token = await kakao.UserApi.instance.loginWithKakaoAccount();
-      }
-
-      final credential = firebase.OAuthProvider('oidc.kakao').credential(
-        accessToken: token.accessToken,
-        idToken: token.idToken,
-      );
-
-      final result = await _firebaseAuth.signInWithCredential(credential);
-      final user = _firebaseUserToUser(result.user!);
-      return AuthResult.success(user);
-    } catch (e) {
-      return AuthResult.failure('카카오 로그인 중 오류가 발생했습니다: $e');
-    }
+    return AuthResult.failure('카카오 로그인은 현재 비활성화되어 있습니다.');
   }
 
   @override
   Future<void> signOut() async {
     await _firebaseAuth.signOut();
-    await _googleSignIn.signOut();
-    await FacebookAuth.instance.logOut();
-    await kakao.UserApi.instance.logout();
   }
 
   @override
