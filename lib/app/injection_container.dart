@@ -1,6 +1,5 @@
 import 'package:get_it/get_it.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_application_1/data/repositories/firestore_member_repository_impl.dart';
 import 'package:flutter_application_1/data/repositories/member_repository_impl.dart';
 import 'package:flutter_application_1/domain/repositories/member_repository.dart';
 import 'package:flutter_application_1/domain/usecases/member_usecases.dart';
@@ -29,21 +28,21 @@ const String _githubToken = String.fromEnvironment(
 
 Future<void> init() async {
   //! External
-  try {
-    final sharedPreferences = await SharedPreferences.getInstance();
-    sl.registerLazySingleton(() => sharedPreferences);
-    sl.registerLazySingleton<LocalStorageService>(
-      () => SharedPreferencesService(sl<SharedPreferences>()),
-    );
-  } catch (e) {
-    print('⚠️  SharedPreferences 로드 실패 (웹에서는 정상): $e');
-    // 웹 환경에서는 SharedPreferences가 없을 수 있으므로 무시
-  }
+  // try {
+  //   final sharedPreferences = await SharedPreferences.getInstance();
+  //   sl.registerLazySingleton(() => sharedPreferences);
+  //   sl.registerLazySingleton<LocalStorageService>(
+  //     () => SharedPreferencesService(sl<SharedPreferences>()),
+  //   );
+  // } catch (e) {
+  //   print('⚠️  SharedPreferences 로드 실패 (웹에서는 정상): $e');
+  //   // 웹 환경에서는 SharedPreferences가 없을 수 있으므로 무시
+  // }
 
   //! Features - Member
   // Repository
   sl.registerSingleton<MemberRepository>(
-    kIsWeb ? MemberRepositoryImpl() : FirestoreMemberRepositoryImpl(),
+    MemberRepositoryImpl(),
   );
   
   // Historical election data

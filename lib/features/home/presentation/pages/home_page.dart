@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart' as firebase;
+import 'package:flutter/foundation.dart';
+// import 'package:firebase_auth/firebase_auth.dart' as firebase;
 import 'package:flutter_application_1/core/utils/image_util.dart';
 import 'package:flutter_application_1/core/theme/app_theme.dart';
 import 'package:flutter_application_1/domain/entities/analysis_result.dart';
@@ -414,37 +415,46 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       case 4:
         return _buildComparisonPage();
       case 5:
-        final currentUser = firebase.FirebaseAuth.instance.currentUser;
-        if (currentUser != null) {
-          final authUser = auth.User(
-            id: currentUser.uid,
-            email: currentUser.email,
-            displayName: currentUser.displayName,
-            photoUrl: currentUser.photoURL,
-            provider: _getAuthProvider(currentUser),
-            createdAt: currentUser.metadata.creationTime ?? DateTime.now(),
-            lastLoginAt: currentUser.metadata.lastSignInTime ?? DateTime.now(),
-          );
-          return PollsPage(currentUser: authUser);
-        } else {
-          return const Center(child: Text('로그인이 필요합니다.'));
+        if (kIsWeb) {
+          // 웹에서는 프로필 페이지를 표시하지 않음
+          return const Center(child: Text('웹에서는 프로필 기능을 사용할 수 없습니다.'));
         }
+        // final currentUser = firebase.FirebaseAuth.instance.currentUser;
+        // if (currentUser != null) {
+        //   final authUser = auth.User(
+        //     id: currentUser.uid,
+        //     email: currentUser.email,
+        //     displayName: currentUser.displayName,
+        //     photoUrl: currentUser.photoURL,
+        //     provider: auth.AuthProvider.email,
+        //     createdAt: currentUser.metadata.creationTime ?? DateTime.now(),
+        //     lastLoginAt: currentUser.metadata.lastSignInTime ?? DateTime.now(),
+        //   );
+        //   return PollsPage(currentUser: authUser);
+        // } else {
+        //   return const Center(child: Text('로그인이 필요합니다.'));
+        // }
+        return const Center(child: Text('모바일에서만 사용할 수 있습니다.'));
       case 6:
-        final currentUser = firebase.FirebaseAuth.instance.currentUser;
-        if (currentUser != null) {
-          final authUser = auth.User(
-            id: currentUser.uid,
-            email: currentUser.email,
-            displayName: currentUser.displayName,
-            photoUrl: currentUser.photoURL,
-            provider: _getAuthProvider(currentUser),
-            createdAt: currentUser.metadata.creationTime ?? DateTime.now(),
-            lastLoginAt: currentUser.metadata.lastSignInTime ?? DateTime.now(),
-          );
-          return ProfilePage(currentUser: authUser);
-        } else {
-          return const Center(child: Text('로그인이 필요합니다.'));
+        if (kIsWeb) {
+          return const Center(child: Text('웹에서는 투표 기능을 사용할 수 없습니다.'));
         }
+        // final currentUser = firebase.FirebaseAuth.instance.currentUser;
+        // if (currentUser != null) {
+        //   final authUser = auth.User(
+        //     id: currentUser.uid,
+        //     email: currentUser.email,
+        //     displayName: currentUser.displayName,
+        //     photoUrl: currentUser.photoURL,
+        //     provider: auth.AuthProvider.email,
+        //     createdAt: currentUser.metadata.creationTime ?? DateTime.now(),
+        //     lastLoginAt: currentUser.metadata.lastSignInTime ?? DateTime.now(),
+        //   );
+        //   return ProfilePage(currentUser: authUser);
+        // } else {
+        //   return const Center(child: Text('로그인이 필요합니다.'));
+        // }
+        return const Center(child: Text('모바일에서만 사용할 수 있습니다.'));
       default:
         return _buildHomeDashboard();
     }
@@ -1038,7 +1048,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   const SizedBox(width: 1),
                   GestureDetector(
                     onTap: () async {
-                      await firebase.FirebaseAuth.instance.signOut();
+                      // if (!kIsWeb) {
+                      //   await firebase.FirebaseAuth.instance.signOut();
+                      // }
                     },
                     child: Container(
                       padding: const EdgeInsets.all(8),
@@ -1785,28 +1797,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         });
       },
     );
-  }
-
-  // Firebase User를 AuthProvider로 변환
-  auth.AuthProvider _getAuthProvider(firebase.User firebaseUser) {
-    if (firebaseUser.providerData.isNotEmpty) {
-      final providerId = firebaseUser.providerData.first.providerId;
-      switch (providerId) {
-        case 'google.com':
-          return auth.AuthProvider.google;
-        case 'apple.com':
-          return auth.AuthProvider.apple;
-        case 'facebook.com':
-          return auth.AuthProvider.facebook;
-        case 'oidc.kakao':
-          return auth.AuthProvider.kakao;
-        case 'password':
-          return auth.AuthProvider.email;
-        default:
-          return auth.AuthProvider.anonymous;
-      }
-    }
-    return auth.AuthProvider.anonymous;
   }
 
 }
