@@ -1,7 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:firebase_auth/firebase_auth.dart' as firebase;
 import 'package:flutter_application_1/core/utils/image_util.dart';
 import 'package:flutter_application_1/core/theme/app_theme.dart';
 import 'package:flutter_application_1/domain/entities/analysis_result.dart';
@@ -14,9 +13,6 @@ import 'package:flutter_application_1/app/injection_container.dart';
 import 'package:flutter_application_1/features/auth/presentation/pages/auth_gate.dart';
 import 'package:flutter_application_1/features/home/presentation/pages/member_detail_page.dart';
 import 'package:flutter_application_1/features/map/presentation/pages/map_screen.dart';
-import 'package:flutter_application_1/features/auth/domain/entities/user.dart' as auth;
-import 'package:flutter_application_1/features/voting/presentation/pages/polls_page.dart';
-import 'package:flutter_application_1/features/profile/presentation/pages/profile_page.dart';
 import 'dart:async';
 
 class HomePage extends StatefulWidget {
@@ -314,64 +310,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _membersStream = Stream<List<Member>>.empty();
   }
 
-  auth.User? _getAuthenticatedUser() {
-    try {
-      final currentUser = firebase.FirebaseAuth.instance.currentUser;
-      if (currentUser == null) {
-        return null;
-      }
-
-      auth.AuthProvider provider = auth.AuthProvider.anonymous;
-      if (currentUser.providerData.isNotEmpty) {
-        switch (currentUser.providerData.first.providerId) {
-          case 'google.com':
-            provider = auth.AuthProvider.google;
-            break;
-          case 'apple.com':
-            provider = auth.AuthProvider.apple;
-            break;
-          case 'facebook.com':
-            provider = auth.AuthProvider.facebook;
-            break;
-          case 'oidc.kakao':
-            provider = auth.AuthProvider.kakao;
-            break;
-          case 'password':
-            provider = auth.AuthProvider.email;
-            break;
-        }
-      }
-
-      return auth.User(
-        id: currentUser.uid,
-        email: currentUser.email,
-        displayName: currentUser.displayName,
-        photoUrl: currentUser.photoURL,
-        provider: provider,
-        createdAt: currentUser.metadata.creationTime ?? DateTime.now(),
-        lastLoginAt: currentUser.metadata.lastSignInTime ?? DateTime.now(),
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
   Future<void> _handleBottomNavTap(int index) async {
     if (index == 5) {
-      final currentUser = _getAuthenticatedUser();
-      if (currentUser == null) {
-        await Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const AuthGate()),
-        );
-        if (!mounted) {
-          return;
-        }
-      } else {
-        setState(() {
-          _selectedIndex = index;
-          _selectedMember = null;
-        });
-      }
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const AuthGate()),
+      );
       return;
     }
 
@@ -492,17 +435,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       case 4:
         return _buildComparisonPage();
       case 5:
-        final currentUser = _getAuthenticatedUser();
-        if (currentUser == null) {
-          return const Center(child: Text('투표 기능은 로그인 후 이용할 수 있습니다.'));
-        }
-        return PollsPage(currentUser: currentUser);
+        return const Center(child: Text('로컬 웹에서는 투표 기능이 비활성화되어 있습니다.'));
       case 6:
-        final currentUser = _getAuthenticatedUser();
-        if (currentUser == null) {
-          return const Center(child: Text('프로필 기능은 로그인 후 이용할 수 있습니다.'));
-        }
-        return ProfilePage(currentUser: currentUser);
+        return const Center(child: Text('로컬 웹에서는 프로필 기능이 비활성화되어 있습니다.'));
       default:
         return _buildHomeDashboard();
     }

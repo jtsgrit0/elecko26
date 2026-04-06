@@ -1,20 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart' as firebase;
-import 'package:flutter_application_1/features/home/presentation/pages/home_page.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    try {
-      if (firebase.FirebaseAuth.instance.currentUser != null) {
-        return const HomePage();
-      }
-    } catch (_) {
-      // Firebase가 아직 초기화되지 않은 환경에서는 로그인 안내 화면만 표시합니다.
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('로그인'),
@@ -34,7 +24,7 @@ class AuthGate extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               const Text(
-                '현재 로그인 화면 진입 게이트입니다. 기존 로그인 UI가 연결되어 있다면 이 화면에서 이어지도록 붙이면 됩니다.',
+                '로컬 Chrome 웹에서는 Firebase 기반 로그인 기능을 잠시 비활성화했습니다.',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
