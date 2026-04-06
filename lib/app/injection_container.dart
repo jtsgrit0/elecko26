@@ -139,6 +139,30 @@ Future<void> initMinimal() async {
     HistoricalElectionRepositoryImpl(sl<HistoricalElectionDataSource>()),
   );
 
+  sl.registerSingleton<GetMembersUseCase>(
+    GetMembersUseCase(repository: sl<MemberRepository>()),
+  );
+
+  sl.registerSingleton<SearchMembersUseCase>(
+    SearchMembersUseCase(repository: sl<MemberRepository>()),
+  );
+
+  sl.registerSingleton<GetMemberByIdUseCase>(
+    GetMemberByIdUseCase(repository: sl<MemberRepository>()),
+  );
+
+  sl.registerSingleton<WatchMembersUseCase>(
+    WatchMembersUseCase(repository: sl<MemberRepository>()),
+  );
+
+  sl.registerSingleton<WatchMemberByIdUseCase>(
+    WatchMemberByIdUseCase(repository: sl<MemberRepository>()),
+  );
+
+  sl.registerSingleton<ToggleFavoriteUseCase>(
+    ToggleFavoriteUseCase(repository: sl<MemberRepository>()),
+  );
+
   sl.registerSingleton<CalculateElectionPossibilityUseCase>(
     CalculateElectionPossibilityUseCase(
       repository: sl<MemberRepository>(),
@@ -166,5 +190,13 @@ Future<void> initMinimal() async {
     UpdateMembersWithNesdcDataUseCase(
       memberRepository: sl<MemberRepository>(),
     ),
+  );
+
+  sl.registerSingleton<MapRepository>(
+    map_repo_impl.MapRepositoryImpl(),
+  );
+
+  sl.registerSingleton<GetElectionMapDataUseCase>(
+    GetElectionMapDataUseCase(sl<MapRepository>()),
   );
 }
