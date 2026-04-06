@@ -289,16 +289,25 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _loadUserSettings() async {
-    final selectedRegion = await sl<MemberRepository>().getSelectedRegion();
-    if (mounted) {
-      setState(() {
-        _userRegion = selectedRegion;
-      });
+    try {
+      final selectedRegion = await sl<MemberRepository>().getSelectedRegion();
+      if (mounted) {
+        setState(() {
+          _userRegion = selectedRegion;
+        });
+      }
+    } catch (e) {
+      debugPrint('[HomePage] Failed to load user settings: $e');
     }
   }
 
   void _startMemberStream() {
-    _membersStream = sl<WatchMembersUseCase>().call().asBroadcastStream();
+    try {
+      _membersStream = sl<WatchMembersUseCase>().call().asBroadcastStream();
+    } catch (e) {
+      debugPrint('[HomePage] Failed to start member stream: $e');
+      _membersStream = const Stream<List<Member>>.empty();
+    }
   }
 
   void _stopMemberStream() {

@@ -27,6 +27,12 @@ const String _githubToken = String.fromEnvironment(
 );
 
 Future<void> init() async {
+  if (sl.isRegistered<MemberRepository>() ||
+      sl.isRegistered<GetMembersUseCase>() ||
+      sl.isRegistered<MapRepository>()) {
+    await sl.reset();
+  }
+
   //! External
   // try {
   //   final sharedPreferences = await SharedPreferences.getInstance();
@@ -127,6 +133,12 @@ Future<void> init() async {
 /// CLI 도구 및 테스트를 위한 최소한의 초기화 로직
 /// 플랫폼 전용 플러그인(SharedPreferences 등)에 대한 의존성을 제거합니다.
 Future<void> initMinimal() async {
+  if (sl.isRegistered<MemberRepository>() ||
+      sl.isRegistered<GetMembersUseCase>() ||
+      sl.isRegistered<MapRepository>()) {
+    await sl.reset();
+  }
+
   // Repository (SharedPreferences 의존성 없이 작동하도록 내부 로직에서 체크 필요)
   sl.registerSingleton<MemberRepository>(
     MemberRepositoryImpl(),
