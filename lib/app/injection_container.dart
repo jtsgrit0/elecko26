@@ -1,4 +1,5 @@
 import 'package:get_it/get_it.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_application_1/data/repositories/firestore_member_repository_impl.dart';
 import 'package:flutter_application_1/data/repositories/member_repository_impl.dart';
 import 'package:flutter_application_1/domain/repositories/member_repository.dart';
@@ -42,7 +43,7 @@ Future<void> init() async {
   //! Features - Member
   // Repository
   sl.registerSingleton<MemberRepository>(
-    FirestoreMemberRepositoryImpl(),
+    kIsWeb ? MemberRepositoryImpl() : FirestoreMemberRepositoryImpl(),
   );
   
   // Historical election data

@@ -1451,7 +1451,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 );
               }
               
-              if (snapshot.hasError) {
+              final freshMembers = snapshot.data ?? [];
+              if (snapshot.hasError && freshMembers.isEmpty && _cachedMembers.isEmpty) {
                 return Container(
                   height: 200,
                   decoration: BoxDecoration(
@@ -1472,7 +1473,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 );
               }
               
-              final freshMembers = snapshot.data ?? [];
               if (freshMembers.isNotEmpty) {
                 _cachedMembers = freshMembers;
               }

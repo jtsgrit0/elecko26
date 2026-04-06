@@ -273,22 +273,73 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
   @override
   Stream<List<Member>> watchAllMembers({Duration interval = const Duration(hours: 1)}) async* {
-    await refreshMembers();
-    yield await getAllMembers();
-    yield* Stream.periodic(interval).asyncMap((_) async {
+    try {
       await refreshMembers();
-      return await getAllMembers();
+    } catch (e, st) {
+      print('[FirestoreMemberRepo] watchAllMembers initial refresh failed: $e');
+      print(st);
+    }
+
+    yield await _safeGetAllMembers();
+
+    yield* Stream.periodic(interval).asyncMap((_) async {
+      try {
+        await refreshMembers();
+      } catch (e, st) {
+        print('[FirestoreMemberRepo] watchAllMembers periodic refresh failed: $e');
+        print(st);
+      }
+      return await _safeGetAllMembers();
     });
   }
 
   @override
   Stream<Member> watchMemberById(String memberId, {Duration interval = const Duration(hours: 1)}) async* {
-    await refreshMembers();
-    yield await getMemberById(memberId);
-    yield* Stream.periodic(interval).asyncMap((_) async {
+    try {
       await refreshMembers();
+    } catch (e, st) {
+      print('[FirestoreMemberRepo] watchMemberById initial refresh failed: $e');
+      print(st);
+    }
+
+    final firstMember = await _safeGetMemberById(memberId);
+    if (firstMember != null) {
+      yield firstMember;
+    }
+
+    while (true) {
+      await Future.delayed(interval);
+      try {
+        await refreshMembers();
+      } catch (e, st) {
+        print('[FirestoreMemberRepo] watchMemberById periodic refresh failed: $e');
+        print(st);
+      }
+      final member = await _safeGetMemberById(memberId);
+      if (member != null) {
+        yield member;
+      }
+    }
+  }
+
+  Future<List<Member>> _safeGetAllMembers() async {
+    try {
+      return await getAllMembers();
+    } catch (e, st) {
+      print('[FirestoreMemberRepo] getAllMembers failed: $e');
+      print(st);
+      return [];
+    }
+  }
+
+  Future<Member?> _safeGetMemberById(String memberId) async {
+    try {
       return await getMemberById(memberId);
-    });
+    } catch (e, st) {
+      print('[FirestoreMemberRepo] getMemberById failed: $e');
+      print(st);
+      return null;
+    }
   }
 
   Future<void> _setUserMetadata(Map<String, dynamic> updates) async {

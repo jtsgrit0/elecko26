@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_application_1/data/models/member_model.dart';
 import 'package:flutter_application_1/domain/entities/member.dart';
@@ -93,40 +94,51 @@ class MemberRepositoryImpl implements MemberRepository {
     }
 
     try {
+      String? decodedBody;
       try {
         final rawUrl = 'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
         final response = await http.get(Uri.parse(rawUrl)).timeout(const Duration(seconds: 10));
-        
         if (response.statusCode == 200) {
-          final decodedBody = utf8.decode(response.bodyBytes);
-          final List<dynamic> jsonList = json.decode(decodedBody);
-          
-          for (var item in jsonList) {
-            try {
-              final newMember = MemberModel.fromJson(item as Map<String, dynamic>);
-              final idx = _dummyMembers.indexWhere((m) => m.name == newMember.name);
-              
-              final isFavorite = favoriteIds.contains(newMember.id);
-              
-              if (idx != -1) {
-                _dummyMembers[idx] = newMember.copyWith(
-                  polls: _dummyMembers[idx].polls,
-                  isFavorite: isFavorite,
-                );
-              } else {
-                if (!_dummyMembers.any((m) => m.id == newMember.id)) {
-                  _dummyMembers.add(newMember.copyWith(isFavorite: isFavorite));
-                }
-              }
-            } catch (e) {
-              print("[MemberRepo] Member parse error for ${item['name']}: $e");
-            }
-          }
+          decodedBody = utf8.decode(response.bodyBytes);
         } else {
-          print('[MemberRepo] Fetch failed with status: ${response.statusCode}');
+          print('[MemberRepo] Remote fetch failed with status: ${response.statusCode}');
         }
       } catch (e) {
-        print('[MemberRepo] Crawling fetch failed: $e');
+        print('[MemberRepo] Remote fetch failed: $e');
+      }
+
+      if (decodedBody == null) {
+        try {
+          decodedBody = await rootBundle.loadString('data/election_candidates.json');
+          print('[MemberRepo] Loaded local asset fallback for election_candidates.json');
+        } catch (e) {
+          print('[MemberRepo] Local asset fallback failed: $e');
+        }
+      }
+
+      if (decodedBody != null) {
+        final List<dynamic> jsonList = json.decode(decodedBody);
+        
+        for (var item in jsonList) {
+          try {
+            final newMember = MemberModel.fromJson(item as Map<String, dynamic>);
+            final idx = _dummyMembers.indexWhere((m) => m.name == newMember.name);
+            final isFavorite = favoriteIds.contains(newMember.id);
+
+            if (idx != -1) {
+              _dummyMembers[idx] = newMember.copyWith(
+                polls: _dummyMembers[idx].polls,
+                isFavorite: isFavorite,
+              );
+            } else if (!_dummyMembers.any((m) => m.id == newMember.id)) {
+              _dummyMembers.add(newMember.copyWith(isFavorite: isFavorite));
+            }
+          } catch (e) {
+            print('[MemberRepo] Member parse error for ${item['name']}: $e');
+          }
+        }
+      } else {
+        print('[MemberRepo] No election_candidates data could be loaded.');
       }
 
       final entries = await _nesdcPollDataSource.fetchLatest();
