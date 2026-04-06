@@ -94,12 +94,15 @@ class MemberRepositoryImpl implements MemberRepository {
     }
 
     try {
+      print('[MemberRepo] Starting refreshMembers at $now');
       String? decodedBody;
       try {
         final rawUrl = 'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
         final response = await http.get(Uri.parse(rawUrl)).timeout(const Duration(seconds: 10));
+        print('[MemberRepo] Remote fetch HTTP status: ${response.statusCode}');
         if (response.statusCode == 200) {
           decodedBody = utf8.decode(response.bodyBytes);
+          print('[MemberRepo] Remote fetch succeeded, ${response.bodyBytes.length} bytes');
         } else {
           print('[MemberRepo] Remote fetch failed with status: ${response.statusCode}');
         }
@@ -110,7 +113,7 @@ class MemberRepositoryImpl implements MemberRepository {
       if (decodedBody == null) {
         try {
           decodedBody = await rootBundle.loadString('data/election_candidates.json');
-          print('[MemberRepo] Loaded local asset fallback for election_candidates.json');
+          print('[MemberRepo] Loaded local asset fallback for election_candidates.json, ${decodedBody.length} chars');
         } catch (e) {
           print('[MemberRepo] Local asset fallback failed: $e');
         }
@@ -118,7 +121,7 @@ class MemberRepositoryImpl implements MemberRepository {
 
       if (decodedBody != null) {
         final List<dynamic> jsonList = json.decode(decodedBody);
-        
+        print('[MemberRepo] Parsed json list length: ${jsonList.length}');
         for (var item in jsonList) {
           try {
             final newMember = MemberModel.fromJson(item as Map<String, dynamic>);
@@ -231,6 +234,7 @@ class MemberRepositoryImpl implements MemberRepository {
       }
     } finally {
       _refreshInProgress = false;
+      print('[MemberRepo] refreshMembers completed. member count=${_dummyMembers.length}');
     }
   }
 
