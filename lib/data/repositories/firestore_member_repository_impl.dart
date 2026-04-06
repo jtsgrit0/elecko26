@@ -62,20 +62,40 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<Map<String, dynamic>> _loadUserMetadata() async {
     final uid = _currentUid;
     if (uid == null) {
-      return {};
+      return _loadLocalUserMetadata();
     }
 
-    final docRef = _userDocument(uid);
-    final snapshot = await docRef.get();
-    if (!snapshot.exists) {
-      await _ensureUserDocumentExists();
-      return {
+    try {
+      final docRef = _userDocument(uid);
+      final snapshot = await docRef.get();
+      if (!snapshot.exists) {
+        await _ensureUserDocumentExists();
+        return {
+          'favorite_member_ids': <String>[],
+          'selected_region': '전국',
+        };
+      }
+
+      return snapshot.data() ?? {
         'favorite_member_ids': <String>[],
         'selected_region': '전국',
       };
+    } catch (e, st) {
+      print('[FirestoreMemberRepo] _loadUserMetadata failed, using local fallback: $e');
+      print(st);
+      return _loadLocalUserMetadata();
     }
+  }
 
-    return snapshot.data() ?? {
+  Map<String, dynamic> _loadLocalUserMetadata() {
+    if (sl.isRegistered<LocalStorageService>()) {
+      final prefs = sl<LocalStorageService>();
+      return {
+        'favorite_member_ids': prefs.getStringList('favorite_member_ids') ?? <String>[],
+        'selected_region': prefs.getString('user_selected_region') ?? '전국',
+      };
+    }
+    return {
       'favorite_member_ids': <String>[],
       'selected_region': '전국',
     };
@@ -236,10 +256,23 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   @override
   Future<List<Member>> getAllMembers() async {
     final favoriteIds = await _loadFavoriteIds();
-    final querySnapshot = await _membersCollection.get();
-    return querySnapshot.docs
-        .map((doc) => _memberFromFirestoreData(doc.data(), doc.id, favoriteIds))
-        .toList();
+    try {
+      final querySnapshot = await _membersCollection.get();
+      final members = querySnapshot.docs
+          .map((doc) => _memberFromFirestoreData(doc.data(), doc.id, favoriteIds))
+          .toList();
+
+      if (members.isNotEmpty) {
+        return members;
+      }
+
+      print('[FirestoreMemberRepo] Firestore members empty, using remote fallback');
+      return await _fetchMembersFromRemote(favoriteIds);
+    } catch (e, st) {
+      print('[FirestoreMemberRepo] Firestore getAllMembers failed, using remote fallback: $e');
+      print(st);
+      return await _fetchMembersFromRemote(favoriteIds);
+    }
   }
 
   @override
@@ -365,18 +398,16 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
       if (response.statusCode == 200) {
         final decodedBody = utf8.decode(response.bodyBytes);
-        final List<dynamic> jsonList = json.decode(decodedBody);
         final favoriteIds = await _loadFavoriteIds();
+        final members = _parseMembersFromJson(decodedBody, favoriteIds);
 
-        for (var item in jsonList) {
+        for (final member in members) {
           try {
-            final newMember = MemberModel.fromJson(item as Map<String, dynamic>);
-            final memberWithFavorites = newMember.copyWith(
-              isFavorite: favoriteIds.contains(newMember.id),
+            await _membersCollection.doc(member.id).set(
+              _memberToFirestore(member),
             );
-            await _membersCollection.doc(newMember.id).set(_memberToFirestore(memberWithFavorites));
           } catch (e) {
-            print('[FirestoreMemberRepo] Member parse error for ${item['name']}: $e');
+            print('[FirestoreMemberRepo] Member sync error for ${member.name}: $e');
           }
         }
       } else {
@@ -386,6 +417,34 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       print('[FirestoreMemberRepo] Refresh failed: $e');
     } finally {
       _refreshInProgress = false;
+    }
+  }
+
+  List<Member> _parseMembersFromJson(String decodedBody, Set<String> favoriteIds) {
+    final List<dynamic> jsonList = json.decode(decodedBody);
+    return jsonList.map((item) {
+      final newMember = MemberModel.fromJson(item as Map<String, dynamic>);
+      return newMember.copyWith(
+        isFavorite: favoriteIds.contains(newMember.id),
+      );
+    }).toList();
+  }
+
+  Future<List<Member>> _fetchMembersFromRemote(Set<String> favoriteIds) async {
+    try {
+      final rawUrl = 'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
+      final response = await http.get(Uri.parse(rawUrl)).timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) {
+        print('[FirestoreMemberRepo] Remote fallback failed with status: ${response.statusCode}');
+        return [];
+      }
+
+      final decodedBody = utf8.decode(response.bodyBytes);
+      return _parseMembersFromJson(decodedBody, favoriteIds);
+    } catch (e, st) {
+      print('[FirestoreMemberRepo] Remote fallback fetch failed: $e');
+      print(st);
+      return [];
     }
   }
 
