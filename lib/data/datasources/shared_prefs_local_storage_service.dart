@@ -8,6 +8,16 @@ class SharedPreferencesService implements LocalStorageService {
   SharedPreferencesService(this.prefs);
 
   @override
+  String? getString(String key) {
+    return prefs.getString(key);
+  }
+
+  @override
+  Future<bool> setString(String key, String value) async {
+    return await prefs.setString(key, value);
+  }
+
+  @override
   List<String>? getStringList(String key) {
     return prefs.getStringList(key);
   }

@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase;
 import 'package:flutter_application_1/core/utils/image_util.dart';
 import 'package:flutter_application_1/core/theme/app_theme.dart';
 import 'package:flutter_application_1/domain/entities/analysis_result.dart';
@@ -11,7 +12,9 @@ import 'package:flutter_application_1/domain/usecases/export_election_data_useca
 import 'package:flutter_application_1/app/injection_container.dart';
 import 'package:flutter_application_1/features/home/presentation/pages/member_detail_page.dart';
 import 'package:flutter_application_1/features/map/presentation/pages/map_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_application_1/features/auth/domain/entities/user.dart' as auth;
+import 'package:flutter_application_1/features/voting/presentation/pages/polls_page.dart';
+import 'package:flutter_application_1/features/profile/presentation/pages/profile_page.dart';
 import 'dart:async';
 
 class HomePage extends StatefulWidget {
@@ -191,11 +194,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               setState(() {
                 _userRegion = region;
               });
-              
-              // SharedPreferences에 저장
-              final prefs = sl<SharedPreferences>();
-              await prefs.setString('user_selected_region', region);
-              
+              await sl<MemberRepository>().saveSelectedRegion(region);
+
               if (mounted) {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -287,10 +287,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _loadUserSettings() async {
-    final prefs = sl<SharedPreferences>();
-    setState(() {
-      _userRegion = prefs.getString('user_selected_region') ?? '전국';
-    });
+    final selectedRegion = await sl<MemberRepository>().getSelectedRegion();
+    if (mounted) {
+      setState(() {
+        _userRegion = selectedRegion;
+      });
+    }
   }
 
   void _startMemberStream() {
@@ -411,6 +413,38 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         return _buildIntegratedNewsPage();
       case 4:
         return _buildComparisonPage();
+      case 5:
+        final currentUser = firebase.FirebaseAuth.instance.currentUser;
+        if (currentUser != null) {
+          final authUser = auth.User(
+            id: currentUser.uid,
+            email: currentUser.email,
+            displayName: currentUser.displayName,
+            photoUrl: currentUser.photoURL,
+            provider: _getAuthProvider(currentUser),
+            createdAt: currentUser.metadata.creationTime ?? DateTime.now(),
+            lastLoginAt: currentUser.metadata.lastSignInTime ?? DateTime.now(),
+          );
+          return PollsPage(currentUser: authUser);
+        } else {
+          return const Center(child: Text('로그인이 필요합니다.'));
+        }
+      case 6:
+        final currentUser = firebase.FirebaseAuth.instance.currentUser;
+        if (currentUser != null) {
+          final authUser = auth.User(
+            id: currentUser.uid,
+            email: currentUser.email,
+            displayName: currentUser.displayName,
+            photoUrl: currentUser.photoURL,
+            provider: _getAuthProvider(currentUser),
+            createdAt: currentUser.metadata.creationTime ?? DateTime.now(),
+            lastLoginAt: currentUser.metadata.lastSignInTime ?? DateTime.now(),
+          );
+          return ProfilePage(currentUser: authUser);
+        } else {
+          return const Center(child: Text('로그인이 필요합니다.'));
+        }
       default:
         return _buildHomeDashboard();
     }
@@ -996,6 +1030,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                       child: const Icon(
                         Icons.settings,
+                        color: AppColors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 1),
+                  GestureDetector(
+                    onTap: () async {
+                      await firebase.FirebaseAuth.instance.signOut();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.logout,
                         color: AppColors.white,
                         size: 24,
                       ),
@@ -1717,6 +1769,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ),
           label: '비교',
         ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.poll),
+          label: '투표',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person),
+          label: '프로필',
+        ),
       ],
       onTap: (index) {
         setState(() {
@@ -1725,6 +1785,28 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         });
       },
     );
+  }
+
+  // Firebase User를 AuthProvider로 변환
+  auth.AuthProvider _getAuthProvider(firebase.User firebaseUser) {
+    if (firebaseUser.providerData.isNotEmpty) {
+      final providerId = firebaseUser.providerData.first.providerId;
+      switch (providerId) {
+        case 'google.com':
+          return auth.AuthProvider.google;
+        case 'apple.com':
+          return auth.AuthProvider.apple;
+        case 'facebook.com':
+          return auth.AuthProvider.facebook;
+        case 'oidc.kakao':
+          return auth.AuthProvider.kakao;
+        case 'password':
+          return auth.AuthProvider.email;
+        default:
+          return auth.AuthProvider.anonymous;
+      }
+    }
+    return auth.AuthProvider.anonymous;
   }
 
 }

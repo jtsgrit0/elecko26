@@ -378,6 +378,23 @@ class MemberRepositoryImpl implements MemberRepository {
   }
 
   @override
+  Future<String> getSelectedRegion() async {
+    if (sl.isRegistered<LocalStorageService>()) {
+      final prefs = sl<LocalStorageService>();
+      return prefs.getString('user_selected_region') ?? '전국';
+    }
+    return '전국';
+  }
+
+  @override
+  Future<void> saveSelectedRegion(String region) async {
+    if (sl.isRegistered<LocalStorageService>()) {
+      final prefs = sl<LocalStorageService>();
+      await prefs.setString('user_selected_region', region);
+    }
+  }
+
+  @override
   Future<void> resetSettings() async {
     if (sl.isRegistered<LocalStorageService>()) {
       final prefs = sl<LocalStorageService>();

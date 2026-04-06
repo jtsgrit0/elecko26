@@ -37,5 +37,10 @@ abstract class MemberRepository {
 
   /// 즐겨찾기 상태 토글
   Future<void> toggleFavorite(String memberId);
+
+  /// 사용자 지역 설정을 읽고 저장하는 메서드입니다.
+  Future<String> getSelectedRegion();
+  Future<void> saveSelectedRegion(String region);
+
   Future<void> resetSettings();
 }

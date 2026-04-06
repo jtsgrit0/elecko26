@@ -4,7 +4,6 @@ import 'package:flutter_application_1/core/utils/image_util.dart';
 import 'package:flutter_application_1/domain/entities/member.dart';
 import 'package:flutter_application_1/domain/usecases/member_usecases.dart';
 import 'package:flutter_application_1/app/injection_container.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application_1/core/theme/app_theme.dart';
 import 'package:flutter_application_1/domain/repositories/member_repository.dart';
 
@@ -32,10 +31,12 @@ class _MemberListPageState extends State<MemberListPage> {
   }
 
   Future<void> _loadUserRegion() async {
-    final prefs = sl<SharedPreferences>();
-    setState(() {
-      _userRegion = prefs.getString('user_selected_region') ?? '전국';
-    });
+    final region = await sl<MemberRepository>().getSelectedRegion();
+    if (mounted) {
+      setState(() {
+        _userRegion = region;
+      });
+    }
   }
 
   @override
