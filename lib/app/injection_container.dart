@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_application_1/data/repositories/firestore_member_repository_impl.dart';
 import 'package:flutter_application_1/data/repositories/member_repository_impl.dart';
 import 'package:flutter_application_1/domain/repositories/member_repository.dart';
 import 'package:flutter_application_1/domain/usecases/member_usecases.dart';
@@ -83,7 +84,7 @@ Future<void> init() async {
 
   // Repository
   sl.registerSingleton<MemberRepository>(
-    MemberRepositoryImpl(),
+    FirestoreMemberRepositoryImpl(),
   );
   
   // Historical election data
