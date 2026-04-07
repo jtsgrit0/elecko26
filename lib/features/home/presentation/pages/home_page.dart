@@ -1430,24 +1430,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                         fit: BoxFit.cover,
                                         placeholder: (context, url) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                                         errorWidget: (context, url, error) {
-                                          return Center(
-                                            child: Text(
-                                              member.name.isNotEmpty ? member.name[0] : '?',
-                                              style: AppTextStyles.headline4.copyWith(
-                                                color: AppColors.primary,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                          return const Center(
+                                            child: Icon(
+                                              Icons.person_rounded,
+                                              color: AppColors.primary,
+                                              size: 34,
                                             ),
                                           );
                                         },
                                       )
-                                    : Center(
-                                        child: Text(
-                                          member.name.isNotEmpty ? member.name[0] : '?',
-                                          style: AppTextStyles.headline4.copyWith(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                    : const Center(
+                                        child: Icon(
+                                          Icons.person_rounded,
+                                          color: AppColors.primary,
+                                          size: 34,
                                         ),
                                       ),
                               ),
@@ -2075,13 +2071,11 @@ class _MemberCardState extends State<_MemberCard> {
                                 end: Alignment.bottomRight,
                               ),
                             ),
-                            child: Center(
-                              child: Text(
-                                member.name.isNotEmpty ? member.name[0] : '?',
-                                style: AppTextStyles.headline3.copyWith(
-                                  color: AppColors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.person_rounded,
+                                color: AppColors.white,
+                                size: 28,
                               ),
                             ),
                           ),
@@ -2099,13 +2093,11 @@ class _MemberCardState extends State<_MemberCard> {
                               end: Alignment.bottomRight,
                             ),
                           ),
-                          child: Center(
-                            child: Text(
-                              member.name.isNotEmpty ? member.name[0] : '?',
-                              style: AppTextStyles.headline3.copyWith(
-                                color: AppColors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.person_rounded,
+                              color: AppColors.white,
+                              size: 28,
                             ),
                           ),
                         ),

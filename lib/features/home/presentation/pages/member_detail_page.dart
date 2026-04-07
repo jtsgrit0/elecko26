@@ -246,13 +246,11 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                             end: Alignment.bottomRight,
                           ),
                         ),
-                        child: Center(
-                          child: Text(
-                            member.name[0],
-                            style: AppTextStyles.headline1.copyWith(
-                              color: AppColors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.person_rounded,
+                            color: AppColors.white,
+                            size: 42,
                           ),
                         ),
                       );
@@ -268,13 +266,11 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                         end: Alignment.bottomRight,
                       ),
                     ),
-                    child: Center(
-                      child: Text(
-                        member.name[0],
-                        style: AppTextStyles.headline1.copyWith(
-                          color: AppColors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.person_rounded,
+                        color: AppColors.white,
+                        size: 42,
                       ),
                     ),
                   ),
