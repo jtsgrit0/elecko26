@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:characters/characters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/core/theme/app_theme.dart';
 import 'package:flutter_application_1/domain/entities/analysis_result.dart';
@@ -246,11 +247,13 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                             end: Alignment.bottomRight,
                           ),
                         ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.person_rounded,
-                            color: AppColors.white,
-                            size: 42,
+                        child: Center(
+                          child: Text(
+                            _getProfileInitial(member.name),
+                            style: AppTextStyles.headline1.copyWith(
+                              color: AppColors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       );
@@ -266,11 +269,13 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                         end: Alignment.bottomRight,
                       ),
                     ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.person_rounded,
-                        color: AppColors.white,
-                        size: 42,
+                    child: Center(
+                      child: Text(
+                        _getProfileInitial(member.name),
+                        style: AppTextStyles.headline1.copyWith(
+                          color: AppColors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
@@ -1452,6 +1457,14 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
       ),
     );
   }
+}
+
+String _getProfileInitial(String name) {
+  final trimmed = name.trim();
+  if (trimmed.isEmpty) {
+    return '?';
+  }
+  return trimmed.characters.first;
 }
 
 class _StockChartPainter extends CustomPainter {

@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:characters/characters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_application_1/core/utils/image_util.dart';
@@ -1037,10 +1038,31 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                   width: 40,
                                   height: 40,
                                   color: AppColors.lightGrey,
-                                  child: const Icon(Icons.person, size: 20),
+                                  child: Center(
+                                    child: Text(
+                                      _getProfileInitial(member.name),
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               )
-                            : Container(width: 40, height: 40, color: AppColors.lightGrey, child: const Icon(Icons.person)),
+                            : Container(
+                                width: 40,
+                                height: 40,
+                                color: AppColors.lightGrey,
+                                child: Center(
+                                  child: Text(
+                                    _getProfileInitial(member.name),
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
                       ),
                       onChanged: (bool? value) {
                         setState(() {
@@ -1152,10 +1174,31 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       width: 80,
                       height: 80,
                       color: AppColors.lightGrey,
-                      child: const Icon(Icons.person, size: 40),
+                      child: Center(
+                        child: Text(
+                          _getProfileInitial(m.name),
+                          style: AppTextStyles.headline3.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
                   )
-                : Container(width: 80, height: 80, color: AppColors.lightGrey, child: const Icon(Icons.person, size: 40)),
+                : Container(
+                    width: 80,
+                    height: 80,
+                    color: AppColors.lightGrey,
+                    child: Center(
+                      child: Text(
+                        _getProfileInitial(m.name),
+                        style: AppTextStyles.headline3.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
           ),
           const SizedBox(height: 8),
           Text(m.name, style: AppTextStyles.headline4),
@@ -1604,20 +1647,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                         fit: BoxFit.cover,
                                         placeholder: (context, url) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                                         errorWidget: (context, url, error) {
-                                          return const Center(
-                                            child: Icon(
-                                              Icons.person_rounded,
-                                              color: AppColors.primary,
-                                              size: 34,
+                                          return Center(
+                                            child: Text(
+                                              _getProfileInitial(member.name),
+                                              style: AppTextStyles.headline4.copyWith(
+                                                color: AppColors.primary,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                             ),
                                           );
                                         },
                                       )
-                                    : const Center(
-                                        child: Icon(
-                                          Icons.person_rounded,
-                                          color: AppColors.primary,
-                                          size: 34,
+                                    : Center(
+                                        child: Text(
+                                          _getProfileInitial(member.name),
+                                          style: AppTextStyles.headline4.copyWith(
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
                               ),
@@ -2245,11 +2292,13 @@ class _MemberCardState extends State<_MemberCard> {
                                 end: Alignment.bottomRight,
                               ),
                             ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.person_rounded,
-                                color: AppColors.white,
-                                size: 28,
+                            child: Center(
+                              child: Text(
+                                _getProfileInitial(member.name),
+                                style: AppTextStyles.headline3.copyWith(
+                                  color: AppColors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
@@ -2266,12 +2315,14 @@ class _MemberCardState extends State<_MemberCard> {
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
-                          ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.person_rounded,
-                              color: AppColors.white,
-                              size: 28,
+                            ),
+                          child: Center(
+                            child: Text(
+                              _getProfileInitial(member.name),
+                              style: AppTextStyles.headline3.copyWith(
+                                color: AppColors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
@@ -2418,4 +2469,12 @@ Color _getPartyColor(String party) {
   if (party.contains('개혁신당')) return const Color(0xFFFF7F00);
   if (party.contains('기본소득당')) return const Color(0xFF00D2C3);
   return AppColors.grey;
+}
+
+String _getProfileInitial(String name) {
+  final trimmed = name.trim();
+  if (trimmed.isEmpty) {
+    return '?';
+  }
+  return trimmed.characters.first;
 }
