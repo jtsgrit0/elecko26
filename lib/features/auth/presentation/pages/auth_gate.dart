@@ -78,6 +78,14 @@ class _AuthGateState extends State<AuthGate> {
     }
   }
 
+  Future<void> _showSocialLoginNotice() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('웹 안정화 중이라 현재는 이메일 로그인만 지원합니다.'),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -374,9 +382,7 @@ class _AuthGateState extends State<AuthGate> {
                                   color: const Color(0xFFDB4437),
                                   onTap: _isSubmitting
                                       ? null
-                                      : () => _submitSocialLogin(
-                                            () => sl<SignInWithGoogleUseCase>().execute(),
-                                          ),
+                                      : _showSocialLoginNotice,
                                 ),
                                 _buildSocialAction(
                                   label: 'Apple',
@@ -384,9 +390,7 @@ class _AuthGateState extends State<AuthGate> {
                                   color: Colors.black87,
                                   onTap: _isSubmitting
                                       ? null
-                                      : () => _submitSocialLogin(
-                                            () => sl<SignInWithAppleUseCase>().execute(),
-                                          ),
+                                      : _showSocialLoginNotice,
                                 ),
                                 _buildSocialAction(
                                   label: 'Facebook',
@@ -394,9 +398,7 @@ class _AuthGateState extends State<AuthGate> {
                                   color: const Color(0xFF1877F2),
                                   onTap: _isSubmitting
                                       ? null
-                                      : () => _submitSocialLogin(
-                                            () => sl<SignInWithFacebookUseCase>().execute(),
-                                          ),
+                                      : _showSocialLoginNotice,
                                 ),
                                 _buildSocialAction(
                                   label: 'Kakao',
@@ -405,9 +407,7 @@ class _AuthGateState extends State<AuthGate> {
                                   foreground: Colors.black87,
                                   onTap: _isSubmitting
                                       ? null
-                                      : () => _submitSocialLogin(
-                                            () => sl<SignInWithKakaoUseCase>().execute(),
-                                          ),
+                                      : _showSocialLoginNotice,
                                 ),
                               ],
                             ),

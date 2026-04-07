@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_application_1/app/injection_container.dart' as di;
 import 'package:flutter_application_1/core/theme/app_theme.dart';
 import 'package:flutter_application_1/features/home/presentation/pages/home_page.dart';
-import 'package:flutter_application_1/firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    await di.init();
+    if (kIsWeb) {
+      await di.initMinimal();
+    } else {
+      await di.init();
+    }
   } catch (e, st) {
     print('DI init failed: $e\n$st');
   }

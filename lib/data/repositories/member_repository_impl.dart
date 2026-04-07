@@ -34,18 +34,27 @@ class MemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<List<Member>> getAllMembers() async {
+    if (_dummyMembers.isEmpty) {
+      await refreshMembers();
+    }
     await Future.delayed(const Duration(milliseconds: 400));
     return _dummyMembers;
   }
 
   @override
   Future<List<Member>> getCachedMembers() async {
+    if (_dummyMembers.isEmpty) {
+      await refreshMembers();
+    }
     await Future.delayed(const Duration(milliseconds: 150));
     return _dummyMembers;
   }
 
   @override
   Future<Member> getMemberById(String memberId) async {
+    if (_dummyMembers.isEmpty) {
+      await refreshMembers();
+    }
     await Future.delayed(const Duration(milliseconds: 250));
     try {
       return _dummyMembers.firstWhere((m) => m.id == memberId);

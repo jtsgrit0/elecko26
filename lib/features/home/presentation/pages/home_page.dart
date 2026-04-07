@@ -15,8 +15,6 @@ import 'package:flutter_application_1/features/auth/domain/entities/user.dart' a
 import 'package:flutter_application_1/features/auth/domain/usecases/auth_usecases.dart';
 import 'package:flutter_application_1/features/home/presentation/pages/member_detail_page.dart';
 import 'package:flutter_application_1/features/map/presentation/pages/map_screen.dart';
-import 'package:flutter_application_1/features/profile/presentation/pages/profile_page.dart';
-import 'package:flutter_application_1/features/voting/presentation/pages/polls_page.dart';
 import 'dart:async';
 
 class HomePage extends StatefulWidget {
@@ -343,14 +341,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           return;
         }
       }
-
-      final Widget page = index == 5
-          ? PollsPage(currentUser: _currentUser!)
-          : ProfilePage(currentUser: _currentUser!);
-      await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => page),
-      );
-      return;
     }
 
     setState(() {
@@ -470,12 +460,117 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       case 4:
         return _buildComparisonPage();
       case 5:
-        return const Center(child: Text('투표 탭에서 투표 화면으로 이동합니다.'));
+        return _buildVotingGatewayPage();
       case 6:
-        return const Center(child: Text('프로필 탭에서 프로필 화면으로 이동합니다.'));
+        return _buildProfileGatewayPage();
       default:
         return _buildHomeDashboard();
     }
+  }
+
+  Widget _buildVotingGatewayPage() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.how_to_vote_rounded, size: 56, color: AppColors.primary),
+                  const SizedBox(height: 16),
+                  Text(
+                    _currentUser == null ? '로그인 후 투표 기능을 이용할 수 있습니다.' : '현재 웹 안정화 중입니다.',
+                    style: AppTextStyles.headline4,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _currentUser == null
+                        ? '이메일 로그인 후 투표 및 프로필 기능을 사용할 수 있습니다.'
+                        : '${_currentUser!.email ?? _currentUser!.displayName ?? '사용자'} 계정으로 로그인되어 있습니다.\n현재는 의원 데이터와 홈 기능을 우선 안정화한 상태입니다.',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
+                  ),
+                  const SizedBox(height: 20),
+                  if (_currentUser == null)
+                    ElevatedButton(
+                      onPressed: () => _handleBottomNavTap(5),
+                      child: const Text('로그인하기'),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileGatewayPage() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircleAvatar(
+                    radius: 36,
+                    backgroundColor: Color(0xFFF2E7DA),
+                    child: Icon(Icons.person_rounded, size: 40, color: AppColors.primary),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    _currentUser == null ? '로그인이 필요합니다.' : (_currentUser!.displayName ?? '내 프로필'),
+                    style: AppTextStyles.headline4,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _currentUser?.email ?? '로그인 후 프로필과 즐겨찾기 흐름을 사용할 수 있습니다.',
+                    style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  if (_currentUser == null)
+                    ElevatedButton(
+                      onPressed: () => _handleBottomNavTap(6),
+                      child: const Text('로그인하기'),
+                    )
+                  else
+                    OutlinedButton(
+                      onPressed: () async {
+                        await sl<SignOutUseCase>().execute();
+                        await _loadCurrentUser();
+                        if (!mounted) {
+                          return;
+                        }
+                        setState(() {
+                          _selectedIndex = 0;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('로그아웃되었습니다.')),
+                        );
+                      },
+                      child: const Text('로그아웃'),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   // 홈 대시보드
