@@ -1,35 +1,19 @@
 import 'dart:async';
-import 'dart:convert';
-
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 
-/// 로컬 스토리지를 사용하는 이메일 인증 리포지토리 구현
+/// 플러그인 없이 동작하는 메모리 기반 이메일 인증 리포지토리 구현
 class AuthRepositoryImpl implements AuthRepository {
-  static const _accountsKey = 'auth_accounts_v1';
-  static const _currentUserKey = 'auth_current_user_v1';
+  static final Map<String, Map<String, dynamic>> _accounts = {};
+  static User? _currentUser;
 
   final StreamController<User?> _authStateController =
       StreamController<User?>.broadcast();
 
-  Future<SharedPreferences> get _prefs async => SharedPreferences.getInstance();
-
   @override
   Future<User?> getCurrentUser() async {
-    final prefs = await _prefs;
-    final raw = prefs.getString(_currentUserKey);
-    if (raw == null || raw.isEmpty) {
-      return null;
-    }
-
-    try {
-      return _userFromJson(json.decode(raw) as Map<String, dynamic>);
-    } catch (_) {
-      await prefs.remove(_currentUserKey);
-      return null;
-    }
+    return _currentUser;
   }
 
   @override
@@ -40,9 +24,7 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     try {
-      final prefs = await _prefs;
-      final accounts = await _loadAccounts();
-      final account = accounts[normalizedEmail];
+      final account = _accounts[normalizedEmail];
       if (account == null) {
         return AuthResult.failure('등록되지 않은 이메일입니다.');
       }
@@ -61,9 +43,8 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       account['lastLoginAt'] = now.toIso8601String();
-      accounts[normalizedEmail] = account;
-      await prefs.setString(_accountsKey, json.encode(accounts));
-      await prefs.setString(_currentUserKey, json.encode(_userToJson(user)));
+      _accounts[normalizedEmail] = account;
+      _currentUser = user;
       _authStateController.add(user);
       return AuthResult.success(user);
     } catch (e) {
@@ -82,9 +63,7 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     try {
-      final prefs = await _prefs;
-      final accounts = await _loadAccounts();
-      if (accounts.containsKey(normalizedEmail)) {
+      if (_accounts.containsKey(normalizedEmail)) {
         return AuthResult.failure('이미 사용 중인 이메일입니다.');
       }
 
@@ -98,7 +77,7 @@ class AuthRepositoryImpl implements AuthRepository {
         lastLoginAt: now,
       );
 
-      accounts[normalizedEmail] = {
+      _accounts[normalizedEmail] = {
         'id': user.id,
         'email': normalizedEmail,
         'password': password,
@@ -107,8 +86,7 @@ class AuthRepositoryImpl implements AuthRepository {
         'lastLoginAt': now.toIso8601String(),
       };
 
-      await prefs.setString(_accountsKey, json.encode(accounts));
-      await prefs.setString(_currentUserKey, json.encode(_userToJson(user)));
+      _currentUser = user;
       _authStateController.add(user);
       return AuthResult.success(user);
     } catch (e) {
@@ -138,8 +116,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> signOut() async {
-    final prefs = await _prefs;
-    await prefs.remove(_currentUserKey);
+    _currentUser = null;
     _authStateController.add(null);
   }
 
@@ -150,11 +127,8 @@ class AuthRepositoryImpl implements AuthRepository {
       return;
     }
 
-    final prefs = await _prefs;
-    final accounts = await _loadAccounts();
-    accounts.remove(currentUser.email!.toLowerCase());
-    await prefs.setString(_accountsKey, json.encode(accounts));
-    await prefs.remove(_currentUserKey);
+    _accounts.remove(currentUser.email!.toLowerCase());
+    _currentUser = null;
     _authStateController.add(null);
   }
 
@@ -168,48 +142,5 @@ class AuthRepositoryImpl implements AuthRepository {
       );
       controller.onCancel = () => sub.cancel();
     });
-  }
-
-  Future<Map<String, Map<String, dynamic>>> _loadAccounts() async {
-    final prefs = await _prefs;
-    final raw = prefs.getString(_accountsKey);
-    if (raw == null || raw.isEmpty) {
-      return {};
-    }
-
-    final decoded = json.decode(raw) as Map<String, dynamic>;
-    return decoded.map(
-      (key, value) => MapEntry(
-        key,
-        Map<String, dynamic>.from(value as Map),
-      ),
-    );
-  }
-
-  Map<String, dynamic> _userToJson(User user) {
-    return {
-      'id': user.id,
-      'email': user.email,
-      'displayName': user.displayName,
-      'photoUrl': user.photoUrl,
-      'provider': user.provider.name,
-      'createdAt': user.createdAt.toIso8601String(),
-      'lastLoginAt': user.lastLoginAt.toIso8601String(),
-    };
-  }
-
-  User _userFromJson(Map<String, dynamic> jsonMap) {
-    return User(
-      id: jsonMap['id'] as String,
-      email: jsonMap['email'] as String?,
-      displayName: jsonMap['displayName'] as String?,
-      photoUrl: jsonMap['photoUrl'] as String?,
-      provider: AuthProvider.values.firstWhere(
-        (provider) => provider.name == jsonMap['provider'],
-        orElse: () => AuthProvider.email,
-      ),
-      createdAt: DateTime.tryParse(jsonMap['createdAt'] as String? ?? '') ?? DateTime.now(),
-      lastLoginAt: DateTime.tryParse(jsonMap['lastLoginAt'] as String? ?? '') ?? DateTime.now(),
-    );
   }
 }

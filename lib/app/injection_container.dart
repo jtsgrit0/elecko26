@@ -17,10 +17,6 @@ import 'package:flutter_application_1/features/auth/data/repositories/auth_repos
 import 'package:flutter_application_1/features/auth/domain/repositories/auth_repository.dart';
 import 'package:flutter_application_1/features/auth/domain/usecases/auth_usecases.dart';
 
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_application_1/data/datasources/local_storage_service.dart';
-import 'package:flutter_application_1/data/datasources/shared_prefs_local_storage_service.dart';
-
 final sl = GetIt.instance;
 
 // GitHub token from environment (must be const for web support)
