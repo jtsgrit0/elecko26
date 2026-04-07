@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_application_1/data/datasources/local_storage_service.dart';
 import 'package:flutter_application_1/data/models/member_model.dart';
 import 'package:flutter_application_1/domain/entities/member.dart';
@@ -283,11 +284,22 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   @override
   Future<Member> getMemberById(String memberId) async {
     final favoriteIds = await _loadFavoriteIds();
-    final docSnapshot = await _membersCollection.doc(memberId).get();
-    if (!docSnapshot.exists) {
+    try {
+      final docSnapshot = await _membersCollection.doc(memberId).get();
+      if (docSnapshot.exists && docSnapshot.data() != null) {
+        return _memberFromFirestoreData(docSnapshot.data()!, memberId, favoriteIds);
+      }
+    } catch (e, st) {
+      print('[FirestoreMemberRepo] getMemberById firestore lookup failed: $e');
+      print(st);
+    }
+
+    final members = await _fetchMembersWithFallback(favoriteIds);
+    try {
+      return members.firstWhere((member) => member.id == memberId);
+    } catch (_) {
       throw Exception('Member not found');
     }
-    return _memberFromFirestoreData(docSnapshot.data()!, memberId, favoriteIds);
   }
 
   @override
@@ -393,25 +405,17 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     _refreshInProgress = true;
 
     try {
-      final rawUrl = 'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
-      final response = await http.get(Uri.parse(rawUrl)).timeout(const Duration(seconds: 10));
+      final favoriteIds = await _loadFavoriteIds();
+      final members = await _fetchMembersWithFallback(favoriteIds);
 
-      if (response.statusCode == 200) {
-        final decodedBody = utf8.decode(response.bodyBytes);
-        final favoriteIds = await _loadFavoriteIds();
-        final members = _parseMembersFromJson(decodedBody, favoriteIds);
-
-        for (final member in members) {
-          try {
-            await _membersCollection.doc(member.id).set(
-              _memberToFirestore(member),
-            );
-          } catch (e) {
-            print('[FirestoreMemberRepo] Member sync error for ${member.name}: $e');
-          }
+      for (final member in members) {
+        try {
+          await _membersCollection.doc(member.id).set(
+            _memberToFirestore(member),
+          );
+        } catch (e) {
+          print('[FirestoreMemberRepo] Member sync error for ${member.name}: $e');
         }
-      } else {
-        print('[FirestoreMemberRepo] Fetch failed with status: ${response.statusCode}');
       }
     } catch (e) {
       print('[FirestoreMemberRepo] Refresh failed: $e');
@@ -436,7 +440,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       final response = await http.get(Uri.parse(rawUrl)).timeout(const Duration(seconds: 10));
       if (response.statusCode != 200) {
         print('[FirestoreMemberRepo] Remote fallback failed with status: ${response.statusCode}');
-        return [];
+        return await _fetchMembersFromAsset(favoriteIds);
       }
 
       final decodedBody = utf8.decode(response.bodyBytes);
@@ -444,8 +448,28 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     } catch (e, st) {
       print('[FirestoreMemberRepo] Remote fallback fetch failed: $e');
       print(st);
+      return await _fetchMembersFromAsset(favoriteIds);
+    }
+  }
+
+  Future<List<Member>> _fetchMembersFromAsset(Set<String> favoriteIds) async {
+    try {
+      final decodedBody = await rootBundle.loadString('data/election_candidates.json');
+      print('[FirestoreMemberRepo] Loaded local asset fallback for election_candidates.json');
+      return _parseMembersFromJson(decodedBody, favoriteIds);
+    } catch (e, st) {
+      print('[FirestoreMemberRepo] Asset fallback failed: $e');
+      print(st);
       return [];
     }
+  }
+
+  Future<List<Member>> _fetchMembersWithFallback(Set<String> favoriteIds) async {
+    final remoteMembers = await _fetchMembersFromRemote(favoriteIds);
+    if (remoteMembers.isNotEmpty) {
+      return remoteMembers;
+    }
+    return await _fetchMembersFromAsset(favoriteIds);
   }
 
   @override
