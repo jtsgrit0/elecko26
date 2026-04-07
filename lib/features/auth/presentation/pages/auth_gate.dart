@@ -451,11 +451,10 @@ class _AuthGateState extends State<AuthGate> {
   }) {
     return SizedBox(
       width: 194,
-      child: InkWell(
-        onTap: onTap,
+      child: Material(
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(18),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(18),
@@ -467,19 +466,26 @@ class _AuthGateState extends State<AuthGate> {
               ),
             ],
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: foreground, size: 22),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  color: foreground,
-                  fontWeight: FontWeight.w700,
-                ),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(18),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, color: foreground, size: 22),
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: foreground,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
