@@ -288,13 +288,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _loadCurrentUser();
     _loadUserSettings();
     _startMemberStream();
-    _triggerNesdcRefresh();
+    _triggerNesdcRefresh(isSilent: true);
     _startDataExportTimer();
     
-    // 1분마다 UI 데이터 새로고침
+    // 1분마다 UI 데이터 새로고침 (백그라운드에서 조용히)
     _uiRefreshTimer = Timer.periodic(
       const Duration(minutes: 1),
-      (_) => _triggerNesdcRefresh(),
+      (_) => _triggerNesdcRefresh(isSilent: true),
     );
   }
 
@@ -359,8 +359,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     });
   }
 
-  Future<void> _triggerNesdcRefresh() async {
-    setState(() { _isLoading = true; });
+  Future<void> _triggerNesdcRefresh({bool isSilent = false}) async {
+    if (!isSilent) setState(() { _isLoading = true; });
     // 강제 갱신 트리거: 최신 후보자 JSON 및 시스템 데이터 스크랩
     try {
       await sl<MemberRepository>().refreshMembers();
@@ -368,7 +368,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     } catch (e) {
       debugPrint('[Refresh] Data sync failed: $e');
     } finally {
-      if (mounted) setState(() { _isLoading = false; });
+      if (mounted && !isSilent) setState(() { _isLoading = false; });
     }
   }
 
@@ -586,7 +586,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // 홈 대시보드
   Widget _buildHomeDashboard() {
     return RefreshIndicator(
-      onRefresh: _triggerNesdcRefresh,
+      onRefresh: () => _triggerNesdcRefresh(isSilent: false),
       color: AppColors.primary,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),

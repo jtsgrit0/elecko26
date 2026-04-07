@@ -160,8 +160,12 @@ class MemberRepositoryImpl implements MemberRepository {
       if (!_kReleaseMode) {
         print('[NESDC] fetched list entries: ${entries.length}');
       }
-      for (var i = 0; i < _dummyMembers.length; i++) {
-        final member = _dummyMembers[i];
+
+      // 벙렬 처리를 위한 비동기 작업 목록 생성
+      final updateTasks = _dummyMembers.asMap().entries.map((mapEntry) async {
+        final i = mapEntry.key;
+        final member = mapEntry.value;
+        
         final regionKey = _mapDistrictToRegion(member.district);
         final matchedEntries = entries
             .where((e) => _matchesRegion(e.region, regionKey))
@@ -169,30 +173,27 @@ class MemberRepositoryImpl implements MemberRepository {
           ..sort((a, b) => b.registeredDate.compareTo(a.registeredDate));
         final limitedEntries = matchedEntries.take(5).toList();
 
-        final newPolls = <Poll>[];
-        var extractedCount = 0;
-        var partyExtractedCount = 0;
-        final candidateNames = _candidateNameVariants(member);
-        final partyNames = _partyAliases(member.party);
-        for (final entry in limitedEntries) {
+        // 각 의원의 여론조사 상세 정보를 병렬로 가져옴
+        final pollFutures = limitedEntries.map((entry) async {
           NesdcPollDetail? detail;
           try {
             detail = await _nesdcPollDataSource.fetchDetail(entry.sourceUrl);
           } catch (_) {
             detail = null;
           }
+          
+          final candidateNames = _candidateNameVariants(member);
+          final partyNames = _partyAliases(member.party);
+          
           double? supportRate = detail?.findSupportRate(candidateNames);
           var supportSource = '후보';
           if (supportRate == null) {
             supportRate = detail?.findSupportRate(partyNames);
             if (supportRate != null) {
               supportSource = '정당';
-              partyExtractedCount++;
             }
           }
-          if (supportRate != null) {
-            extractedCount++;
-          }
+          
           final sampleSize = detail?.sampleSize;
           final marginOfError = detail?.marginOfError;
           final surveyDate = detail?.surveyDate ?? entry.registeredDate;
@@ -216,30 +217,35 @@ class MemberRepositoryImpl implements MemberRepository {
             noteParts.add('결과 링크: $resultUrl');
           }
 
-          newPolls.add(
-            Poll(
-              id: 'nesdc_${entry.registrationNo}',
-              pollAgency: entry.agency,
-              surveyDate: surveyDate,
-              supportRate: supportRate,
-              partyName: member.party,
-              sampleSize: sampleSize,
-              marginOfError: marginOfError,
-              source: entry.sourceUrl,
-              notes: noteParts.join(' | '),
-            ),
+          return Poll(
+            id: 'nesdc_${entry.registrationNo}',
+            pollAgency: entry.agency,
+            surveyDate: surveyDate,
+            supportRate: supportRate,
+            partyName: member.party,
+            sampleSize: sampleSize,
+            marginOfError: marginOfError,
+            source: entry.sourceUrl,
+            notes: noteParts.join(' | '),
           );
-        }
+        });
 
+        final newPolls = await Future.wait(pollFutures);
         final mergedPolls = _mergePolls(member.polls, newPolls);
+        
         _dummyMembers[i] = member.copyWith(
           polls: mergedPolls,
           lastAnalysisDate: now,
         );
+        
         if (!_kReleaseMode) {
-          print('[NESDC] ${member.name} matched=${limitedEntries.length} extracted=$extractedCount party=$partyExtractedCount');
+          final extractedCount = newPolls.where((p) => p.supportRate != null).length;
+          print('[NESDC] ${member.name} matched=${limitedEntries.length} extracted=$extractedCount');
         }
-      }
+      });
+
+      // 모든 의원의 업데이트 작업을 동시에 실행
+      await Future.wait(updateTasks);
     } catch (_) {
       for (var i = 0; i < _dummyMembers.length; i++) {
         _dummyMembers[i] = _dummyMembers[i].copyWith(lastAnalysisDate: now);
