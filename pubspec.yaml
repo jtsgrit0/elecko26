@@ -41,6 +41,7 @@ dependencies:
   cached_network_image: ^3.4.1
   flutter_map: ^6.1.0
   latlong2: ^0.9.0
+  shared_preferences: ^2.5.3
 
 
 dev_dependencies:

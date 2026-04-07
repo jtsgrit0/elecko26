@@ -103,6 +103,7 @@ class UpdateMembersWithNesdcDataUseCase {
       lastAnalysisDate: DateTime.now(),
       improvementPoints: member.improvementPoints,
       socialContributions: member.socialContributions,
+      isFavorite: member.isFavorite,
     );
   }
 

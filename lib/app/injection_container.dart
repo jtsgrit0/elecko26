@@ -15,6 +15,10 @@ import 'package:flutter_application_1/features/map/domain/usecases/get_election_
 import 'package:flutter_application_1/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:flutter_application_1/features/auth/domain/repositories/auth_repository.dart';
 import 'package:flutter_application_1/features/auth/domain/usecases/auth_usecases.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_application_1/data/datasources/local_storage_service.dart';
+import 'package:flutter_application_1/data/datasources/shared_prefs_local_storage_service.dart';
+
 
 final sl = GetIt.instance;
 
@@ -32,16 +36,16 @@ Future<void> init() async {
   }
 
   //! External
-  // try {
-  //   final sharedPreferences = await SharedPreferences.getInstance();
-  //   sl.registerLazySingleton(() => sharedPreferences);
-  //   sl.registerLazySingleton<LocalStorageService>(
-  //     () => SharedPreferencesService(sl<SharedPreferences>()),
-  //   );
-  // } catch (e) {
-  //   print('⚠️  SharedPreferences 로드 실패 (웹에서는 정상): $e');
-  //   // 웹 환경에서는 SharedPreferences가 없을 수 있으므로 무시
-  // }
+  try {
+    final sharedPreferences = await SharedPreferences.getInstance();
+    sl.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
+    sl.registerLazySingleton<LocalStorageService>(
+      () => SharedPreferencesService(sl<SharedPreferences>()),
+    );
+  } catch (e) {
+    print('⚠️  SharedPreferences 로드 실패 (웹에서는 정상): $e');
+    // 웹 환경에서는 SharedPreferences가 없을 수 있으므로 무시
+  }
 
   //! Features - Member
   sl.registerSingleton<AuthRepository>(
