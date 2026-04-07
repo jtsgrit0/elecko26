@@ -100,6 +100,9 @@ class MemberRepositoryImpl implements MemberRepository {
     if (sl.isRegistered<LocalStorageService>()) {
       final prefs = sl<LocalStorageService>();
       favoriteIds = prefs.getStringList('favorite_member_ids') ?? [];
+      print('[MemberRepo] Loaded ${favoriteIds.length} favorite IDs from storage');
+    } else {
+      print('[MemberRepo] Warning: LocalStorageService is not registered!');
     }
 
     try {
@@ -398,6 +401,9 @@ class MemberRepositoryImpl implements MemberRepository {
         }
         
         await prefs.setStringList('favorite_member_ids', favoriteIds);
+        print('[MemberRepo] Saved ${favoriteIds.length} favorite IDs to storage');
+      } else {
+        print('[MemberRepo] Warning: Cannot save favorite, LocalStorageService not registered');
       }
     }
   }

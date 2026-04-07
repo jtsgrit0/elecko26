@@ -175,6 +175,17 @@ Future<void> initMinimal() async {
     await sl.reset();
   }
 
+  //! External
+  try {
+    final sharedPreferences = await SharedPreferences.getInstance();
+    sl.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
+    sl.registerLazySingleton<LocalStorageService>(
+      () => SharedPreferencesService(sl<SharedPreferences>()),
+    );
+  } catch (e) {
+    print('⚠️  initMinimal: SharedPreferences 로드 실패: $e');
+  }
+
   sl.registerSingleton<AuthRepository>(
     AuthRepositoryImpl(),
   );
