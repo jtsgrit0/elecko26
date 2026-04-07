@@ -56,6 +56,14 @@ class _AuthGateState extends State<AuthGate> {
     }
   }
 
+  void _showSocialLoginNotice(String providerName) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$providerName 로그인은 현재 로컬 Chrome 웹에서 준비 중입니다. 이메일 로그인을 이용해주세요.'),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -123,6 +131,47 @@ class _AuthGateState extends State<AuthGate> {
                     child: Text(
                       _isSubmitting ? '처리 중...' : (_isLoginMode ? '로그인' : '회원가입'),
                     ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Row(
+                    children: [
+                      Expanded(child: Divider()),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        child: Text('소셜 로그인'),
+                      ),
+                      Expanded(child: Divider()),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: _isSubmitting ? null : () => _showSocialLoginNotice('구글'),
+                    icon: const Icon(Icons.g_mobiledata),
+                    label: const Text('구글로 계속하기'),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: _isSubmitting ? null : () => _showSocialLoginNotice('애플'),
+                    icon: const Icon(Icons.apple),
+                    label: const Text('애플로 계속하기'),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: _isSubmitting ? null : () => _showSocialLoginNotice('페이스북'),
+                    icon: const Icon(Icons.facebook),
+                    label: const Text('페이스북으로 계속하기'),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: _isSubmitting ? null : () => _showSocialLoginNotice('카카오'),
+                    icon: const Icon(Icons.chat_bubble_outline),
+                    label: const Text('카카오로 계속하기'),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '소셜 로그인 버튼은 유지하되, 현재 로컬 Chrome 웹에서는 이메일 로그인만 활성화되어 있습니다.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(height: 12),
                   TextButton(
