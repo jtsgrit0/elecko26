@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/app/injection_container.dart';
+import 'package:flutter_application_1/features/auth/domain/entities/user.dart';
 import 'package:flutter_application_1/features/auth/domain/usecases/auth_usecases.dart';
 
 class AuthGate extends StatefulWidget {
@@ -56,12 +57,25 @@ class _AuthGateState extends State<AuthGate> {
     }
   }
 
-  void _showSocialLoginNotice(String providerName) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$providerName 로그인은 현재 로컬 Chrome 웹에서 준비 중입니다. 이메일 로그인을 이용해주세요.'),
-      ),
-    );
+  Future<void> _submitSocialLogin(Future<AuthResult> Function() action) async {
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
+
+    final result = await action();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = false;
+      _errorMessage = result.errorMessage;
+    });
+
+    if (result.isSuccess) {
+      Navigator.of(context).pop(true);
+    }
   }
 
   @override
@@ -145,33 +159,43 @@ class _AuthGateState extends State<AuthGate> {
                   ),
                   const SizedBox(height: 16),
                   OutlinedButton.icon(
-                    onPressed: _isSubmitting ? null : () => _showSocialLoginNotice('구글'),
+                    onPressed: _isSubmitting
+                        ? null
+                        : () => _submitSocialLogin(
+                              () => sl<SignInWithGoogleUseCase>().execute(),
+                            ),
                     icon: const Icon(Icons.g_mobiledata),
                     label: const Text('구글로 계속하기'),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
-                    onPressed: _isSubmitting ? null : () => _showSocialLoginNotice('애플'),
+                    onPressed: _isSubmitting
+                        ? null
+                        : () => _submitSocialLogin(
+                              () => sl<SignInWithAppleUseCase>().execute(),
+                            ),
                     icon: const Icon(Icons.apple),
                     label: const Text('애플로 계속하기'),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
-                    onPressed: _isSubmitting ? null : () => _showSocialLoginNotice('페이스북'),
+                    onPressed: _isSubmitting
+                        ? null
+                        : () => _submitSocialLogin(
+                              () => sl<SignInWithFacebookUseCase>().execute(),
+                            ),
                     icon: const Icon(Icons.facebook),
                     label: const Text('페이스북으로 계속하기'),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
-                    onPressed: _isSubmitting ? null : () => _showSocialLoginNotice('카카오'),
+                    onPressed: _isSubmitting
+                        ? null
+                        : () => _submitSocialLogin(
+                              () => sl<SignInWithKakaoUseCase>().execute(),
+                            ),
                     icon: const Icon(Icons.chat_bubble_outline),
                     label: const Text('카카오로 계속하기'),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '소셜 로그인 버튼은 유지하되, 현재 로컬 Chrome 웹에서는 이메일 로그인만 활성화되어 있습니다.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(height: 12),
                   TextButton(

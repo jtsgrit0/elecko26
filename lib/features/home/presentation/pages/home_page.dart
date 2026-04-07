@@ -15,6 +15,8 @@ import 'package:flutter_application_1/features/auth/domain/entities/user.dart' a
 import 'package:flutter_application_1/features/auth/domain/usecases/auth_usecases.dart';
 import 'package:flutter_application_1/features/home/presentation/pages/member_detail_page.dart';
 import 'package:flutter_application_1/features/map/presentation/pages/map_screen.dart';
+import 'package:flutter_application_1/features/profile/presentation/pages/profile_page.dart';
+import 'package:flutter_application_1/features/voting/presentation/pages/polls_page.dart';
 import 'dart:async';
 
 class HomePage extends StatefulWidget {
@@ -329,27 +331,25 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Future<void> _handleBottomNavTap(int index) async {
     if (index == 5 || index == 6) {
-      if (_currentUser != null) {
-        setState(() {
-          _selectedIndex = index;
-          _selectedMember = null;
-        });
-        return;
+      if (_currentUser == null) {
+        final result = await Navigator.of(context).push<bool>(
+          MaterialPageRoute(builder: (_) => const AuthGate()),
+        );
+        await _loadCurrentUser();
+        if (!mounted) {
+          return;
+        }
+        if (result != true || _currentUser == null) {
+          return;
+        }
       }
 
-      final result = await Navigator.of(context).push<bool>(
-        MaterialPageRoute(builder: (_) => const AuthGate()),
+      final Widget page = index == 5
+          ? PollsPage(currentUser: _currentUser!)
+          : ProfilePage(currentUser: _currentUser!);
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => page),
       );
-      await _loadCurrentUser();
-      if (!mounted) {
-        return;
-      }
-      if (result == true && _currentUser != null) {
-        setState(() {
-          _selectedIndex = index;
-          _selectedMember = null;
-        });
-      }
       return;
     }
 
@@ -470,87 +470,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       case 4:
         return _buildComparisonPage();
       case 5:
-        if (_currentUser == null) {
-          return const Center(child: Text('투표 기능은 로그인 후 이용할 수 있습니다.'));
-        }
-        return Center(
-          child: Text('${_currentUser!.email ?? _currentUser!.id} 계정으로 로그인되었습니다.'),
-        );
+        return const Center(child: Text('투표 탭에서 투표 화면으로 이동합니다.'));
       case 6:
-        if (_currentUser == null) {
-          return const Center(child: Text('프로필은 로그인 후 이용할 수 있습니다.'));
-        }
-        return _buildProfileOverview();
+        return const Center(child: Text('프로필 탭에서 프로필 화면으로 이동합니다.'));
       default:
         return _buildHomeDashboard();
     }
-  }
-
-  Widget _buildProfileOverview() {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 460),
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircleAvatar(
-                    radius: 36,
-                    child: Icon(Icons.person, size: 36),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _currentUser!.displayName ?? '로컬 웹 사용자',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _currentUser!.email ?? _currentUser!.id,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  ListTile(
-                    leading: const Icon(Icons.how_to_vote),
-                    title: const Text('투표 참여'),
-                    subtitle: const Text('로그인된 상태로 투표 탭을 바로 이용할 수 있습니다.'),
-                    onTap: () {
-                      setState(() {
-                        _selectedIndex = 5;
-                      });
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.badge_outlined),
-                    title: const Text('로그인 방식'),
-                    subtitle: Text(_currentUser!.provider.name),
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      await sl<SignOutUseCase>().execute();
-                      await _loadCurrentUser();
-                      if (!mounted) {
-                        return;
-                      }
-                      setState(() {
-                        _selectedIndex = 0;
-                      });
-                    },
-                    icon: const Icon(Icons.logout),
-                    label: const Text('로그아웃'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   // 홈 대시보드

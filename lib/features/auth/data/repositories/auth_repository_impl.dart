@@ -1,19 +1,28 @@
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart' as firebase;
+import 'package:flutter/foundation.dart';
 
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 
-/// 플러그인 없이 동작하는 메모리 기반 이메일 인증 리포지토리 구현
+/// Firebase Auth 기반 인증 리포지토리 구현
 class AuthRepositoryImpl implements AuthRepository {
-  static final Map<String, Map<String, dynamic>> _accounts = {};
-  static User? _currentUser;
+  final firebase.FirebaseAuth _firebaseAuth;
 
   final StreamController<User?> _authStateController =
       StreamController<User?>.broadcast();
 
+  AuthRepositoryImpl({
+    firebase.FirebaseAuth? firebaseAuth,
+  }) : _firebaseAuth = firebaseAuth ?? firebase.FirebaseAuth.instance;
+
   @override
   Future<User?> getCurrentUser() async {
-    return _currentUser;
+    final firebaseUser = _firebaseAuth.currentUser;
+    if (firebaseUser == null) {
+      return null;
+    }
+    return _firebaseUserToUser(firebaseUser);
   }
 
   @override
@@ -24,29 +33,15 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     try {
-      final account = _accounts[normalizedEmail];
-      if (account == null) {
-        return AuthResult.failure('등록되지 않은 이메일입니다.');
-      }
-      if ((account['password'] as String?) != password) {
-        return AuthResult.failure('잘못된 비밀번호입니다.');
-      }
-
-      final now = DateTime.now();
-      final user = User(
-        id: account['id'] as String,
+      final result = await _firebaseAuth.signInWithEmailAndPassword(
         email: normalizedEmail,
-        displayName: account['displayName'] as String?,
-        provider: AuthProvider.email,
-        createdAt: DateTime.tryParse(account['createdAt'] as String? ?? '') ?? now,
-        lastLoginAt: now,
+        password: password,
       );
-
-      account['lastLoginAt'] = now.toIso8601String();
-      _accounts[normalizedEmail] = account;
-      _currentUser = user;
+      final user = _firebaseUserToUser(result.user!);
       _authStateController.add(user);
       return AuthResult.success(user);
+    } on firebase.FirebaseAuthException catch (e) {
+      return AuthResult.failure(_getFirebaseErrorMessage(e));
     } catch (e) {
       return AuthResult.failure('로그인 중 오류가 발생했습니다: $e');
     }
@@ -63,32 +58,15 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     try {
-      if (_accounts.containsKey(normalizedEmail)) {
-        return AuthResult.failure('이미 사용 중인 이메일입니다.');
-      }
-
-      final now = DateTime.now();
-      final user = User(
-        id: 'local_${now.microsecondsSinceEpoch}',
+      final result = await _firebaseAuth.createUserWithEmailAndPassword(
         email: normalizedEmail,
-        displayName: normalizedEmail.split('@').first,
-        provider: AuthProvider.email,
-        createdAt: now,
-        lastLoginAt: now,
+        password: password,
       );
-
-      _accounts[normalizedEmail] = {
-        'id': user.id,
-        'email': normalizedEmail,
-        'password': password,
-        'displayName': user.displayName,
-        'createdAt': now.toIso8601String(),
-        'lastLoginAt': now.toIso8601String(),
-      };
-
-      _currentUser = user;
+      final user = _firebaseUserToUser(result.user!);
       _authStateController.add(user);
       return AuthResult.success(user);
+    } on firebase.FirebaseAuthException catch (e) {
+      return AuthResult.failure(_getFirebaseErrorMessage(e));
     } catch (e) {
       return AuthResult.failure('회원가입 중 오류가 발생했습니다: $e');
     }
@@ -96,51 +74,161 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<AuthResult> signInWithGoogle() async {
-    return AuthResult.failure('구글 로그인은 현재 비활성화되어 있습니다.');
+    try {
+      final provider = firebase.GoogleAuthProvider();
+      provider.addScope('email');
+      provider.addScope('profile');
+      final credential = await _signInWithProvider(provider);
+      final user = _firebaseUserToUser(credential.user!);
+      _authStateController.add(user);
+      return AuthResult.success(user);
+    } on firebase.FirebaseAuthException catch (e) {
+      return AuthResult.failure(_getFirebaseErrorMessage(e));
+    } catch (e) {
+      return AuthResult.failure('구글 로그인 중 오류가 발생했습니다: $e');
+    }
   }
 
   @override
   Future<AuthResult> signInWithApple() async {
-    return AuthResult.failure('Apple 로그인은 현재 비활성화되어 있습니다.');
+    try {
+      final provider = firebase.OAuthProvider('apple.com');
+      provider.addScope('email');
+      provider.addScope('name');
+      final credential = await _signInWithProvider(provider);
+      final user = _firebaseUserToUser(credential.user!);
+      _authStateController.add(user);
+      return AuthResult.success(user);
+    } on firebase.FirebaseAuthException catch (e) {
+      return AuthResult.failure(_getFirebaseErrorMessage(e));
+    } catch (e) {
+      return AuthResult.failure('Apple 로그인 중 오류가 발생했습니다: $e');
+    }
   }
 
   @override
   Future<AuthResult> signInWithFacebook() async {
-    return AuthResult.failure('페이스북 로그인은 현재 비활성화되어 있습니다.');
+    try {
+      final provider = firebase.FacebookAuthProvider();
+      provider.addScope('email');
+      final credential = await _signInWithProvider(provider);
+      final user = _firebaseUserToUser(credential.user!);
+      _authStateController.add(user);
+      return AuthResult.success(user);
+    } on firebase.FirebaseAuthException catch (e) {
+      return AuthResult.failure(_getFirebaseErrorMessage(e));
+    } catch (e) {
+      return AuthResult.failure('페이스북 로그인 중 오류가 발생했습니다: $e');
+    }
   }
 
   @override
   Future<AuthResult> signInWithKakao() async {
-    return AuthResult.failure('카카오 로그인은 현재 비활성화되어 있습니다.');
+    try {
+      final provider = firebase.OAuthProvider('oidc.kakao');
+      provider.addScope('profile_nickname');
+      provider.addScope('account_email');
+      final credential = await _signInWithProvider(provider);
+      final user = _firebaseUserToUser(credential.user!);
+      _authStateController.add(user);
+      return AuthResult.success(user);
+    } on firebase.FirebaseAuthException catch (e) {
+      return AuthResult.failure(_getFirebaseErrorMessage(e));
+    } catch (e) {
+      return AuthResult.failure('카카오 로그인 중 오류가 발생했습니다: $e');
+    }
   }
 
   @override
   Future<void> signOut() async {
-    _currentUser = null;
+    await _firebaseAuth.signOut();
     _authStateController.add(null);
   }
 
   @override
   Future<void> deleteAccount() async {
-    final currentUser = await getCurrentUser();
-    if (currentUser == null || currentUser.email == null) {
-      return;
+    final user = _firebaseAuth.currentUser;
+    if (user != null) {
+      await user.delete();
     }
-
-    _accounts.remove(currentUser.email!.toLowerCase());
-    _currentUser = null;
     _authStateController.add(null);
   }
 
   @override
   Stream<User?> get authStateChanges {
-    return Stream<User?>.multi((controller) async {
-      controller.add(await getCurrentUser());
-      final sub = _authStateController.stream.listen(
-        controller.add,
-        onError: controller.addError,
-      );
-      controller.onCancel = () => sub.cancel();
+    return _firebaseAuth.authStateChanges().map((firebaseUser) {
+      return firebaseUser != null ? _firebaseUserToUser(firebaseUser) : null;
     });
+  }
+
+  Future<firebase.UserCredential> _signInWithProvider(
+    firebase.AuthProvider provider,
+  ) async {
+    if (kIsWeb && provider is firebase.OAuthProvider) {
+      return _firebaseAuth.signInWithPopup(provider);
+    }
+    if (kIsWeb && provider is firebase.FacebookAuthProvider) {
+      return _firebaseAuth.signInWithPopup(provider);
+    }
+    if (kIsWeb && provider is firebase.GoogleAuthProvider) {
+      return _firebaseAuth.signInWithPopup(provider);
+    }
+    throw UnsupportedError('이 플랫폼에서는 현재 소셜 로그인이 지원되지 않습니다.');
+  }
+
+  User _firebaseUserToUser(firebase.User firebaseUser) {
+    AuthProvider provider = AuthProvider.anonymous;
+
+    if (firebaseUser.providerData.isNotEmpty) {
+      final providerId = firebaseUser.providerData.first.providerId;
+      switch (providerId) {
+        case 'google.com':
+          provider = AuthProvider.google;
+          break;
+        case 'apple.com':
+          provider = AuthProvider.apple;
+          break;
+        case 'facebook.com':
+          provider = AuthProvider.facebook;
+          break;
+        case 'oidc.kakao':
+          provider = AuthProvider.kakao;
+          break;
+        case 'password':
+          provider = AuthProvider.email;
+          break;
+      }
+    }
+
+    return User(
+      id: firebaseUser.uid,
+      email: firebaseUser.email,
+      displayName: firebaseUser.displayName,
+      photoUrl: firebaseUser.photoURL,
+      provider: provider,
+      createdAt: firebaseUser.metadata.creationTime ?? DateTime.now(),
+      lastLoginAt: firebaseUser.metadata.lastSignInTime ?? DateTime.now(),
+    );
+  }
+
+  String _getFirebaseErrorMessage(firebase.FirebaseAuthException e) {
+    switch (e.code) {
+      case 'user-not-found':
+        return '등록되지 않은 이메일입니다.';
+      case 'wrong-password':
+        return '잘못된 비밀번호입니다.';
+      case 'email-already-in-use':
+        return '이미 사용 중인 이메일입니다.';
+      case 'weak-password':
+        return '비밀번호가 너무 약합니다.';
+      case 'invalid-email':
+        return '유효하지 않은 이메일 형식입니다.';
+      case 'popup-blocked':
+        return '브라우저가 로그인 팝업을 차단했습니다.';
+      case 'account-exists-with-different-credential':
+        return '다른 로그인 방식으로 이미 가입된 계정입니다.';
+      default:
+        return '인증 오류가 발생했습니다: ${e.message}';
+    }
   }
 }

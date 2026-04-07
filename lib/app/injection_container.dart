@@ -61,6 +61,22 @@ Future<void> init() async {
     SignUpWithEmailUseCase(sl<AuthRepository>()),
   );
 
+  sl.registerSingleton<SignInWithGoogleUseCase>(
+    SignInWithGoogleUseCase(sl<AuthRepository>()),
+  );
+
+  sl.registerSingleton<SignInWithAppleUseCase>(
+    SignInWithAppleUseCase(sl<AuthRepository>()),
+  );
+
+  sl.registerSingleton<SignInWithFacebookUseCase>(
+    SignInWithFacebookUseCase(sl<AuthRepository>()),
+  );
+
+  sl.registerSingleton<SignInWithKakaoUseCase>(
+    SignInWithKakaoUseCase(sl<AuthRepository>()),
+  );
+
   sl.registerSingleton<SignOutUseCase>(
     SignOutUseCase(sl<AuthRepository>()),
   );
@@ -172,6 +188,22 @@ Future<void> initMinimal() async {
 
   sl.registerSingleton<SignUpWithEmailUseCase>(
     SignUpWithEmailUseCase(sl<AuthRepository>()),
+  );
+
+  sl.registerSingleton<SignInWithGoogleUseCase>(
+    SignInWithGoogleUseCase(sl<AuthRepository>()),
+  );
+
+  sl.registerSingleton<SignInWithAppleUseCase>(
+    SignInWithAppleUseCase(sl<AuthRepository>()),
+  );
+
+  sl.registerSingleton<SignInWithFacebookUseCase>(
+    SignInWithFacebookUseCase(sl<AuthRepository>()),
+  );
+
+  sl.registerSingleton<SignInWithKakaoUseCase>(
+    SignInWithKakaoUseCase(sl<AuthRepository>()),
   );
 
   sl.registerSingleton<SignOutUseCase>(
