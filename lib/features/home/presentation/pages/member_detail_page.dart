@@ -107,6 +107,18 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
             ),
             backgroundColor: AppColors.primary,
             elevation: 0,
+            actions: [
+              IconButton(
+                icon: Icon(
+                  member.isFavorite ? Icons.star : Icons.star_border,
+                  color: member.isFavorite ? Colors.amber : AppColors.white,
+                ),
+                onPressed: () {
+                  sl<ToggleFavoriteUseCase>().call(member.id);
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
           body: StreamBuilder<AnalysisResult>(
             stream: _analysisStream,
