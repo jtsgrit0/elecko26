@@ -1,0 +1,251 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:elecko26/core/utils/image_util.dart';
+import 'package:elecko26/core/utils/party_util.dart';
+import 'package:elecko26/core/theme/app_theme.dart';
+import 'package:elecko26/domain/entities/analysis_result.dart';
+import 'package:elecko26/domain/entities/member.dart';
+import 'package:elecko26/domain/usecases/calculate_election_possibility_usecase.dart';
+import 'package:elecko26/domain/usecases/member_usecases.dart';
+import 'package:elecko26/app/injection_container.dart';
+
+class MemberCard extends StatefulWidget {
+  final Member member;
+  final VoidCallback? onTap;
+
+  const MemberCard({Key? key, required this.member, this.onTap}) : super(key: key);
+
+  @override
+  State<MemberCard> createState() => _MemberCardState();
+}
+
+class _MemberCardState extends State<MemberCard> {
+  late bool _isFavorite;
+
+  @override
+  void initState() {
+    super.initState();
+    _isFavorite = widget.member.isFavorite;
+  }
+
+  @override
+  void didUpdateWidget(MemberCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.member.isFavorite != oldWidget.member.isFavorite) {
+      setState(() {
+        _isFavorite = widget.member.isFavorite;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final member = widget.member;
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.primary.withOpacity(0.2),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Column(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: member.imageUrl.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: '${ImageUtil.getProxyUrl(member.imageUrl, width: 160, height: 160)}&v=2',
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(width: 60, height: 60, color: AppColors.lightGrey),
+                          errorWidget: (context, url, error) => Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.primary.withOpacity(0.8),
+                                  AppColors.secondary.withOpacity(0.6),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                _getProfileInitial(member.name),
+                                style: AppTextStyles.headline3.copyWith(
+                                  color: AppColors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.primary.withOpacity(0.8),
+                                AppColors.secondary.withOpacity(0.6),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            ),
+                          child: Center(
+                            child: Text(
+                              _getProfileInitial(member.name),
+                              style: AppTextStyles.headline3.copyWith(
+                                color: AppColors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                ),
+                const SizedBox(height: 6),
+                SizedBox(
+                  width: 50,
+                  child: AspectRatio(
+                    aspectRatio: 3 / 1,
+                    child: Image.asset(
+                      PartyUtil.getPartyLogoUrl(member.party),
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    member.name,
+                    style: AppTextStyles.bodyLarge,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  RichText(
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: member.party,
+                          style: AppTextStyles.bodySmall.copyWith(color: PartyUtil.getPartyColor(member.party), fontWeight: FontWeight.bold),
+                        ),
+                        TextSpan(
+                          text: ' • ${member.district}',
+                          style: AppTextStyles.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: FutureBuilder<AnalysisResult>(
+                      future: sl<CalculateElectionPossibilityUseCase>().call(member.id),
+                      builder: (context, snapshot) {
+                        final possibility = snapshot.data?.electionPossibility ?? member.electionPossibility;
+                        return Text(
+                          '당선 가능성: ${(possibility * 100).toStringAsFixed(0)}%',
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: AppColors.success,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '업데이트: ${_formatRelativeTime(member.lastAnalysisDate)}',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.mediumGray,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: AppColors.grey,
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: Icon(
+                _isFavorite ? Icons.star : Icons.star_border,
+                color: _isFavorite ? Colors.amber : AppColors.grey,
+              ),
+              onPressed: () async {
+                final prev = _isFavorite;
+                setState(() {
+                  _isFavorite = !_isFavorite; // 낙관적 UI 업데이트
+                });
+                try {
+                  await sl<ToggleFavoriteUseCase>().call(member.id);
+                } catch (e) {
+                  // 저장 실패 시 로컬 상태 롤백
+                  if (mounted) {
+                    setState(() {
+                      _isFavorite = prev;
+                    });
+                  }
+                  debugPrint('[MemberCard] toggleFavorite failed: $e');
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _formatRelativeTime(DateTime date) {
+  final local = date.toLocal();
+  final y = local.year.toString().padLeft(4, '0');
+  final m = local.month.toString().padLeft(2, '0');
+  final d = local.day.toString().padLeft(2, '0');
+  final h = local.hour.toString().padLeft(2, '0');
+  final min = local.minute.toString().padLeft(2, '0');
+  final s = local.second.toString().padLeft(2, '0');
+  return '\$y-\$m-\$d \$h:\$min:\$s';
+}
+
+String _getProfileInitial(String name) {
+  final trimmed = name.trim();
+  if (trimmed.isEmpty) {
+    return '?';
+  }
+  return trimmed.characters.first;
+}

@@ -75,3 +75,24 @@ class NumberUtil {
     return value.toString();
   }
 }
+
+/// 시간 상세 포맷
+String formatRelativeTime(DateTime date) {
+  final local = date.toLocal();
+  final y = local.year.toString().padLeft(4, '0');
+  final m = local.month.toString().padLeft(2, '0');
+  final d = local.day.toString().padLeft(2, '0');
+  final h = local.hour.toString().padLeft(2, '0');
+  final min = local.minute.toString().padLeft(2, '0');
+  final s = local.second.toString().padLeft(2, '0');
+  return '$y-$m-$d $h:$min:$s';
+}
+
+/// 이름 첫 글자 추출
+String getProfileInitial(String name) {
+  final trimmed = name.trim();
+  if (trimmed.isEmpty) {
+    return '?';
+  }
+  return trimmed.characters.first;
+}

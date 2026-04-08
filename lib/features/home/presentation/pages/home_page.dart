@@ -16,6 +16,10 @@ import 'package:elecko26/features/auth/domain/entities/user.dart' as auth;
 import 'package:elecko26/features/auth/domain/usecases/auth_usecases.dart';
 import 'package:elecko26/features/home/presentation/pages/member_detail_page.dart';
 import 'package:elecko26/features/map/presentation/pages/map_screen.dart';
+import 'package:elecko26/core/utils/party_util.dart';
+import 'package:elecko26/core/utils/utility_functions.dart';
+import 'package:elecko26/features/home/presentation/widgets/member_card.dart';
+import 'package:elecko26/features/home/presentation/widgets/favorites_view.dart';
 import 'dart:async';
 
 class HomePage extends StatefulWidget {
@@ -267,7 +271,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             final member = favorites[index];
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _MemberCard(
+              child: MemberCard(
                 member: member,
                 onTap: () {
                   Navigator.pop(context);
@@ -886,7 +890,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           itemBuilder: (context, index) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _MemberCard(
+              child: MemberCard(
                 member: filteredMembers[index],
                 onTap: () => setState(() => _selectedMember = filteredMembers[index]),
               ),
@@ -899,42 +903,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   // 즐겨찾기 페이지
   Widget _buildFavoritesPage() {
-    return StreamBuilder<List<Member>>(
-      stream: _membersStream,
-      builder: (context, snapshot) {
-        final members = snapshot.data ?? _cachedMembers;
-        final favoriteMembers = members.where((m) => m.isFavorite).toList();
-
-        if (favoriteMembers.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.star_border, size: 64, color: AppColors.grey),
-                const SizedBox(height: 16),
-                Text(
-                  '즐겨찾기한 의원이 없습니다',
-                  style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: favoriteMembers.length,
-          itemBuilder: (context, index) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _MemberCard(
-                member: favoriteMembers[index],
-                onTap: () => setState(() => _selectedMember = favoriteMembers[index]),
-              ),
-            );
-          },
-        );
-      },
+    return FavoritesView(
+      membersStream: _membersStream,
+      cachedMembers: _cachedMembers,
+      onMemberSelected: (member) => setState(() => _selectedMember = member),
     );
   }
 
@@ -1010,7 +982,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             TextSpan(
                               text: member.party,
                               style: TextStyle(
-                                color: _getPartyColor(member.party),
+                                color: PartyUtil.getPartyColor(member.party),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
                               ),
@@ -1040,7 +1012,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                   color: AppColors.lightGrey,
                                   child: Center(
                                     child: Text(
-                                      _getProfileInitial(member.name),
+                                      getProfileInitial(member.name),
                                       style: AppTextStyles.bodyMedium.copyWith(
                                         color: AppColors.primary,
                                         fontWeight: FontWeight.bold,
@@ -1055,7 +1027,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 color: AppColors.lightGrey,
                                 child: Center(
                                   child: Text(
-                                    _getProfileInitial(member.name),
+                                    getProfileInitial(member.name),
                                     style: AppTextStyles.bodyMedium.copyWith(
                                       color: AppColors.primary,
                                       fontWeight: FontWeight.bold,
@@ -1088,8 +1060,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   // 비교 결과 화면
   Widget _buildComparisonResults(Member m1, Member m2) {
-    final color1 = _getPartyColor(m1.party);
-    final color2 = _getPartyColor(m2.party);
+    final color1 = PartyUtil.getPartyColor(m1.party);
+    final color2 = PartyUtil.getPartyColor(m2.party);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -1156,7 +1128,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Widget _buildSimpleMemberHeader(Member m) {
-    final partyColor = _getPartyColor(m.party);
+    final partyColor = PartyUtil.getPartyColor(m.party);
     return GestureDetector(
       onTap: () => setState(() => _selectedMember = m),
       child: Column(
@@ -1176,7 +1148,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       color: AppColors.lightGrey,
                       child: Center(
                         child: Text(
-                          _getProfileInitial(m.name),
+                          getProfileInitial(m.name),
                           style: AppTextStyles.headline3.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.bold,
@@ -1191,7 +1163,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     color: AppColors.lightGrey,
                     child: Center(
                       child: Text(
-                        _getProfileInitial(m.name),
+                        getProfileInitial(m.name),
                         style: AppTextStyles.headline3.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.bold,
@@ -1505,7 +1477,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   .map((m) => m.lastAnalysisDate)
                   .reduce((a, b) => a.isAfter(b) ? a : b)
               : null;
-          final updateValue = latestAnalysis == null ? '-' : _formatRelativeTime(latestAnalysis);
+          final updateValue = latestAnalysis == null ? '-' : formatRelativeTime(latestAnalysis);
           final nesdcCount = members.fold<int>(
               0,
               (sum, m) =>
@@ -1649,7 +1621,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                         errorWidget: (context, url, error) {
                                           return Center(
                                             child: Text(
-                                              _getProfileInitial(member.name),
+                                              getProfileInitial(member.name),
                                               style: AppTextStyles.headline4.copyWith(
                                                 color: AppColors.primary,
                                                 fontWeight: FontWeight.bold,
@@ -1660,7 +1632,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                       )
                                     : Center(
                                         child: Text(
-                                          _getProfileInitial(member.name),
+                                          getProfileInitial(member.name),
                                           style: AppTextStyles.headline4.copyWith(
                                             color: AppColors.primary,
                                             fontWeight: FontWeight.bold,
@@ -1906,7 +1878,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       final member = ranked[index].member;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: _MemberCard(
+                        child: MemberCard(
                           member: member,
                           onTap: () => setState(() => _selectedMember = member),
                         ),
@@ -2005,7 +1977,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                     child: AspectRatio(
                                       aspectRatio: 3 / 1,
                                       child: Image.asset(
-                                        _getPartyLogoUrl(m.party),
+                                        PartyUtil.getPartyLogoUrl(m.party),
                                         fit: BoxFit.contain,
                                         errorBuilder: (context, error, stackTrace) => const SizedBox(),
                                       ),
@@ -2019,7 +1991,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 width: 12,
                                 height: 12,
                                 decoration: BoxDecoration(
-                                  color: _getPartyColor(m.party),
+                                  color: PartyUtil.getPartyColor(m.party),
                                   borderRadius: BorderRadius.circular(2),
                                 ),
                               ),
@@ -2028,7 +2000,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 text: TextSpan(
                                   children: [
                                     TextSpan(text: '${m.name} • ', style: AppTextStyles.labelSmall.copyWith(color: AppColors.darkGray, fontWeight: FontWeight.bold)),
-                                    TextSpan(text: m.party, style: AppTextStyles.labelSmall.copyWith(color: _getPartyColor(m.party), fontWeight: FontWeight.bold)),
+                                    TextSpan(text: m.party, style: AppTextStyles.labelSmall.copyWith(color: PartyUtil.getPartyColor(m.party), fontWeight: FontWeight.bold)),
                                   ],
                                 ),
                               ),
@@ -2218,276 +2190,3 @@ class _TopMember {
 }
 
 // 의원 카드 위젯
-class _MemberCard extends StatefulWidget {
-  final Member member;
-  final VoidCallback? onTap;
-
-  const _MemberCard({required this.member, this.onTap});
-
-  @override
-  State<_MemberCard> createState() => _MemberCardState();
-}
-
-class _MemberCardState extends State<_MemberCard> {
-  late bool _isFavorite;
-
-  @override
-  void initState() {
-    super.initState();
-    _isFavorite = widget.member.isFavorite;
-  }
-
-  @override
-  void didUpdateWidget(_MemberCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.member.isFavorite != oldWidget.member.isFavorite) {
-      setState(() {
-        _isFavorite = widget.member.isFavorite;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final member = widget.member;
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.primary.withOpacity(0.2),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Column(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: member.imageUrl.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: '${ImageUtil.getProxyUrl(member.imageUrl, width: 160, height: 160)}&v=2',
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(width: 60, height: 60, color: AppColors.lightGrey),
-                          errorWidget: (context, url, error) => Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppColors.primary.withOpacity(0.8),
-                                  AppColors.secondary.withOpacity(0.6),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                _getProfileInitial(member.name),
-                                style: AppTextStyles.headline3.copyWith(
-                                  color: AppColors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        )
-                      : Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppColors.primary.withOpacity(0.8),
-                                AppColors.secondary.withOpacity(0.6),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            ),
-                          child: Center(
-                            child: Text(
-                              _getProfileInitial(member.name),
-                              style: AppTextStyles.headline3.copyWith(
-                                color: AppColors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                ),
-                const SizedBox(height: 6),
-                SizedBox(
-                  width: 50,
-                  child: AspectRatio(
-                    aspectRatio: 3 / 1,
-                    child: Image.asset(
-                      _getPartyLogoUrl(member.party),
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => const SizedBox(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    member.name,
-                    style: AppTextStyles.bodyLarge,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  RichText(
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: member.party,
-                          style: AppTextStyles.bodySmall.copyWith(color: _getPartyColor(member.party), fontWeight: FontWeight.bold),
-                        ),
-                        TextSpan(
-                          text: ' • ${member.district}',
-                          style: AppTextStyles.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: FutureBuilder<AnalysisResult>(
-                      future: sl<CalculateElectionPossibilityUseCase>().call(member.id),
-                      builder: (context, snapshot) {
-                        final possibility = snapshot.data?.electionPossibility ?? member.electionPossibility;
-                        return Text(
-                          '당선 가능성: ${(possibility * 100).toStringAsFixed(0)}%',
-                          style: AppTextStyles.labelSmall.copyWith(
-                            color: AppColors.success,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '업데이트: ${_formatRelativeTime(member.lastAnalysisDate)}',
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.mediumGray,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios,
-              color: AppColors.grey,
-              size: 16,
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              icon: Icon(
-                _isFavorite ? Icons.star : Icons.star_border,
-                color: _isFavorite ? Colors.amber : AppColors.grey,
-              ),
-              onPressed: () async {
-                final prev = _isFavorite;
-                setState(() {
-                  _isFavorite = !_isFavorite; // 낙관적 UI 업데이트
-                });
-                try {
-                  await sl<ToggleFavoriteUseCase>().call(member.id);
-                } catch (e) {
-                  // 저장 실패 시 로컬 상태 롤백
-                  if (mounted) {
-                    setState(() {
-                      _isFavorite = prev;
-                    });
-                  }
-                  debugPrint('[MemberCard] toggleFavorite failed: $e');
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-
-String _formatRelativeTime(DateTime date) {
-  final local = date.toLocal();
-  final y = local.year.toString().padLeft(4, '0');
-  final m = local.month.toString().padLeft(2, '0');
-  final d = local.day.toString().padLeft(2, '0');
-  final h = local.hour.toString().padLeft(2, '0');
-  final min = local.minute.toString().padLeft(2, '0');
-  final s = local.second.toString().padLeft(2, '0');
-  return '$y-$m-$d $h:$min:$s';
-}
-
-// 정당별 로고 URL (가로 3:1 비율 PNG)
-String _getPartyLogoUrl(String party) {
-  if (party.contains('더불어민주당')) {
-    return 'assets/images/party/minjoo.png';
-  } else if (party.contains('국민의힘')) {
-    return 'assets/images/party/power.png';
-  } else if (party.contains('정의당')) {
-    return 'assets/images/party/justice.png';
-  } else if (party.contains('진보당')) {
-    return 'assets/images/party/progressive.png';
-  } else if (party.contains('조국혁신당')) {
-    return 'assets/images/party/rebuilding.png';
-  } else if (party.contains('개혁신당')) {
-    return 'assets/images/party/reform.png';
-  } else if (party.contains('기본소득당')) {
-    return 'assets/images/party/basicincome.png';
-  }
-  return ''; // 로고 없음
-}
-
-// 정당별 색상 도우미
-Color _getPartyColor(String party) {
-  if (party.contains('더불어민주당')) return const Color(0xFF004EA2);
-  if (party.contains('국민의힘')) return const Color(0xFFE61E2B);
-  if (party.contains('정의당')) return const Color(0xFFFFCC00);
-  if (party.contains('진보당')) return const Color(0xFFD6001C);
-  if (party.contains('조국혁신당')) return const Color(0xFF00A0E2);
-  if (party.contains('개혁신당')) return const Color(0xFFFF7F00);
-  if (party.contains('기본소득당')) return const Color(0xFF00D2C3);
-  return AppColors.grey;
-}
-
-String _getProfileInitial(String name) {
-  final trimmed = name.trim();
-  if (trimmed.isEmpty) {
-    return '?';
-  }
-  return trimmed.characters.first;
-}
