@@ -1,8 +1,8 @@
-import 'package:flutter_application_1/domain/entities/analysis_result.dart';
-import 'package:flutter_application_1/domain/entities/election_data_export.dart';
-import 'package:flutter_application_1/domain/entities/member.dart';
-import 'package:flutter_application_1/domain/repositories/member_repository.dart';
-import 'package:flutter_application_1/domain/usecases/calculate_election_possibility_usecase.dart';
+import 'package:elecko26/domain/entities/analysis_result.dart';
+import 'package:elecko26/domain/entities/election_data_export.dart';
+import 'package:elecko26/domain/entities/member.dart';
+import 'package:elecko26/domain/repositories/member_repository.dart';
+import 'package:elecko26/domain/usecases/calculate_election_possibility_usecase.dart';
 
 /// 당선 가능성 데이터를 JSON으로 내보내는 Use Case
 class ExportElectionDataUseCase {

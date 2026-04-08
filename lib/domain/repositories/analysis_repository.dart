@@ -1,4 +1,4 @@
-import 'package:flutter_application_1/domain/entities/analysis_result.dart';
+import 'package:elecko26/domain/entities/analysis_result.dart';
 
 /// 분석 결과 Repository 추상 클래스
 abstract class AnalysisRepository {

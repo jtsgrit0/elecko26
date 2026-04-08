@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_application_1/data/models/member_model.dart';
-import 'package:flutter_application_1/domain/entities/member.dart';
-import 'package:flutter_application_1/domain/entities/poll.dart';
-import 'package:flutter_application_1/domain/repositories/member_repository.dart';
-import 'package:flutter_application_1/data/datasources/nesdc_poll_data_source.dart';
+import 'package:elecko26/data/models/member_model.dart';
+import 'package:elecko26/domain/entities/member.dart';
+import 'package:elecko26/domain/entities/poll.dart';
+import 'package:elecko26/domain/repositories/member_repository.dart';
+import 'package:elecko26/data/datasources/nesdc_poll_data_source.dart';
 import 'package:get_it/get_it.dart';
-import 'package:flutter_application_1/data/datasources/local_storage_service.dart';
+import 'package:elecko26/data/datasources/local_storage_service.dart';
 import 'package:rxdart/rxdart.dart';
 
 final sl = GetIt.instance;

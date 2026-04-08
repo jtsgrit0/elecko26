@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_application_1/domain/usecases/nesdc_pdf_extractor.dart';
+import 'package:elecko26/domain/usecases/nesdc_pdf_extractor.dart';
 
 void main() {
   test('Analyze extracted PDF text for support rates', () async {

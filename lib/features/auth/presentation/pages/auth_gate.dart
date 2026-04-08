@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/app/injection_container.dart';
-import 'package:flutter_application_1/features/auth/domain/usecases/auth_usecases.dart';
-import 'package:flutter_application_1/features/auth/domain/entities/user.dart';
+import 'package:elecko26/app/injection_container.dart';
+import 'package:elecko26/features/auth/domain/usecases/auth_usecases.dart';
+import 'package:elecko26/features/auth/domain/entities/user.dart';
 
 class AuthGate extends StatefulWidget {
   const AuthGate({Key? key}) : super(key: key);

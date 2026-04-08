@@ -1,11 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/core/utils/image_util.dart';
-import 'package:flutter_application_1/domain/entities/member.dart';
-import 'package:flutter_application_1/domain/usecases/member_usecases.dart';
-import 'package:flutter_application_1/app/injection_container.dart';
-import 'package:flutter_application_1/core/theme/app_theme.dart';
-import 'package:flutter_application_1/domain/repositories/member_repository.dart';
+import 'package:elecko26/core/utils/image_util.dart';
+import 'package:elecko26/domain/entities/member.dart';
+import 'package:elecko26/domain/usecases/member_usecases.dart';
+import 'package:elecko26/app/injection_container.dart';
+import 'package:elecko26/core/theme/app_theme.dart';
+import 'package:elecko26/domain/repositories/member_repository.dart';
 
 class MemberListPage extends StatefulWidget {
   const MemberListPage({Key? key}) : super(key: key);

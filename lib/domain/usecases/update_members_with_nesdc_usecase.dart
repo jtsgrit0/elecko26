@@ -1,7 +1,7 @@
-import 'package:flutter_application_1/domain/entities/member.dart';
-import 'package:flutter_application_1/domain/entities/poll.dart';
-import 'package:flutter_application_1/domain/repositories/member_repository.dart';
-import 'package:flutter_application_1/domain/usecases/nesdc_pdf_extractor.dart';
+import 'package:elecko26/domain/entities/member.dart';
+import 'package:elecko26/domain/entities/poll.dart';
+import 'package:elecko26/domain/repositories/member_repository.dart';
+import 'package:elecko26/domain/usecases/nesdc_pdf_extractor.dart';
 
 /// NESDC PDF 데이터로 멤버 여론조사 정보 업데이트
 class UpdateMembersWithNesdcDataUseCase {

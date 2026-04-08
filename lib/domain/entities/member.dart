@@ -1,4 +1,4 @@
-import 'package:flutter_application_1/domain/entities/poll.dart';
+import 'package:elecko26/domain/entities/poll.dart';
 
 /// 국회의원 엔티티
 class Member {

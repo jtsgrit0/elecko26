@@ -1,5 +1,5 @@
-import 'package:flutter_application_1/domain/entities/member.dart';
-import 'package:flutter_application_1/domain/entities/poll.dart';
+import 'package:elecko26/domain/entities/member.dart';
+import 'package:elecko26/domain/entities/poll.dart';
 
 /// Member 모델 (API 응답용)
 class MemberModel extends Member {

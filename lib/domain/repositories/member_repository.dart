@@ -1,4 +1,4 @@
-import 'package:flutter_application_1/domain/entities/member.dart';
+import 'package:elecko26/domain/entities/member.dart';
 
 /// 회원 Repository 추상 클래스
 abstract class MemberRepository {

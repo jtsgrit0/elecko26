@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter_application_1/core/theme/app_theme.dart';
-import 'package:flutter_application_1/features/home/presentation/pages/home_page.dart';
+import 'package:elecko26/core/theme/app_theme.dart';
+import 'package:elecko26/features/home/presentation/pages/home_page.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);

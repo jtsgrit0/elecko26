@@ -1,5 +1,5 @@
-import 'package:flutter_application_1/domain/entities/analysis_result.dart';
-import 'package:flutter_application_1/domain/repositories/analysis_repository.dart';
+import 'package:elecko26/domain/entities/analysis_result.dart';
+import 'package:elecko26/domain/repositories/analysis_repository.dart';
 
 /// 분석 저장소 구현체 (데이터 레이어)
 class AnalysisRepositoryImpl implements AnalysisRepository {

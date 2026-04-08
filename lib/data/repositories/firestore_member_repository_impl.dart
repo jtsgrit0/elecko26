@@ -3,11 +3,11 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_application_1/data/datasources/local_storage_service.dart';
-import 'package:flutter_application_1/data/models/member_model.dart';
-import 'package:flutter_application_1/domain/entities/member.dart';
-import 'package:flutter_application_1/domain/entities/poll.dart';
-import 'package:flutter_application_1/domain/repositories/member_repository.dart';
+import 'package:elecko26/data/datasources/local_storage_service.dart';
+import 'package:elecko26/data/models/member_model.dart';
+import 'package:elecko26/domain/entities/member.dart';
+import 'package:elecko26/domain/entities/poll.dart';
+import 'package:elecko26/domain/repositories/member_repository.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 

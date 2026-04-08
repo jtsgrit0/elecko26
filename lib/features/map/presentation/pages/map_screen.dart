@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:flutter_application_1/features/map/domain/entities/election_map.dart';
-import 'package:flutter_application_1/features/map/domain/usecases/get_election_map_data_usecase.dart';
-import 'package:flutter_application_1/app/injection_container.dart';
+import 'package:elecko26/features/map/domain/entities/election_map.dart';
+import 'package:elecko26/features/map/domain/usecases/get_election_map_data_usecase.dart';
+import 'package:elecko26/app/injection_container.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);

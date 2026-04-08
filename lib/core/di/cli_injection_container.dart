@@ -1,12 +1,12 @@
 import 'package:get_it/get_it.dart';
-import 'package:flutter_application_1/data/repositories/member_repository_impl.dart';
-import 'package:flutter_application_1/domain/repositories/member_repository.dart';
-import 'package:flutter_application_1/domain/usecases/calculate_election_possibility_usecase.dart';
-import 'package:flutter_application_1/domain/usecases/export_election_data_usecase.dart';
-import 'package:flutter_application_1/data/datasources/github_datasource.dart';
-import 'package:flutter_application_1/data/datasources/historical_election_data_source.dart';
-import 'package:flutter_application_1/data/repositories/historical_election_repository_impl.dart';
-import 'package:flutter_application_1/domain/repositories/historical_election_repository.dart';
+import 'package:elecko26/data/repositories/member_repository_impl.dart';
+import 'package:elecko26/domain/repositories/member_repository.dart';
+import 'package:elecko26/domain/usecases/calculate_election_possibility_usecase.dart';
+import 'package:elecko26/domain/usecases/export_election_data_usecase.dart';
+import 'package:elecko26/data/datasources/github_datasource.dart';
+import 'package:elecko26/data/datasources/historical_election_data_source.dart';
+import 'package:elecko26/data/repositories/historical_election_repository_impl.dart';
+import 'package:elecko26/domain/repositories/historical_election_repository.dart';
 
 final sl = GetIt.instance;
 

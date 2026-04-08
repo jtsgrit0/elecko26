@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:flutter_application_1/core/platform/platform_info.dart';
+import 'package:elecko26/core/platform/platform_info.dart';
 import 'package:html/dom.dart' as html_dom;
 import 'package:html/parser.dart' as html_parser;
 import 'package:http/http.dart' as http;
@@ -9,7 +9,7 @@ import 'package:http/http.dart' as http;
 import 'nesdc_pdf_text_extractor_stub.dart'
     if (dart.library.ui) 'nesdc_pdf_text_extractor.dart';
 
-import 'package:flutter_application_1/core/config/refresh_config.dart';
+import 'package:elecko26/core/config/refresh_config.dart';
 
 final Uri _nesdcOrigin = Uri.parse('https://www.nesdc.go.kr');
 

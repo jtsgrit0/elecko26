@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_application_1/domain/usecases/nesdc_pdf_extractor.dart';
+import 'package:elecko26/domain/usecases/nesdc_pdf_extractor.dart';
 
 void main() {
   test('Aggregate all extracted PDF data to JSON', () async {

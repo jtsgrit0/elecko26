@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 
-import 'package:flutter_application_1/domain/entities/analysis_result.dart';
-import 'package:flutter_application_1/domain/entities/member.dart';
-import 'package:flutter_application_1/domain/entities/poll.dart';
-import 'package:flutter_application_1/domain/repositories/member_repository.dart';
-import 'package:flutter_application_1/domain/repositories/historical_election_repository.dart';
+import 'package:elecko26/domain/entities/analysis_result.dart';
+import 'package:elecko26/domain/entities/member.dart';
+import 'package:elecko26/domain/entities/poll.dart';
+import 'package:elecko26/domain/repositories/member_repository.dart';
+import 'package:elecko26/domain/repositories/historical_election_repository.dart';
 
 /// 당선 가능성을 다각적으로 산정하는 UseCase
 class CalculateElectionPossibilityUseCase {

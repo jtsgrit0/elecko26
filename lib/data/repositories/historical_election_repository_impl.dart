@@ -1,6 +1,6 @@
-import 'package:flutter_application_1/data/datasources/historical_election_data_source.dart';
-import 'package:flutter_application_1/domain/entities/historical_election.dart';
-import 'package:flutter_application_1/domain/repositories/historical_election_repository.dart';
+import 'package:elecko26/data/datasources/historical_election_data_source.dart';
+import 'package:elecko26/domain/entities/historical_election.dart';
+import 'package:elecko26/domain/repositories/historical_election_repository.dart';
 
 /// 역대 선거 데이터 저장소 구현체
 /// 정당명 변경 이력을 고려하여 4개 선거의 데이터를 통합합니다.

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_application_1/app/injection_container.dart' as di;
-import 'package:flutter_application_1/core/theme/app_theme.dart';
-import 'package:flutter_application_1/features/home/presentation/pages/home_page.dart';
+import 'package:elecko26/app/injection_container.dart' as di;
+import 'package:elecko26/core/theme/app_theme.dart';
+import 'package:elecko26/features/home/presentation/pages/home_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
