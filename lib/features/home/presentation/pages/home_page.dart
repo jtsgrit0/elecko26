@@ -2415,11 +2415,22 @@ class _MemberCardState extends State<_MemberCard> {
                 _isFavorite ? Icons.star : Icons.star_border,
                 color: _isFavorite ? Colors.amber : AppColors.grey,
               ),
-              onPressed: () {
+              onPressed: () async {
+                final prev = _isFavorite;
                 setState(() {
-                  _isFavorite = !_isFavorite;
+                  _isFavorite = !_isFavorite; // 낙관적 UI 업데이트
                 });
-                sl<ToggleFavoriteUseCase>().call(member.id);
+                try {
+                  await sl<ToggleFavoriteUseCase>().call(member.id);
+                } catch (e) {
+                  // 저장 실패 시 로컬 상태 롤백
+                  if (mounted) {
+                    setState(() {
+                      _isFavorite = prev;
+                    });
+                  }
+                  debugPrint('[MemberCard] toggleFavorite failed: $e');
+                }
               },
             ),
           ],

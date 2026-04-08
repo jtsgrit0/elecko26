@@ -113,8 +113,12 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                   member.isFavorite ? Icons.star : Icons.star_border,
                   color: member.isFavorite ? Colors.amber : AppColors.white,
                 ),
-                onPressed: () {
-                  sl<ToggleFavoriteUseCase>().call(member.id);
+                onPressed: () async {
+                  try {
+                    await sl<ToggleFavoriteUseCase>().call(member.id);
+                  } catch (e) {
+                    debugPrint('[MemberDetailPage] toggleFavorite failed: $e');
+                  }
                 },
               ),
               const SizedBox(width: 8),

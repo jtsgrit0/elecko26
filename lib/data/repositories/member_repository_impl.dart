@@ -403,16 +403,18 @@ class MemberRepositoryImpl implements MemberRepository {
   @override
   Future<void> toggleFavorite(String memberId) async {
     final index = _dummyMembers.indexWhere((m) => m.id == memberId);
-    if (index != -1) {
-      final member = _dummyMembers[index];
-      final newFavoriteStatus = !member.isFavorite;
-      _dummyMembers[index] = member.copyWith(isFavorite: newFavoriteStatus);
+    if (index == -1) return;
+
+    final member = _dummyMembers[index];
+    final newFavoriteStatus = !member.isFavorite;
+    _dummyMembers[index] = member.copyWith(isFavorite: newFavoriteStatus);
+
+    // LocalStorage 에 저장 (등록된 경우에만)
+    if (sl.isRegistered<LocalStorageService>()) {
+      final prefs = sl<LocalStorageService>();
+      final List<String> favoriteIds = prefs.getStringList('favorite_member_ids') ?? [];
       
-      // LocalStorage 에 저장 (등록된 경우에만)
-      if (sl.isRegistered<LocalStorageService>()) {
-        final prefs = sl<LocalStorageService>();
-        final List<String> favoriteIds = prefs.getStringList('favorite_member_ids') ?? [];
-        
+      try {
         if (newFavoriteStatus) {
           if (!favoriteIds.contains(memberId)) {
             favoriteIds.add(memberId);
@@ -423,12 +425,17 @@ class MemberRepositoryImpl implements MemberRepository {
         
         await prefs.setStringList('favorite_member_ids', favoriteIds);
         print('[MemberRepo] Saved ${favoriteIds.length} favorite IDs to storage');
-      } else {
-        print('[MemberRepo] Warning: Cannot save favorite, LocalStorageService not registered');
+      } catch (e) {
+        // 저장 실패 시 메모리 상태를 원래대로 복원 후 예외 전파
+        _dummyMembers[index] = member; // 롤백
+        print('[MemberRepo] Failed to save favorites: $e');
+        rethrow;
       }
-      
-      _notifyListeners();
+    } else {
+      print('[MemberRepo] Warning: Cannot save favorite, LocalStorageService not registered');
     }
+    
+    _notifyListeners();
   }
 
   @override
