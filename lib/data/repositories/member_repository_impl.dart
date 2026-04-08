@@ -8,6 +8,7 @@ import 'package:flutter_application_1/domain/repositories/member_repository.dart
 import 'package:flutter_application_1/data/datasources/nesdc_poll_data_source.dart';
 import 'package:get_it/get_it.dart';
 import 'package:flutter_application_1/data/datasources/local_storage_service.dart';
+import 'package:rxdart/rxdart.dart';
 
 final sl = GetIt.instance;
 // import 'package:flutter/foundation.dart'; // CLI 호환성을 위해 제거
@@ -19,17 +20,27 @@ class MemberRepositoryImpl implements MemberRepository {
   bool _refreshInProgress = false;
   // 외부 크롤링 데이터 소스 (election_candidates.json) 기반 동적 로드를 위해 초기 명단은 비워둡니다.
   static final List<Member> _dummyMembers = [];
+  
+  // 실시간 데이터 동기화를 위한 컨트롤러
+  static final BehaviorSubject<List<Member>> _membersController = 
+      BehaviorSubject<List<Member>>.seeded([]);
+
+  void _notifyListeners() {
+    _membersController.add(List.from(_dummyMembers));
+  }
 
   @override
   Future<void> addMember(Member member) async {
     await Future.delayed(const Duration(milliseconds: 250));
     _dummyMembers.add(member);
+    _notifyListeners();
   }
 
   @override
   Future<void> deleteMember(String memberId) async {
     await Future.delayed(const Duration(milliseconds: 250));
     _dummyMembers.removeWhere((m) => m.id == memberId);
+    _notifyListeners();
   }
 
   @override
@@ -85,6 +96,7 @@ class MemberRepositoryImpl implements MemberRepository {
     final index = _dummyMembers.indexWhere((m) => m.id == member.id);
     if (index != -1) {
       _dummyMembers[index] = member;
+      _notifyListeners();
     }
   }
 
@@ -246,6 +258,7 @@ class MemberRepositoryImpl implements MemberRepository {
 
       // 모든 의원의 업데이트 작업을 동시에 실행
       await Future.wait(updateTasks);
+      _notifyListeners();
     } catch (_) {
       for (var i = 0; i < _dummyMembers.length; i++) {
         _dummyMembers[i] = _dummyMembers[i].copyWith(lastAnalysisDate: now);
@@ -257,23 +270,25 @@ class MemberRepositoryImpl implements MemberRepository {
   }
 
   @override
-  Stream<List<Member>> watchAllMembers({Duration interval = const Duration(hours: 1)}) async* {
-    await refreshMembers();
-    yield await getAllMembers();
-    yield* Stream.periodic(interval).asyncMap((_) async {
+  Stream<List<Member>> watchAllMembers({Duration interval = const Duration(hours: 1)}) {
+    // 주기적인 강제 새로고침 (필요한 경우)
+    final periodicRefresh = Stream.periodic(interval).asyncMap((_) async {
       await refreshMembers();
-      return await getAllMembers();
+      return _dummyMembers;
     });
+
+    // 수동 변경 스트림과 주기적 갱신 스트림 결합
+    return MergeStream([
+      _membersController.stream,
+      periodicRefresh,
+    ]).shareValueSeeded(_dummyMembers);
   }
 
   @override
-  Stream<Member> watchMemberById(String memberId, {Duration interval = const Duration(hours: 1)}) async* {
-    await refreshMembers();
-    yield await getMemberById(memberId);
-    yield* Stream.periodic(interval).asyncMap((_) async {
-      await refreshMembers();
-      return await getMemberById(memberId);
-    });
+  Stream<Member> watchMemberById(String memberId, {Duration interval = const Duration(hours: 1)}) {
+    return watchAllMembers(interval: interval).map((members) {
+      return members.firstWhere((m) => m.id == memberId);
+    }).distinct();
   }
 
   List<Poll> _mergePolls(List<Poll> existing, List<Poll> incoming) {
@@ -411,6 +426,8 @@ class MemberRepositoryImpl implements MemberRepository {
       } else {
         print('[MemberRepo] Warning: Cannot save favorite, LocalStorageService not registered');
       }
+      
+      _notifyListeners();
     }
   }
 
@@ -442,5 +459,6 @@ class MemberRepositoryImpl implements MemberRepository {
     for (var i = 0; i < _dummyMembers.length; i++) {
       _dummyMembers[i] = _dummyMembers[i].copyWith(isFavorite: false);
     }
+    _notifyListeners();
   }
 }
