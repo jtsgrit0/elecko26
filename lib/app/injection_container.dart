@@ -1,3 +1,5 @@
+import 'package:elecko26/core/config/app_config.dart';
+import 'package:elecko26/data/repositories/firestore_member_repository_impl.dart';
 import 'package:get_it/get_it.dart';
 import 'package:elecko26/data/repositories/member_repository_impl.dart';
 import 'package:elecko26/domain/repositories/member_repository.dart';
@@ -85,7 +87,11 @@ Future<void> init() async {
   );
 
   // Repository
-  sl.registerSingleton<MemberRepository>(MemberRepositoryImpl());
+  if (AppConfig.enableFirebase) {
+    sl.registerSingleton<MemberRepository>(FirestoreMemberRepositoryImpl());
+  } else {
+    sl.registerSingleton<MemberRepository>(MemberRepositoryImpl());
+  }
   
   // Historical election data
   sl.registerSingleton<HistoricalElectionDataSource>(
@@ -223,9 +229,11 @@ Future<void> initMinimal() async {
   );
 
   // Repository (SharedPreferences 의존성 없이 작동하도록 내부 로직에서 체크 필요)
-  sl.registerSingleton<MemberRepository>(
-    MemberRepositoryImpl(),
-  );
+  if (AppConfig.enableFirebase) {
+    sl.registerSingleton<MemberRepository>(FirestoreMemberRepositoryImpl());
+  } else {
+    sl.registerSingleton<MemberRepository>(MemberRepositoryImpl());
+  }
   
   sl.registerSingleton<HistoricalElectionDataSource>(
     HistoricalElectionDataSource(),
