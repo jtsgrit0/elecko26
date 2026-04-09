@@ -329,12 +329,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   void _startMemberStream() {
     try {
-      _membersStream = sl<WatchMembersUseCase>().call().asBroadcastStream();
+      final stream = sl<WatchMembersUseCase>().call().asBroadcastStream();
+      _membersStream = stream;
+      
+      // 스트림을 구독하여 로컬 캐시를 최신으로 유지 (UI 반응성 강화)
+      stream.listen((members) {
+        if (mounted) {
+          setState(() {
+            _cachedMembers = members;
+          });
+        }
+      });
     } catch (e) {
       debugPrint('[HomePage] Failed to start member stream: $e');
       _membersStream = const Stream<List<Member>>.empty();
     }
   }
+
 
   void _stopMemberStream() {
     _membersStream = Stream<List<Member>>.empty();

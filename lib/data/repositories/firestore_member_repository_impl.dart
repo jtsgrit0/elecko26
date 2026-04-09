@@ -393,13 +393,14 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<void> toggleFavorite(String memberId) async {
+    final sanitizedId = memberId.trim();
     final localService = sl<LocalStorageService>();
-    final isFav = await localService.isFavorite(memberId);
+    final isFav = await localService.isFavorite(sanitizedId);
     
     if (isFav) {
-      await localService.removeFavorite(memberId);
+      await localService.removeFavorite(sanitizedId);
     } else {
-      await localService.addFavorite(memberId);
+      await localService.addFavorite(sanitizedId);
     }
     
     final user = auth.FirebaseAuth.instance.currentUser;
@@ -415,13 +416,18 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       }
     }
     
-    final members = List<Member>.from(_membersController.value);
-    final idx = members.indexWhere((m) => m.id == memberId);
+    // 즉각적인 리스트 갱신 및 스트림 통지
+    final currentMembers = List<Member>.from(_membersController.value);
+    final idx = currentMembers.indexWhere((m) => m.id == sanitizedId);
     if (idx != -1) {
-      members[idx] = members[idx].copyWith(isFavorite: !isFav);
-      _notifyListeners(members);
+      currentMembers[idx] = currentMembers[idx].copyWith(isFavorite: !isFav);
+      _notifyListeners(currentMembers);
+    } else {
+      // 리스트에 없더라도 일단 배포를 위해 전체 새로고침 트리거
+      await refreshMembers();
     }
   }
+
 
   @override
   Future<String> getSelectedRegion() async {
