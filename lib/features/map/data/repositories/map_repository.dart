@@ -76,8 +76,12 @@ class MapRepositoryImpl implements MapRepository {
       '경상북': '경상북도',
       '경상남': '경상남도',
       '제주': '제주특별자치도',
-      '김해': '경상남도', // 시/군 정보는 시/도로 분류
+      '청주': '충청북도', // 청주시 후보 → 충청북도 통계에 합산
+      '김해': '경상남도', // 김해시 후보 → 경상남도 통계에 합산
+      '포항': '경상북도',
+      '경주': '경상북도',
     };
+
 
     for (var key in regionMap.keys) {
       if (district.contains(key)) {
