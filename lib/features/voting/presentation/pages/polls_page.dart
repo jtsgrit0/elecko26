@@ -9,6 +9,10 @@ import '../../domain/usecases/poll_usecases.dart';
 import '../widgets/region_selection_prompt.dart';
 import '../widgets/regional_member_voting_list.dart';
 import 'poll_detail_page.dart';
+import 'package:elecko26/data/datasources/local_storage_service.dart';
+import 'package:elecko26/domain/entities/member.dart';
+import 'package:elecko26/features/home/presentation/widgets/member_card.dart';
+import 'package:elecko26/features/home/presentation/pages/member_detail_page.dart';
 
 class PollsPage extends StatefulWidget {
   final auth.User currentUser;
@@ -26,6 +30,7 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
   late TabController _tabController;
 
   List<Poll> _myPolls = [];
+  List<Member> _myVotedMembers = [];
   String _selectedRegion = '전국';
   StreamSubscription<String>? _regionSubscription;
 
@@ -73,14 +78,22 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
       }
 
       // 2순위: 투표 목록 병렬 로드
+      final localService = sl<LocalStorageService>();
+      final memberRepo = sl<MemberRepository>();
+      
       final results = await Future.wait([
         sl<GetPollsUseCase>().execute(status: PollStatus.active),          // [0] List<Poll>
         sl<GetPollsUseCase>().execute(creatorId: widget.currentUser.id),   // [1] List<Poll>
       ]);
 
+      final votesMap = await localService.getAllVotes();
+      final allMembers = await memberRepo.getCachedMembers();
+      final votedList = allMembers.where((m) => votesMap.values.contains(m.id)).toList();
+
       if (mounted) {
         setState(() {
           _myPolls = results[1];
+          _myVotedMembers = votedList;
         });
       }
     } catch (e) {
@@ -160,9 +173,9 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
                 onChangeRegion: _showRegionSelectionDialog,
               ),
             
-        _isLoading && _myPolls.isEmpty
+        _isLoading && _myPolls.isEmpty && _myVotedMembers.isEmpty
             ? const Center(child: CircularProgressIndicator())
-            : _buildPollList(_myPolls, '내가 만든 투표가 없습니다.'),
+            : _buildMyVotesTab(),
       ],
     );
   }
@@ -228,41 +241,52 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildPollList(List<Poll> polls, String emptyMessage) {
-    if (polls.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.poll,
-              size: 64,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              emptyMessage,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
-    }
-
+  Widget _buildMyVotesTab() {
     return RefreshIndicator(
       onRefresh: _loadPolls,
       color: AppColors.primary,
-      child: ListView.builder(
+      child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        itemCount: polls.length,
-        itemBuilder: (context, index) {
-          final poll = polls[index];
-          return _buildPollCard(poll);
-        },
+        children: [
+          if (_myVotedMembers.isNotEmpty) ...[
+            Text('내가 지지한 후보', style: AppTextStyles.headline3.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            ..._myVotedMembers.map((m) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: MemberCard(
+                member: m,
+                onTap: () {
+                   Navigator.of(context).push(MaterialPageRoute(builder: (_) => MemberDetailPage(member: m, onBack: () => Navigator.pop(context))));
+                }
+              )
+            )).toList(),
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 24),
+          ],
+          
+          Text('내가 만든 투표', style: AppTextStyles.headline3.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          if (_myPolls.isEmpty)
+             _buildEmptyState('내가 만든 투표가 없습니다.')
+          else
+            ..._myPolls.map((poll) => _buildPollCard(poll)).toList(),
+        ],
+      )
+    );
+  }
+
+  Widget _buildEmptyState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        child: Column(
+          children: [
+            Icon(Icons.poll, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(message, style: TextStyle(fontSize: 16, color: Colors.grey[600]), textAlign: TextAlign.center),
+          ],
+        ),
       ),
     );
   }
