@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:elecko26/core/theme/app_theme.dart';
+import 'package:elecko26/core/utils/utility_functions.dart';
 import 'package:elecko26/domain/entities/member.dart';
 import 'package:elecko26/domain/repositories/member_repository.dart';
 import 'package:elecko26/app/injection_container.dart';
@@ -14,7 +15,8 @@ class RegionalMemberVotingList extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<RegionalMemberVotingList> createState() => _RegionalMemberVotingListState();
+  State<RegionalMemberVotingList> createState() =>
+      _RegionalMemberVotingListState();
 }
 
 class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
@@ -41,9 +43,9 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
       // 지역구 필터링 (예: "서울", "부산" 등 광역 단위 매칭)
       final allMembers = await sl<MemberRepository>().getAllMembers();
       final filtered = allMembers.where((m) {
-        return m.district.contains(widget.region);
+        return districtMatchesRegion(m.district, widget.region);
       }).toList();
-      
+
       setState(() {
         _members = filtered;
         _isLoading = false;
@@ -75,11 +77,13 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
           child: Row(
             children: [
-              const Icon(Icons.check_circle, color: AppColors.primary, size: 20),
+              const Icon(Icons.check_circle,
+                  color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
               Text(
                 '${widget.region} 지역구 의원 투표',
-                style: AppTextStyles.headline3.copyWith(fontWeight: FontWeight.bold),
+                style: AppTextStyles.headline3
+                    .copyWith(fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -126,12 +130,23 @@ class _RegionalMemberCard extends StatelessWidget {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
+                  color: AppColors.lightGrey,
                   borderRadius: BorderRadius.circular(12),
-                  image: DecorationImage(
-                    image: CachedNetworkImageProvider(member.imageUrl),
-                    fit: BoxFit.cover,
-                  ),
+                  image: member.imageUrl.trim().isEmpty
+                      ? null
+                      : DecorationImage(
+                          image: CachedNetworkImageProvider(member.imageUrl),
+                          fit: BoxFit.cover,
+                        ),
                 ),
+                child: member.imageUrl.trim().isEmpty
+                    ? Center(
+                        child: Text(
+                          getProfileInitial(member.name),
+                          style: AppTextStyles.headline4,
+                        ),
+                      )
+                    : null,
               ),
             ),
             const SizedBox(width: 16),
@@ -142,12 +157,14 @@ class _RegionalMemberCard extends StatelessWidget {
                 children: [
                   Text(
                     member.name,
-                    style: AppTextStyles.headline3.copyWith(fontWeight: FontWeight.bold),
+                    style: AppTextStyles.headline3
+                        .copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${member.party} | ${member.district}',
-                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.mediumGray),
+                    style: AppTextStyles.bodySmall
+                        .copyWith(color: AppColors.mediumGray),
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
@@ -156,7 +173,8 @@ class _RegionalMemberCard extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('${member.name} 의원을 지지하셨습니다!')),
+                          SnackBar(
+                              content: Text('${member.name} 의원을 지지하셨습니다!')),
                         );
                       },
                       style: ElevatedButton.styleFrom(
@@ -167,7 +185,8 @@ class _RegionalMemberCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text('지지하기', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text('지지하기',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],

@@ -60,12 +60,12 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     if (user == null) return;
 
     final localService = sl<LocalStorageService>();
-    
+
     try {
       final doc = await _firestore.collection('users').doc(user.uid).get();
       if (doc.exists) {
         final data = doc.data() ?? {};
-        
+
         final cloudRegion = data['selectedRegion'] as String?;
         if (cloudRegion != null && cloudRegion.isNotEmpty) {
           await localService.saveSelectedRegion(cloudRegion);
@@ -76,13 +76,13 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
           final localFavorites = await localService.getFavorites();
           final mergedSet = {...cloudFavorites, ...localFavorites};
           final mergedList = mergedSet.toList();
-          
+
           for (final id in mergedList) {
             if (!localFavorites.contains(id)) {
               await localService.addFavorite(id);
             }
           }
-          
+
           await _firestore.collection('users').doc(user.uid).set({
             'favorites': mergedList,
             'updatedAt': FieldValue.serverTimestamp(),
@@ -98,16 +98,17 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<void> refreshMembers() async {
     List<Member> loadedMembers = [];
     final now = DateTime.now();
-    
+
     // --- [1단계: 즉시 로딩] 의원 기본 정보 로드 ---
-    
+
     // 1-1. Firestore(Cloud) 확인
     try {
       if (Firebase.apps.isNotEmpty) {
-        final snapshot = await _firestore.collection('members').get(
-          const GetOptions(source: Source.serverAndCache)
-        ).timeout(const Duration(seconds: 3));
-        
+        final snapshot = await _firestore
+            .collection('members')
+            .get(const GetOptions(source: Source.serverAndCache))
+            .timeout(const Duration(seconds: 3));
+
         if (snapshot.docs.isNotEmpty) {
           for (var doc in snapshot.docs) {
             try {
@@ -125,33 +126,13 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       debugPrint('[FirestoreMemberRepository] Cloud Fetch Error: $e');
     }
 
-    // 1-2. Cloud 데이터가 없다면 로컬 JSON 파일(Fallback)
+    // 1-2. 로컬 JSON 후보군을 항상 로드하여 Cloud 일부 누락 케이스를 보강
+    final fallbackMembers = await _loadFallbackMembers();
     if (loadedMembers.isEmpty) {
-      try {
-        String? jsonString;
-        try {
-          final rawUrl = 'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
-          final response = await http.get(Uri.parse(rawUrl)).timeout(const Duration(seconds: 3));
-          if (response.statusCode == 200) {
-            jsonString = utf8.decode(response.bodyBytes);
-          }
-        } catch (_) {}
-
-        if (jsonString == null) {
-          jsonString = await rootBundle.loadString('data/election_candidates.json');
-        }
-
-        if (jsonString != null) {
-          final List<dynamic> jsonList = json.decode(jsonString);
-          for (var item in jsonList) {
-            try {
-              loadedMembers.add(MemberModel.fromJson(item as Map<String, dynamic>));
-            } catch (_) {}
-          }
-        }
-      } catch (e) {
-        debugPrint('[FirestoreMemberRepository] Local Fallback Error: $e');
-      }
+      loadedMembers = fallbackMembers;
+    } else if (fallbackMembers.isNotEmpty) {
+      loadedMembers =
+          _mergeMembersByIdPreferCloud(loadedMembers, fallbackMembers);
     }
 
     // 1-3. 즉시 첫 번째 결과 통지 (의원 리스트 노출)
@@ -162,26 +143,94 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         return m.copyWith(isFavorite: favorites.contains(m.id));
       }).toList();
       _notifyListeners(preliminaryMembers);
-      debugPrint('[FirestoreMemberRepository] Phase 1 complete: ${loadedMembers.length} members shown.');
+      debugPrint(
+          '[FirestoreMemberRepository] Phase 1 complete: ${loadedMembers.length} members shown.');
     }
 
     // --- [2단계: 백그라운드 로딩] 여론조사 데이터 매칭 ---
-    
+
     // 이 단계는 await 하지 않고 비동기로 처리하여 refreshMembers가 즉시 반환되게 할 수도 있지만,
     // _ensureInitialized에서 대기하므로 여기서는 별도 Isolate/Future로 넘깁니다.
     _performPollMatchingInBackground(loadedMembers, now);
   }
 
-  Future<void> _performPollMatchingInBackground(List<Member> initialMembers, DateTime now) async {
+  Future<List<Member>> _loadFallbackMembers() async {
+    final fallbackMembers = <Member>[];
+    try {
+      String? jsonString;
+      try {
+        final rawUrl =
+            'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
+        final response = await http
+            .get(Uri.parse(rawUrl))
+            .timeout(const Duration(seconds: 3));
+        if (response.statusCode == 200) {
+          jsonString = utf8.decode(response.bodyBytes);
+        }
+      } catch (_) {}
+
+      if (jsonString == null) {
+        jsonString =
+            await rootBundle.loadString('data/election_candidates.json');
+      }
+
+      final List<dynamic> jsonList = json.decode(jsonString);
+      for (final item in jsonList) {
+        try {
+          fallbackMembers
+              .add(MemberModel.fromJson(item as Map<String, dynamic>));
+        } catch (_) {}
+      }
+    } catch (e) {
+      debugPrint('[FirestoreMemberRepository] Local Fallback Error: $e');
+    }
+    return fallbackMembers;
+  }
+
+  List<Member> _mergeMembersByIdPreferCloud(
+    List<Member> cloudMembers,
+    List<Member> fallbackMembers,
+  ) {
+    final byId = <String, Member>{};
+
+    for (final member in fallbackMembers) {
+      final id = member.id.trim();
+      if (id.isNotEmpty) byId[id] = member;
+    }
+    for (final member in cloudMembers) {
+      final id = member.id.trim();
+      if (id.isNotEmpty) byId[id] = member;
+    }
+
+    if (byId.isNotEmpty) {
+      return byId.values.toList();
+    }
+
+    // 비정상 ID 데이터가 섞여 있을 때를 위한 이름 기반 보조 병합
+    final byName = <String, Member>{};
+    for (final member in fallbackMembers) {
+      final key = member.name.trim();
+      if (key.isNotEmpty) byName[key] = member;
+    }
+    for (final member in cloudMembers) {
+      final key = member.name.trim();
+      if (key.isNotEmpty) byName[key] = member;
+    }
+    return byName.values.toList();
+  }
+
+  Future<void> _performPollMatchingInBackground(
+      List<Member> initialMembers, DateTime now) async {
     if (initialMembers.isEmpty) return;
 
     try {
-      debugPrint('[FirestoreMemberRepository] Phase 2 start: Matching polls in background...');
+      debugPrint(
+          '[FirestoreMemberRepository] Phase 2 start: Matching polls in background...');
       final entries = await _nesdcPollDataSource.fetchLatest();
-      
+
       // 최신 항목들 상세 정보 로드 (성능을 위해 제한)
       final List<Future<void>> detailTasks = [];
-      for (var entry in entries.take(20)) { 
+      for (var entry in entries.take(20)) {
         detailTasks.add(_nesdcPollDataSource.fetchDetail(entry.sourceUrl));
       }
       await Future.wait(detailTasks);
@@ -192,13 +241,14 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
           .toList();
 
       final updatedMembers = kIsWeb
-          ? _matchPollsInBackground(List.from(initialMembers), entries, collectedDetails, now)
+          ? _matchPollsInBackground(
+              List.from(initialMembers), entries, collectedDetails, now)
           : await Isolate.run(() => _matchPollsInBackground(
-              List.from(initialMembers),
-              entries,
-              collectedDetails,
-              now,
-            ));
+                List.from(initialMembers),
+                entries,
+                collectedDetails,
+                now,
+              ));
 
       // 2-2. 즐겨찾기 재적용 및 최종 통지
       final localService = sl<LocalStorageService>();
@@ -206,9 +256,10 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       final finalMembers = updatedMembers.map((m) {
         return m.copyWith(isFavorite: favorites.contains(m.id));
       }).toList();
-      
+
       _notifyListeners(finalMembers);
-      debugPrint('[FirestoreMemberRepository] Phase 2 complete: Polls matched and UI updated.');
+      debugPrint(
+          '[FirestoreMemberRepository] Phase 2 complete: Polls matched and UI updated.');
     } catch (e) {
       debugPrint('[FirestoreMemberRepository] Phase 2 Match Failed: $e');
     }
@@ -231,7 +282,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
           .where((e) => _staticMatchesRegion(e.region, regionKey))
           .toList()
         ..sort((a, b) => b.registeredDate.compareTo(a.registeredDate));
-      
+
       final limitedEntries = matchedEntries.take(5).toList();
       final newPolls = <Poll>[];
 
@@ -241,7 +292,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
         final candidateNames = _staticCandidateNameVariants(member);
         final partyAliases = _staticPartyAliases(member.party);
-        
+
         double? supportRate = detail.findSupportRate(candidateNames);
         if (supportRate == null) {
           supportRate = detail.findSupportRate(partyAliases);
@@ -256,7 +307,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
           sampleSize: detail.sampleSize,
           marginOfError: detail.marginOfError,
           source: entry.sourceUrl,
-          notes: '${entry.client} | ${entry.method} | 지지율: ${supportRate ?? '미공개'}',
+          notes:
+              '${entry.client} | ${entry.method} | 지지율: ${supportRate ?? '미공개'}',
         ));
       }
 
@@ -271,10 +323,23 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   static String _staticMapDistrictToRegion(String district) {
     final normalized = district.replaceAll(' ', '');
     const regionMap = {
-      '서울': '서울특별시', '부산': '부산광역시', '대구': '대구광역시', '인천': '인천광역시',
-      '광주': '광주광역시', '대전': '대전광역시', '울산': '울산광역시', '세종': '세종특별자치시',
-      '경기': '경기도', '강원': '강원도', '충북': '충청북도', '충남': '충청남도',
-      '전북': '전북특별자치도', '전남': '전라남도', '경북': '경상북도', '경남': '경상남도', '제주': '제주특별자치도',
+      '서울': '서울특별시',
+      '부산': '부산광역시',
+      '대구': '대구광역시',
+      '인천': '인천광역시',
+      '광주': '광주광역시',
+      '대전': '대전광역시',
+      '울산': '울산광역시',
+      '세종': '세종특별자치시',
+      '경기': '경기도',
+      '강원': '강원도',
+      '충북': '충청북도',
+      '충남': '충청남도',
+      '전북': '전북특별자치도',
+      '전남': '전라남도',
+      '경북': '경상북도',
+      '경남': '경상남도',
+      '제주': '제주특별자치도',
     };
     for (final entry in regionMap.entries) {
       if (normalized.contains(entry.key)) return entry.value;
@@ -284,7 +349,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
   static bool _staticMatchesRegion(String pollRegion, String targetRegion) {
     if (pollRegion.isEmpty) return false;
-    if (pollRegion.contains('전국') || pollRegion.contains(targetRegion)) return true;
+    if (pollRegion.contains('전국') || pollRegion.contains(targetRegion))
+      return true;
     if (targetRegion == '전북특별자치도' && pollRegion.contains('전라북도')) return true;
     return false;
   }
@@ -308,7 +374,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     return aliasMap[party] ?? [party];
   }
 
-  static List<Poll> _staticMergePolls(List<Poll> existing, List<Poll> incoming) {
+  static List<Poll> _staticMergePolls(
+      List<Poll> existing, List<Poll> incoming) {
     final byId = {for (var p in existing) p.id: p};
     for (final p in incoming) byId[p.id] = p;
     final merged = byId.values.toList();
@@ -323,18 +390,19 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         data[field] = (data[field] as Timestamp).toDate().toIso8601String();
       }
     }
-    
+
     final nestedFields = {
       'polls': 'surveyDate',
       'pressReports': 'publishDate',
       'socialContributions': 'date'
     };
-    
+
     nestedFields.forEach((listField, dateField) {
       if (data[listField] != null) {
         for (var item in data[listField]) {
           if (item[dateField] is Timestamp) {
-            item[dateField] = (item[dateField] as Timestamp).toDate().toIso8601String();
+            item[dateField] =
+                (item[dateField] as Timestamp).toDate().toIso8601String();
           }
         }
       }
@@ -357,7 +425,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<Member> getMemberById(String memberId) async {
     await _ensureInitialized();
     final members = _membersController.value;
-    return members.firstWhere((m) => m.id == memberId, orElse: () => throw Exception('Not found'));
+    return members.firstWhere((m) => m.id == memberId,
+        orElse: () => throw Exception('Not found'));
   }
 
   @override
@@ -374,13 +443,15 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   }
 
   @override
-  Stream<List<Member>> watchAllMembers({Duration interval = const Duration(hours: 1)}) {
+  Stream<List<Member>> watchAllMembers(
+      {Duration interval = const Duration(hours: 1)}) {
     _ensureInitialized();
     return _membersController.stream;
   }
 
   @override
-  Stream<Member> watchMemberById(String memberId, {Duration interval = const Duration(hours: 1)}) {
+  Stream<Member> watchMemberById(String memberId,
+      {Duration interval = const Duration(hours: 1)}) {
     _ensureInitialized();
     return _membersController.stream.map((members) {
       try {
@@ -396,13 +467,13 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     final sanitizedId = memberId.trim();
     final localService = sl<LocalStorageService>();
     final isFav = await localService.isFavorite(sanitizedId);
-    
+
     if (isFav) {
       await localService.removeFavorite(sanitizedId);
     } else {
       await localService.addFavorite(sanitizedId);
     }
-    
+
     final user = auth.FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
@@ -412,10 +483,11 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
       } catch (e) {
-        debugPrint('[FirestoreMemberRepository] Failed to sync favorite to cloud: $e');
+        debugPrint(
+            '[FirestoreMemberRepository] Failed to sync favorite to cloud: $e');
       }
     }
-    
+
     // 즉각적인 리스트 갱신 및 스트림 통지
     final currentMembers = List<Member>.from(_membersController.value);
     final idx = currentMembers.indexWhere((m) => m.id == sanitizedId);
@@ -427,7 +499,6 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       await refreshMembers();
     }
   }
-
 
   @override
   Future<String> getSelectedRegion() async {
@@ -448,7 +519,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
       } catch (e) {
-        debugPrint('[FirestoreMemberRepository] Failed to sync region to cloud: $e');
+        debugPrint(
+            '[FirestoreMemberRepository] Failed to sync region to cloud: $e');
       }
     }
   }
@@ -458,17 +530,20 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     final localService = sl<LocalStorageService>();
     await localService.clearAll();
   }
-  
+
   @override
   Future<void> syncUserSettings() async {
     await _syncUserSettingsWithCloud();
     await refreshMembers();
   }
-  
+
   @override
   Future<void> addMember(Member member) async {
     if (member is MemberModel) {
-       await _firestore.collection('members').doc(member.id).set(member.toJson());
+      await _firestore
+          .collection('members')
+          .doc(member.id)
+          .set(member.toJson());
     }
   }
 
@@ -480,7 +555,10 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   @override
   Future<void> updateMember(Member member) async {
     if (member is MemberModel) {
-      await _firestore.collection('members').doc(member.id).update(member.toJson());
+      await _firestore
+          .collection('members')
+          .doc(member.id)
+          .update(member.toJson());
     }
   }
 
@@ -489,8 +567,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     final batch = _firestore.batch();
     for (var member in members) {
       if (member is MemberModel) {
-         final doc = _firestore.collection('members').doc(member.id);
-         batch.set(doc, member.toJson(), SetOptions(merge: true));
+        final doc = _firestore.collection('members').doc(member.id);
+        batch.set(doc, member.toJson(), SetOptions(merge: true));
       }
     }
     await batch.commit();

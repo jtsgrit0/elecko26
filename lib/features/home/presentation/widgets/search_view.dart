@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:elecko26/core/theme/app_theme.dart';
+import 'package:elecko26/core/utils/utility_functions.dart';
 import 'package:elecko26/domain/entities/member.dart';
 import 'package:elecko26/features/home/presentation/widgets/member_card.dart';
 
@@ -29,7 +30,20 @@ class _SearchViewState extends State<SearchView> {
 
   static const List<String> _searchCategories = ['전체', '광역', '기초', '의회'];
   static const Map<String, List<String>> _officeOptionsByCategory = {
-    '전체': ['전체', '도지사', '광역시장', '특별시장', '특별자치도지사', '시장', '군수', '구청장', '도의원', '시의원', '구의원', '군의원'],
+    '전체': [
+      '전체',
+      '도지사',
+      '광역시장',
+      '특별시장',
+      '특별자치도지사',
+      '시장',
+      '군수',
+      '구청장',
+      '도의원',
+      '시의원',
+      '구의원',
+      '군의원'
+    ],
     '광역': ['전체', '도지사', '광역시장', '특별시장', '특별자치도지사'],
     '기초': ['전체', '시장', '군수', '구청장'],
     '의회': ['전체', '도의원', '시의원', '구의원', '군의원'],
@@ -42,16 +56,9 @@ class _SearchViewState extends State<SearchView> {
   }
 
   List<Member> _getFilteredMembers(List<Member> members) {
-    if (widget.userRegion == '전국') return members;
-    
-    // 지역명 정규화 (예: '서울특별시' -> '서울', '경기도' -> '경기')
-    String shortRegion = widget.userRegion.substring(0, 2);
-    // 특수지역 대응
-    if (widget.userRegion == '세종특별자치시') shortRegion = '세종';
-    if (widget.userRegion == '제주특별자치도') shortRegion = '제주';
-    if (widget.userRegion == '전북특별자치도') shortRegion = '전북';
-
-    return members.where((m) => m.district.contains(shortRegion)).toList();
+    return members
+        .where((m) => districtMatchesRegion(m.district, widget.userRegion))
+        .toList();
   }
 
   Widget _buildSearchPage() {
@@ -106,8 +113,8 @@ class _SearchViewState extends State<SearchView> {
   }
 
   Widget _buildSearchFilters() {
-    final officeOptions =
-        _officeOptionsByCategory[_searchCategory] ?? _officeOptionsByCategory['전체']!;
+    final officeOptions = _officeOptionsByCategory[_searchCategory] ??
+        _officeOptionsByCategory['전체']!;
 
     return Container(
       width: double.infinity,
@@ -225,29 +232,24 @@ class _SearchViewState extends State<SearchView> {
 
         final filteredMembers = allMembers.where((m) {
           // 지역 필터링 먼저 적용
-          if (widget.userRegion != '전국') {
-            String shortRegion = widget.userRegion.substring(0, 2);
-            if (widget.userRegion == '세종특별자치시') shortRegion = '세종';
-            if (widget.userRegion == '제주특별자치도') shortRegion = '제주';
-            if (widget.userRegion == '전북특별자치도') shortRegion = '전북';
-            
-            if (!m.district.contains(shortRegion)) return false;
-          }
+          if (!districtMatchesRegion(m.district, widget.userRegion))
+            return false;
 
           if (!_matchesSearchCategory(m)) return false;
           if (!_matchesSearchOffice(m)) return false;
 
           final query = _searchQuery.toLowerCase();
           return m.name.toLowerCase().contains(query) ||
-                 m.party.toLowerCase().contains(query) ||
-                 m.district.toLowerCase().contains(query) ||
-                 m.bio.toLowerCase().contains(query) ||
-                 m.policies.any((p) => p.toLowerCase().contains(query)) ||
-                 m.achievementsList.any((a) => a.toLowerCase().contains(query));
+              m.party.toLowerCase().contains(query) ||
+              m.district.toLowerCase().contains(query) ||
+              m.bio.toLowerCase().contains(query) ||
+              m.policies.any((p) => p.toLowerCase().contains(query)) ||
+              m.achievementsList.any((a) => a.toLowerCase().contains(query));
         }).toList();
 
         // 당선 가능성 높은 순으로 정렬
-        filteredMembers.sort((a, b) => b.electionPossibility.compareTo(a.electionPossibility));
+        filteredMembers.sort(
+            (a, b) => b.electionPossibility.compareTo(a.electionPossibility));
 
         if (filteredMembers.isEmpty) {
           return Center(
@@ -258,7 +260,8 @@ class _SearchViewState extends State<SearchView> {
                 const SizedBox(height: 16),
                 Text(
                   '검색 결과가 없습니다',
-                  style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
+                  style:
+                      AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
                 ),
               ],
             ),
@@ -287,6 +290,7 @@ class _SearchViewState extends State<SearchView> {
   Widget build(BuildContext context) {
     return _buildSearchPage();
   }
+
   bool _matchesSearchCategory(Member member) {
     if (_searchCategory == '전체') {
       return true;
@@ -338,5 +342,4 @@ class _SearchViewState extends State<SearchView> {
         return district.endsWith(_searchOffice);
     }
   }
-
 }

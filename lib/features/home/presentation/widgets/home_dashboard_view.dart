@@ -41,16 +41,9 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
   }
 
   List<Member> _getFilteredMembers(List<Member> members) {
-    if (widget.userRegion == '전국') return members;
-    
-    // 지역명 정규화 (예: '서울특별시' -> '서울', '경기도' -> '경기')
-    String shortRegion = widget.userRegion.length >= 2 ? widget.userRegion.substring(0, 2) : widget.userRegion;
-    // 특수지역 대응
-    if (widget.userRegion == '세종특별자치시') shortRegion = '세종';
-    if (widget.userRegion == '제주특별자치도') shortRegion = '제주';
-    if (widget.userRegion == '전북특별자치도') shortRegion = '전북';
-
-    return members.where((m) => m.district.contains(shortRegion)).toList();
+    return members
+        .where((m) => districtMatchesRegion(m.district, widget.userRegion))
+        .toList();
   }
 
   @override
@@ -62,12 +55,14 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
         if (freshMembers.isNotEmpty) {
           __localCachedMembers = freshMembers;
         }
-        final allMembers = freshMembers.isNotEmpty ? freshMembers : __localCachedMembers;
+        final allMembers =
+            freshMembers.isNotEmpty ? freshMembers : __localCachedMembers;
         final filteredMembers = _getFilteredMembers(allMembers);
-        
+
         // 정렬된 멤버 리스트 준비 (동기 방식)
         final rankedMembers = List<Member>.from(filteredMembers)
-          ..sort((a, b) => b.electionPossibility.compareTo(a.electionPossibility));
+          ..sort(
+              (a, b) => b.electionPossibility.compareTo(a.electionPossibility));
 
         return RefreshIndicator(
           onRefresh: () => widget.onRefresh(),
@@ -79,7 +74,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                 if (widget.isLoading)
                   const LinearProgressIndicator(
                     backgroundColor: Colors.transparent,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(AppColors.primary),
                     minHeight: 4,
                   ),
                 if (!widget.isLoading) const SizedBox(height: 4),
@@ -191,7 +187,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
             .map((m) => m.lastAnalysisDate)
             .reduce((a, b) => a.isAfter(b) ? a : b)
         : null;
-    final updateValue = latestAnalysis == null ? '-' : formatRelativeTime(latestAnalysis);
+    final updateValue =
+        latestAnalysis == null ? '-' : formatRelativeTime(latestAnalysis);
     final nesdcCount = members.fold<int>(
         0,
         (sum, m) =>
@@ -259,7 +256,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                 final member = top3[index];
                 final rank = index + 1;
                 return Padding(
-                  padding: EdgeInsets.only(bottom: index < top3.length - 1 ? 12 : 0),
+                  padding:
+                      EdgeInsets.only(bottom: index < top3.length - 1 ? 12 : 0),
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -278,7 +276,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                         const SizedBox(width: 16),
                         ClipOval(
                           child: CachedNetworkImage(
-                            imageUrl: '${ImageUtil.getProxyUrl(member.imageUrl, width: 100, height: 100)}',
+                            imageUrl:
+                                '${ImageUtil.getProxyUrl(member.imageUrl, width: 100, height: 100)}',
                             width: 50,
                             height: 50,
                             fit: BoxFit.cover,
@@ -297,7 +296,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                             children: [
                               Text(
                                 member.name,
-                                style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold),
+                                style: AppTextStyles.bodyMedium
+                                    .copyWith(fontWeight: FontWeight.bold),
                               ),
                               Text(
                                 '${member.party} • ${member.district}',
