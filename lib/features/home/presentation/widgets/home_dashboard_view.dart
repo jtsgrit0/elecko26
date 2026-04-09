@@ -4,10 +4,7 @@ import 'package:elecko26/core/theme/app_theme.dart';
 import 'package:elecko26/core/utils/image_util.dart';
 import 'package:elecko26/core/utils/party_util.dart';
 import 'package:elecko26/core/utils/utility_functions.dart';
-import 'package:elecko26/domain/entities/analysis_result.dart';
 import 'package:elecko26/domain/entities/member.dart';
-import 'package:elecko26/domain/usecases/calculate_election_possibility_usecase.dart';
-import 'package:elecko26/app/injection_container.dart';
 import 'package:elecko26/features/home/presentation/widgets/member_card.dart';
 
 class HomeDashboardView extends StatefulWidget {
@@ -35,11 +32,6 @@ class HomeDashboardView extends StatefulWidget {
 }
 
 class _HomeDashboardViewState extends State<HomeDashboardView> {
-  List<_TopMember> _cachedTop3 = [];
-  List<_TopMember> _cachedRanked = [];
-
-  // Update cachedMembers dynamically from _buildStatistics?
-  // We should better use widget.cachedMembers, but in _buildStatistics it assigns to _cachedMembers
   List<Member> __localCachedMembers = [];
 
   @override
@@ -52,7 +44,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     if (widget.userRegion == '전국') return members;
     
     // 지역명 정규화 (예: '서울특별시' -> '서울', '경기도' -> '경기')
-    String shortRegion = widget.userRegion.substring(0, 2);
+    String shortRegion = widget.userRegion.length >= 2 ? widget.userRegion.substring(0, 2) : widget.userRegion;
     // 특수지역 대응
     if (widget.userRegion == '세종특별자치시') shortRegion = '세종';
     if (widget.userRegion == '제주특별자치도') shortRegion = '제주';
@@ -61,33 +53,53 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     return members.where((m) => m.district.contains(shortRegion)).toList();
   }
 
-  Widget _buildHomeDashboard() {
-    return RefreshIndicator(
-      onRefresh: () => widget.onRefresh(),
-      color: AppColors.primary,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          children: [
-            if (widget.isLoading)
-              const LinearProgressIndicator(
-                backgroundColor: Colors.transparent,
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                minHeight: 4,
-              ),
-            if (!widget.isLoading) const SizedBox(height: 4),
-            // 2026 지방선거 배너
-            _buildElectionBanner(),
-            const SizedBox(height: 24),
-            // 주요 통계
-            _buildStatistics(),
-            const SizedBox(height: 24),
-            // 의원 목록 요약
-            _buildMemberListSection(),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<Member>>(
+      stream: widget.membersStream,
+      builder: (context, snapshot) {
+        final freshMembers = snapshot.data ?? [];
+        if (freshMembers.isNotEmpty) {
+          __localCachedMembers = freshMembers;
+        }
+        final allMembers = freshMembers.isNotEmpty ? freshMembers : __localCachedMembers;
+        final filteredMembers = _getFilteredMembers(allMembers);
+        
+        // 정렬된 멤버 리스트 준비 (동기 방식)
+        final rankedMembers = List<Member>.from(filteredMembers)
+          ..sort((a, b) => b.electionPossibility.compareTo(a.electionPossibility));
+
+        return RefreshIndicator(
+          onRefresh: () => widget.onRefresh(),
+          color: AppColors.primary,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                if (widget.isLoading)
+                  const LinearProgressIndicator(
+                    backgroundColor: Colors.transparent,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    minHeight: 4,
+                  ),
+                if (!widget.isLoading) const SizedBox(height: 4),
+                // 2026 지방선거 배너
+                _buildElectionBanner(),
+                const SizedBox(height: 24),
+                // 주요 통계
+                _buildStatistics(filteredMembers),
+                const SizedBox(height: 24),
+                // 당선 가능성 TOP 3
+                _buildTop3Section(rankedMembers.take(3).toList()),
+                const SizedBox(height: 24),
+                // 의원 목록 요약
+                _buildMemberListSection(rankedMembers),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -144,10 +156,10 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                     ),
                   ],
                 ),
-                Image.asset(
-                  'assets/images/election_icon.png',
-                  width: 60,
-                  height: 60,
+                const Icon(
+                  Icons.how_to_vote,
+                  color: AppColors.white,
+                  size: 40,
                 ),
               ],
             ),
@@ -173,229 +185,148 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     );
   }
 
-  Widget _buildStatistics() {
+  Widget _buildStatistics(List<Member> members) {
+    final latestAnalysis = members.isNotEmpty
+        ? members
+            .map((m) => m.lastAnalysisDate)
+            .reduce((a, b) => a.isAfter(b) ? a : b)
+        : null;
+    final updateValue = latestAnalysis == null ? '-' : formatRelativeTime(latestAnalysis);
+    final nesdcCount = members.fold<int>(
+        0,
+        (sum, m) =>
+            sum + m.polls.where((p) => p.id.startsWith('nesdc_')).length);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: StreamBuilder<List<Member>>(
-        stream: widget.membersStream,
-        builder: (context, snapshot) {
-          final freshMembers = snapshot.data ?? [];
-          if (freshMembers.isNotEmpty) {
-            __localCachedMembers = freshMembers;
-          }
-          final allMembers = freshMembers.isNotEmpty ? freshMembers : __localCachedMembers;
-          final members = _getFilteredMembers(allMembers);
-          final latestAnalysis = members.isNotEmpty
-              ? members
-                  .map((m) => m.lastAnalysisDate)
-                  .reduce((a, b) => a.isAfter(b) ? a : b)
-              : null;
-          final updateValue = latestAnalysis == null ? '-' : formatRelativeTime(latestAnalysis);
-          final nesdcCount = members.fold<int>(
-              0,
-              (sum, m) =>
-                  sum + m.polls.where((p) => p.id.startsWith('nesdc_')).length);
-
-          // 반응형 레이아웃: TOP3는 전체 너비, 분석과 여론조사위는 3:7 비율로 가로 정렬
-          return Column(
+      child: Column(
+        children: [
+          Row(
             children: [
-              // TOP3 카드 - 전체 너비
-              _buildTop3Card(members),
-              const SizedBox(height: 12),
-              // 분석과 여론조사위 - 3:7 비율 가로 정렬
-              Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: _StatisticCard(
-                      title: '분석 중인 의원',
-                      value: members.length.toString(),
-                      icon: Icons.people,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 7,
-                    child: _StatisticCard(
-                      title: '여론조사심의위 반영 · $updateValue',
-                      value: '$nesdcCount건',
-                      icon: Icons.update,
-                      color: AppColors.secondary,
-                    ),
-                  ),
-                ],
+              Expanded(
+                flex: 3,
+                child: _StatisticCard(
+                  title: '분석 중인 의원',
+                  value: members.length.toString(),
+                  icon: Icons.people,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 7,
+                child: _StatisticCard(
+                  title: '여론조사심의위 반영 · $updateValue',
+                  value: '$nesdcCount건',
+                  icon: Icons.update,
+                  color: AppColors.secondary,
+                ),
               ),
             ],
-          );
-        },
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildTop3Card(List<Member> members) {
-    return FutureBuilder<List<_TopMember>>(
-      future: _loadTop3Members(members),
-      builder: (context, snapshot) {
-        final freshTop3 = snapshot.data ?? [];
-        if (freshTop3.isNotEmpty) {
-          _cachedTop3 = freshTop3;
-        }
-        final top3 = freshTop3.isNotEmpty ? freshTop3 : _cachedTop3;
+  Widget _buildTop3Section(List<Member> top3) {
+    if (top3.isEmpty) return const SizedBox.shrink();
 
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.success.withOpacity(0.2),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.success.withOpacity(0.2),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '당선 가능성 TOP 3',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.success,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.success.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '당선 가능성 TOP 3',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.success,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              if (snapshot.connectionState == ConnectionState.waiting && top3.isEmpty)
-                Text(
-                  '계산 중...',
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.mediumGray,
-                  ),
-                )
-              else if (top3.isEmpty)
-                Text(
-                  '데이터 없음',
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.mediumGray,
-                  ),
-                )
-              else
-                // 세로 정렬: 3명을 가운데 정렬하며 각 셀을 세로로 길게 표시
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: List.generate(top3.length, (index) {
-                    final entry = top3[index];
-                    final member = entry.member;
-                    final rank = index + 1;
-                    return Padding(
-                      padding: EdgeInsets.only(bottom: index < top3.length - 1 ? 12 : 0),
-                      child: Container(
-                        height: 140,
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(10),
+            const SizedBox(height: 12),
+            Column(
+              children: List.generate(top3.length, (index) {
+                final member = top3[index];
+                final rank = index + 1;
+                return Padding(
+                  padding: EdgeInsets.only(bottom: index < top3.length - 1 ? 12 : 0),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          '${rank}위',
+                          style: AppTextStyles.headline4.copyWith(
+                            color: AppColors.error,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            // 순위 (분석 카드와 같은 크기, 빨간색)
-                            Text(
-                              '${rank}위',
-                              style: AppTextStyles.headline4.copyWith(
-                                color: AppColors.error,
-                                fontWeight: FontWeight.bold,
+                        const SizedBox(width: 16),
+                        ClipOval(
+                          child: CachedNetworkImage(
+                            imageUrl: '${ImageUtil.getProxyUrl(member.imageUrl, width: 100, height: 100)}',
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, __, ___) => Container(
+                              color: AppColors.lightGrey,
+                              child: Center(
+                                child: Text(getProfileInitial(member.name)),
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            // 아바타
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: AppColors.lightGrey,
-                                border: Border.all(color: AppColors.primary.withOpacity(0.08)),
-                              ),
-                              child: ClipOval(
-                                child: member.imageUrl.isNotEmpty
-                                    ? CachedNetworkImage(
-                                        imageUrl: '${ImageUtil.getProxyUrl(member.imageUrl, width: 200, height: 200)}&v=2',
-                                        fit: BoxFit.cover,
-                                        placeholder: (context, url) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                                        errorWidget: (context, url, error) {
-                                          return Center(
-                                            child: Text(
-                                              getProfileInitial(member.name),
-                                              style: AppTextStyles.headline4.copyWith(
-                                                color: AppColors.primary,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      )
-                                    : Center(
-                                        child: Text(
-                                          getProfileInitial(member.name),
-                                          style: AppTextStyles.headline4.copyWith(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            // 이름 및 퍼센트
-                            Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    member.name,
-                                    style: AppTextStyles.bodyMedium.copyWith(
-                                      color: AppColors.darkGray,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    '${(entry.possibility * 100).toStringAsFixed(0)}%',
-                                    style: AppTextStyles.bodySmall.copyWith(
-                                      color: AppColors.success,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    );
-                  }),
-                ),
-            ],
-          ),
-        );
-      },
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                member.name,
+                                style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                '${member.party} • ${member.district}',
+                                style: AppTextStyles.labelSmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          '${(member.electionPossibility * 100).toStringAsFixed(0)}%',
+                          style: AppTextStyles.headline4.copyWith(
+                            color: AppColors.success,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildMemberListSection() {
+  Widget _buildMemberListSection(List<Member> members) {
+    if (members.isEmpty) return const SizedBox.shrink();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -409,170 +340,25 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                 style: AppTextStyles.headline4,
               ),
               TextButton(
-                onPressed: () => widget.onNavigateToSearch(), // 검색 탭으로 이동
-                child: Text(
-                  '전체보기',
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.primary,
-                  ),
-                ),
+                onPressed: () => widget.onNavigateToSearch(),
+                child: const Text('전체보기'),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          StreamBuilder<List<Member>>(
-            stream: widget.membersStream,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting && __localCachedMembers.isEmpty) {
-                return Container(
-                  height: 200,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.primary.withOpacity(0.2),
-                    ),
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const CircularProgressIndicator(),
-                        const SizedBox(height: 16),
-                        Text(
-                          '의원 데이터 로드 중...',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-              
-              final freshMembers = snapshot.data ?? [];
-              if (snapshot.hasError && freshMembers.isEmpty && __localCachedMembers.isEmpty) {
-                return Container(
-                  height: 200,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.error.withOpacity(0.2),
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '데이터 로드 실패',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.error,
-                      ),
-                    ),
-                  ),
-                );
-              }
-              
-              if (freshMembers.isNotEmpty) {
-                __localCachedMembers = freshMembers;
-              }
-              final allMembers = freshMembers.isNotEmpty ? freshMembers : __localCachedMembers;
-              final members = _getFilteredMembers(allMembers);
-              if (members.isEmpty) {
-                return Container(
-                  height: 200,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.primary.withOpacity(0.2),
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '의원 데이터가 없습니다',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.grey,
-                      ),
-                    ),
-                  ),
-                );
-              }
-              
-              return FutureBuilder<List<_TopMember>>(
-                future: _loadTopMembers(members),
-                builder: (context, topSnapshot) {
-                  if (topSnapshot.connectionState == ConnectionState.waiting && _cachedRanked.isEmpty) {
-                    return Container(
-                      height: 200,
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.primary.withOpacity(0.2),
-                        ),
-                      ),
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const CircularProgressIndicator(),
-                            const SizedBox(height: 16),
-                            Text(
-                              '당선 가능성 계산 중...',
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-
-                  final freshRanked = topSnapshot.data ?? [];
-                  if (freshRanked.isNotEmpty) {
-                    _cachedRanked = freshRanked;
-                  }
-                  final ranked = freshRanked.isNotEmpty ? freshRanked : _cachedRanked;
-                  if (ranked.isEmpty) {
-                    return Container(
-                      height: 200,
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.primary.withOpacity(0.2),
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '의원 데이터가 없습니다',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.grey,
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: ranked.length,
-                    itemBuilder: (context, index) {
-                      final member = ranked[index].member;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: MemberCard(
-                          key: ValueKey(member.id),
-                          member: member,
-                          onTap: () => widget.onMemberSelected(member),
-                        ),
-                      );
-                    },
-                  );
-                },
+          const SizedBox(height: 8),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: members.length > 10 ? 10 : members.length, // 상위 10명만 표시
+            itemBuilder: (context, index) {
+              final member = members[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: MemberCard(
+                  key: ValueKey(member.id),
+                  member: member,
+                  onTap: () => widget.onMemberSelected(member),
+                ),
               );
             },
           ),
@@ -580,78 +366,29 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
       ),
     );
   }
-
-  Future<List<_TopMember>> _loadTop3Members(List<Member> members) async {
-    if (members.isEmpty) {
-      return [];
-    }
-    final results = <_TopMember>[];
-    for (final member in members) {
-      final analysis = await sl<CalculateElectionPossibilityUseCase>().call(member.id);
-      results.add(_TopMember(member: member, possibility: analysis.electionPossibility));
-    }
-    results.sort((a, b) => b.possibility.compareTo(a.possibility));
-    return results.take(3).toList();
-  }
-
-  Future<List<_TopMember>> _loadTopMembers(List<Member> members) async {
-    if (members.isEmpty) {
-      return [];
-    }
-    final results = <_TopMember>[];
-    for (final member in members) {
-      final analysis = await sl<CalculateElectionPossibilityUseCase>().call(member.id);
-      results.add(_TopMember(member: member, possibility: analysis.electionPossibility));
-    }
-    results.sort((a, b) => b.possibility.compareTo(a.possibility));
-    return results;
-  }
-
-
-
-  @override
-  Widget build(BuildContext context) {
-    return _buildHomeDashboard();
-  }
 }
 
 class _StatisticCard extends StatelessWidget {
   final String title;
   final String value;
-  final String? subtitle;
   final IconData icon;
   final Color color;
 
   const _StatisticCard({
     required this.title,
     required this.value,
-    this.subtitle,
     required this.icon,
     required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    final subtitleWidgets = subtitle == null
-        ? const <Widget>[]
-        : <Widget>[
-            const SizedBox(height: 2),
-            Text(
-              subtitle!,
-              style: AppTextStyles.labelSmall.copyWith(
-                color: AppColors.mediumGray,
-              ),
-            ),
-          ];
-
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-        ),
+        border: Border.all(color: color.withOpacity(0.2)),
         boxShadow: [
           BoxShadow(
             color: color.withOpacity(0.1),
@@ -663,44 +400,12 @@ class _StatisticCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 20,
-            ),
-          ),
+          Icon(icon, color: color, size: 24),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: AppTextStyles.headline4.copyWith(
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: AppTextStyles.bodySmall,
-          ),
-          ...subtitleWidgets,
+          Text(value, style: AppTextStyles.headline4.copyWith(color: color)),
+          Text(title, style: AppTextStyles.bodySmall),
         ],
       ),
     );
   }
-
-}
-
-class _TopMember {
-  final Member member;
-  final double possibility;
-
-  const _TopMember({
-    required this.member,
-    required this.possibility,
-  });
 }
