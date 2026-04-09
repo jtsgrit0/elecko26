@@ -33,6 +33,7 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
   List<Member> _myVotedMembers = [];
   String _selectedRegion = '전국';
   StreamSubscription<String>? _regionSubscription;
+  StreamSubscription<List<Member>>? _membersSubscription;
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -52,12 +53,25 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
         _loadPolls(); // 지역 변경 시 재로딩
       }
     });
+
+    // 멤버 상태(즐겨찾기 등) 변경 감지 구독
+    _membersSubscription = sl<MemberRepository>().watchAllMembers().listen((members) async {
+      if (mounted && members.isNotEmpty) {
+        final localService = sl<LocalStorageService>();
+        final votesMap = await localService.getAllVotes();
+        final votedList = members.where((m) => votesMap.values.contains(m.id)).toList();
+        setState(() {
+          _myVotedMembers = votedList;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     _regionSubscription?.cancel();
+    _membersSubscription?.cancel();
     super.dispose();
   }
 
