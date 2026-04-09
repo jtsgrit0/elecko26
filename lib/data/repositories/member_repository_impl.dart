@@ -111,8 +111,8 @@ class MemberRepositoryImpl implements MemberRepository {
     final now = DateTime.now();
     
     try {
-      final prefs = sl<LocalStorageService>();
-      final favoriteIds = prefs.getStringList('favorite_member_ids') ?? [];
+      final localService = sl<LocalStorageService>();
+      final favoriteIds = await localService.getFavorites();
 
       String? candidatesJson;
       try {
@@ -458,65 +458,55 @@ class MemberRepositoryImpl implements MemberRepository {
 
     final member = _dummyMembers[index];
     final newFavoriteStatus = !member.isFavorite;
-    _dummyMembers[index] = member.copyWith(isFavorite: newFavoriteStatus);
-
-    // LocalStorage 에 저장 (등록된 경우에만)
-    if (sl.isRegistered<LocalStorageService>()) {
-      final prefs = sl<LocalStorageService>();
-      final List<String> favoriteIds = prefs.getStringList('favorite_member_ids') ?? [];
-      
-      try {
-        if (newFavoriteStatus) {
-          if (!favoriteIds.contains(memberId)) {
-            favoriteIds.add(memberId);
-          }
-        } else {
-          favoriteIds.remove(memberId);
-        }
-        
-        await prefs.setStringList('favorite_member_ids', favoriteIds);
-        print('[MemberRepo] Saved ${favoriteIds.length} favorite IDs to storage');
-      } catch (e) {
-        // 저장 실패 시 메모리 상태를 원래대로 복원 후 예외 전파
-        _dummyMembers[index] = member; // 롤백
-        print('[MemberRepo] Failed to save favorites: $e');
-        rethrow;
-      }
-    } else {
-      print('[MemberRepo] Warning: Cannot save favorite, LocalStorageService not registered');
-    }
     
+    // UI 상태 반영 (낙관적)
+    _dummyMembers[index] = member.copyWith(isFavorite: newFavoriteStatus);
     _notifyListeners();
+
+    try {
+      final localService = sl<LocalStorageService>();
+      if (newFavoriteStatus) {
+        await localService.addFavorite(memberId);
+      } else {
+        await localService.removeFavorite(memberId);
+      }
+      print('[MemberRepo] Local favorite status updated for $memberId');
+    } catch (e) {
+      // 실패 시 롤백
+      _dummyMembers[index] = member; 
+      _notifyListeners();
+      print('[MemberRepo] Failed to save local favorite: $e');
+      rethrow;
+    }
   }
 
   @override
   Future<String> getSelectedRegion() async {
-    if (sl.isRegistered<LocalStorageService>()) {
-      final prefs = sl<LocalStorageService>();
-      return prefs.getString('user_selected_region') ?? '전국';
-    }
-    return '전국';
+    final localService = sl<LocalStorageService>();
+    return await localService.getSelectedRegion();
   }
 
   @override
   Future<void> saveSelectedRegion(String region) async {
-    if (sl.isRegistered<LocalStorageService>()) {
-      final prefs = sl<LocalStorageService>();
-      await prefs.setString('user_selected_region', region);
-    }
+    final localService = sl<LocalStorageService>();
+    await localService.saveSelectedRegion(region);
   }
 
   @override
   Future<void> resetSettings() async {
-    if (sl.isRegistered<LocalStorageService>()) {
-      final prefs = sl<LocalStorageService>();
-      await prefs.clear(); // 모든 저장된 데이터 삭제 (지역 정보 포함)
-    }
+    final localService = sl<LocalStorageService>();
+    await localService.clearAll();
     
     // 메모리 내 즐겨찾기 상태 초기화
     for (var i = 0; i < _dummyMembers.length; i++) {
       _dummyMembers[i] = _dummyMembers[i].copyWith(isFavorite: false);
     }
     _notifyListeners();
+  }
+
+  @override
+  Future<void> syncUserSettings() async {
+    // 로컬 모드에서는 SharedPreferences의 최신 상태를 메모리에 반영
+    await refreshMembers();
   }
 }
