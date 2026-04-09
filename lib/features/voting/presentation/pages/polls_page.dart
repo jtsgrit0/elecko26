@@ -25,7 +25,6 @@ class PollsPage extends StatefulWidget {
 class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
   late TabController _tabController;
 
-  List<Poll> _endedPolls = [];
   List<Poll> _myPolls = [];
   String _selectedRegion = '전국';
   StreamSubscription<String>? _regionSubscription;
@@ -36,7 +35,7 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _loadPolls();
     
     // 지역 설정 변경 감지 구독
@@ -65,19 +64,23 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
     });
 
     try {
-      // 모든 쿼리를 병렬로 동시 실행하여 로딩 시간 최소화
+      // 1순위: 지역 정보 먼저 로드하여 UI 반응성 확보
+      final region = await sl<MemberRepository>().getSelectedRegion();
+      if (mounted) {
+        setState(() {
+          _selectedRegion = region;
+        });
+      }
+
+      // 2순위: 투표 목록 병렬 로드
       final results = await Future.wait([
-        sl<MemberRepository>().getSelectedRegion(),                        // [0] String
-        sl<GetPollsUseCase>().execute(status: PollStatus.active),          // [1] List<Poll>
-        sl<GetPollsUseCase>().execute(status: PollStatus.ended),           // [2] List<Poll>
-        sl<GetPollsUseCase>().execute(creatorId: widget.currentUser.id),   // [3] List<Poll>
+        sl<GetPollsUseCase>().execute(status: PollStatus.active),          // [0] List<Poll>
+        sl<GetPollsUseCase>().execute(creatorId: widget.currentUser.id),   // [1] List<Poll>
       ]);
 
       if (mounted) {
         setState(() {
-          _selectedRegion = results[0] as String;
-          _endedPolls = results[2] as List<Poll>;
-          _myPolls = results[3] as List<Poll>;
+          _myPolls = results[1];
         });
       }
     } catch (e) {
@@ -111,7 +114,6 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
           unselectedLabelStyle: AppTextStyles.bodyMedium,
           tabs: const [
             Tab(text: '진행중'),
-            Tab(text: '종료됨'),
             Tab(text: '내 투표'),
           ],
         ),
@@ -122,9 +124,7 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
   }
 
   Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    // 전체 블로킹 로딩 제거 (탭 구조를 즉시 보여줌)
 
     if (_errorMessage != null) {
       return Center(
@@ -152,14 +152,17 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
       children: [
         // 진행중 탭: 지역 설정 여부에 따라 분기
         _selectedRegion == '전국' || _selectedRegion == '미설정'
-            ? RegionSelectionPrompt(onSelectRegion: _showRegionSelectionDialog)
+            ? (_isLoading 
+                ? const Center(child: CircularProgressIndicator()) 
+                : RegionSelectionPrompt(onSelectRegion: _showRegionSelectionDialog))
             : RegionalMemberVotingList(
                 region: _selectedRegion,
                 onChangeRegion: _showRegionSelectionDialog,
               ),
             
-        _buildPollList(_endedPolls, '종료된 투표가 없습니다.'),
-        _buildPollList(_myPolls, '내가 만든 투표가 없습니다.'),
+        _isLoading && _myPolls.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : _buildPollList(_myPolls, '내가 만든 투표가 없습니다.'),
       ],
     );
   }
