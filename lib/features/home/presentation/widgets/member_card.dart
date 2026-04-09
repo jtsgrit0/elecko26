@@ -9,41 +9,16 @@ import 'package:elecko26/domain/usecases/calculate_election_possibility_usecase.
 import 'package:elecko26/domain/usecases/member_usecases.dart';
 import 'package:elecko26/app/injection_container.dart';
 
-class MemberCard extends StatefulWidget {
+class MemberCard extends StatelessWidget {
   final Member member;
   final VoidCallback? onTap;
 
   const MemberCard({Key? key, required this.member, this.onTap}) : super(key: key);
 
   @override
-  State<MemberCard> createState() => _MemberCardState();
-}
-
-class _MemberCardState extends State<MemberCard> {
-  late bool _isFavorite;
-
-  @override
-  void initState() {
-    super.initState();
-    _isFavorite = widget.member.isFavorite;
-  }
-
-  @override
-  void didUpdateWidget(MemberCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.member.id != oldWidget.member.id || 
-        widget.member.isFavorite != oldWidget.member.isFavorite) {
-      setState(() {
-        _isFavorite = widget.member.isFavorite;
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final member = widget.member;
     return GestureDetector(
-      onTap: widget.onTap,
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -109,7 +84,7 @@ class _MemberCardState extends State<MemberCard> {
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
-                            ),
+                          ),
                           child: Center(
                             child: Text(
                               _getProfileInitial(member.name),
@@ -154,7 +129,10 @@ class _MemberCardState extends State<MemberCard> {
                       children: [
                         TextSpan(
                           text: member.party,
-                          style: AppTextStyles.bodySmall.copyWith(color: PartyUtil.getPartyColor(member.party), fontWeight: FontWeight.bold),
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: PartyUtil.getPartyColor(member.party),
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         TextSpan(
                           text: ' • ${member.district}',
@@ -204,23 +182,14 @@ class _MemberCardState extends State<MemberCard> {
             const SizedBox(width: 8),
             IconButton(
               icon: Icon(
-                _isFavorite ? Icons.star : Icons.star_border,
-                color: _isFavorite ? Colors.amber : AppColors.grey,
+                member.isFavorite ? Icons.star : Icons.star_border,
+                color: member.isFavorite ? Colors.amber : AppColors.grey,
               ),
               onPressed: () async {
-                final prev = _isFavorite;
-                setState(() {
-                  _isFavorite = !_isFavorite; // 낙관적 UI 업데이트
-                });
                 try {
+                  // 리포지토리에 토글 요청 (스트림을 통해 UI가 자동으로 갱신됨)
                   await sl<ToggleFavoriteUseCase>().call(member.id);
                 } catch (e) {
-                  // 저장 실패 시 로컬 상태 롤백
-                  if (mounted) {
-                    setState(() {
-                      _isFavorite = prev;
-                    });
-                  }
                   debugPrint('[MemberCard] toggleFavorite failed: $e');
                 }
               },
@@ -230,23 +199,23 @@ class _MemberCardState extends State<MemberCard> {
       ),
     );
   }
-}
 
-String _formatRelativeTime(DateTime date) {
-  final local = date.toLocal();
-  final y = local.year.toString().padLeft(4, '0');
-  final m = local.month.toString().padLeft(2, '0');
-  final d = local.day.toString().padLeft(2, '0');
-  final h = local.hour.toString().padLeft(2, '0');
-  final min = local.minute.toString().padLeft(2, '0');
-  final s = local.second.toString().padLeft(2, '0');
-  return '\$y-\$m-\$d \$h:\$min:\$s';
-}
-
-String _getProfileInitial(String name) {
-  final trimmed = name.trim();
-  if (trimmed.isEmpty) {
-    return '?';
+  String _formatRelativeTime(DateTime date) {
+    final local = date.toLocal();
+    final y = local.year.toString().padLeft(4, '0');
+    final m = local.month.toString().padLeft(2, '0');
+    final d = local.day.toString().padLeft(2, '0');
+    final h = local.hour.toString().padLeft(2, '0');
+    final min = local.minute.toString().padLeft(2, '0');
+    final s = local.second.toString().padLeft(2, '0');
+    return '$y-$m-$d $h:$min:$s';
   }
-  return trimmed.characters.first;
+
+  String _getProfileInitial(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) {
+      return '?';
+    }
+    return trimmed.characters.first;
+  }
 }

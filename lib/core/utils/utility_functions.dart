@@ -1,3 +1,5 @@
+import 'package:characters/characters.dart';
+
 /// 네트워크 관련 유틸리티
 class NetworkUtil {
   static const String baseUrl = 'https://api.example.com';

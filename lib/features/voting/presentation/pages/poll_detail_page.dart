@@ -169,6 +169,7 @@ class _PollDetailPageState extends State<PollDetailPage> {
         centerTitle: true,
         backgroundColor: AppColors.primary,
         elevation: 0,
+        actions: [
           if (_currentPoll?.creatorId == widget.currentUser.id &&
               _currentPoll?.status == PollStatus.active)
             IconButton(

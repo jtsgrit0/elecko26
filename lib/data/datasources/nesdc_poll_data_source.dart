@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:elecko26/core/config/app_config.dart';
-import 'package:elecko26/core/platform/platform_info.dart';
+import 'package:elecko26/core/platform/platform_info.dart' as platform;
 import 'package:html/dom.dart' as html_dom;
 import 'package:html/parser.dart' as html_parser;
 import 'package:http/http.dart' as http;
@@ -410,16 +410,16 @@ class NesdcPollDataSource {
       final fileResponse = await _client.get(_wrapProxy(fileTarget), headers: _defaultHeaders());
       if (fileResponse.statusCode == 200) {
         resultText = _tryExtractPdfText(fileResponse.bodyBytes);
-        if (!kReleaseMode) {
+        if (!platform.kReleaseMode) {
           debugPrint('[NESDC] PDF extracted: url=$resultFileUrl bytes=${fileResponse.bodyBytes.length} textLen=${resultText?.length ?? 0}');
         }
       } else {
-        if (!kReleaseMode) {
+        if (!platform.kReleaseMode) {
           debugPrint('[NESDC] PDF fetch failed: url=$resultFileUrl status=${fileResponse.statusCode}');
         }
       }
     } else {
-      if (!kReleaseMode) {
+      if (!platform.kReleaseMode) {
         debugPrint('[NESDC] No result file url for detail: $detailUrl');
       }
     }
@@ -436,7 +436,7 @@ class NesdcPollDataSource {
     );
 
     _detailCache[detailUrl] = detail;
-    if (!kReleaseMode) {
+    if (!platform.kReleaseMode) {
       debugPrint(
         '[NESDC] detail parsed: url=$detailUrl survey=${surveyDate?.toIso8601String()} sample=$sampleSize margin=$marginOfError resultUrl=${resultFileUrl ?? "-"}',
       );
@@ -469,10 +469,10 @@ class NesdcPollDataSource {
       return Uri.parse(raw);
     }
     final base = Uri.parse(raw);
-    if (kIsWeb) {
+    if (platform.kIsWeb) {
       return base;
     }
-    if (defaultTargetPlatform == TargetPlatform.android &&
+    if (platform.defaultTargetPlatform == platform.TargetPlatform.android &&
         (base.host == 'localhost' || base.host == '127.0.0.1')) {
       return base.replace(host: '10.0.2.2');
     }
@@ -480,7 +480,7 @@ class NesdcPollDataSource {
   }
 
   Uri? _resolveWebBackendOverride() {
-    if (!kIsWeb) {
+    if (!platform.kIsWeb) {
       return null;
     }
     if (kNesdcBackendUrl.trim().isNotEmpty) {

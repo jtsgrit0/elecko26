@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -8,8 +7,8 @@ import '../../domain/repositories/auth_repository.dart';
 
 /// Firebase를 사용한 인증 리포지토리 구현
 class AuthRepositoryImpl implements AuthRepository {
-  final firebase_auth.FirebaseAuth _firebaseAuth = firebase_auth.FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  firebase_auth.FirebaseAuth get _firebaseAuth => firebase_auth.FirebaseAuth.instance;
+  GoogleSignIn get _googleSignIn => GoogleSignIn();
 
   AuthRepositoryImpl();
 
@@ -98,8 +97,8 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final credential = await SignInWithApple.getAppleIDCredential(
         scopes: [
-          AppleIDAuthorizationScope.email,
-          AppleIDAuthorizationScope.fullName,
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
         ],
       );
 
@@ -159,8 +158,5 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-  @override
-  Stream<User?> get authStateChanges {
-    return _authStateController.stream;
-  }
+
 }

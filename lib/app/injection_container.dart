@@ -23,71 +23,72 @@ import 'package:elecko26/data/datasources/shared_prefs_local_storage_service.dar
 import 'package:elecko26/features/voting/data/repositories/poll_repository_impl.dart';
 import 'package:elecko26/features/voting/domain/repositories/poll_repository.dart';
 import 'package:elecko26/features/voting/domain/usecases/poll_usecases.dart';
-
+import 'package:flutter/foundation.dart';
 
 final sl = GetIt.instance;
 
-// GitHub token from environment (must be const for web support)
 const String _githubToken = String.fromEnvironment(
   'GITHUB_TOKEN',
-  defaultValue: '', // 기본값: 빈 문자열 (토큰이 없으면 기능 비활성화)
+  defaultValue: '',
 );
 
 Future<void> init() async {
-  if (sl.isRegistered<MemberRepository>() ||
-      sl.isRegistered<GetMembersUseCase>() ||
-      sl.isRegistered<MapRepository>()) {
+  if (sl.isRegistered<MemberRepository>()) {
+    await sl.reset();
+  }
+
+  //! External
+  final sharedPreferences = await SharedPreferences.getInstance();
+  sl.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
+  sl.registerLazySingleton<LocalStorageService>(
+    () => SharedPreferencesService(sl<SharedPreferences>()),
+  );
+
+  _registerAll();
+}
+
+Future<void> initMinimal() async {
+  debugPrint('[DI] Initializing Minimal DI...');
+  if (sl.isRegistered<MemberRepository>()) {
     await sl.reset();
   }
 
   //! External
   try {
-    final sharedPreferences = await SharedPreferences.getInstance();
+    debugPrint('[DI] Loading SharedPreferences...');
+    final sharedPreferences = await SharedPreferences.getInstance().timeout(
+      const Duration(seconds: 3),
+      onTimeout: () {
+        debugPrint('[DI] SharedPreferences timeout, using fallback');
+        throw Exception('Timeout');
+      },
+    );
     sl.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
     sl.registerLazySingleton<LocalStorageService>(
       () => SharedPreferencesService(sl<SharedPreferences>()),
     );
   } catch (e) {
-    print('⚠️  SharedPreferences 로드 실패 (웹에서는 정상): $e');
-    // 웹 환경에서는 SharedPreferences가 없을 수 있으므로 무시
+    debugPrint('[DI] SharedPreferences Load failed, registering fallback: $e');
+    sl.registerLazySingleton<LocalStorageService>(() => InMemoryLocalStorageService());
   }
 
-  //! Features - Member
-  sl.registerSingleton<AuthRepository>(
-    AuthRepositoryImpl(),
-  );
+  _registerAll();
+  debugPrint('[DI] Minimal DI Initialization Complete');
+}
 
-  sl.registerSingleton<GetCurrentUserUseCase>(
-    GetCurrentUserUseCase(sl<AuthRepository>()),
-  );
-
-  sl.registerSingleton<SignInWithEmailUseCase>(
-    SignInWithEmailUseCase(sl<AuthRepository>()),
-  );
-
-  sl.registerSingleton<SignUpWithEmailUseCase>(
-    SignUpWithEmailUseCase(sl<AuthRepository>()),
-  );
-
-  sl.registerSingleton<SignInWithGoogleUseCase>(
-    SignInWithGoogleUseCase(sl<AuthRepository>()),
-  );
-
-  sl.registerSingleton<SignInWithAppleUseCase>(
-    SignInWithAppleUseCase(sl<AuthRepository>()),
-  );
-
-  sl.registerSingleton<SignInWithFacebookUseCase>(
-    SignInWithFacebookUseCase(sl<AuthRepository>()),
-  );
-
-  sl.registerSingleton<SignInWithKakaoUseCase>(
-    SignInWithKakaoUseCase(sl<AuthRepository>()),
-  );
-
-  sl.registerSingleton<SignOutUseCase>(
-    SignOutUseCase(sl<AuthRepository>()),
-  );
+void _registerAll() {
+  //! Features
+  sl.registerSingleton<AuthRepository>(AuthRepositoryImpl());
+  
+  // Auth UseCases
+  sl.registerSingleton<GetCurrentUserUseCase>(GetCurrentUserUseCase(sl<AuthRepository>()));
+  sl.registerSingleton<SignInWithEmailUseCase>(SignInWithEmailUseCase(sl<AuthRepository>()));
+  sl.registerSingleton<SignUpWithEmailUseCase>(SignUpWithEmailUseCase(sl<AuthRepository>()));
+  sl.registerSingleton<SignInWithGoogleUseCase>(SignInWithGoogleUseCase(sl<AuthRepository>()));
+  sl.registerSingleton<SignInWithAppleUseCase>(SignInWithAppleUseCase(sl<AuthRepository>()));
+  sl.registerSingleton<SignInWithFacebookUseCase>(SignInWithFacebookUseCase(sl<AuthRepository>()));
+  sl.registerSingleton<SignInWithKakaoUseCase>(SignInWithKakaoUseCase(sl<AuthRepository>()));
+  sl.registerSingleton<SignOutUseCase>(SignOutUseCase(sl<AuthRepository>()));
 
   // Repository
   if (AppConfig.enableFirebase) {
@@ -96,39 +97,25 @@ Future<void> init() async {
     sl.registerSingleton<MemberRepository>(MemberRepositoryImpl());
   }
   
-  // Historical election data
-  sl.registerSingleton<HistoricalElectionDataSource>(
-    HistoricalElectionDataSource(),
-  );
+  sl.registerSingleton<HistoricalElectionDataSource>(HistoricalElectionDataSource());
   sl.registerSingleton<HistoricalElectionRepository>(
     HistoricalElectionRepositoryImpl(sl<HistoricalElectionDataSource>()),
   );
 
-  // Use cases
-  sl.registerSingleton<GetMembersUseCase>(
-    GetMembersUseCase(repository: sl<MemberRepository>()),
-  );
-  
-  sl.registerSingleton<SearchMembersUseCase>(
-    SearchMembersUseCase(repository: sl<MemberRepository>()),
-  );
-  
-  sl.registerSingleton<GetMemberByIdUseCase>(
-    GetMemberByIdUseCase(repository: sl<MemberRepository>()),
-  );
+  sl.registerSingleton<PollRepository>(PollRepositoryImpl());
 
-  sl.registerSingleton<WatchMembersUseCase>(
-    WatchMembersUseCase(repository: sl<MemberRepository>()),
-  );
-
-  sl.registerSingleton<WatchMemberByIdUseCase>(
-    WatchMemberByIdUseCase(repository: sl<MemberRepository>()),
-  );
-
-  sl.registerSingleton<ToggleFavoriteUseCase>(
-    ToggleFavoriteUseCase(repository: sl<MemberRepository>()),
-  );
+  // UseCases
+  sl.registerSingleton<GetMembersUseCase>(GetMembersUseCase(repository: sl<MemberRepository>()));
+  sl.registerSingleton<SearchMembersUseCase>(SearchMembersUseCase(repository: sl<MemberRepository>()));
+  sl.registerSingleton<GetMemberByIdUseCase>(GetMemberByIdUseCase(repository: sl<MemberRepository>()));
+  sl.registerSingleton<WatchMembersUseCase>(WatchMembersUseCase(repository: sl<MemberRepository>()));
+  sl.registerSingleton<WatchMemberByIdUseCase>(WatchMemberByIdUseCase(repository: sl<MemberRepository>()));
+  sl.registerSingleton<ToggleFavoriteUseCase>(ToggleFavoriteUseCase(repository: sl<MemberRepository>()));
   
+  sl.registerSingleton<GetPollsUseCase>(GetPollsUseCase(sl<PollRepository>()));
+  sl.registerSingleton<CreatePollUseCase>(CreatePollUseCase(sl<PollRepository>()));
+  sl.registerSingleton<UpdatePollStatusUseCase>(UpdatePollStatusUseCase(sl<PollRepository>()));
+
   sl.registerSingleton<CalculateElectionPossibilityUseCase>(
     CalculateElectionPossibilityUseCase(
       repository: sl<MemberRepository>(),
@@ -136,7 +123,6 @@ Future<void> init() async {
     ),
   );
 
-  // GitHub DataSource
   sl.registerSingleton<GitHubDataSource>(
     GitHubDataSource(
       owner: 'jtsgrit0',
@@ -146,7 +132,6 @@ Future<void> init() async {
     ),
   );
 
-  // Export Use Case
   sl.registerSingleton<ExportElectionDataUseCase>(
     ExportElectionDataUseCase(
       memberRepository: sl<MemberRepository>(),
@@ -154,204 +139,39 @@ Future<void> init() async {
     ),
   );
 
-  // NESDC Update Use Case
   sl.registerSingleton<UpdateMembersWithNesdcDataUseCase>(
     UpdateMembersWithNesdcDataUseCase(
       memberRepository: sl<MemberRepository>(),
     ),
   );
-  
-  //! Features - Map
-  sl.registerSingleton<MapRepository>(
-    map_repo_impl.MapRepositoryImpl(),
-  );
-  
-  sl.registerSingleton<GetElectionMapDataUseCase>(
-    GetElectionMapDataUseCase(sl<MapRepository>()),
-  );
-  
-  //! Features - Voting
-  sl.registerSingleton<PollRepository>(
-    PollRepositoryImpl(),
-  );
 
-  sl.registerSingleton<GetPollsUseCase>(
-    GetPollsUseCase(sl<PollRepository>()),
-  );
-
-  sl.registerSingleton<GetPollUseCase>(
-    GetPollUseCase(sl<PollRepository>()),
-  );
-
-  sl.registerSingleton<CreatePollUseCase>(
-    CreatePollUseCase(sl<PollRepository>()),
-  );
-
-  sl.registerSingleton<UpdatePollUseCase>(
-    UpdatePollUseCase(sl<PollRepository>()),
-  );
-
-  sl.registerSingleton<DeletePollUseCase>(
-    DeletePollUseCase(sl<PollRepository>()),
-  );
-
-  sl.registerSingleton<UpdatePollStatusUseCase>(
-    UpdatePollStatusUseCase(sl<PollRepository>()),
-  );
-
-  sl.registerSingleton<VoteUseCase>(
-    VoteUseCase(sl<PollRepository>()),
-  );
-
-  sl.registerSingleton<GetPollResultsUseCase>(
-    GetPollResultsUseCase(sl<PollRepository>()),
-  );
-
-  sl.registerSingleton<GetUserVotesUseCase>(
-    GetUserVotesUseCase(sl<PollRepository>()),
-  );
-
-  sl.registerSingleton<StartPollUseCase>(
-    StartPollUseCase(sl<PollRepository>()),
-  );
-
-  sl.registerSingleton<EndPollUseCase>(
-    EndPollUseCase(sl<PollRepository>()),
-  );
-  
-  //! Core
-  
-  //! External
+  sl.registerSingleton<MapRepository>(map_repo_impl.MapRepositoryImpl());
+  sl.registerSingleton<GetElectionMapDataUseCase>(GetElectionMapDataUseCase(sl<MapRepository>()));
 }
 
-/// CLI 도구 및 테스트를 위한 최소한의 초기화 로직
-/// 플랫폼 전용 플러그인(SharedPreferences 등)에 대한 의존성을 제거합니다.
-Future<void> initMinimal() async {
-  if (sl.isRegistered<MemberRepository>() ||
-      sl.isRegistered<GetMembersUseCase>() ||
-      sl.isRegistered<MapRepository>()) {
-    await sl.reset();
+/// Fallback storage for cases where SharedPreferences is unavailable (e.g. CLI tools or failing Web)
+class InMemoryLocalStorageService implements LocalStorageService {
+  final Map<String, dynamic> _data = {};
+
+  @override String? getString(String key) => _data[key] as String?;
+  @override Future<bool> setString(String key, String value) async { _data[key] = value; return true; }
+  @override List<String>? getStringList(String key) => _data[key] as List<String>?;
+  @override Future<bool> setStringList(String key, List<String> value) async { _data[key] = value; return true; }
+  @override Future<bool> clear() async { _data.clear(); return true; }
+
+  @override Future<List<String>> getFavorites() async => (_data['favorites'] as List<String>?) ?? [];
+  @override Future<void> addFavorite(String id) async {
+    final list = await getFavorites();
+    if (!list.contains(id)) list.add(id);
+    await setStringList('favorites', list);
   }
-
-  //! External
-  try {
-    final sharedPreferences = await SharedPreferences.getInstance();
-    sl.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
-    sl.registerLazySingleton<LocalStorageService>(
-      () => SharedPreferencesService(sl<SharedPreferences>()),
-    );
-  } catch (e) {
-    print('⚠️  initMinimal: SharedPreferences 로드 실패: $e');
+  @override Future<void> removeFavorite(String id) async {
+    final list = await getFavorites();
+    list.remove(id);
+    await setStringList('favorites', list);
   }
-
-  sl.registerSingleton<AuthRepository>(
-    AuthRepositoryImpl(),
-  );
-
-  sl.registerSingleton<GetCurrentUserUseCase>(
-    GetCurrentUserUseCase(sl<AuthRepository>()),
-  );
-
-  sl.registerSingleton<SignInWithEmailUseCase>(
-    SignInWithEmailUseCase(sl<AuthRepository>()),
-  );
-
-  sl.registerSingleton<SignUpWithEmailUseCase>(
-    SignUpWithEmailUseCase(sl<AuthRepository>()),
-  );
-
-  sl.registerSingleton<SignInWithGoogleUseCase>(
-    SignInWithGoogleUseCase(sl<AuthRepository>()),
-  );
-
-  sl.registerSingleton<SignInWithAppleUseCase>(
-    SignInWithAppleUseCase(sl<AuthRepository>()),
-  );
-
-  sl.registerSingleton<SignInWithFacebookUseCase>(
-    SignInWithFacebookUseCase(sl<AuthRepository>()),
-  );
-
-  sl.registerSingleton<SignInWithKakaoUseCase>(
-    SignInWithKakaoUseCase(sl<AuthRepository>()),
-  );
-
-  sl.registerSingleton<SignOutUseCase>(
-    SignOutUseCase(sl<AuthRepository>()),
-  );
-
-  // Repository (SharedPreferences 의존성 없이 작동하도록 내부 로직에서 체크 필요)
-  if (AppConfig.enableFirebase) {
-    sl.registerSingleton<MemberRepository>(FirestoreMemberRepositoryImpl());
-  } else {
-    sl.registerSingleton<MemberRepository>(MemberRepositoryImpl());
-  }
-  
-  sl.registerSingleton<HistoricalElectionDataSource>(
-    HistoricalElectionDataSource(),
-  );
-  sl.registerSingleton<HistoricalElectionRepository>(
-    HistoricalElectionRepositoryImpl(sl<HistoricalElectionDataSource>()),
-  );
-
-  sl.registerSingleton<GetMembersUseCase>(
-    GetMembersUseCase(repository: sl<MemberRepository>()),
-  );
-
-  sl.registerSingleton<SearchMembersUseCase>(
-    SearchMembersUseCase(repository: sl<MemberRepository>()),
-  );
-
-  sl.registerSingleton<GetMemberByIdUseCase>(
-    GetMemberByIdUseCase(repository: sl<MemberRepository>()),
-  );
-
-  sl.registerSingleton<WatchMembersUseCase>(
-    WatchMembersUseCase(repository: sl<MemberRepository>()),
-  );
-
-  sl.registerSingleton<WatchMemberByIdUseCase>(
-    WatchMemberByIdUseCase(repository: sl<MemberRepository>()),
-  );
-
-  sl.registerSingleton<ToggleFavoriteUseCase>(
-    ToggleFavoriteUseCase(repository: sl<MemberRepository>()),
-  );
-
-  sl.registerSingleton<CalculateElectionPossibilityUseCase>(
-    CalculateElectionPossibilityUseCase(
-      repository: sl<MemberRepository>(),
-      historicalRepository: sl<HistoricalElectionRepository>(),
-    ),
-  );
-
-  sl.registerSingleton<GitHubDataSource>(
-    GitHubDataSource(
-      owner: 'jtsgrit0',
-      repo: 'elecko26',
-      token: _githubToken,
-      branch: 'main',
-    ),
-  );
-
-  sl.registerSingleton<ExportElectionDataUseCase>(
-    ExportElectionDataUseCase(
-      memberRepository: sl<MemberRepository>(),
-      calculateElectionPossibilityUseCase: sl<CalculateElectionPossibilityUseCase>(),
-    ),
-  );
-
-  sl.registerSingleton<UpdateMembersWithNesdcDataUseCase>(
-    UpdateMembersWithNesdcDataUseCase(
-      memberRepository: sl<MemberRepository>(),
-    ),
-  );
-
-  sl.registerSingleton<MapRepository>(
-    map_repo_impl.MapRepositoryImpl(),
-  );
-
-  sl.registerSingleton<GetElectionMapDataUseCase>(
-    GetElectionMapDataUseCase(sl<MapRepository>()),
-  );
+  @override Future<bool> isFavorite(String id) async => (await getFavorites()).contains(id);
+  @override Future<String> getSelectedRegion() async => _data['selected_region'] as String? ?? '전국';
+  @override Future<void> saveSelectedRegion(String region) async => await setString('selected_region', region);
+  @override Future<void> clearAll() async => _data.clear();
 }

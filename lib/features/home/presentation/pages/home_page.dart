@@ -43,6 +43,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   List<Member> _cachedMembers = [];
   Member? _selectedMember;
   auth.User? _currentUser;
+  final TextEditingController _searchController = TextEditingController();
   
   // 검색 관련 상태
   
@@ -55,6 +56,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     '전국', '서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시',
     '세종특별자치시', '경기도', '강원도', '충청북도', '충청남도', '전라북도', '전라남도', '경상북도', '경상남도', '제주특별자치도'
   ];
+  static const Map<String, List<String>> _categories = {
     '전체': ['전체', '도지사', '광역시장', '특별시장', '특별자치도지사', '시장', '군수', '구청장', '도의원', '시의원', '구의원', '군의원'],
     '광역': ['전체', '도지사', '광역시장', '특별시장', '특별자치도지사'],
     '기초': ['전체', '시장', '군수', '구청장'],
@@ -268,6 +270,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: MemberCard(
+                key: ValueKey(member.id),
                 member: member,
                 onTap: () {
                   Navigator.pop(context);
@@ -536,7 +539,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     '이메일 로그인 후 투표 및 프로필 기능을 사용할 수 있습니다.',
                     textAlign: TextAlign.center,
                     style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),

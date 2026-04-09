@@ -13,8 +13,6 @@ import 'package:elecko26/data/datasources/local_storage_service.dart';
 import 'package:rxdart/rxdart.dart';
 
 final sl = GetIt.instance;
-// import 'package:flutter/foundation.dart'; // CLI 호환성을 위해 제거
-const bool _kReleaseMode = bool.fromEnvironment('dart.vm.product');
 
 /// 멤버 저장소 구현체 (데이터 레이어)
 class MemberRepositoryImpl implements MemberRepository {
@@ -22,10 +20,8 @@ class MemberRepositoryImpl implements MemberRepository {
     localStorageService: sl<LocalStorageService>(),
   );
   bool _refreshInProgress = false;
-  // 외부 크롤링 데이터 소스 (election_candidates.json) 기반 동적 로드를 위해 초기 명단은 비워둡니다.
   static final List<Member> _dummyMembers = [];
   
-  // 실시간 데이터 동기화를 위한 컨트롤러
   static final BehaviorSubject<List<Member>> _membersController = 
       BehaviorSubject<List<Member>>.seeded([]);
 
@@ -52,25 +48,16 @@ class MemberRepositoryImpl implements MemberRepository {
     if (_dummyMembers.isEmpty) {
       await refreshMembers();
     }
-    await Future.delayed(const Duration(milliseconds: 400));
     return _dummyMembers;
   }
 
   @override
   Future<List<Member>> getCachedMembers() async {
-    if (_dummyMembers.isEmpty) {
-      await refreshMembers();
-    }
-    await Future.delayed(const Duration(milliseconds: 150));
     return _dummyMembers;
   }
 
   @override
   Future<Member> getMemberById(String memberId) async {
-    if (_dummyMembers.isEmpty) {
-      await refreshMembers();
-    }
-    await Future.delayed(const Duration(milliseconds: 250));
     try {
       return _dummyMembers.firstWhere((m) => m.id == memberId);
     } catch (e) {
@@ -80,27 +67,28 @@ class MemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<List<Member>> searchMembers(String query) async {
-    await Future.delayed(const Duration(milliseconds: 300));
     final lowerQuery = query.toLowerCase();
     return _dummyMembers
         .where((m) =>
             m.name.toLowerCase().contains(lowerQuery) ||
             m.party.toLowerCase().contains(lowerQuery) ||
-            m.district.toLowerCase().contains(lowerQuery) ||
-            m.bio.toLowerCase().contains(lowerQuery) ||
-            m.policies.any((p) => p.toLowerCase().contains(lowerQuery)) ||
-            m.achievementsList.any((a) => a.toLowerCase().contains(lowerQuery)) ||
-            m.improvementPoints.any((i) => i.toLowerCase().contains(lowerQuery)))
+            m.district.toLowerCase().contains(lowerQuery))
         .toList();
   }
 
   @override
   Future<void> updateMember(Member member) async {
-    await Future.delayed(const Duration(milliseconds: 250));
     final index = _dummyMembers.indexWhere((m) => m.id == member.id);
     if (index != -1) {
       _dummyMembers[index] = member;
       _notifyListeners();
+    }
+  }
+
+  @override
+  Future<void> updateMembers(List<Member> members) async {
+    for (final member in members) {
+      await updateMember(member);
     }
   }
 
@@ -130,8 +118,9 @@ class MemberRepositoryImpl implements MemberRepository {
       }
 
       if (candidatesJson != null) {
-        // [Optimization] JSON 파싱과 Member 객체 생성을 Isolate에서 수행
-        final membersFromIsolate = await Isolate.run(() => _parseMembersInBackground(candidatesJson!, favoriteIds));
+        final membersFromIsolate = kIsWeb 
+            ? _parseMembersInBackground(candidatesJson, favoriteIds)
+            : await Isolate.run(() => _parseMembersInBackground(candidatesJson!, favoriteIds));
         
         for (var newMember in membersFromIsolate) {
           final idx = _dummyMembers.indexWhere((m) => m.name == newMember.name);
@@ -147,47 +136,113 @@ class MemberRepositoryImpl implements MemberRepository {
       }
 
       final entries = await _nesdcPollDataSource.fetchLatest();
-      
-      // 상세 정보 병렬 Fetch (I/O는 메인 스레드 비동기로 처리)
       final List<Future<void>> detailTasks = [];
       for (final member in _dummyMembers) {
-        final regionKey = _mapDistrictToRegion(member.district);
-        final matchedEntries = entries
-            .where((e) => _matchesRegion(e.region, regionKey))
-            .toList()
-          ..sort((a, b) => b.registeredDate.compareTo(a.registeredDate));
-        
+        final regionKey = _staticMapDistrictToRegion(member.district);
+        final matchedEntries = entries.where((e) => _staticMatchesRegion(e.region, regionKey)).toList();
         for (final entry in matchedEntries.take(5)) {
           detailTasks.add(_nesdcPollDataSource.fetchDetail(entry.sourceUrl));
         }
       }
       await Future.wait(detailTasks);
 
-      // [Optimization] 복잡한 정규표현식 매칭 루프를 Isolate에서 한꺼번에 수행
       final List<NesdcPollDetail> collectedDetails = entries
           .map((e) => _nesdcPollDataSource.getCachedDetail(e.sourceUrl))
           .whereType<NesdcPollDetail>()
           .toList();
 
-      final updatedMembers = await Isolate.run(() => _matchPollsInBackground(
-        _dummyMembers,
-        entries,
-        collectedDetails,
-        now,
-      ));
+      final updatedMembers = kIsWeb
+          ? _matchPollsInBackground(List.from(_dummyMembers), entries, collectedDetails, now)
+          : await Isolate.run(() => _matchPollsInBackground(
+              List.from(_dummyMembers),
+              entries,
+              collectedDetails,
+              now,
+            ));
 
       _dummyMembers.clear();
       _dummyMembers.addAll(updatedMembers);
       _notifyListeners();
     } catch (e, st) {
-      debugPrint('[MemberRepo] UI Stutter Prevention Failed: $e\n$st');
+      debugPrint('[MemberRepo] Refresh Failed: $e\n$st');
     } finally {
       _refreshInProgress = false;
     }
   }
+
+  @override
+  Stream<List<Member>> watchAllMembers({Duration interval = const Duration(hours: 1)}) {
+    final periodicRefresh = Stream.periodic(interval).asyncMap((_) async {
+      await refreshMembers();
+      return _dummyMembers;
+    });
+    return MergeStream([
+      _membersController.stream,
+      periodicRefresh,
+    ]).shareValueSeeded(_dummyMembers);
   }
 
-  /// [Static Background Function] JSON 파싱 및 Member 객체 변환을 Isolate에서 수행
+  @override
+  Stream<Member> watchMemberById(String memberId, {Duration interval = const Duration(hours: 1)}) {
+    return watchAllMembers(interval: interval).map((members) {
+      return members.firstWhere((m) => m.id == memberId, orElse: () => throw Exception('Not found'));
+    }).distinct();
+  }
+
+  @override
+  Future<void> toggleFavorite(String memberId) async {
+    final index = _dummyMembers.indexWhere((m) => m.id == memberId);
+    if (index == -1) return;
+
+    final member = _dummyMembers[index];
+    final newFavoriteStatus = !member.isFavorite;
+    
+    _dummyMembers[index] = member.copyWith(isFavorite: newFavoriteStatus);
+    _notifyListeners();
+
+    try {
+      final localService = sl<LocalStorageService>();
+      if (newFavoriteStatus) {
+        await localService.addFavorite(memberId);
+      } else {
+        await localService.removeFavorite(memberId);
+      }
+    } catch (e) {
+      _dummyMembers[index] = member; 
+      _notifyListeners();
+      rethrow;
+    }
+  }
+
+  @override
+  Future<String> getSelectedRegion() async {
+    final localService = sl<LocalStorageService>();
+    return await localService.getSelectedRegion();
+  }
+
+  @override
+  Future<void> saveSelectedRegion(String region) async {
+    final localService = sl<LocalStorageService>();
+    await localService.saveSelectedRegion(region);
+  }
+
+  @override
+  Future<void> resetSettings() async {
+    final localService = sl<LocalStorageService>();
+    await localService.clearAll();
+    for (var i = 0; i < _dummyMembers.length; i++) {
+      _dummyMembers[i] = _dummyMembers[i].copyWith(isFavorite: false);
+    }
+    _notifyListeners();
+  }
+
+  @override
+  Future<void> syncUserSettings() async {
+    await refreshMembers();
+  }
+
+  // --- Static Helpers for Isolate ---
+
   static List<Member> _parseMembersInBackground(String jsonString, List<String> favoriteIds) {
     final List<dynamic> jsonList = json.decode(jsonString);
     final List<Member> members = [];
@@ -200,14 +255,12 @@ class MemberRepositoryImpl implements MemberRepository {
     return members;
   }
 
-  /// [Static Background Function] 대량의 여론조사 텍스트 매칭(Regex)을 Isolate에서 한꺼번에 수행
   static List<Member> _matchPollsInBackground(
     List<Member> members,
     List<NesdcPollEntry> entries,
     List<NesdcPollDetail> details,
     DateTime now,
   ) {
-    // 빠른 조회를 위해 상세 정보를 Map으로 변환
     final detailMap = {for (var d in details) d.detailUrl: d};
     final updatedMembers = <Member>[];
 
@@ -229,18 +282,9 @@ class MemberRepositoryImpl implements MemberRepository {
         final partyAliases = _staticPartyAliases(member.party);
         
         double? supportRate = detail.findSupportRate(candidateNames);
-        var supportSource = '후보';
         if (supportRate == null) {
           supportRate = detail.findSupportRate(partyAliases);
-          if (supportRate != null) supportSource = '정당';
         }
-
-        final noteParts = [
-          entry.client, entry.method, entry.sampleFrame, entry.pollName,
-          if (entry.status != null) '결과등록: ${entry.status}',
-          supportRate == null ? '결과 미공개' : '$supportSource 지지율 추출됨',
-          if (detail.resultFileUrl != null) '결과 링크: ${detail.resultFileUrl}'
-        ];
 
         newPolls.add(Poll(
           id: 'nesdc_${entry.registrationNo}',
@@ -251,7 +295,7 @@ class MemberRepositoryImpl implements MemberRepository {
           sampleSize: detail.sampleSize,
           marginOfError: detail.marginOfError,
           source: entry.sourceUrl,
-          notes: noteParts.where((s) => s.isNotEmpty).join(' | '),
+          notes: '${entry.client} | ${entry.method} | 지지율: ${supportRate ?? '미공개'}',
         ));
       }
 
@@ -263,7 +307,6 @@ class MemberRepositoryImpl implements MemberRepository {
     return updatedMembers;
   }
 
-  // Isolate 내부에서 사용하기 위한 정적 헬퍼 메서드들
   static String _staticMapDistrictToRegion(String district) {
     final normalized = district.replaceAll(' ', '');
     const regionMap = {
@@ -289,15 +332,9 @@ class MemberRepositoryImpl implements MemberRepository {
     final name = member.name.trim();
     if (name.isEmpty) return [];
     final variants = {name, name.replaceAll(' ', '')};
-    if (name.length >= 2) variants.add('${name[0]} ${name.substring(1)}');
     const suffixes = ['후보', '후보자', '의원', '시장', '지사', '군수', '구청장', '위원장'];
     for (final s in suffixes) {
       variants.add('$name $s');
-      variants.add('${name.replaceAll(' ', '')}$s');
-    }
-    for (final alias in _staticPartyAliases(member.party)) {
-      variants.add('$alias $name');
-      variants.add('$alias $name 후보');
     }
     return variants.toList();
   }
@@ -306,7 +343,6 @@ class MemberRepositoryImpl implements MemberRepository {
     const aliasMap = {
       '더불어민주당': ['더불어민주당', '민주당', '더불어 민주당', '민주'],
       '국민의힘': ['국민의힘', '국힘'],
-      '정의당': ['정의당'], '국민의당': ['국민의당'], '기본소득당': ['기본소득당'], '진보당': ['진보당'],
     };
     return aliasMap[party] ?? [party];
   }
@@ -317,196 +353,5 @@ class MemberRepositoryImpl implements MemberRepository {
     final merged = byId.values.toList();
     merged.sort((a, b) => b.surveyDate.compareTo(a.surveyDate));
     return merged;
-  }
-  }
-
-  @override
-  Stream<List<Member>> watchAllMembers({Duration interval = const Duration(hours: 1)}) {
-    // 주기적인 강제 새로고침 (필요한 경우)
-    final periodicRefresh = Stream.periodic(interval).asyncMap((_) async {
-      await refreshMembers();
-      return _dummyMembers;
-    });
-
-    // 수동 변경 스트림과 주기적 갱신 스트림 결합
-    return MergeStream([
-      _membersController.stream,
-      periodicRefresh,
-    ]).shareValueSeeded(_dummyMembers);
-  }
-
-  @override
-  Stream<Member> watchMemberById(String memberId, {Duration interval = const Duration(hours: 1)}) {
-    return watchAllMembers(interval: interval).map((members) {
-      return members.firstWhere((m) => m.id == memberId);
-    }).distinct();
-  }
-
-  List<Poll> _mergePolls(List<Poll> existing, List<Poll> incoming) {
-    final byId = <String, Poll>{};
-    for (final poll in existing) {
-      byId[poll.id] = poll;
-    }
-    for (final poll in incoming) {
-      byId[poll.id] = poll;
-    }
-    final merged = byId.values.toList();
-    merged.sort((a, b) => b.surveyDate.compareTo(a.surveyDate));
-    return merged;
-  }
-
-  List<String> _candidateNameVariants(Member member) {
-    final name = member.name.trim();
-    final variants = <String>{};
-    if (name.isEmpty) {
-      return [];
-    }
-
-    variants.add(name);
-    variants.add(name.replaceAll(' ', ''));
-
-    if (name.length >= 2) {
-      variants.add('${name[0]} ${name.substring(1)}');
-    }
-
-    final suffixes = ['후보', '후보자', '의원', '시장', '지사', '군수', '구청장', '위원장'];
-    for (final suffix in suffixes) {
-      variants.add('$name $suffix');
-      variants.add('${name.replaceAll(' ', '')}$suffix');
-    }
-
-    final partyAliases = _partyAliases(member.party);
-    for (final alias in partyAliases) {
-      variants.add('$alias $name');
-      variants.add('$alias $name 후보');
-    }
-
-    return variants.toList();
-  }
-
-  List<String> _partyAliases(String party) {
-    const aliasMap = {
-      '더불어민주당': ['더불어민주당', '민주당', '더불어 민주당', '민주'],
-      '국민의힘': ['국민의힘', '국힘'],
-      '정의당': ['정의당'],
-      '국민의당': ['국민의당'],
-      '기본소득당': ['기본소득당'],
-      '진보당': ['진보당'],
-    };
-    return aliasMap[party] ?? [party];
-  }
-
-  String _mapDistrictToRegion(String district) {
-    final normalized = district.replaceAll(' ', '');
-    const regionMap = {
-      '서울': '서울특별시',
-      '부산': '부산광역시',
-      '대구': '대구광역시',
-      '인천': '인천광역시',
-      '광주': '광주광역시',
-      '대전': '대전광역시',
-      '울산': '울산광역시',
-      '세종': '세종특별자치시',
-      '경기': '경기도',
-      '강원': '강원도',
-      '충북': '충청북도',
-      '충남': '충청남도',
-      '전북': '전북특별자치도',
-      '전남': '전라남도',
-      '경북': '경상북도',
-      '경남': '경상남도',
-      '제주': '제주특별자치도',
-    };
-
-    for (final entry in regionMap.entries) {
-      if (normalized.contains(entry.key)) {
-        return entry.value;
-      }
-    }
-    return '전국';
-  }
-
-  bool _matchesRegion(String pollRegion, String targetRegion) {
-    if (pollRegion.isEmpty) {
-      return false;
-    }
-    if (pollRegion.contains('전국')) {
-      return true;
-    }
-    if (pollRegion.contains(targetRegion)) {
-      return true;
-    }
-    // 약식 표기 대응
-    if (targetRegion == '전북특별자치도' && pollRegion.contains('전라북도')) {
-      return true;
-    }
-    return false;
-  }
-
-  @override
-  Future<void> updateMembers(List<Member> members) async {
-    // 여러 멤버를 일괄 업데이트
-    for (final member in members) {
-      await updateMember(member);
-    }
-  }
-
-  @override
-  Future<void> toggleFavorite(String memberId) async {
-    final index = _dummyMembers.indexWhere((m) => m.id == memberId);
-    if (index == -1) return;
-
-    final member = _dummyMembers[index];
-    final newFavoriteStatus = !member.isFavorite;
-    
-    // UI 상태 반영 (낙관적)
-    _dummyMembers[index] = member.copyWith(isFavorite: newFavoriteStatus);
-    _notifyListeners();
-
-    try {
-      final localService = sl<LocalStorageService>();
-      if (newFavoriteStatus) {
-        await localService.addFavorite(memberId);
-      } else {
-        await localService.removeFavorite(memberId);
-      }
-      print('[MemberRepo] Local favorite status updated for $memberId');
-    } catch (e) {
-      // 실패 시 롤백
-      _dummyMembers[index] = member; 
-      _notifyListeners();
-      print('[MemberRepo] Failed to save local favorite: $e');
-      rethrow;
-    }
-  }
-
-  @override
-  Future<String> getSelectedRegion() async {
-    final localService = sl<LocalStorageService>();
-    return await localService.getSelectedRegion();
-  }
-
-  @override
-  Future<void> saveSelectedRegion(String region) async {
-    final localService = sl<LocalStorageService>();
-    await localService.saveSelectedRegion(region);
-  }
-
-  @override
-  Future<void> resetSettings() async {
-    final localService = sl<LocalStorageService>();
-    await localService.clearAll();
-    
-    // 메모리 내 즐겨찾기 상태 초기화
-    for (var i = 0; i < _dummyMembers.length; i++) {
-      _dummyMembers[i] = _dummyMembers[i].copyWith(isFavorite: false);
-    }
-    _notifyListeners();
-  }
-
-  @override
-  Future<void> syncUserSettings() async {
-    // 로컬 모드에서는 SharedPreferences의 최신 상태를 메모리에 반영
-    await refreshMembers();
   }
 }

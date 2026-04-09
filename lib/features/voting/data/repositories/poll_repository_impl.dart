@@ -4,15 +4,11 @@ import '../../domain/repositories/poll_repository.dart';
 
 /// Firestore를 사용한 투표 리포지토리 구현
 class PollRepositoryImpl implements PollRepository {
-  final FirebaseFirestore _firestore;
-  final CollectionReference _pollsCollection;
-  final CollectionReference _votesCollection;
+  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+  CollectionReference get _pollsCollection => _firestore.collection('polls');
+  CollectionReference get _votesCollection => _firestore.collection('votes');
 
-  PollRepositoryImpl({
-    FirebaseFirestore? firestore,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _pollsCollection = (firestore ?? FirebaseFirestore.instance).collection('polls'),
-        _votesCollection = (firestore ?? FirebaseFirestore.instance).collection('votes');
+  PollRepositoryImpl();
 
   @override
   Future<List<Poll>> getPolls({
@@ -48,7 +44,6 @@ class PollRepositoryImpl implements PollRepository {
           final poll = Poll.fromJson(doc.data() as Map<String, dynamic>);
           polls.add(poll);
         } catch (e) {
-          // 개별 투표 파싱 실패 시 건너뜀
           continue;
         }
       }
@@ -98,20 +93,13 @@ class PollRepositoryImpl implements PollRepository {
   @override
   Future<bool> deletePoll(String pollId) async {
     try {
-      // 투표 삭제
       await _pollsCollection.doc(pollId).delete();
-
-      // 관련 투표 기록 삭제
-      final votesQuery = await _votesCollection
-          .where('pollId', isEqualTo: pollId)
-          .get();
-
+      final votesQuery = await _votesCollection.where('pollId', isEqualTo: pollId).get();
       final batch = _firestore.batch();
       for (final doc in votesQuery.docs) {
         batch.delete(doc.reference);
       }
       await batch.commit();
-
       return true;
     } catch (e) {
       return false;
@@ -132,7 +120,6 @@ class PollRepositoryImpl implements PollRepository {
   Future<VoteResult> vote(String pollId, String userId, List<String> optionIds) async {
     try {
       await _firestore.runTransaction((transaction) async {
-        // 투표 기록 저장
         final voteDoc = _votesCollection.doc();
         transaction.set(voteDoc, {
           'pollId': pollId,
@@ -141,7 +128,6 @@ class PollRepositoryImpl implements PollRepository {
           'votedAt': FieldValue.serverTimestamp(),
         });
 
-        // 투표 수 업데이트
         final pollRef = _pollsCollection.doc(pollId);
         final pollDoc = await transaction.get(pollRef);
 
@@ -153,7 +139,6 @@ class PollRepositoryImpl implements PollRepository {
         final currentVoteCounts = Map<String, int>.from(pollData['voteCounts'] ?? {});
         final currentTotalVotes = pollData['totalVotes'] as int? ?? 0;
 
-        // 투표 수 증가
         for (final optionId in optionIds) {
           currentVoteCounts[optionId] = (currentVoteCounts[optionId] ?? 0) + 1;
         }
@@ -182,7 +167,6 @@ class PollRepositoryImpl implements PollRepository {
         final voteData = query.docs.first.data() as Map<String, dynamic>;
         return List<String>.from(voteData['optionIds'] as List);
       }
-
       return [];
     } catch (e) {
       return [];
@@ -194,7 +178,6 @@ class PollRepositoryImpl implements PollRepository {
     try {
       final poll = await getPoll(pollId);
       if (poll == null) return null;
-
       return PollResult(
         poll: poll,
         voteCounts: poll.voteCounts,
@@ -225,14 +208,8 @@ class PollRepositoryImpl implements PollRepository {
     PollStatus? status,
   }) {
     Query query = _pollsCollection.orderBy('createdAt', descending: true);
-
-    if (creatorId != null) {
-      query = query.where('creatorId', isEqualTo: creatorId);
-    }
-
-    if (status != null) {
-      query = query.where('status', isEqualTo: status.index);
-    }
+    if (creatorId != null) query = query.where('creatorId', isEqualTo: creatorId);
+    if (status != null) query = query.where('status', isEqualTo: status.index);
 
     return query.snapshots().map((snapshot) {
       final polls = <Poll>[];
