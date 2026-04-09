@@ -44,20 +44,49 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Member? _selectedMember;
   auth.User? _currentUser;
   final TextEditingController _searchController = TextEditingController();
-  
+
   // 검색 관련 상태
-  
+
   // 비교 관련 상태
-  
+
   // 유저 상단 설정 상태
   String _userRegion = '전국';
-  
+
   static const List<String> _regions = [
-    '전국', '서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시',
-    '세종특별자치시', '경기도', '강원도', '충청북도', '충청남도', '전라북도', '전라남도', '경상북도', '경상남도', '제주특별자치도'
+    '전국',
+    '서울특별시',
+    '부산광역시',
+    '대구광역시',
+    '인천광역시',
+    '광주광역시',
+    '대전광역시',
+    '울산광역시',
+    '세종특별자치시',
+    '경기도',
+    '강원도',
+    '충청북도',
+    '충청남도',
+    '전라북도',
+    '전라남도',
+    '경상북도',
+    '경상남도',
+    '제주특별자치도'
   ];
   static const Map<String, List<String>> _categories = {
-    '전체': ['전체', '도지사', '광역시장', '특별시장', '특별자치도지사', '시장', '군수', '구청장', '도의원', '시의원', '구의원', '군의원'],
+    '전체': [
+      '전체',
+      '도지사',
+      '광역시장',
+      '특별시장',
+      '특별자치도지사',
+      '시장',
+      '군수',
+      '구청장',
+      '도의원',
+      '시의원',
+      '구의원',
+      '군의원'
+    ],
     '광역': ['전체', '도지사', '광역시장', '특별시장', '특별자치도지사'],
     '기초': ['전체', '시장', '군수', '구청장'],
     '의회': ['전체', '도의원', '시의원', '구의원', '군의원'],
@@ -111,18 +140,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
               const Divider(height: 1),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: TextButton.icon(
                   onPressed: () => _showResetConfirmation(),
                   icon: const Icon(Icons.refresh, color: Colors.redAccent),
                   label: const Text(
                     '설정 및 데이터 초기화',
-                    style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: Colors.redAccent, fontWeight: FontWeight.bold),
                   ),
                   style: TextButton.styleFrom(
                     minimumSize: const Size(double.infinity, 50),
                     backgroundColor: Colors.redAccent.withOpacity(0.05),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ),
@@ -165,7 +197,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
             child: const Text('초기화', style: TextStyle(color: AppColors.white)),
           ),
@@ -181,14 +214,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       itemBuilder: (context, index) {
         final region = _regions[index];
         final isSelected = _userRegion == region;
-        
+
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary.withOpacity(0.05) : AppColors.white,
+            color: isSelected
+                ? AppColors.primary.withOpacity(0.05)
+                : AppColors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.lightGrey.withOpacity(0.5),
+              color: isSelected
+                  ? AppColors.primary
+                  : AppColors.lightGrey.withOpacity(0.5),
               width: isSelected ? 2 : 1,
             ),
           ),
@@ -200,9 +237,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
-            trailing: isSelected 
-              ? const Icon(Icons.check_circle, color: AppColors.primary)
-              : null,
+            trailing: isSelected
+                ? const Icon(Icons.check_circle, color: AppColors.primary)
+                : null,
             onTap: () async {
               setState(() {
                 _userRegion = region;
@@ -228,7 +265,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   List<Member> _getFilteredMembers(List<Member> members) {
     if (_userRegion == '전국') return members;
-    
+
     // 지역명 정규화 (예: '서울특별시' -> '서울', '경기도' -> '경기')
     String shortRegion = _userRegion.substring(0, 2);
     // 특수지역 대응
@@ -245,17 +282,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       builder: (context, snapshot) {
         final members = snapshot.data ?? _cachedMembers;
         final favorites = members.where((m) => m.isFavorite).toList();
-        
+
         if (favorites.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.star_outline, size: 64, color: AppColors.grey.withOpacity(0.3)),
+                Icon(Icons.star_outline,
+                    size: 64, color: AppColors.grey.withOpacity(0.3)),
                 const SizedBox(height: 16),
                 Text(
                   '즐겨찾기한 의원이 없습니다.',
-                  style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
+                  style:
+                      AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
                 ),
               ],
             ),
@@ -283,7 +322,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       },
     );
   }
-  
+
   @override
   void initState() {
     super.initState();
@@ -293,7 +332,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _startMemberStream();
     _triggerNesdcRefresh(isSilent: true);
     _startDataExportTimer();
-    
+
     // 5분마다 UI 데이터 새로고침 (백그라운드에서 조용히, Isolate 최적화 적용됨)
     _uiRefreshTimer = Timer.periodic(
       const Duration(minutes: 5),
@@ -331,7 +370,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     try {
       final stream = sl<WatchMembersUseCase>().call().asBroadcastStream();
       _membersStream = stream;
-      
+
       // 스트림을 구독하여 로컬 캐시를 최신으로 유지 (UI 반응성 강화)
       stream.listen((members) {
         if (mounted) {
@@ -345,7 +384,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _membersStream = const Stream<List<Member>>.empty();
     }
   }
-
 
   void _stopMemberStream() {
     _membersStream = Stream<List<Member>>.empty();
@@ -379,7 +417,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _triggerNesdcRefresh({bool isSilent = false}) async {
-    if (!isSilent) setState(() { _isLoading = true; });
+    if (!isSilent)
+      setState(() {
+        _isLoading = true;
+      });
     // 강제 갱신 트리거: 최신 후보자 JSON 및 시스템 데이터 스크랩
     try {
       await sl<MemberRepository>().refreshMembers();
@@ -387,7 +428,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     } catch (e) {
       debugPrint('[Refresh] Data sync failed: $e');
     } finally {
-      if (mounted && !isSilent) setState(() { _isLoading = false; });
+      if (mounted && !isSilent)
+        setState(() {
+          _isLoading = false;
+        });
     }
   }
 
@@ -395,7 +439,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void _startDataExportTimer() {
     // 첫 번째는 즉시 실행
     _exportElectionData();
-    
+
     // 이후 1분마다 반복
     _dataExportTimer = Timer.periodic(
       const Duration(minutes: 1),
@@ -408,12 +452,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     try {
       final exportUseCase = sl<ExportElectionDataUseCase>();
       final exportData = await exportUseCase.call();
-      
+
       // 콘솔에 로그 출력
       debugPrint('[ElectionData] Exported at: ${exportData.exportedAt}');
-      debugPrint('[ElectionData] Members analyzed: ${exportData.metadata.membersAnalyzed}');
-      debugPrint('[ElectionData] Average possibility: ${(exportData.metadata.averageElectionPossibility * 100).toStringAsFixed(1)}%');
-      
+      debugPrint(
+          '[ElectionData] Members analyzed: ${exportData.metadata.membersAnalyzed}');
+      debugPrint(
+          '[ElectionData] Average possibility: ${(exportData.metadata.averageElectionPossibility * 100).toStringAsFixed(1)}%');
+
       // JSON 생성 및 로컬 저장 (향후 GitHub Pages에서 서빙)
       // TODO: GitHub API 또는 파일 시스템에 저장
     } catch (e) {
@@ -447,12 +493,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _selectedMember == null 
-        ? PreferredSize(
-            preferredSize: const Size.fromHeight(80),
-            child: _buildAppBar(),
-          )
-        : null, // 상세 페이지는 자체 AppBar 사용
+      appBar: _selectedMember == null
+          ? PreferredSize(
+              preferredSize: const Size.fromHeight(80),
+              child: _buildAppBar(),
+            )
+          : null, // 상세 페이지는 자체 AppBar 사용
       body: PopScope(
         canPop: _selectedMember == null,
         onPopInvokedWithResult: (bool didPop, dynamic result) {
@@ -476,7 +522,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         onBack: () => setState(() => _selectedMember = null),
       );
     }
-    
+
     return IndexedStack(
       index: _selectedIndex,
       children: [
@@ -536,7 +582,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 440),
           child: Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -545,7 +592,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   const CircleAvatar(
                     radius: 36,
                     backgroundColor: Color(0xFFF2E7DA),
-                    child: Icon(Icons.person_rounded, size: 40, color: AppColors.primary),
+                    child: Icon(Icons.person_rounded,
+                        size: 40, color: AppColors.primary),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -556,26 +604,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   const SizedBox(height: 8),
                   Text(
                     _currentUser!.email ?? '',
-                    style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
+                    style:
+                        AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 20),
-                  OutlinedButton(
-                    onPressed: () async {
-                      await sl<SignOutUseCase>().execute();
-                      await _loadCurrentUser();
-                      if (!mounted) {
-                        return;
-                      }
-                      setState(() {
-                        _selectedIndex = 0;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('로그아웃되었습니다.')),
-                      );
-                    },
-                    child: const Text('로그아웃'),
-                  ),
                 ],
               ),
             ),
@@ -591,10 +624,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   // 검색 필드
 
-
-
-
-
   // 검색 결과 목록
 
   // 즐겨찾기 페이지
@@ -609,8 +638,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // 비교 페이지
 
   // 비교 결과 화면
-
-
 
   // 커스텀 앱바
   Widget _buildAppBar() {
@@ -666,7 +693,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   GestureDetector(
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const MapScreen()),
+                      MaterialPageRoute(
+                          builder: (context) => const MapScreen()),
                     ),
                     child: Container(
                       padding: const EdgeInsets.all(8),
@@ -730,9 +758,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   // 주요 통계
 
-
-
-
   // 의원 목록 섹션
 
   // 통합 뉴스 피드 페이지
@@ -786,10 +811,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       onTap: _handleBottomNavTap,
     );
   }
-
 }
 
 // 통계 카드 위젯
-
 
 // 의원 카드 위젯
