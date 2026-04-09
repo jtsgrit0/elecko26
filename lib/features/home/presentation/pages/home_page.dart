@@ -17,6 +17,7 @@ import 'package:elecko26/features/map/presentation/pages/map_screen.dart';
 import 'package:elecko26/features/home/presentation/widgets/member_card.dart';
 import 'package:elecko26/features/voting/presentation/pages/polls_page.dart';
 import 'package:elecko26/features/home/presentation/widgets/favorites_view.dart';
+import 'package:elecko26/features/auth/domain/repositories/auth_repository.dart';
 import 'dart:async';
 
 class HomePage extends StatefulWidget {
@@ -37,6 +38,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   auth.User? _currentUser;
   final TextEditingController _searchController = TextEditingController();
   StreamSubscription<String>? _regionSubscription;
+  StreamSubscription<auth.User?>? _authSubscription;
 
   // 검색 관련 상태
 
@@ -309,6 +311,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         });
       }
     });
+
+    // 인증 상태 변경 감지 구독 (실시간 로그아웃/로그인 대응)
+    _authSubscription = sl<AuthRepository>().authStateChanges.listen((user) {
+      if (mounted) {
+        setState(() {
+          _currentUser = user;
+        });
+      }
+    });
   }
 
   Future<void> _loadUserSettings() async {
@@ -363,10 +374,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> _handleBottomNavTap(int index) async {
     if (index == 5 || index == 6) {
       if (_currentUser == null) {
-        final result = await Navigator.of(context).push<bool>(
+        await Navigator.of(context).push<bool>(
           MaterialPageRoute(builder: (_) => const AuthGate()),
         );
-        await _loadCurrentUser();
+        // 인증 스트림이 자동으로 _currentUser를 업데이트하므로 명시적 호출 불필요할 수 있으나,
+        // 즉각적인 동기화를 위해 유지하거나 스트림 결과를 기다릴 수 있음.
         if (_currentUser != null) {
           // 로그인 성공 시 설정을 클라우드에서 동기화
           await sl<MemberRepository>().syncUserSettings();
@@ -375,7 +387,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         if (!mounted) {
           return;
         }
-        if (result != true || _currentUser == null) {
+        if (_currentUser == null) {
           return;
         }
       }
@@ -462,6 +474,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _dataExportTimer?.cancel();
     _uiRefreshTimer?.cancel();
     _regionSubscription?.cancel();
+    _authSubscription?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -627,7 +640,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (shouldSignOut != true) return;
 
     await sl<SignOutUseCase>().execute();
-    await _loadCurrentUser();
+    // _authSubscription이 즉시 _currentUser를 null로 업데이트함
     if (!mounted) return;
     setState(() {
       _selectedIndex = 0;
