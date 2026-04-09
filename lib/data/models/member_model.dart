@@ -25,27 +25,38 @@ class MemberModel extends Member {
   });
 
   factory MemberModel.fromJson(Map<String, dynamic> json) {
+    // 날짜 파싱 안전 장치
+    DateTime parseDate(dynamic dateValue) {
+      if (dateValue == null) return DateTime.now();
+      if (dateValue is String) {
+        return DateTime.tryParse(dateValue) ?? DateTime.now();
+      }
+      return DateTime.now();
+    }
+
     return MemberModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      party: json['party'] as String,
-      district: json['district'] as String,
-      imageUrl: json['imageUrl'] as String,
-      bio: json['bio'] as String,
-      electionDate: DateTime.parse(json['electionDate'] as String),
-      term: json['term'] as int,
-      achievementsList: List<String>.from(json['achievementsList'] as List),
-      actions: List<String>.from(json['actions'] as List),
-      policies: List<String>.from(json['policies'] as List),
-      pressReports: (json['pressReports'] as List)
+      id: (json['id'] ?? '') as String,
+      name: (json['name'] ?? '알 수 없음') as String,
+      party: (json['party'] ?? '무소속') as String,
+      district: (json['district'] ?? '전국') as String,
+      imageUrl: (json['imageUrl'] ?? '') as String,
+      bio: (json['bio'] ?? '') as String,
+      electionDate: parseDate(json['electionDate']),
+      term: (json['term'] ?? 0) as int,
+      achievementsList: List<String>.from(json['achievementsList'] as List? ?? []),
+      actions: List<String>.from(json['actions'] as List? ?? []),
+      policies: List<String>.from(json['policies'] as List? ?? []),
+      pressReports: (json['pressReports'] as List? ?? [])
           .map((e) => PressReportModel.fromJson(e as Map<String, dynamic>))
           .toList(),
       polls: (json['polls'] as List? ?? [])
           .map((e) => PollModel.fromJson(e as Map<String, dynamic>))
           .toList(),
-      electionPossibility: (json['electionPossibility'] as num).toDouble(),
-      lastAnalysisDate: DateTime.parse(json['lastAnalysisDate'] as String),
-      improvementPoints: List<String>.from(json['improvementPoints'] as List),
+      electionPossibility: (json['electionPossibility'] ?? 0.0) is num 
+          ? (json['electionPossibility'] as num).toDouble() 
+          : 0.0,
+      lastAnalysisDate: parseDate(json['lastAnalysisDate']),
+      improvementPoints: List<String>.from(json['improvementPoints'] as List? ?? []),
       socialContributions: (json['socialContributions'] as List? ?? [])
           .map((e) => SocialContributionModel.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -110,14 +121,14 @@ class PollModel extends Poll {
     final marginValue = json['marginOfError'];
 
     return PollModel(
-      id: json['id'] as String,
-      pollAgency: json['pollAgency'] as String,
-      surveyDate: DateTime.parse(json['surveyDate'] as String),
+      id: (json['id'] ?? '') as String,
+      pollAgency: (json['pollAgency'] ?? '') as String,
+      surveyDate: DateTime.tryParse(json['surveyDate'] as String? ?? '') ?? DateTime.now(),
       supportRate: supportRateValue == null ? null : (supportRateValue as num).toDouble(),
-      partyName: json['partyName'] as String,
+      partyName: (json['partyName'] ?? '') as String,
       sampleSize: sampleSizeValue == null ? null : (sampleSizeValue as num).toInt(),
       marginOfError: marginValue == null ? null : (marginValue as num).toDouble(),
-      source: json['source'] as String,
+      source: (json['source'] ?? '') as String,
       notes: json['notes'] as String?,
     );
   }
@@ -150,13 +161,13 @@ class PressReportModel extends PressReport {
 
   factory PressReportModel.fromJson(Map<String, dynamic> json) {
     return PressReportModel(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      source: json['source'] as String,
-      url: json['url'] as String,
-      publishDate: DateTime.parse(json['publishDate'] as String),
-      summary: json['summary'] as String,
-      sentiment: json['sentiment'] as String,
+      id: (json['id'] ?? '') as String,
+      title: (json['title'] ?? '') as String,
+      source: (json['source'] ?? '') as String,
+      url: (json['url'] ?? '') as String,
+      publishDate: DateTime.tryParse(json['publishDate'] as String? ?? '') ?? DateTime.now(),
+      summary: (json['summary'] ?? '') as String,
+      sentiment: (json['sentiment'] ?? 'neutral') as String,
     );
   }
 
@@ -183,11 +194,11 @@ class SocialContributionModel extends SocialContribution {
 
   factory SocialContributionModel.fromJson(Map<String, dynamic> json) {
     return SocialContributionModel(
-      title: json['title'] as String,
-      date: DateTime.parse(json['date'] as String),
-      type: json['type'] as String,
+      title: (json['title'] ?? '') as String,
+      date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
+      type: (json['type'] ?? '') as String,
       amount: json['amount'] as String?,
-      summary: json['summary'] as String,
+      summary: (json['summary'] ?? '') as String,
     );
   }
 

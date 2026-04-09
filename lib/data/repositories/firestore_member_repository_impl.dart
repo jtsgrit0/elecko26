@@ -94,13 +94,17 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       if (Firebase.apps.isNotEmpty) {
         final snapshot = await _firestore.collection('members').get();
         if (snapshot.docs.isNotEmpty) {
-          loadedMembers = snapshot.docs.map((doc) {
-            final data = doc.data();
-            _normalizeFirestoreTimestamps(data);
-            data['id'] = doc.id;
-            return MemberModel.fromJson(data);
-          }).toList();
-          debugPrint('[FirestoreMemberRepository] Loaded ${loadedMembers.length} members from Cloud');
+          for (var doc in snapshot.docs) {
+            try {
+              final data = doc.data();
+              _normalizeFirestoreTimestamps(data);
+              data['id'] = doc.id;
+              loadedMembers.add(MemberModel.fromJson(data));
+            } catch (e) {
+              debugPrint('[FirestoreMemberRepository] Skipping member ${doc.id} due to parse error: $e');
+            }
+          }
+          debugPrint('[FirestoreMemberRepository] Successfully parsed ${loadedMembers.length} members from Cloud');
         }
       }
     } catch (e) {
@@ -110,7 +114,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     // 2. 만약 Cloud 데이터가 없다면 로컬 JSON 파일(Fallback)에서 로드
     if (loadedMembers.isEmpty) {
       try {
-        debugPrint('[FirestoreMemberRepository] No cloud data. Falling back to local JSON...');
+        debugPrint('[FirestoreMemberRepository] No cloud data or fetch failed. Falling back to local JSON...');
         String? jsonString;
         
         // GitHub Raw 시도
@@ -129,8 +133,15 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
         if (jsonString != null) {
           final List<dynamic> jsonList = json.decode(jsonString);
-          loadedMembers = jsonList.map((item) => MemberModel.fromJson(item as Map<String, dynamic>)).toList();
-          debugPrint('[FirestoreMemberRepository] Loaded ${loadedMembers.length} members from Local Fallback');
+          for (var item in jsonList) {
+            try {
+              loadedMembers.add(MemberModel.fromJson(item as Map<String, dynamic>));
+            } catch (e) {
+              final name = (item as Map)['name'] ?? 'Unknown';
+              debugPrint('[FirestoreMemberRepository] Skipping local member $name due to parse error: $e');
+            }
+          }
+          debugPrint('[FirestoreMemberRepository] Successfully parsed ${loadedMembers.length} members from Local Fallback');
         }
       } catch (e) {
         debugPrint('[FirestoreMemberRepository] Local Fallback Error: $e');
@@ -145,11 +156,12 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         return m.copyWith(isFavorite: favorites.contains(m.id));
       }).toList();
       _notifyListeners(mappedMembers);
+    } else {
+      debugPrint('[FirestoreMemberRepository] CRITICAL: No members loaded from any source.');
     }
   }
 
   void _normalizeFirestoreTimestamps(Map<String, dynamic> data) {
-    // Firestore Timestamp to ISO string normalization logic
     final dateFields = ['electionDate', 'lastAnalysisDate'];
     for (var field in dateFields) {
       if (data[field] is Timestamp) {
