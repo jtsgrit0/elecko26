@@ -174,4 +174,44 @@ class InMemoryLocalStorageService implements LocalStorageService {
   @override Future<String> getSelectedRegion() async => _data['selected_region'] as String? ?? '전국';
   @override Future<void> saveSelectedRegion(String region) async => await setString('selected_region', region);
   @override Future<void> clearAll() async => _data.clear();
+
+  // 투표 관련 구현 (In-Memory)
+  static const String _keyVotePrefix = 'vote_';
+  static const String _keyVoteDistricts = 'vote_districts';
+
+  @override
+  Future<void> saveVote(String district, String memberId) async {
+    _data['$_keyVotePrefix$district'] = memberId;
+    final districts = _data[_keyVoteDistricts] as List<String>? ?? [];
+    if (!districts.contains(district)) {
+      districts.add(district);
+      _data[_keyVoteDistricts] = districts;
+    }
+  }
+
+  @override
+  Future<String?> getVote(String district) async {
+    return _data['$_keyVotePrefix$district'] as String?;
+  }
+
+  @override
+  Future<Map<String, String>> getAllVotes() async {
+    final districts = _data[_keyVoteDistricts] as List<String>? ?? [];
+    final votes = <String, String>{};
+    for (final district in districts) {
+      final memberId = _data['$_keyVotePrefix$district'] as String?;
+      if (memberId != null) {
+        votes[district] = memberId;
+      }
+    }
+    return votes;
+  }
+
+  @override
+  Future<void> removeVote(String district) async {
+    _data.remove('$_keyVotePrefix$district');
+    final List<String> districts = List<String>.from(_data[_keyVoteDistricts] as List<dynamic>? ?? []);
+    districts.remove(district);
+    _data[_keyVoteDistricts] = districts;
+  }
 }
