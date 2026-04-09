@@ -33,7 +33,6 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
   List<Member> _myVotedMembers = [];
   String _selectedRegion = '전국';
   StreamSubscription<String>? _regionSubscription;
-  StreamSubscription<List<Member>>? _membersSubscription;
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -53,25 +52,12 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
         _loadPolls(); // 지역 변경 시 재로딩
       }
     });
-
-    // 멤버 상태(즐겨찾기 등) 변경 감지 구독
-    _membersSubscription = sl<MemberRepository>().watchAllMembers().listen((members) async {
-      if (mounted && members.isNotEmpty) {
-        final localService = sl<LocalStorageService>();
-        final votesMap = await localService.getAllVotes();
-        final votedList = members.where((m) => votesMap.values.contains(m.id)).toList();
-        setState(() {
-          _myVotedMembers = votedList;
-        });
-      }
-    });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     _regionSubscription?.cancel();
-    _membersSubscription?.cancel();
     super.dispose();
   }
 
@@ -262,29 +248,48 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         children: [
-          if (_myVotedMembers.isNotEmpty) ...[
-            Text('내가 지지한 후보', style: AppTextStyles.headline3.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            ..._myVotedMembers.map((m) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: MemberCard(
-                member: m,
-                onTap: () {
-                   Navigator.of(context).push(MaterialPageRoute(builder: (_) => MemberDetailPage(member: m, onBack: () => Navigator.pop(context))));
-                }
-              )
-            )).toList(),
-            const SizedBox(height: 24),
-            const Divider(),
-            const SizedBox(height: 24),
-          ],
+          StreamBuilder<List<Member>>(
+            stream: sl<MemberRepository>().watchAllMembers(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox.shrink();
+              
+              final currentVotedIds = _myVotedMembers.map((m) => m.id).toSet();
+              if (currentVotedIds.isEmpty) return const SizedBox.shrink();
+              
+              final latestVotedMembers = snapshot.data!
+                  .where((m) => currentVotedIds.contains(m.id))
+                  .toList();
+
+              if (latestVotedMembers.isEmpty) return const SizedBox.shrink();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('내가 지지한 후보', style: AppTextStyles.headline3.copyWith(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  ...latestVotedMembers.map((m) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: MemberCard(
+                      member: m,
+                      onTap: () {
+                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => MemberDetailPage(member: m, onBack: () => Navigator.pop(context))));
+                      }
+                    )
+                  )),
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  const SizedBox(height: 24),
+                ],
+              );
+            }
+          ),
           
           Text('내가 만든 투표', style: AppTextStyles.headline3.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           if (_myPolls.isEmpty)
              _buildEmptyState('내가 만든 투표가 없습니다.')
           else
-            ..._myPolls.map((poll) => _buildPollCard(poll)).toList(),
+            ..._myPolls.map((poll) => _buildPollCard(poll)),
         ],
       )
     );
