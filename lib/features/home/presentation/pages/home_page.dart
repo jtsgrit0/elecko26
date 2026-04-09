@@ -59,7 +59,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     '강원도',
     '충청북도',
     '충청남도',
-    '전라북도',
+    '전북특별자치도',
     '전라남도',
     '경상북도',
     '경상남도',
@@ -159,7 +159,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               setState(() {
                 _userRegion = '전국';
               });
-              if (mounted) {
+              if (context.mounted) {
                 Navigator.pop(context); // 팝업 닫기
                 Navigator.pop(context); // 설정 모달 닫기
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -221,7 +221,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               });
               await sl<MemberRepository>().saveSelectedRegion(region);
 
-              if (mounted) {
+              if (context.mounted) {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

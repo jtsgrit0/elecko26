@@ -25,6 +25,7 @@ class RegionalMemberVotingList extends StatefulWidget {
 class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
   List<Member> _members = [];
   Map<String, String> _votes = {}; // district -> memberId
+  Map<String, int> _voteTimestamps = {}; // district -> timestamp
   bool _isLoading = true;
 
   @override
@@ -46,6 +47,7 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
     try {
       final localStorage = sl<LocalStorageService>();
       final votes = await localStorage.getAllVotes();
+      final timestamps = await localStorage.getAllVoteTimestamps();
 
       // 1단계: 캐시된 데이터를 먼저 즉시 표시 (블로킹 없음)
       final cached = await sl<MemberRepository>().getCachedMembers();
@@ -57,6 +59,7 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
           setState(() {
             _members = filtered;
             _votes = votes;
+            _voteTimestamps = timestamps;
             _isLoading = false;
           });
         }
@@ -73,6 +76,7 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
         setState(() {
           _members = filtered;
           _votes = votes;
+          _voteTimestamps = timestamps;
           _isLoading = false;
         });
       }
@@ -84,12 +88,35 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
   void _handleVote(String district, Member member) async {
     final localStorage = sl<LocalStorageService>();
     final currentVote = _votes[district];
-    
+    final lastVoteTime = _voteTimestamps[district];
+
+    // 24시간 제한 체크
+    if (lastVoteTime != null) {
+      final diff = DateTime.now()
+          .difference(DateTime.fromMillisecondsSinceEpoch(lastVoteTime));
+      if (diff.inHours < 24) {
+        final remainingHours = 23 - diff.inHours;
+        final remainingMinutes = 59 - (diff.inMinutes % 60);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  '지지 후보는 24시간마다 변경할 수 있습니다. (남은 시간: 약 $remainingHours시간 $remainingMinutes분)'),
+              backgroundColor: Colors.orange[800],
+            ),
+          );
+        }
+        return;
+      }
+    }
+
     if (currentVote == member.id) {
       // 투표 취소
       await localStorage.removeVote(district);
       setState(() {
         _votes.remove(district);
+        // 취소 시에는 timestamp를 지울지 유지할지 결정 필요. 
+        // "바꿀 수 없도록"이 목적이므로 취소도 제한하는 것이 맞음.
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -98,9 +125,11 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
       }
     } else {
       // 투표하기 (또는 변경)
-      await localStorage.saveVote(district, member.id);
+      final now = DateTime.now().millisecondsSinceEpoch;
+      await localStorage.saveVote(district, member.id, timestamp: now);
       setState(() {
         _votes[district] = member.id;
+        _voteTimestamps[district] = now;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -118,8 +147,15 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
       }
       grouped[member.district]!.add(member);
     }
-    // 선거구명(district)을 사전순으로 정렬
-    final sortedKeys = grouped.keys.toList()..sort();
+    // 선거구명(district)을 사용자 요청 순서(도지사 > 시장 > 구의원 > 군수 > 군의원)에 따라 정렬
+    final sortedKeys = grouped.keys.toList()..sort((a, b) {
+      final priorityA = getDistrictSortPriority(a);
+      final priorityB = getDistrictSortPriority(b);
+      if (priorityA != priorityB) {
+        return priorityA.compareTo(priorityB);
+      }
+      return a.compareTo(b); // 우선순위가 같으면 가나다순
+    });
     return {for (var key in sortedKeys) key: grouped[key]!};
   }
 

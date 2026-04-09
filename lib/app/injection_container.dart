@@ -177,11 +177,15 @@ class InMemoryLocalStorageService implements LocalStorageService {
 
   // 투표 관련 구현 (In-Memory)
   static const String _keyVotePrefix = 'vote_';
+  static const String _keyTimePrefix = 'vote_time_';
   static const String _keyVoteDistricts = 'vote_districts';
 
   @override
-  Future<void> saveVote(String district, String memberId) async {
+  Future<void> saveVote(String district, String memberId, {int? timestamp}) async {
     _data['$_keyVotePrefix$district'] = memberId;
+    if (timestamp != null) {
+      _data['$_keyTimePrefix$district'] = timestamp;
+    }
     final districts = _data[_keyVoteDistricts] as List<String>? ?? [];
     if (!districts.contains(district)) {
       districts.add(district);
@@ -192,6 +196,11 @@ class InMemoryLocalStorageService implements LocalStorageService {
   @override
   Future<String?> getVote(String district) async {
     return _data['$_keyVotePrefix$district'] as String?;
+  }
+
+  @override
+  Future<int?> getVoteTimestamp(String district) async {
+    return _data['$_keyTimePrefix$district'] as int?;
   }
 
   @override
@@ -208,8 +217,22 @@ class InMemoryLocalStorageService implements LocalStorageService {
   }
 
   @override
+  Future<Map<String, int>> getAllVoteTimestamps() async {
+    final districts = _data[_keyVoteDistricts] as List<String>? ?? [];
+    final times = <String, int>{};
+    for (final district in districts) {
+      final timestamp = _data['$_keyTimePrefix$district'] as int?;
+      if (timestamp != null) {
+        times[district] = timestamp;
+      }
+    }
+    return times;
+  }
+
+  @override
   Future<void> removeVote(String district) async {
     _data.remove('$_keyVotePrefix$district');
+    _data.remove('$_keyTimePrefix$district');
     final List<String> districts = List<String>.from(_data[_keyVoteDistricts] as List<dynamic>? ?? []);
     districts.remove(district);
     _data[_keyVoteDistricts] = districts;

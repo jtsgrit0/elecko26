@@ -226,3 +226,42 @@ List<String> _regionKeywords(String region) {
   if (region.length >= 2) fallback.add(region.substring(0, 2));
   return fallback;
 }
+
+/// 선거구 명칭별 정렬 우선순위를 반환합니다. (낮을수록 상단)
+/// 사용 요청 순서: 도지사 > 시장 > 구의원 > 군수 > 군의원
+int getDistrictSortPriority(String district) {
+  // 1순위: 광역단체장 (도지사, 특별시장, 광역시장 등)
+  if (district.contains('도지사') ||
+      district.contains('특별시장') ||
+      district.contains('광역시장') ||
+      district.contains('자치시장')) {
+    return 1;
+  }
+
+  // 2순위: 기초단체장 (시장, 구청장) - 군수는 사용자 요청에 따라 뒤로 밀림
+  if (district.contains('시장') || district.contains('구청장')) {
+    return 2;
+  }
+
+  // 3순위: 구의원
+  if (district.contains('구의원')) {
+    return 3;
+  }
+
+  // 4순위: 군수
+  if (district.contains('군수')) {
+    return 4;
+  }
+
+  // 5순위: 군의원
+  if (district.contains('군의원')) {
+    return 5;
+  }
+
+  // 6순위: 시의원, 도의원 등 기타 의원
+  if (district.contains('의원')) {
+    return 6;
+  }
+
+  return 99; // 기타
+}

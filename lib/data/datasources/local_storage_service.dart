@@ -18,11 +18,15 @@ abstract class LocalStorageService {
 
   // 투표 관련
   /// 특정 선거구(district)에 투표한 후보 ID 저장
-  Future<void> saveVote(String district, String memberId);
+  Future<void> saveVote(String district, String memberId, {int? timestamp});
   /// 특정 선거구에 투표한 후보 ID 반환 (없으면 null)
   Future<String?> getVote(String district);
+  /// 특정 선거구의 마지막 투표 시각 반환 (없으면 null)
+  Future<int?> getVoteTimestamp(String district);
   /// 모든 투표 기록 가져오기 {district: memberId}
   Future<Map<String, String>> getAllVotes();
+  /// 모든 투표 시각 가져오기 {district: timestamp}
+  Future<Map<String, int>> getAllVoteTimestamps();
   /// 특정 선거구 투표 취소
   Future<void> removeVote(String district);
 }

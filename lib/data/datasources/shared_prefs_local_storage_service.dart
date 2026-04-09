@@ -82,11 +82,15 @@ class SharedPreferencesService implements LocalStorageService {
 
   // 투표 관련 구현
   static const String _keyVotePrefix = 'vote_';
+  static const String _keyTimePrefix = 'vote_time_';
   static const String _keyVoteDistricts = 'vote_districts';
 
   @override
-  Future<void> saveVote(String district, String memberId) async {
+  Future<void> saveVote(String district, String memberId, {int? timestamp}) async {
     await prefs.setString('$_keyVotePrefix$district', memberId);
+    if (timestamp != null) {
+      await prefs.setInt('$_keyTimePrefix$district', timestamp);
+    }
     // 투표한 선거구 목록도 관리
     final districts = prefs.getStringList(_keyVoteDistricts) ?? [];
     if (!districts.contains(district)) {
@@ -98,6 +102,11 @@ class SharedPreferencesService implements LocalStorageService {
   @override
   Future<String?> getVote(String district) async {
     return prefs.getString('$_keyVotePrefix$district');
+  }
+
+  @override
+  Future<int?> getVoteTimestamp(String district) async {
+    return prefs.getInt('$_keyTimePrefix$district');
   }
 
   @override
@@ -114,8 +123,22 @@ class SharedPreferencesService implements LocalStorageService {
   }
 
   @override
+  Future<Map<String, int>> getAllVoteTimestamps() async {
+    final districts = prefs.getStringList(_keyVoteDistricts) ?? [];
+    final times = <String, int>{};
+    for (final district in districts) {
+      final timestamp = prefs.getInt('$_keyTimePrefix$district');
+      if (timestamp != null) {
+        times[district] = timestamp;
+      }
+    }
+    return times;
+  }
+
+  @override
   Future<void> removeVote(String district) async {
     await prefs.remove('$_keyVotePrefix$district');
+    await prefs.remove('$_keyTimePrefix$district');
     final districts = prefs.getStringList(_keyVoteDistricts) ?? [];
     districts.remove(district);
     await prefs.setStringList(_keyVoteDistricts, districts);
