@@ -9,10 +9,12 @@ import 'package:elecko26/data/datasources/local_storage_service.dart';
 
 class RegionalMemberVotingList extends StatefulWidget {
   final String region;
+  final VoidCallback? onChangeRegion;
 
   const RegionalMemberVotingList({
     super.key,
     required this.region,
+    this.onChangeRegion,
   });
 
   @override
@@ -129,9 +131,22 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
 
     if (_members.isEmpty) {
       return Center(
-        child: Text(
-          '${widget.region} 지역의 등록된 후보가 없습니다.',
-          style: AppTextStyles.bodyMedium,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '${widget.region} 지역의 등록된 후보가 없습니다.',
+              style: AppTextStyles.bodyMedium,
+            ),
+            if (widget.onChangeRegion != null) ...[
+              const SizedBox(height: 16),
+              TextButton.icon(
+                onPressed: widget.onChangeRegion,
+                icon: const Icon(Icons.location_on),
+                label: const Text('다른 지역 선택'),
+              ),
+            ],
+          ],
         ),
       );
     }
@@ -145,14 +160,25 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
           child: Row(
             children: [
-              const Icon(Icons.check_circle,
-                  color: AppColors.primary, size: 20),
+              const Icon(Icons.how_to_vote,
+                  color: AppColors.primary, size: 24),
               const SizedBox(width: 8),
-              Text(
-                '${widget.region} 지역구 의원 투표',
-                style: AppTextStyles.headline3
-                    .copyWith(fontWeight: FontWeight.bold),
+              Expanded(
+                child: Text(
+                  '${widget.region} 의원 투표',
+                  style: AppTextStyles.headline3
+                      .copyWith(fontWeight: FontWeight.bold),
+                ),
               ),
+              if (widget.onChangeRegion != null)
+                TextButton(
+                  onPressed: widget.onChangeRegion,
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  child: const Text('지역 변경', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
             ],
           ),
         ),
