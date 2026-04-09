@@ -8,6 +8,7 @@ import 'package:elecko26/domain/entities/member.dart';
 import 'package:elecko26/domain/entities/poll.dart';
 import 'package:elecko26/domain/repositories/member_repository.dart';
 import 'package:elecko26/data/datasources/nesdc_poll_data_source.dart';
+import 'package:elecko26/data/datasources/profile_image_resolver.dart';
 import 'package:get_it/get_it.dart';
 import 'package:elecko26/data/datasources/local_storage_service.dart';
 import 'package:rxdart/rxdart.dart';
@@ -19,10 +20,13 @@ class MemberRepositoryImpl implements MemberRepository {
   final NesdcPollDataSource _nesdcPollDataSource = NesdcPollDataSource(
     localStorageService: sl<LocalStorageService>(),
   );
+  late final ProfileImageResolver _profileImageResolver = ProfileImageResolver(
+    localStorageService: sl<LocalStorageService>(),
+  );
   bool _refreshInProgress = false;
   static final List<Member> _dummyMembers = [];
-  
-  static final BehaviorSubject<List<Member>> _membersController = 
+
+  static final BehaviorSubject<List<Member>> _membersController =
       BehaviorSubject<List<Member>>.seeded([]);
 
   void _notifyListeners() {
@@ -97,15 +101,18 @@ class MemberRepositoryImpl implements MemberRepository {
     if (_refreshInProgress) return;
     _refreshInProgress = true;
     final now = DateTime.now();
-    
+
     try {
       final localService = sl<LocalStorageService>();
       final favoriteIds = await localService.getFavorites();
 
       String? candidatesJson;
       try {
-        final rawUrl = 'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
-        final response = await http.get(Uri.parse(rawUrl)).timeout(const Duration(seconds: 10));
+        final rawUrl =
+            'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
+        final response = await http
+            .get(Uri.parse(rawUrl))
+            .timeout(const Duration(seconds: 10));
         if (response.statusCode == 200) {
           candidatesJson = utf8.decode(response.bodyBytes);
         }
@@ -113,15 +120,17 @@ class MemberRepositoryImpl implements MemberRepository {
 
       if (candidatesJson == null) {
         try {
-          candidatesJson = await rootBundle.loadString('data/election_candidates.json');
+          candidatesJson =
+              await rootBundle.loadString('data/election_candidates.json');
         } catch (_) {}
       }
 
       if (candidatesJson != null) {
-        final membersFromIsolate = kIsWeb 
+        final membersFromIsolate = kIsWeb
             ? _parseMembersInBackground(candidatesJson, favoriteIds)
-            : await Isolate.run(() => _parseMembersInBackground(candidatesJson!, favoriteIds));
-        
+            : await Isolate.run(
+                () => _parseMembersInBackground(candidatesJson!, favoriteIds));
+
         for (var newMember in membersFromIsolate) {
           final idx = _dummyMembers.indexWhere((m) => m.name == newMember.name);
           if (idx != -1) {
@@ -135,11 +144,16 @@ class MemberRepositoryImpl implements MemberRepository {
         }
       }
 
+      // 프로필 이미지가 비어있는 항목은 백그라운드로 조용히 보강
+      _resolveMissingProfileImagesInBackground();
+
       final entries = await _nesdcPollDataSource.fetchLatest();
       final List<Future<void>> detailTasks = [];
       for (final member in _dummyMembers) {
         final regionKey = _staticMapDistrictToRegion(member.district);
-        final matchedEntries = entries.where((e) => _staticMatchesRegion(e.region, regionKey)).toList();
+        final matchedEntries = entries
+            .where((e) => _staticMatchesRegion(e.region, regionKey))
+            .toList();
         for (final entry in matchedEntries.take(5)) {
           detailTasks.add(_nesdcPollDataSource.fetchDetail(entry.sourceUrl));
         }
@@ -152,13 +166,14 @@ class MemberRepositoryImpl implements MemberRepository {
           .toList();
 
       final updatedMembers = kIsWeb
-          ? _matchPollsInBackground(List.from(_dummyMembers), entries, collectedDetails, now)
+          ? _matchPollsInBackground(
+              List.from(_dummyMembers), entries, collectedDetails, now)
           : await Isolate.run(() => _matchPollsInBackground(
-              List.from(_dummyMembers),
-              entries,
-              collectedDetails,
-              now,
-            ));
+                List.from(_dummyMembers),
+                entries,
+                collectedDetails,
+                now,
+              ));
 
       _dummyMembers.clear();
       _dummyMembers.addAll(updatedMembers);
@@ -170,8 +185,54 @@ class MemberRepositoryImpl implements MemberRepository {
     }
   }
 
+  Future<void> _resolveMissingProfileImagesInBackground() async {
+    final candidates = _dummyMembers
+        .where((m) =>
+            m.imageUrl.trim().isEmpty &&
+            _profileImageResolver.shouldAttempt(m.id))
+        .take(15)
+        .toList();
+    if (candidates.isEmpty) return;
+
+    try {
+      bool changed = false;
+      for (final member in candidates) {
+        final cached = _profileImageResolver.getCachedUrl(member.id);
+        if (cached != null && cached.isNotEmpty) {
+          final idx = _dummyMembers.indexWhere((m) => m.id == member.id);
+          if (idx != -1 && _dummyMembers[idx].imageUrl.trim().isEmpty) {
+            _dummyMembers[idx] = _dummyMembers[idx].copyWith(imageUrl: cached);
+            changed = true;
+          }
+          continue;
+        }
+
+        final resolved =
+            await _profileImageResolver.resolveImageUrlByName(member.name);
+        if (resolved == null || resolved.trim().isEmpty) {
+          await _profileImageResolver.cacheNegative(member.id);
+          continue;
+        }
+
+        await _profileImageResolver.cacheUrl(member.id, resolved);
+        final idx = _dummyMembers.indexWhere((m) => m.id == member.id);
+        if (idx != -1 && _dummyMembers[idx].imageUrl.trim().isEmpty) {
+          _dummyMembers[idx] = _dummyMembers[idx].copyWith(imageUrl: resolved);
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        _notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('[MemberRepo] Profile image resolve failed: $e');
+    }
+  }
+
   @override
-  Stream<List<Member>> watchAllMembers({Duration interval = const Duration(hours: 1)}) {
+  Stream<List<Member>> watchAllMembers(
+      {Duration interval = const Duration(hours: 1)}) {
     final periodicRefresh = Stream.periodic(interval).asyncMap((_) async {
       await refreshMembers();
       return _dummyMembers;
@@ -183,9 +244,11 @@ class MemberRepositoryImpl implements MemberRepository {
   }
 
   @override
-  Stream<Member> watchMemberById(String memberId, {Duration interval = const Duration(hours: 1)}) {
+  Stream<Member> watchMemberById(String memberId,
+      {Duration interval = const Duration(hours: 1)}) {
     return watchAllMembers(interval: interval).map((members) {
-      return members.firstWhere((m) => m.id == memberId, orElse: () => throw Exception('Not found'));
+      return members.firstWhere((m) => m.id == memberId,
+          orElse: () => throw Exception('Not found'));
     }).distinct();
   }
 
@@ -196,7 +259,7 @@ class MemberRepositoryImpl implements MemberRepository {
 
     final member = _dummyMembers[index];
     final newFavoriteStatus = !member.isFavorite;
-    
+
     _dummyMembers[index] = member.copyWith(isFavorite: newFavoriteStatus);
     _notifyListeners();
 
@@ -208,7 +271,7 @@ class MemberRepositoryImpl implements MemberRepository {
         await localService.removeFavorite(memberId);
       }
     } catch (e) {
-      _dummyMembers[index] = member; 
+      _dummyMembers[index] = member;
       _notifyListeners();
       rethrow;
     }
@@ -243,14 +306,15 @@ class MemberRepositoryImpl implements MemberRepository {
 
   // --- Static Helpers for Isolate ---
 
-  static List<Member> _parseMembersInBackground(String jsonString, List<String> favoriteIds) {
+  static List<Member> _parseMembersInBackground(
+      String jsonString, List<String> favoriteIds) {
     final List<dynamic> jsonList = json.decode(jsonString);
     final List<Member> members = [];
     for (var item in jsonList) {
-       try {
-         final m = MemberModel.fromJson(item as Map<String, dynamic>);
-         members.add(m.copyWith(isFavorite: favoriteIds.contains(m.id)));
-       } catch (_) {}
+      try {
+        final m = MemberModel.fromJson(item as Map<String, dynamic>);
+        members.add(m.copyWith(isFavorite: favoriteIds.contains(m.id)));
+      } catch (_) {}
     }
     return members;
   }
@@ -270,7 +334,7 @@ class MemberRepositoryImpl implements MemberRepository {
           .where((e) => _staticMatchesRegion(e.region, regionKey))
           .toList()
         ..sort((a, b) => b.registeredDate.compareTo(a.registeredDate));
-      
+
       final limitedEntries = matchedEntries.take(5).toList();
       final newPolls = <Poll>[];
 
@@ -280,7 +344,7 @@ class MemberRepositoryImpl implements MemberRepository {
 
         final candidateNames = _staticCandidateNameVariants(member);
         final partyAliases = _staticPartyAliases(member.party);
-        
+
         double? supportRate = detail.findSupportRate(candidateNames);
         if (supportRate == null) {
           supportRate = detail.findSupportRate(partyAliases);
@@ -295,7 +359,8 @@ class MemberRepositoryImpl implements MemberRepository {
           sampleSize: detail.sampleSize,
           marginOfError: detail.marginOfError,
           source: entry.sourceUrl,
-          notes: '${entry.client} | ${entry.method} | 지지율: ${supportRate ?? '미공개'}',
+          notes:
+              '${entry.client} | ${entry.method} | 지지율: ${supportRate ?? '미공개'}',
         ));
       }
 
@@ -310,10 +375,23 @@ class MemberRepositoryImpl implements MemberRepository {
   static String _staticMapDistrictToRegion(String district) {
     final normalized = district.replaceAll(' ', '');
     const regionMap = {
-      '서울': '서울특별시', '부산': '부산광역시', '대구': '대구광역시', '인천': '인천광역시',
-      '광주': '광주광역시', '대전': '대전광역시', '울산': '울산광역시', '세종': '세종특별자치시',
-      '경기': '경기도', '강원': '강원도', '충북': '충청북도', '충남': '충청남도',
-      '전북': '전북특별자치도', '전남': '전라남도', '경북': '경상북도', '경남': '경상남도', '제주': '제주특별자치도',
+      '서울': '서울특별시',
+      '부산': '부산광역시',
+      '대구': '대구광역시',
+      '인천': '인천광역시',
+      '광주': '광주광역시',
+      '대전': '대전광역시',
+      '울산': '울산광역시',
+      '세종': '세종특별자치시',
+      '경기': '경기도',
+      '강원': '강원도',
+      '충북': '충청북도',
+      '충남': '충청남도',
+      '전북': '전북특별자치도',
+      '전남': '전라남도',
+      '경북': '경상북도',
+      '경남': '경상남도',
+      '제주': '제주특별자치도',
     };
     for (final entry in regionMap.entries) {
       if (normalized.contains(entry.key)) return entry.value;
@@ -323,7 +401,8 @@ class MemberRepositoryImpl implements MemberRepository {
 
   static bool _staticMatchesRegion(String pollRegion, String targetRegion) {
     if (pollRegion.isEmpty) return false;
-    if (pollRegion.contains('전국') || pollRegion.contains(targetRegion)) return true;
+    if (pollRegion.contains('전국') || pollRegion.contains(targetRegion))
+      return true;
     if (targetRegion == '전북특별자치도' && pollRegion.contains('전라북도')) return true;
     return false;
   }
@@ -347,7 +426,8 @@ class MemberRepositoryImpl implements MemberRepository {
     return aliasMap[party] ?? [party];
   }
 
-  static List<Poll> _staticMergePolls(List<Poll> existing, List<Poll> incoming) {
+  static List<Poll> _staticMergePolls(
+      List<Poll> existing, List<Poll> incoming) {
     final byId = {for (var p in existing) p.id: p};
     for (final p in incoming) byId[p.id] = p;
     final merged = byId.values.toList();

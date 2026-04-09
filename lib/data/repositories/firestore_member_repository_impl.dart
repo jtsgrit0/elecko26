@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:elecko26/data/datasources/local_storage_service.dart';
 import 'package:elecko26/data/datasources/nesdc_poll_data_source.dart';
+import 'package:elecko26/data/datasources/profile_image_resolver.dart';
 import 'package:elecko26/data/models/member_model.dart';
 import 'package:elecko26/domain/entities/member.dart';
 import 'package:elecko26/domain/entities/poll.dart';
@@ -20,6 +21,10 @@ final sl = GetIt.instance;
 class FirestoreMemberRepositoryImpl implements MemberRepository {
   // NESDC 여론조사 데이터 소스 엔진
   final NesdcPollDataSource _nesdcPollDataSource = NesdcPollDataSource(
+    localStorageService: sl<LocalStorageService>(),
+  );
+
+  late final ProfileImageResolver _profileImageResolver = ProfileImageResolver(
     localStorageService: sl<LocalStorageService>(),
   );
 
@@ -145,6 +150,9 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       _notifyListeners(preliminaryMembers);
       debugPrint(
           '[FirestoreMemberRepository] Phase 1 complete: ${loadedMembers.length} members shown.');
+
+      // --- [1.5단계: 백그라운드] 프로필 이미지 보강 ---
+      _resolveMissingProfileImagesInBackground(preliminaryMembers);
     }
 
     // --- [2단계: 백그라운드 로딩] 여론조사 데이터 매칭 ---
@@ -262,6 +270,58 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
           '[FirestoreMemberRepository] Phase 2 complete: Polls matched and UI updated.');
     } catch (e) {
       debugPrint('[FirestoreMemberRepository] Phase 2 Match Failed: $e');
+    }
+  }
+
+  Future<void> _resolveMissingProfileImagesInBackground(
+      List<Member> initialMembers) async {
+    // UX를 방해하지 않도록, 결과가 생길 때만 스트림을 한 번 더 갱신합니다.
+    final candidates = initialMembers
+        .where((m) =>
+            m.imageUrl.trim().isEmpty &&
+            _profileImageResolver.shouldAttempt(m.id))
+        .take(15)
+        .toList();
+    if (candidates.isEmpty) return;
+
+    try {
+      bool changed = false;
+      final updated = List<Member>.from(_membersController.value);
+
+      for (final member in candidates) {
+        final cached = _profileImageResolver.getCachedUrl(member.id);
+        if (cached != null && cached.isNotEmpty) {
+          final idx = updated.indexWhere((m) => m.id == member.id);
+          if (idx != -1 && updated[idx].imageUrl.trim().isEmpty) {
+            updated[idx] = updated[idx].copyWith(imageUrl: cached);
+            changed = true;
+          }
+          continue;
+        }
+
+        final resolved =
+            await _profileImageResolver.resolveImageUrlByName(member.name);
+        if (resolved == null || resolved.trim().isEmpty) {
+          await _profileImageResolver.cacheNegative(member.id);
+          continue;
+        }
+
+        await _profileImageResolver.cacheUrl(member.id, resolved);
+        final idx = updated.indexWhere((m) => m.id == member.id);
+        if (idx != -1 && updated[idx].imageUrl.trim().isEmpty) {
+          updated[idx] = updated[idx].copyWith(imageUrl: resolved);
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        _notifyListeners(updated);
+        debugPrint(
+            '[FirestoreMemberRepository] Profile images updated in background.');
+      }
+    } catch (e) {
+      debugPrint(
+          '[FirestoreMemberRepository] Profile image resolve failed: $e');
     }
   }
 
