@@ -40,18 +40,35 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
   Future<void> _loadRegionalMembers() async {
     setState(() => _isLoading = true);
     try {
-      // 지역구 필터링 (예: "서울", "부산" 등 광역 단위 매칭)
+      // 1단계: 캐시된 데이터를 먼저 즉시 표시 (블로킹 없음)
+      final cached = await sl<MemberRepository>().getCachedMembers();
+      if (cached.isNotEmpty) {
+        final filtered = cached.where((m) {
+          return districtMatchesRegion(m.district, widget.region);
+        }).toList();
+        if (mounted) {
+          setState(() {
+            _members = filtered;
+            _isLoading = false;
+          });
+        }
+        return; // 캐시 데이터로 즉시 표시 완료
+      }
+
+      // 2단계: 캐시 비어있을 때만 전체 로드 (최초 1회)
       final allMembers = await sl<MemberRepository>().getAllMembers();
       final filtered = allMembers.where((m) {
         return districtMatchesRegion(m.district, widget.region);
       }).toList();
 
-      setState(() {
-        _members = filtered;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _members = filtered;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

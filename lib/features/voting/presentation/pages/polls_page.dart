@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:elecko26/app/injection_container.dart';
-import 'package:elecko26/features/voting/data/repositories/poll_repository_impl.dart';
 import 'package:elecko26/core/theme/app_theme.dart';
 import 'package:elecko26/domain/repositories/member_repository.dart';
 import '../../../auth/domain/entities/user.dart' as auth;
@@ -24,11 +23,6 @@ class PollsPage extends StatefulWidget {
 }
 
 class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
-  late final PollRepositoryImpl _pollRepository;
-  late final GetPollsUseCase _getPollsUseCase;
-  late final CreatePollUseCase _createPollUseCase;
-  late final UpdatePollStatusUseCase _updatePollStatusUseCase;
-
   late TabController _tabController;
 
   List<Poll> _activePolls = [];
@@ -60,19 +54,20 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
     });
 
     try {
-      // 지역 설정 가져오기
-      final region = await sl<MemberRepository>().getSelectedRegion();
-      
-      final activePolls = await sl<GetPollsUseCase>().execute(status: PollStatus.active);
-      final endedPolls = await sl<GetPollsUseCase>().execute(status: PollStatus.ended);
-      final myPolls = await sl<GetPollsUseCase>().execute(creatorId: widget.currentUser.id);
+      // 모든 쿼리를 병렬로 동시 실행하여 로딩 시간 최소화
+      final results = await Future.wait([
+        sl<MemberRepository>().getSelectedRegion(),                        // [0] String
+        sl<GetPollsUseCase>().execute(status: PollStatus.active),          // [1] List<Poll>
+        sl<GetPollsUseCase>().execute(status: PollStatus.ended),           // [2] List<Poll>
+        sl<GetPollsUseCase>().execute(creatorId: widget.currentUser.id),   // [3] List<Poll>
+      ]);
 
       if (mounted) {
         setState(() {
-          _selectedRegion = region;
-          _activePolls = activePolls;
-          _endedPolls = endedPolls;
-          _myPolls = myPolls;
+          _selectedRegion = results[0] as String;
+          _activePolls = results[1] as List<Poll>;
+          _endedPolls = results[2] as List<Poll>;
+          _myPolls = results[3] as List<Poll>;
         });
       }
     } catch (e) {
