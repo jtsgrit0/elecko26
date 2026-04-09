@@ -63,8 +63,17 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     _isInitialized = true;
   }
 
+  auth.User? _getCurrentUserSafe() {
+    try {
+      if (Firebase.apps.isNotEmpty) {
+        return auth.FirebaseAuth.instance.currentUser;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<void> _syncUserSettingsWithCloud() async {
-    final user = auth.FirebaseAuth.instance.currentUser;
+    final user = _getCurrentUserSafe();
     if (user == null) return;
 
     final localService = sl<LocalStorageService>();
@@ -536,7 +545,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       await localService.addFavorite(sanitizedId);
     }
 
-    final user = auth.FirebaseAuth.instance.currentUser;
+    final user = _getCurrentUserSafe();
     if (user != null) {
       try {
         final favorites = await localService.getFavorites();
@@ -580,7 +589,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
     _regionController.add(region);
 
-    final user = auth.FirebaseAuth.instance.currentUser;
+    final user = _getCurrentUserSafe();
     if (user != null) {
       try {
         await _firestore.collection('users').doc(user.uid).set({
