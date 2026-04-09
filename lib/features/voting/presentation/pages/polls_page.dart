@@ -14,9 +14,9 @@ class PollsPage extends StatefulWidget {
   final auth.User currentUser;
 
   const PollsPage({
-    Key? key,
+    super.key,
     required this.currentUser,
-  }) : super(key: key);
+  });
 
   @override
   State<PollsPage> createState() => _PollsPageState();
@@ -25,7 +25,6 @@ class PollsPage extends StatefulWidget {
 class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
   late TabController _tabController;
 
-  List<Poll> _activePolls = [];
   List<Poll> _endedPolls = [];
   List<Poll> _myPolls = [];
 
@@ -65,7 +64,6 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
       if (mounted) {
         setState(() {
           _selectedRegion = results[0] as String;
-          _activePolls = results[1] as List<Poll>;
           _endedPolls = results[2] as List<Poll>;
           _myPolls = results[3] as List<Poll>;
         });
@@ -403,17 +401,7 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
     );
   }
 
-  void _navigateToCreatePoll() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => CreatePollPage(currentUser: widget.currentUser),
-      ),
-    ).then((result) {
-      if (result == true) {
-        _loadPolls(); // 투표 생성 후 목록 새로고침
-      }
-    });
-  }
+
 
   void _navigateToPollDetail(Poll poll) {
     Navigator.of(context).push(

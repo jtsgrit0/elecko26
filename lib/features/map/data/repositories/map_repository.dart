@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:elecko26/features/map/domain/entities/election_map.dart';
 import 'package:elecko26/features/map/domain/repositories/map_repository.dart';
+import 'package:elecko26/core/utils/utility_functions.dart';
 
 class MapRepositoryImpl implements MapRepository {
   @override
@@ -18,7 +19,7 @@ class MapRepositoryImpl implements MapRepository {
       final party = candidate['party'] as String? ?? '무소속';
       
       // district에서 지역 추출 (예: "서울특별시장" → "서울특별시")
-      String region = _extractRegion(district);
+      String region = getParentRegion(district);
       
       if (region.isNotEmpty) {
         regionPartyCounts.putIfAbsent(region, () => {});
@@ -50,45 +51,5 @@ class MapRepositoryImpl implements MapRepository {
     );
 
     return mapData;
-  }
-
-  /// district에서 시/도 지역명 추출
-  String _extractRegion(String district) {
-    // "서울특별시장" → "서울특별시"
-    // "경기도지사" → "경기도"
-    // "부산광역시장" → "부산광역시"
-    
-    final regionMap = {
-      '서울': '서울특별시',
-      '부산': '부산광역시',
-      '대구': '대구광역시',
-      '인천': '인천광역시',
-      '광주': '광주광역시',
-      '대전': '대전광역시',
-      '울산': '울산광역시',
-      '세종': '세종특별자치시',
-      '경기': '경기도',
-      '강원': '강원도',
-      '충청북': '충청북도',
-      '충청남': '충청남도',
-      '전라북': '전라북도',
-      '전라남': '전라남도',
-      '경상북': '경상북도',
-      '경상남': '경상남도',
-      '제주': '제주특별자치도',
-      '청주': '충청북도', // 청주시 후보 → 충청북도 통계에 합산
-      '김해': '경상남도', // 김해시 후보 → 경상남도 통계에 합산
-      '포항': '경상북도',
-      '경주': '경상북도',
-    };
-
-
-    for (var key in regionMap.keys) {
-      if (district.contains(key)) {
-        return regionMap[key]!;
-      }
-    }
-
-    return '';
   }
 }
