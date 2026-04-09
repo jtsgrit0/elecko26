@@ -9,7 +9,7 @@ import 'package:elecko26/features/home/presentation/pages/home_page.dart';
 
 import 'package:elecko26/core/config/app_config.dart';
 
-Future<void> main() async {
+Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
 
   if (AppConfig.enableFirebase) {

@@ -105,13 +105,7 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
             Tab(text: '내 투표'),
           ],
         ),
-        actions: [
-          IconButton(
-            onPressed: _navigateToCreatePoll,
-            icon: const Icon(Icons.add),
-            tooltip: '투표 만들기',
-          ),
-        ],
+        // + 투표 생성 아이콘 제거
       ),
       body: _buildBody(),
     );
@@ -162,7 +156,7 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
     
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('지역 선택'),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         content: SizedBox(
@@ -172,12 +166,23 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
             itemCount: regions.length,
             separatorBuilder: (context, index) => const Divider(),
             itemBuilder: (context, index) {
+              final isSelected = regions[index] == _selectedRegion;
               return ListTile(
-                title: Text(regions[index]),
-                trailing: const Icon(Icons.chevron_right, size: 18),
+                title: Text(
+                  regions[index],
+                  style: TextStyle(
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected ? AppColors.primary : AppColors.darkGray,
+                  ),
+                ),
+                trailing: isSelected 
+                    ? const Icon(Icons.check, color: AppColors.primary)
+                    : const Icon(Icons.chevron_right, size: 18),
                 onTap: () async {
                   await sl<MemberRepository>().saveSelectedRegion(regions[index]);
-                  if (mounted) Navigator.pop(context);
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                  }
                   _loadPolls(); // 지역 변경 후 리로드
                 },
               );
