@@ -5,14 +5,15 @@ import 'package:elecko26/domain/entities/member.dart';
 import 'package:elecko26/domain/repositories/member_repository.dart';
 import 'package:elecko26/app/injection_container.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:elecko26/data/datasources/local_storage_service.dart';
 
 class RegionalMemberVotingList extends StatefulWidget {
   final String region;
 
   const RegionalMemberVotingList({
-    Key? key,
+    super.key,
     required this.region,
-  }) : super(key: key);
+  });
 
   @override
   State<RegionalMemberVotingList> createState() =>
@@ -21,6 +22,7 @@ class RegionalMemberVotingList extends StatefulWidget {
 
 class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
   List<Member> _members = [];
+  Map<String, String> _votes = {}; // district -> memberId
   bool _isLoading = true;
 
   @override
@@ -40,6 +42,9 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
   Future<void> _loadRegionalMembers() async {
     setState(() => _isLoading = true);
     try {
+      final localStorage = sl<LocalStorageService>();
+      final votes = await localStorage.getAllVotes();
+
       // 1단계: 캐시된 데이터를 먼저 즉시 표시 (블로킹 없음)
       final cached = await sl<MemberRepository>().getCachedMembers();
       if (cached.isNotEmpty) {
@@ -49,6 +54,7 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
         if (mounted) {
           setState(() {
             _members = filtered;
+            _votes = votes;
             _isLoading = false;
           });
         }
@@ -64,12 +70,55 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
       if (mounted) {
         setState(() {
           _members = filtered;
+          _votes = votes;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _handleVote(String district, Member member) async {
+    final localStorage = sl<LocalStorageService>();
+    final currentVote = _votes[district];
+    
+    if (currentVote == member.id) {
+      // 투표 취소
+      await localStorage.removeVote(district);
+      setState(() {
+        _votes.remove(district);
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${member.name} 의원 지지를 취소했습니다.')),
+        );
+      }
+    } else {
+      // 투표하기 (또는 변경)
+      await localStorage.saveVote(district, member.id);
+      setState(() {
+        _votes[district] = member.id;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${member.name} 의원을 지지하셨습니다!')),
+        );
+      }
+    }
+  }
+
+  Map<String, List<Member>> get _groupedMembers {
+    final Map<String, List<Member>> grouped = {};
+    for (final member in _members) {
+      if (!grouped.containsKey(member.district)) {
+        grouped[member.district] = [];
+      }
+      grouped[member.district]!.add(member);
+    }
+    // 선거구명(district)을 사전순으로 정렬
+    final sortedKeys = grouped.keys.toList()..sort();
+    return {for (var key in sortedKeys) key: grouped[key]!};
   }
 
   @override
@@ -86,6 +135,8 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
         ),
       );
     }
+
+    final groupedMembers = _groupedMembers;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,12 +159,59 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            itemCount: _members.length,
+            itemCount: groupedMembers.length,
             itemBuilder: (context, index) {
-              return _RegionalMemberCard(member: _members[index]);
+              final district = groupedMembers.keys.elementAt(index);
+              final membersInDistrict = groupedMembers[district]!;
+              return _buildDistrictSection(district, membersInDistrict);
             },
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildDistrictSection(String district, List<Member> membersInDistrict) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 4,
+                height: 16,
+                color: AppColors.primary,
+                margin: const EdgeInsets.only(right: 8),
+              ),
+              Text(
+                district,
+                style: AppTextStyles.headline3.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.darkGray,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '1표 행사가능',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+        ...membersInDistrict.map((member) {
+          final isVoted = _votes[district] == member.id;
+          return _RegionalMemberCard(
+            member: member,
+            isVoted: isVoted,
+            onVote: () => _handleVote(district, member),
+          );
+        }),
+        const SizedBox(height: 16),
       ],
     );
   }
@@ -121,20 +219,26 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
 
 class _RegionalMemberCard extends StatelessWidget {
   final Member member;
+  final bool isVoted;
+  final VoidCallback onVote;
 
   const _RegionalMemberCard({
-    Key? key,
     required this.member,
-  }) : super(key: key);
+    required this.isVoted,
+    required this.onVote,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 16),
+      elevation: isVoted ? 4 : 0,
+      margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.withOpacity(0.2)),
+        side: BorderSide(
+          color: isVoted ? AppColors.primary : Colors.grey.withOpacity(0.2),
+          width: isVoted ? 2 : 1,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -144,8 +248,8 @@ class _RegionalMemberCard extends StatelessWidget {
             Hero(
               tag: 'member_vote_${member.id}',
               child: Container(
-                width: 80,
-                height: 80,
+                width: 70,
+                height: 70,
                 decoration: BoxDecoration(
                   color: AppColors.lightGrey,
                   borderRadius: BorderRadius.circular(12),
@@ -172,14 +276,22 @@ class _RegionalMemberCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    member.name,
-                    style: AppTextStyles.headline3
-                        .copyWith(fontWeight: FontWeight.bold),
+                  Row(
+                    children: [
+                      Text(
+                        member.name,
+                        style: AppTextStyles.headline3
+                            .copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      if (isVoted) ...[
+                        const SizedBox(width: 8),
+                        const Icon(Icons.check_circle, size: 16, color: AppColors.primary),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${member.party} | ${member.district}',
+                    member.party,
                     style: AppTextStyles.bodySmall
                         .copyWith(color: AppColors.mediumGray),
                   ),
@@ -188,22 +300,23 @@ class _RegionalMemberCard extends StatelessWidget {
                     width: double.infinity,
                     height: 36,
                     child: ElevatedButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text('${member.name} 의원을 지지하셨습니다!')),
-                        );
-                      },
+                      onPressed: onVote,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary.withOpacity(0.1),
-                        foregroundColor: AppColors.primary,
+                        backgroundColor: isVoted 
+                            ? AppColors.primary 
+                            : AppColors.primary.withOpacity(0.1),
+                        foregroundColor: isVoted 
+                            ? AppColors.white 
+                            : AppColors.primary,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text('지지하기',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: Text(
+                        isVoted ? '지지함' : '지지하기',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ],

@@ -15,4 +15,14 @@ abstract class LocalStorageService {
   Future<String> getSelectedRegion();
   Future<void> saveSelectedRegion(String region);
   Future<void> clearAll();
+
+  // 투표 관련
+  /// 특정 선거구(district)에 투표한 후보 ID 저장
+  Future<void> saveVote(String district, String memberId);
+  /// 특정 선거구에 투표한 후보 ID 반환 (없으면 null)
+  Future<String?> getVote(String district);
+  /// 모든 투표 기록 가져오기 {district: memberId}
+  Future<Map<String, String>> getAllVotes();
+  /// 특정 선거구 투표 취소
+  Future<void> removeVote(String district);
 }
