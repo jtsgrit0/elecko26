@@ -20,7 +20,7 @@ import 'package:elecko26/features/home/presentation/widgets/favorites_view.dart'
 import 'dart:async';
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+  const HomePage({super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -36,6 +36,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Member? _selectedMember;
   auth.User? _currentUser;
   final TextEditingController _searchController = TextEditingController();
+  StreamSubscription<String>? _regionSubscription;
 
   // 검색 관련 상태
 
@@ -64,25 +65,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     '경상남도',
     '제주특별자치도'
   ];
-  static const Map<String, List<String>> _categories = {
-    '전체': [
-      '전체',
-      '도지사',
-      '광역시장',
-      '특별시장',
-      '특별자치도지사',
-      '시장',
-      '군수',
-      '구청장',
-      '도의원',
-      '시의원',
-      '구의원',
-      '군의원'
-    ],
-    '광역': ['전체', '도지사', '광역시장', '특별시장', '특별자치도지사'],
-    '기초': ['전체', '시장', '군수', '구청장'],
-    '의회': ['전체', '도의원', '시의원', '구의원', '군의원'],
-  };
+
 
   void _showSettingsModal() {
     showModalBottomSheet(
@@ -255,19 +238,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  List<Member> _getFilteredMembers(List<Member> members) {
-    if (_userRegion == '전국') return members;
-
-    // 지역명 정규화 (예: '서울특별시' -> '서울', '경기도' -> '경기')
-    String shortRegion = _userRegion.substring(0, 2);
-    // 특수지역 대응
-    if (_userRegion == '세종특별자치시') shortRegion = '세종';
-    if (_userRegion == '제주특별자치도') shortRegion = '제주';
-    if (_userRegion == '전북특별자치도') shortRegion = '전북';
-
-    return members.where((m) => m.district.contains(shortRegion)).toList();
-  }
-
   Widget _buildFavoritesTab() {
     return StreamBuilder<List<Member>>(
       stream: _membersStream,
@@ -330,6 +300,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       const Duration(minutes: 5),
       (_) => _triggerNesdcRefresh(isSilent: true),
     );
+
+    // 지역 설정 변경 감지 구독
+    _regionSubscription = sl<MemberRepository>().watchSelectedRegion().listen((region) {
+      if (mounted) {
+        setState(() {
+          _userRegion = region;
+        });
+      }
+    });
   }
 
   Future<void> _loadUserSettings() async {
@@ -409,10 +388,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Future<void> _triggerNesdcRefresh({bool isSilent = false}) async {
-    if (!isSilent)
+    if (!isSilent) {
       setState(() {
         _isLoading = true;
       });
+    }
     // 강제 갱신 트리거: 최신 후보자 JSON 및 시스템 데이터 스크랩
     try {
       await sl<MemberRepository>().refreshMembers();
@@ -420,10 +400,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     } catch (e) {
       debugPrint('[Refresh] Data sync failed: $e');
     } finally {
-      if (mounted && !isSilent)
+      if (mounted && !isSilent) {
         setState(() {
           _isLoading = false;
         });
+      }
     }
   }
 
@@ -435,7 +416,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // 이후 1분마다 반복
     _dataExportTimer = Timer.periodic(
       const Duration(minutes: 1),
-      (_) => _exportElectionData(),
+      (_) {
+        _exportElectionData();
+      },
     );
   }
 
@@ -478,6 +461,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _dataExportTimer?.cancel();
     _uiRefreshTimer?.cancel();
+    _regionSubscription?.cancel();
     _searchController.dispose();
     super.dispose();
   }

@@ -29,6 +29,9 @@ class MemberRepositoryImpl implements MemberRepository {
   static final BehaviorSubject<List<Member>> _membersController =
       BehaviorSubject<List<Member>>.seeded([]);
 
+  static final BehaviorSubject<String> _regionController =
+      BehaviorSubject<String>();
+
   void _notifyListeners() {
     _membersController.add(List.from(_dummyMembers));
   }
@@ -279,14 +282,27 @@ class MemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<String> getSelectedRegion() async {
+    if (_regionController.hasValue) {
+      return _regionController.value;
+    }
     final localService = sl<LocalStorageService>();
-    return await localService.getSelectedRegion();
+    final region = await localService.getSelectedRegion();
+    _regionController.add(region);
+    return region;
   }
 
   @override
   Future<void> saveSelectedRegion(String region) async {
     final localService = sl<LocalStorageService>();
     await localService.saveSelectedRegion(region);
+    _regionController.add(region);
+  }
+
+  @override
+  Stream<String> watchSelectedRegion() {
+    // 초기 호출 시 현재 저장된 값을 스트림에 흘려보냄
+    getSelectedRegion();
+    return _regionController.stream;
   }
 
   @override
@@ -296,6 +312,7 @@ class MemberRepositoryImpl implements MemberRepository {
     for (var i = 0; i < _dummyMembers.length; i++) {
       _dummyMembers[i] = _dummyMembers[i].copyWith(isFavorite: false);
     }
+    _regionController.add('전국');
     _notifyListeners();
   }
 
@@ -394,16 +411,21 @@ class MemberRepositoryImpl implements MemberRepository {
       '제주': '제주특별자치도',
     };
     for (final entry in regionMap.entries) {
-      if (normalized.contains(entry.key)) return entry.value;
+      if (normalized.contains(entry.key)) {
+        return entry.value;
+      }
     }
     return '전국';
   }
 
   static bool _staticMatchesRegion(String pollRegion, String targetRegion) {
     if (pollRegion.isEmpty) return false;
-    if (pollRegion.contains('전국') || pollRegion.contains(targetRegion))
+    if (pollRegion.contains('전국') || pollRegion.contains(targetRegion)) {
       return true;
-    if (targetRegion == '전북특별자치도' && pollRegion.contains('전라북도')) return true;
+    }
+    if (targetRegion == '전북특별자치도' && pollRegion.contains('전라북도')) {
+      return true;
+    }
     return false;
   }
 
@@ -429,7 +451,9 @@ class MemberRepositoryImpl implements MemberRepository {
   static List<Poll> _staticMergePolls(
       List<Poll> existing, List<Poll> incoming) {
     final byId = {for (var p in existing) p.id: p};
-    for (final p in incoming) byId[p.id] = p;
+    for (final p in incoming) {
+      byId[p.id] = p;
+    }
     final merged = byId.values.toList();
     merged.sort((a, b) => b.surveyDate.compareTo(a.surveyDate));
     return merged;

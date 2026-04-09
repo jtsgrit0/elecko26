@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:elecko26/app/injection_container.dart';
 import 'package:elecko26/core/theme/app_theme.dart';
@@ -8,7 +9,6 @@ import '../../domain/usecases/poll_usecases.dart';
 import '../widgets/region_selection_prompt.dart';
 import '../widgets/regional_member_voting_list.dart';
 import 'poll_detail_page.dart';
-import 'create_poll_page.dart';
 
 class PollsPage extends StatefulWidget {
   final auth.User currentUser;
@@ -27,21 +27,33 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
 
   List<Poll> _endedPolls = [];
   List<Poll> _myPolls = [];
+  String _selectedRegion = '전국';
+  StreamSubscription<String>? _regionSubscription;
 
   bool _isLoading = true;
   String? _errorMessage;
-  String _selectedRegion = '전국';
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _loadPolls();
+    
+    // 지역 설정 변경 감지 구독
+    _regionSubscription = sl<MemberRepository>().watchSelectedRegion().listen((region) {
+      if (mounted && _selectedRegion != region) {
+        setState(() {
+          _selectedRegion = region;
+        });
+        _loadPolls(); // 지역 변경 시 재로딩
+      }
+    });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _regionSubscription?.cancel();
     super.dispose();
   }
 
