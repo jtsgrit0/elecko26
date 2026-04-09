@@ -1,16 +1,31 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
+import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:elecko26/data/datasources/local_storage_service.dart';
 import 'package:elecko26/data/models/member_model.dart';
 import 'package:elecko26/domain/entities/member.dart';
 import 'package:elecko26/domain/repositories/member_repository.dart';
 import 'package:get_it/get_it.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 final sl = GetIt.instance;
 
 class FirestoreMemberRepositoryImpl implements MemberRepository {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  // Firebase 초기화 상태를 안전하게 확인하는 Getter
+  FirebaseFirestore get _firestore {
+    if (Firebase.apps.isEmpty) {
+      throw FirebaseException(
+        plugin: 'cloud_firestore',
+        message: 'Firebase가 활성화되지 않았습니다. AppConfig를 확인해주세요.',
+      );
+    }
+    return FirebaseFirestore.instance;
+  }
+
   static final BehaviorSubject<List<Member>> _membersController =
       BehaviorSubject<List<Member>>.seeded([]);
 
@@ -22,7 +37,11 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
   Future<void> _ensureInitialized() async {
     if (_isInitialized) return;
-    await _syncUserSettingsWithCloud();
+    try {
+      if (Firebase.apps.isNotEmpty) {
+        await _syncUserSettingsWithCloud();
+      }
+    } catch (_) {}
     await refreshMembers();
     _isInitialized = true;
   }
@@ -38,28 +57,23 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       if (doc.exists) {
         final data = doc.data() ?? {};
         
-        // Sync Region
         final cloudRegion = data['selectedRegion'] as String?;
         if (cloudRegion != null && cloudRegion.isNotEmpty) {
           await localService.saveSelectedRegion(cloudRegion);
         }
 
-        // Sync Favorites
         final cloudFavorites = List<String>.from(data['favorites'] ?? []);
         if (cloudFavorites.isNotEmpty) {
           final localFavorites = await localService.getFavorites();
-          // Merge logic: Combine both
           final mergedSet = {...cloudFavorites, ...localFavorites};
           final mergedList = mergedSet.toList();
           
-          // Update local
           for (final id in mergedList) {
             if (!localFavorites.contains(id)) {
               await localService.addFavorite(id);
             }
           }
           
-          // Update cloud with merge result
           await _firestore.collection('users').doc(user.uid).set({
             'favorites': mergedList,
             'updatedAt': FieldValue.serverTimestamp(),
@@ -67,68 +81,97 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         }
       }
     } catch (e) {
-      print('[FirestoreMemberRepository] Sync error: $e');
+      debugPrint('[FirestoreMemberRepository] Sync error: $e');
     }
   }
 
   @override
   Future<void> refreshMembers() async {
+    List<Member> loadedMembers = [];
+    
+    // 1. 먼저 Firestore(Cloud)에서 시도
     try {
-      final snapshot = await _firestore.collection('members').get();
-      final members = snapshot.docs.map((doc) {
-        final data = doc.data();
-        
-        // Firestore Timestamp to ISO string normalization
-        if (data['electionDate'] is Timestamp) {
-          data['electionDate'] = (data['electionDate'] as Timestamp).toDate().toIso8601String();
+      if (Firebase.apps.isNotEmpty) {
+        final snapshot = await _firestore.collection('members').get();
+        if (snapshot.docs.isNotEmpty) {
+          loadedMembers = snapshot.docs.map((doc) {
+            final data = doc.data();
+            _normalizeFirestoreTimestamps(data);
+            data['id'] = doc.id;
+            return MemberModel.fromJson(data);
+          }).toList();
+          debugPrint('[FirestoreMemberRepository] Loaded ${loadedMembers.length} members from Cloud');
         }
-        if (data['lastAnalysisDate'] is Timestamp) {
-          data['lastAnalysisDate'] = (data['lastAnalysisDate'] as Timestamp).toDate().toIso8601String();
-        }
+      }
+    } catch (e) {
+      debugPrint('[FirestoreMemberRepository] Cloud Fetch Error: $e');
+    }
+
+    // 2. 만약 Cloud 데이터가 없다면 로컬 JSON 파일(Fallback)에서 로드
+    if (loadedMembers.isEmpty) {
+      try {
+        debugPrint('[FirestoreMemberRepository] No cloud data. Falling back to local JSON...');
+        String? jsonString;
         
-        if (data['polls'] != null) {
-          for (var p in data['polls']) {
-            if (p['surveyDate'] is Timestamp) {
-              p['surveyDate'] = (p['surveyDate'] as Timestamp).toDate().toIso8601String();
-            }
+        // GitHub Raw 시도
+        try {
+          final rawUrl = 'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
+          final response = await http.get(Uri.parse(rawUrl)).timeout(const Duration(seconds: 5));
+          if (response.statusCode == 200) {
+            jsonString = utf8.decode(response.bodyBytes);
           }
-        }
-        
-        if (data['pressReports'] != null) {
-          for (var p in data['pressReports']) {
-            if (p['publishDate'] is Timestamp) {
-              p['publishDate'] = (p['publishDate'] as Timestamp).toDate().toIso8601String();
-            }
-          }
+        } catch (_) {}
+
+        // 로컬 Asset 시도
+        if (jsonString == null) {
+          jsonString = await rootBundle.loadString('data/election_candidates.json');
         }
 
-        if (data['socialContributions'] != null) {
-          for (var s in data['socialContributions']) {
-            if (s['date'] is Timestamp) {
-              s['date'] = (s['date'] as Timestamp).toDate().toIso8601String();
-            }
-          }
+        if (jsonString != null) {
+          final List<dynamic> jsonList = json.decode(jsonString);
+          loadedMembers = jsonList.map((item) => MemberModel.fromJson(item as Map<String, dynamic>)).toList();
+          debugPrint('[FirestoreMemberRepository] Loaded ${loadedMembers.length} members from Local Fallback');
         }
-        
-        // Override ID with document ID usually, or trust the doc data
-        data['id'] = doc.id;
-        
-        return MemberModel.fromJson(data);
-      }).toList();
+      } catch (e) {
+        debugPrint('[FirestoreMemberRepository] Local Fallback Error: $e');
+      }
+    }
 
-      // Retrieve favorites from local storage
+    // 3. 즐겨찾기 상태 반영 및 통지
+    if (loadedMembers.isNotEmpty) {
       final localService = sl<LocalStorageService>();
       final favorites = await localService.getFavorites();
-
-      final mappedMembers = members.map((m) {
+      final mappedMembers = loadedMembers.map((m) {
         return m.copyWith(isFavorite: favorites.contains(m.id));
       }).toList();
-
       _notifyListeners(mappedMembers);
-    } catch (e) {
-      print('Firebase Fetch Error: $e');
-      // If collection doesn't exist or permissions fail, just notify empty or throw
     }
+  }
+
+  void _normalizeFirestoreTimestamps(Map<String, dynamic> data) {
+    // Firestore Timestamp to ISO string normalization logic
+    final dateFields = ['electionDate', 'lastAnalysisDate'];
+    for (var field in dateFields) {
+      if (data[field] is Timestamp) {
+        data[field] = (data[field] as Timestamp).toDate().toIso8601String();
+      }
+    }
+    
+    final nestedFields = {
+      'polls': 'surveyDate',
+      'pressReports': 'publishDate',
+      'socialContributions': 'date'
+    };
+    
+    nestedFields.forEach((listField, dateField) {
+      if (data[listField] != null) {
+        for (var item in data[listField]) {
+          if (item[dateField] is Timestamp) {
+            item[dateField] = (item[dateField] as Timestamp).toDate().toIso8601String();
+          }
+        }
+      }
+    });
   }
 
   @override
@@ -176,7 +219,6 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       try {
         return members.firstWhere((m) => m.id == memberId);
       } catch (e) {
-        // Return dummy/throw if not found.
         throw Exception('Not found');
       }
     });
@@ -187,14 +229,12 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     final localService = sl<LocalStorageService>();
     final isFav = await localService.isFavorite(memberId);
     
-    // Update Local
     if (isFav) {
       await localService.removeFavorite(memberId);
     } else {
       await localService.addFavorite(memberId);
     }
     
-    // Update Cloud if logged in
     final user = auth.FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
@@ -204,7 +244,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
       } catch (e) {
-        print('[FirestoreMemberRepository] Failed to sync favorite to cloud: $e');
+        debugPrint('[FirestoreMemberRepository] Failed to sync favorite to cloud: $e');
       }
     }
     
@@ -227,7 +267,6 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     final localService = sl<LocalStorageService>();
     await localService.saveSelectedRegion(region);
 
-    // Update Cloud if logged in
     final user = auth.FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
@@ -236,7 +275,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
       } catch (e) {
-        print('[FirestoreMemberRepository] Failed to sync region to cloud: $e');
+        debugPrint('[FirestoreMemberRepository] Failed to sync region to cloud: $e');
       }
     }
   }
