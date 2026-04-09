@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:elecko26/app/injection_container.dart';
 import 'package:elecko26/features/voting/data/repositories/poll_repository_impl.dart';
 import 'package:elecko26/core/theme/app_theme.dart';
+import 'package:elecko26/domain/repositories/member_repository.dart';
 import '../../../auth/domain/entities/user.dart' as auth;
 import '../../domain/entities/poll.dart';
 import '../../domain/usecases/poll_usecases.dart';
+import '../widgets/region_selection_prompt.dart';
+import '../widgets/regional_member_voting_list.dart';
 import 'poll_detail_page.dart';
 import 'create_poll_page.dart';
 
@@ -34,6 +37,7 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
 
   bool _isLoading = true;
   String? _errorMessage;
+  String _selectedRegion = '전국';
 
   @override
   void initState() {
@@ -49,64 +53,40 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
   }
 
   Future<void> _loadPolls() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
+      // 지역 설정 가져오기
+      final region = await sl<MemberRepository>().getSelectedRegion();
+      
       final activePolls = await sl<GetPollsUseCase>().execute(status: PollStatus.active);
       final endedPolls = await sl<GetPollsUseCase>().execute(status: PollStatus.ended);
       final myPolls = await sl<GetPollsUseCase>().execute(creatorId: widget.currentUser.id);
 
-      setState(() {
-        _activePolls = activePolls;
-        _endedPolls = endedPolls;
-        _myPolls = myPolls;
-      });
+      if (mounted) {
+        setState(() {
+          _selectedRegion = region;
+          _activePolls = activePolls;
+          _endedPolls = endedPolls;
+          _myPolls = myPolls;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _errorMessage = '투표 목록을 불러오는 중 오류가 발생했습니다.';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = '투표 목록을 불러오는 중 오류가 발생했습니다.';
+        });
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _createSamplePoll() async {
-    final samplePoll = Poll(
-      id: '',
-      title: '샘플 투표: 가장 좋아하는 프로그래밍 언어는?',
-      description: '여러분의 의견을 들려주세요!',
-      creatorId: widget.currentUser.id,
-      options: [
-        PollOption(id: '1', text: 'Dart'),
-        PollOption(id: '2', text: 'Python'),
-        PollOption(id: '3', text: 'JavaScript'),
-        PollOption(id: '4', text: 'Java'),
-      ],
-      settings: PollSettings(
-        isAnonymous: false,
-        allowMultipleVotes: false,
-        showResultsBeforeEnd: true,
-      ),
-      status: PollStatus.active,
-      createdAt: DateTime.now(),
-      tags: ['프로그래밍', '설문조사'],
-    );
-
-    final result = await sl<CreatePollUseCase>().execute(samplePoll);
-    if (result.isSuccess) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('샘플 투표가 생성되었습니다.')),
-      );
-      _loadPolls();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.errorMessage ?? '투표 생성에 실패했습니다.')),
-      );
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -171,10 +151,45 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
     return TabBarView(
       controller: _tabController,
       children: [
-        _buildPollList(_activePolls, '진행 중인 투표가 없습니다.'),
+        // 진행중 탭: 지역 설정 여부에 따라 분기
+        _selectedRegion == '전국' || _selectedRegion == '미설정'
+            ? RegionSelectionPrompt(onSelectRegion: _showRegionSelectionDialog)
+            : RegionalMemberVotingList(region: _selectedRegion),
+            
         _buildPollList(_endedPolls, '종료된 투표가 없습니다.'),
         _buildPollList(_myPolls, '내가 만든 투표가 없습니다.'),
       ],
+    );
+  }
+
+  void _showRegionSelectionDialog() {
+    final regions = ['서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시', '세종특별자치시', '경기도', '강원도', '충청북도', '충청남도', '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도'];
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('지역 선택'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: regions.length,
+            separatorBuilder: (context, index) => const Divider(),
+            itemBuilder: (context, index) {
+              return ListTile(
+                title: Text(regions[index]),
+                trailing: const Icon(Icons.chevron_right, size: 18),
+                onTap: () async {
+                  await sl<MemberRepository>().saveSelectedRegion(regions[index]);
+                  if (mounted) Navigator.pop(context);
+                  _loadPolls(); // 지역 변경 후 리로드
+                },
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 
