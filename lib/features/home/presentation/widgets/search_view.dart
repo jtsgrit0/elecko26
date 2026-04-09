@@ -272,6 +272,7 @@ class _SearchViewState extends State<SearchView> {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: MemberCard(
+                key: ValueKey(filteredMembers[index].id),
                 member: filteredMembers[index],
                 onTap: () => widget.onMemberSelected(filteredMembers[index]),
               ),

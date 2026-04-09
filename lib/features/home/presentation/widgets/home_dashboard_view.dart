@@ -565,6 +565,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: MemberCard(
+                          key: ValueKey(member.id),
                           member: member,
                           onTap: () => widget.onMemberSelected(member),
                         ),

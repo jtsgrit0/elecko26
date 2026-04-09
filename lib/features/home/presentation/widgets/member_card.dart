@@ -31,7 +31,8 @@ class _MemberCardState extends State<MemberCard> {
   @override
   void didUpdateWidget(MemberCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.member.isFavorite != oldWidget.member.isFavorite) {
+    if (widget.member.id != oldWidget.member.id || 
+        widget.member.isFavorite != oldWidget.member.isFavorite) {
       setState(() {
         _isFavorite = widget.member.isFavorite;
       });
