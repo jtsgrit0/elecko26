@@ -50,6 +50,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         await _syncUserSettingsWithCloud();
       }
     } catch (_) {}
+    // refreshMembers는 내부에서 비동기로 돌거나 즉시 첫 결과를 줄 수 있음
     await refreshMembers();
     _isInitialized = true;
   }
@@ -98,10 +99,15 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     List<Member> loadedMembers = [];
     final now = DateTime.now();
     
-    // 1. 먼저 Firestore(Cloud)에서 의원 기본 정보 시도
+    // --- [1단계: 즉시 로딩] 의원 기본 정보 로드 ---
+    
+    // 1-1. Firestore(Cloud) 확인
     try {
       if (Firebase.apps.isNotEmpty) {
-        final snapshot = await _firestore.collection('members').get();
+        final snapshot = await _firestore.collection('members').get(
+          const GetOptions(source: Source.serverAndCache)
+        ).timeout(const Duration(seconds: 3));
+        
         if (snapshot.docs.isNotEmpty) {
           for (var doc in snapshot.docs) {
             try {
@@ -110,7 +116,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
               data['id'] = doc.id;
               loadedMembers.add(MemberModel.fromJson(data));
             } catch (e) {
-              debugPrint('[FirestoreMemberRepository] Skipping member ${doc.id} due to parse error: $e');
+              debugPrint('[FirestoreMemberRepository] Parse error: $e');
             }
           }
         }
@@ -119,13 +125,13 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       debugPrint('[FirestoreMemberRepository] Cloud Fetch Error: $e');
     }
 
-    // 2. 만약 Cloud 데이터가 없다면 로컬 JSON 파일(Fallback)에서 로드
+    // 1-2. Cloud 데이터가 없다면 로컬 JSON 파일(Fallback)
     if (loadedMembers.isEmpty) {
       try {
         String? jsonString;
         try {
           final rawUrl = 'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
-          final response = await http.get(Uri.parse(rawUrl)).timeout(const Duration(seconds: 5));
+          final response = await http.get(Uri.parse(rawUrl)).timeout(const Duration(seconds: 3));
           if (response.statusCode == 200) {
             jsonString = utf8.decode(response.bodyBytes);
           }
@@ -140,10 +146,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
           for (var item in jsonList) {
             try {
               loadedMembers.add(MemberModel.fromJson(item as Map<String, dynamic>));
-            } catch (e) {
-              final name = (item as Map)['name'] ?? 'Unknown';
-              debugPrint('[FirestoreMemberRepository] Skipping local member $name due to parse error: $e');
-            }
+            } catch (_) {}
           }
         }
       } catch (e) {
@@ -151,49 +154,63 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       }
     }
 
-    // 3. 실시간 여론조사(NESDC) 데이터 매칭 및 병합
-    if (loadedMembers.isNotEmpty) {
-      try {
-        debugPrint('[FirestoreMemberRepository] Matching latest polls from NESDC...');
-        final entries = await _nesdcPollDataSource.fetchLatest();
-        
-        // 상세 데이터 수집 (최근 5건 위주)
-        final List<Future<void>> detailTasks = [];
-        for (var entry in entries.take(30)) { // 성능을 위해 최근 30개 항목만 상세 확인
-          detailTasks.add(_nesdcPollDataSource.fetchDetail(entry.sourceUrl));
-        }
-        await Future.wait(detailTasks);
-
-        final List<NesdcPollDetail> collectedDetails = entries
-            .map((e) => _nesdcPollDataSource.getCachedDetail(e.sourceUrl))
-            .whereType<NesdcPollDetail>()
-            .toList();
-
-        // 매칭 로직 실행 (Web 환경 고려하여 Isolate/Direct 선택)
-        final updatedMembers = kIsWeb
-            ? _matchPollsInBackground(List.from(loadedMembers), entries, collectedDetails, now)
-            : await Isolate.run(() => _matchPollsInBackground(
-                List.from(loadedMembers),
-                entries,
-                collectedDetails,
-                now,
-              ));
-
-        loadedMembers = updatedMembers;
-        debugPrint('[FirestoreMemberRepository] Poll matching complete.');
-      } catch (e, st) {
-        debugPrint('[FirestoreMemberRepository] Poll Matching Failed: $e\n$st');
-      }
-    }
-
-    // 4. 즐겨찾기 상태 반영 및 통지
+    // 1-3. 즉시 첫 번째 결과 통지 (의원 리스트 노출)
     if (loadedMembers.isNotEmpty) {
       final localService = sl<LocalStorageService>();
       final favorites = await localService.getFavorites();
-      final finalMembers = loadedMembers.map((m) {
+      final preliminaryMembers = loadedMembers.map((m) {
         return m.copyWith(isFavorite: favorites.contains(m.id));
       }).toList();
+      _notifyListeners(preliminaryMembers);
+      debugPrint('[FirestoreMemberRepository] Phase 1 complete: ${loadedMembers.length} members shown.');
+    }
+
+    // --- [2단계: 백그라운드 로딩] 여론조사 데이터 매칭 ---
+    
+    // 이 단계는 await 하지 않고 비동기로 처리하여 refreshMembers가 즉시 반환되게 할 수도 있지만,
+    // _ensureInitialized에서 대기하므로 여기서는 별도 Isolate/Future로 넘깁니다.
+    _performPollMatchingInBackground(loadedMembers, now);
+  }
+
+  Future<void> _performPollMatchingInBackground(List<Member> initialMembers, DateTime now) async {
+    if (initialMembers.isEmpty) return;
+
+    try {
+      debugPrint('[FirestoreMemberRepository] Phase 2 start: Matching polls in background...');
+      final entries = await _nesdcPollDataSource.fetchLatest();
+      
+      // 최신 항목들 상세 정보 로드 (성능을 위해 제한)
+      final List<Future<void>> detailTasks = [];
+      for (var entry in entries.take(20)) { 
+        detailTasks.add(_nesdcPollDataSource.fetchDetail(entry.sourceUrl));
+      }
+      await Future.wait(detailTasks);
+
+      final List<NesdcPollDetail> collectedDetails = entries
+          .map((e) => _nesdcPollDataSource.getCachedDetail(e.sourceUrl))
+          .whereType<NesdcPollDetail>()
+          .toList();
+
+      final updatedMembers = kIsWeb
+          ? _matchPollsInBackground(List.from(initialMembers), entries, collectedDetails, now)
+          : await Isolate.run(() => _matchPollsInBackground(
+              List.from(initialMembers),
+              entries,
+              collectedDetails,
+              now,
+            ));
+
+      // 2-2. 즐겨찾기 재적용 및 최종 통지
+      final localService = sl<LocalStorageService>();
+      final favorites = await localService.getFavorites();
+      final finalMembers = updatedMembers.map((m) {
+        return m.copyWith(isFavorite: favorites.contains(m.id));
+      }).toList();
+      
       _notifyListeners(finalMembers);
+      debugPrint('[FirestoreMemberRepository] Phase 2 complete: Polls matched and UI updated.');
+    } catch (e) {
+      debugPrint('[FirestoreMemberRepository] Phase 2 Match Failed: $e');
     }
   }
 
