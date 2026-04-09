@@ -290,9 +290,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _triggerNesdcRefresh(isSilent: true);
     _startDataExportTimer();
     
-    // 1분마다 UI 데이터 새로고침 (백그라운드에서 조용히)
+    // 5분마다 UI 데이터 새로고침 (백그라운드에서 조용히, Isolate 최적화 적용됨)
     _uiRefreshTimer = Timer.periodic(
-      const Duration(minutes: 1),
+      const Duration(minutes: 5),
       (_) => _triggerNesdcRefresh(isSilent: true),
     );
   }

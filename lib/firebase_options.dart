@@ -31,17 +31,17 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyD5nifY1s4HyYcTf3Kw63pDdFlN0mJ-FPA',
-    appId: '1:813263083099:web:ea9d0ea13b75bd8b1e517e',
+    appId: '1:813263083099:web:2b21915005a6e9c61e517e',
     messagingSenderId: '813263083099',
     projectId: 'elecko26-585b0',
     authDomain: 'elecko26-585b0.firebaseapp.com',
     storageBucket: 'elecko26-585b0.firebasestorage.app',
-    measurementId: 'G-45MVYT5CK0',
+    measurementId: 'G-DN5Z23W3YE',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDLbgDdhErvac9BLuwXbI-F7xla8Lfc0Ww',
-    appId: '1:813263083099:android:4d90071dd46eb31e1e517e',
+    appId: '1:813263083099:android:b6340228f78440ab1e517e',
     messagingSenderId: '813263083099',
     projectId: 'elecko26-585b0',
     storageBucket: 'elecko26-585b0.firebasestorage.app',
@@ -49,11 +49,12 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAKkkVYZ_BqO7CudU80A3v1KjOx6aT6NRQ',
-    appId: '1:813263083099:ios:50af136a181f5c1f1e517e',
+    appId: '1:813263083099:ios:e886aee9159ad7401e517e',
     messagingSenderId: '813263083099',
     projectId: 'elecko26-585b0',
     storageBucket: 'elecko26-585b0.firebasestorage.app',
-    iosBundleId: 'com.jtsgrit0.elecko26',
+    iosClientId: '813263083099-n2a56ql4nm9eav3854vro405hmg7ndvu.apps.googleusercontent.com',
+    iosBundleId: 'com.elecko26.app',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -62,16 +63,18 @@ class DefaultFirebaseOptions {
     messagingSenderId: '813263083099',
     projectId: 'elecko26-585b0',
     storageBucket: 'elecko26-585b0.firebasestorage.app',
+    iosClientId: '813263083099-qjvo3nju9r5v7e22955r3qbuik4nh81i.apps.googleusercontent.com',
     iosBundleId: 'com.example.flutterApplication1',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyD5nifY1s4HyYcTf3Kw63pDdFlN0mJ-FPA',
-    appId: '1:813263083099:web:2b21915005a6e9c61e517e',
+    appId: '1:813263083099:web:6898686e0149d5861e517e',
     messagingSenderId: '813263083099',
     projectId: 'elecko26-585b0',
     authDomain: 'elecko26-585b0.firebaseapp.com',
     storageBucket: 'elecko26-585b0.firebasestorage.app',
-    measurementId: 'G-DN5Z23W3YE',
+    measurementId: 'G-YT7H9MR46Y',
   );
+
 }

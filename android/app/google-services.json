@@ -7,12 +7,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:813263083099:android:4d90071dd46eb31e1e517e",
+        "mobilesdk_app_id": "1:813263083099:android:b6340228f78440ab1e517e",
         "android_client_info": {
-          "package_name": "com.example.flutter_application_1"
+          "package_name": "com.elecko26.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "813263083099-8t9v3406hbl85rkfh1n8a9vloq2qn5re.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDLbgDdhErvac9BLuwXbI-F7xla8Lfc0Ww"
@@ -20,7 +25,55 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "813263083099-8t9v3406hbl85rkfh1n8a9vloq2qn5re.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "813263083099-nifkb29kq6s5839c49gnf2qulg59vvml.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.jtsgrit0.elecko26"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:813263083099:android:4d90071dd46eb31e1e517e",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_1"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "813263083099-8t9v3406hbl85rkfh1n8a9vloq2qn5re.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLbgDdhErvac9BLuwXbI-F7xla8Lfc0Ww"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "813263083099-8t9v3406hbl85rkfh1n8a9vloq2qn5re.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "813263083099-nifkb29kq6s5839c49gnf2qulg59vvml.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.jtsgrit0.elecko26"
+              }
+            }
+          ]
         }
       }
     }

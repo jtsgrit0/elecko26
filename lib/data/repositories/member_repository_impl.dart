@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:isolate';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:elecko26/data/models/member_model.dart';
 import 'package:elecko26/domain/entities/member.dart';
@@ -104,171 +106,218 @@ class MemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<void> refreshMembers() async {
-    if (_refreshInProgress) {
-      return;
-    }
+    if (_refreshInProgress) return;
     _refreshInProgress = true;
     final now = DateTime.now();
     
-    List<String> favoriteIds = [];
-    if (sl.isRegistered<LocalStorageService>()) {
-      final prefs = sl<LocalStorageService>();
-      favoriteIds = prefs.getStringList('favorite_member_ids') ?? [];
-      print('[MemberRepo] Loaded ${favoriteIds.length} favorite IDs from storage');
-    } else {
-      print('[MemberRepo] Warning: LocalStorageService is not registered!');
-    }
-
     try {
-      print('[MemberRepo] Starting refreshMembers at $now');
-      String? decodedBody;
+      final prefs = sl<LocalStorageService>();
+      final favoriteIds = prefs.getStringList('favorite_member_ids') ?? [];
+
+      String? candidatesJson;
       try {
         final rawUrl = 'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
         final response = await http.get(Uri.parse(rawUrl)).timeout(const Duration(seconds: 10));
-        print('[MemberRepo] Remote fetch HTTP status: ${response.statusCode}');
         if (response.statusCode == 200) {
-          decodedBody = utf8.decode(response.bodyBytes);
-          print('[MemberRepo] Remote fetch succeeded, ${response.bodyBytes.length} bytes');
-        } else {
-          print('[MemberRepo] Remote fetch failed with status: ${response.statusCode}');
+          candidatesJson = utf8.decode(response.bodyBytes);
         }
-      } catch (e) {
-        print('[MemberRepo] Remote fetch failed: $e');
-      }
+      } catch (_) {}
 
-      if (decodedBody == null) {
+      if (candidatesJson == null) {
         try {
-          decodedBody = await rootBundle.loadString('data/election_candidates.json');
-          print('[MemberRepo] Loaded local asset fallback for election_candidates.json, ${decodedBody.length} chars');
-        } catch (e) {
-          print('[MemberRepo] Local asset fallback failed: $e');
-        }
+          candidatesJson = await rootBundle.loadString('data/election_candidates.json');
+        } catch (_) {}
       }
 
-      if (decodedBody != null) {
-        final List<dynamic> jsonList = json.decode(decodedBody);
-        print('[MemberRepo] Parsed json list length: ${jsonList.length}');
-        for (var item in jsonList) {
-          try {
-            final newMember = MemberModel.fromJson(item as Map<String, dynamic>);
-            final idx = _dummyMembers.indexWhere((m) => m.name == newMember.name);
-            final isFavorite = favoriteIds.contains(newMember.id);
-
-            if (idx != -1) {
-              _dummyMembers[idx] = newMember.copyWith(
-                polls: _dummyMembers[idx].polls,
-                isFavorite: isFavorite,
-              );
-            } else if (!_dummyMembers.any((m) => m.id == newMember.id)) {
-              _dummyMembers.add(newMember.copyWith(isFavorite: isFavorite));
-            }
-          } catch (e) {
-            print('[MemberRepo] Member parse error for ${item['name']}: $e');
+      if (candidatesJson != null) {
+        // [Optimization] JSON 파싱과 Member 객체 생성을 Isolate에서 수행
+        final membersFromIsolate = await Isolate.run(() => _parseMembersInBackground(candidatesJson!, favoriteIds));
+        
+        for (var newMember in membersFromIsolate) {
+          final idx = _dummyMembers.indexWhere((m) => m.name == newMember.name);
+          if (idx != -1) {
+            _dummyMembers[idx] = newMember.copyWith(
+              polls: _dummyMembers[idx].polls,
+              isFavorite: newMember.isFavorite,
+            );
+          } else if (!_dummyMembers.any((m) => m.id == newMember.id)) {
+            _dummyMembers.add(newMember);
           }
         }
-      } else {
-        print('[MemberRepo] No election_candidates data could be loaded.');
       }
 
       final entries = await _nesdcPollDataSource.fetchLatest();
-      if (!_kReleaseMode) {
-        print('[NESDC] fetched list entries: ${entries.length}');
-      }
-
-      // 벙렬 처리를 위한 비동기 작업 목록 생성
-      final updateTasks = _dummyMembers.asMap().entries.map((mapEntry) async {
-        final i = mapEntry.key;
-        final member = mapEntry.value;
-        
+      
+      // 상세 정보 병렬 Fetch (I/O는 메인 스레드 비동기로 처리)
+      final List<Future<void>> detailTasks = [];
+      for (final member in _dummyMembers) {
         final regionKey = _mapDistrictToRegion(member.district);
         final matchedEntries = entries
             .where((e) => _matchesRegion(e.region, regionKey))
             .toList()
           ..sort((a, b) => b.registeredDate.compareTo(a.registeredDate));
-        final limitedEntries = matchedEntries.take(5).toList();
-
-        // 각 의원의 여론조사 상세 정보를 병렬로 가져옴
-        final pollFutures = limitedEntries.map((entry) async {
-          NesdcPollDetail? detail;
-          try {
-            detail = await _nesdcPollDataSource.fetchDetail(entry.sourceUrl);
-          } catch (_) {
-            detail = null;
-          }
-          
-          final candidateNames = _candidateNameVariants(member);
-          final partyNames = _partyAliases(member.party);
-          
-          double? supportRate = detail?.findSupportRate(candidateNames);
-          var supportSource = '후보';
-          if (supportRate == null) {
-            supportRate = detail?.findSupportRate(partyNames);
-            if (supportRate != null) {
-              supportSource = '정당';
-            }
-          }
-          
-          final sampleSize = detail?.sampleSize;
-          final marginOfError = detail?.marginOfError;
-          final surveyDate = detail?.surveyDate ?? entry.registeredDate;
-          final resultUrl = detail?.resultFileUrl;
-
-          final noteParts = <String>[
-            entry.client,
-            entry.method,
-            entry.sampleFrame,
-            entry.pollName,
-          ];
-          if (entry.status != null && entry.status!.isNotEmpty) {
-            noteParts.add('결과등록: ${entry.status}');
-          }
-          if (supportRate == null) {
-            noteParts.add('결과 미공개');
-          } else {
-            noteParts.add('$supportSource 지지율 추출됨');
-          }
-          if (resultUrl != null) {
-            noteParts.add('결과 링크: $resultUrl');
-          }
-
-          return Poll(
-            id: 'nesdc_${entry.registrationNo}',
-            pollAgency: entry.agency,
-            surveyDate: surveyDate,
-            supportRate: supportRate,
-            partyName: member.party,
-            sampleSize: sampleSize,
-            marginOfError: marginOfError,
-            source: entry.sourceUrl,
-            notes: noteParts.join(' | '),
-          );
-        });
-
-        final newPolls = await Future.wait(pollFutures);
-        final mergedPolls = _mergePolls(member.polls, newPolls);
         
-        _dummyMembers[i] = member.copyWith(
-          polls: mergedPolls,
-          lastAnalysisDate: now,
-        );
-        
-        if (!_kReleaseMode) {
-          final extractedCount = newPolls.where((p) => p.supportRate != null).length;
-          print('[NESDC] ${member.name} matched=${limitedEntries.length} extracted=$extractedCount');
+        for (final entry in matchedEntries.take(5)) {
+          detailTasks.add(_nesdcPollDataSource.fetchDetail(entry.sourceUrl));
         }
-      });
-
-      // 모든 의원의 업데이트 작업을 동시에 실행
-      await Future.wait(updateTasks);
-      _notifyListeners();
-    } catch (_) {
-      for (var i = 0; i < _dummyMembers.length; i++) {
-        _dummyMembers[i] = _dummyMembers[i].copyWith(lastAnalysisDate: now);
       }
+      await Future.wait(detailTasks);
+
+      // [Optimization] 복잡한 정규표현식 매칭 루프를 Isolate에서 한꺼번에 수행
+      final List<NesdcPollDetail> collectedDetails = entries
+          .map((e) => _nesdcPollDataSource.getCachedDetail(e.sourceUrl))
+          .whereType<NesdcPollDetail>()
+          .toList();
+
+      final updatedMembers = await Isolate.run(() => _matchPollsInBackground(
+        _dummyMembers,
+        entries,
+        collectedDetails,
+        now,
+      ));
+
+      _dummyMembers.clear();
+      _dummyMembers.addAll(updatedMembers);
+      _notifyListeners();
+    } catch (e, st) {
+      debugPrint('[MemberRepo] UI Stutter Prevention Failed: $e\n$st');
     } finally {
       _refreshInProgress = false;
-      print('[MemberRepo] refreshMembers completed. member count=${_dummyMembers.length}');
     }
+  }
+  }
+
+  /// [Static Background Function] JSON 파싱 및 Member 객체 변환을 Isolate에서 수행
+  static List<Member> _parseMembersInBackground(String jsonString, List<String> favoriteIds) {
+    final List<dynamic> jsonList = json.decode(jsonString);
+    final List<Member> members = [];
+    for (var item in jsonList) {
+       try {
+         final m = MemberModel.fromJson(item as Map<String, dynamic>);
+         members.add(m.copyWith(isFavorite: favoriteIds.contains(m.id)));
+       } catch (_) {}
+    }
+    return members;
+  }
+
+  /// [Static Background Function] 대량의 여론조사 텍스트 매칭(Regex)을 Isolate에서 한꺼번에 수행
+  static List<Member> _matchPollsInBackground(
+    List<Member> members,
+    List<NesdcPollEntry> entries,
+    List<NesdcPollDetail> details,
+    DateTime now,
+  ) {
+    // 빠른 조회를 위해 상세 정보를 Map으로 변환
+    final detailMap = {for (var d in details) d.detailUrl: d};
+    final updatedMembers = <Member>[];
+
+    for (var member in members) {
+      final regionKey = _staticMapDistrictToRegion(member.district);
+      final matchedEntries = entries
+          .where((e) => _staticMatchesRegion(e.region, regionKey))
+          .toList()
+        ..sort((a, b) => b.registeredDate.compareTo(a.registeredDate));
+      
+      final limitedEntries = matchedEntries.take(5).toList();
+      final newPolls = <Poll>[];
+
+      for (var entry in limitedEntries) {
+        final detail = detailMap[entry.sourceUrl];
+        if (detail == null) continue;
+
+        final candidateNames = _staticCandidateNameVariants(member);
+        final partyAliases = _staticPartyAliases(member.party);
+        
+        double? supportRate = detail.findSupportRate(candidateNames);
+        var supportSource = '후보';
+        if (supportRate == null) {
+          supportRate = detail.findSupportRate(partyAliases);
+          if (supportRate != null) supportSource = '정당';
+        }
+
+        final noteParts = [
+          entry.client, entry.method, entry.sampleFrame, entry.pollName,
+          if (entry.status != null) '결과등록: ${entry.status}',
+          supportRate == null ? '결과 미공개' : '$supportSource 지지율 추출됨',
+          if (detail.resultFileUrl != null) '결과 링크: ${detail.resultFileUrl}'
+        ];
+
+        newPolls.add(Poll(
+          id: 'nesdc_${entry.registrationNo}',
+          pollAgency: entry.agency,
+          surveyDate: detail.surveyDate ?? entry.registeredDate,
+          supportRate: supportRate,
+          partyName: member.party,
+          sampleSize: detail.sampleSize,
+          marginOfError: detail.marginOfError,
+          source: entry.sourceUrl,
+          notes: noteParts.where((s) => s.isNotEmpty).join(' | '),
+        ));
+      }
+
+      updatedMembers.add(member.copyWith(
+        polls: _staticMergePolls(member.polls, newPolls),
+        lastAnalysisDate: now,
+      ));
+    }
+    return updatedMembers;
+  }
+
+  // Isolate 내부에서 사용하기 위한 정적 헬퍼 메서드들
+  static String _staticMapDistrictToRegion(String district) {
+    final normalized = district.replaceAll(' ', '');
+    const regionMap = {
+      '서울': '서울특별시', '부산': '부산광역시', '대구': '대구광역시', '인천': '인천광역시',
+      '광주': '광주광역시', '대전': '대전광역시', '울산': '울산광역시', '세종': '세종특별자치시',
+      '경기': '경기도', '강원': '강원도', '충북': '충청북도', '충남': '충청남도',
+      '전북': '전북특별자치도', '전남': '전라남도', '경북': '경상북도', '경남': '경상남도', '제주': '제주특별자치도',
+    };
+    for (final entry in regionMap.entries) {
+      if (normalized.contains(entry.key)) return entry.value;
+    }
+    return '전국';
+  }
+
+  static bool _staticMatchesRegion(String pollRegion, String targetRegion) {
+    if (pollRegion.isEmpty) return false;
+    if (pollRegion.contains('전국') || pollRegion.contains(targetRegion)) return true;
+    if (targetRegion == '전북특별자치도' && pollRegion.contains('전라북도')) return true;
+    return false;
+  }
+
+  static List<String> _staticCandidateNameVariants(Member member) {
+    final name = member.name.trim();
+    if (name.isEmpty) return [];
+    final variants = {name, name.replaceAll(' ', '')};
+    if (name.length >= 2) variants.add('${name[0]} ${name.substring(1)}');
+    const suffixes = ['후보', '후보자', '의원', '시장', '지사', '군수', '구청장', '위원장'];
+    for (final s in suffixes) {
+      variants.add('$name $s');
+      variants.add('${name.replaceAll(' ', '')}$s');
+    }
+    for (final alias in _staticPartyAliases(member.party)) {
+      variants.add('$alias $name');
+      variants.add('$alias $name 후보');
+    }
+    return variants.toList();
+  }
+
+  static List<String> _staticPartyAliases(String party) {
+    const aliasMap = {
+      '더불어민주당': ['더불어민주당', '민주당', '더불어 민주당', '민주'],
+      '국민의힘': ['국민의힘', '국힘'],
+      '정의당': ['정의당'], '국민의당': ['국민의당'], '기본소득당': ['기본소득당'], '진보당': ['진보당'],
+    };
+    return aliasMap[party] ?? [party];
+  }
+
+  static List<Poll> _staticMergePolls(List<Poll> existing, List<Poll> incoming) {
+    final byId = {for (var p in existing) p.id: p};
+    for (final p in incoming) byId[p.id] = p;
+    final merged = byId.values.toList();
+    merged.sort((a, b) => b.surveyDate.compareTo(a.surveyDate));
+    return merged;
+  }
   }
 
   @override

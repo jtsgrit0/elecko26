@@ -195,6 +195,9 @@ class NesdcPollDataSource {
   final LocalStorageService? _localStorageService;
   final Map<String, NesdcPollDetail> _detailCache = {};
   
+  /// 캐시된 상세 정보를 가져옵니다 (refreshMembers 최적화용)
+  NesdcPollDetail? getCachedDetail(String url) => _detailCache[url];
+  
   static const String _kPollsCacheKey = 'cached_nesdc_polls_json';
 
   Future<List<NesdcPollEntry>> fetchLatest({int pages = kNesdcPagesToFetch}) async {

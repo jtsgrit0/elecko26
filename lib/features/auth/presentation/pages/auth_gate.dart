@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:elecko26/app/injection_container.dart';
 import 'package:elecko26/features/auth/domain/usecases/auth_usecases.dart';
 import 'package:elecko26/features/auth/domain/entities/user.dart';
@@ -382,16 +383,17 @@ class _AuthGateState extends State<AuthGate> {
                                   color: const Color(0xFFDB4437),
                                   onTap: _isSubmitting
                                       ? null
-                                      : _showSocialLoginNotice,
+                                      : () => _submitSocialLogin(sl<SignInWithGoogleUseCase>().execute),
                                 ),
-                                _buildSocialAction(
-                                  label: 'Apple',
-                                  icon: Icons.apple_rounded,
-                                  color: Colors.black87,
-                                  onTap: _isSubmitting
-                                      ? null
-                                      : _showSocialLoginNotice,
-                                ),
+                                if (Platform.isIOS || Platform.isMacOS)
+                                  _buildSocialAction(
+                                    label: 'Apple',
+                                    icon: Icons.apple_rounded,
+                                    color: Colors.black87,
+                                    onTap: _isSubmitting
+                                        ? null
+                                        : () => _submitSocialLogin(sl<SignInWithAppleUseCase>().execute),
+                                  ),
                                 _buildSocialAction(
                                   label: 'Facebook',
                                   icon: Icons.facebook_rounded,
