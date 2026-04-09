@@ -23,6 +23,7 @@ import 'package:elecko26/features/map/presentation/pages/map_screen.dart';
 import 'package:elecko26/core/utils/party_util.dart';
 import 'package:elecko26/core/utils/utility_functions.dart';
 import 'package:elecko26/features/home/presentation/widgets/member_card.dart';
+import 'package:elecko26/features/voting/presentation/pages/polls_page.dart';
 import 'package:elecko26/features/home/presentation/widgets/favorites_view.dart';
 import 'dart:async';
 
@@ -506,6 +507,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Widget _buildVotingGatewayPage() {
+    if (_currentUser != null) {
+      return PollsPage(currentUser: _currentUser!);
+    }
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -520,25 +525,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 children: [
                   const Icon(Icons.how_to_vote_rounded, size: 56, color: AppColors.primary),
                   const SizedBox(height: 16),
-                  Text(
-                    _currentUser == null ? '로그인 후 투표 기능을 이용할 수 있습니다.' : '현재 웹 안정화 중입니다.',
+                  const Text(
+                    '로그인 후 투표 기능을 이용할 수 있습니다.',
                     style: AppTextStyles.headline4,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 12),
-                  Text(
-                    _currentUser == null
-                        ? '이메일 로그인 후 투표 및 프로필 기능을 사용할 수 있습니다.'
-                        : '${_currentUser!.email ?? _currentUser!.displayName ?? '사용자'} 계정으로 로그인되어 있습니다.\n현재는 의원 데이터와 홈 기능을 우선 안정화한 상태입니다.',
+                  const Text(
+                    '이메일 로그인 후 투표 및 프로필 기능을 사용할 수 있습니다.',
                     textAlign: TextAlign.center,
                     style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
                   ),
                   const SizedBox(height: 20),
-                  if (_currentUser == null)
-                    ElevatedButton(
-                      onPressed: () => _handleBottomNavTap(5),
-                      child: const Text('로그인하기'),
-                    ),
+                  ElevatedButton(
+                    onPressed: () => _handleBottomNavTap(5),
+                    child: const Text('로그인하기'),
+                  ),
                 ],
               ),
             ),

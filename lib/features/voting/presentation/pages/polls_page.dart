@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:elecko26/app/injection_container.dart';
+import 'package:elecko26/core/theme/app_theme.dart';
 import '../../../auth/domain/entities/user.dart' as auth;
 import '../../domain/entities/poll.dart';
 import '../../domain/usecases/poll_usecases.dart';
-import '../../data/repositories/poll_repository_impl.dart';
 import 'poll_detail_page.dart';
 import 'create_poll_page.dart';
 
@@ -37,12 +38,6 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-
-    _pollRepository = PollRepositoryImpl();
-    _getPollsUseCase = GetPollsUseCase(_pollRepository);
-    _createPollUseCase = CreatePollUseCase(_pollRepository);
-    _updatePollStatusUseCase = UpdatePollStatusUseCase(_pollRepository);
-
     _loadPolls();
   }
 
@@ -59,9 +54,9 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
     });
 
     try {
-      final activePolls = await _getPollsUseCase.execute(status: PollStatus.active);
-      final endedPolls = await _getPollsUseCase.execute(status: PollStatus.ended);
-      final myPolls = await _getPollsUseCase.execute(creatorId: widget.currentUser.id);
+      final activePolls = await sl<GetPollsUseCase>().execute(status: PollStatus.active);
+      final endedPolls = await sl<GetPollsUseCase>().execute(status: PollStatus.ended);
+      final myPolls = await sl<GetPollsUseCase>().execute(creatorId: widget.currentUser.id);
 
       setState(() {
         _activePolls = activePolls;
@@ -101,7 +96,7 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
       tags: ['프로그래밍', '설문조사'],
     );
 
-    final result = await _createPollUseCase.execute(samplePoll);
+    final result = await sl<CreatePollUseCase>().execute(samplePoll);
     if (result.isSuccess) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('샘플 투표가 생성되었습니다.')),
@@ -120,9 +115,14 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
       appBar: AppBar(
         title: const Text('투표'),
         centerTitle: true,
-        backgroundColor: const Color(0xFF1F3B5C),
+        backgroundColor: AppColors.primary,
+        elevation: 0,
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: AppColors.white,
+          indicatorWeight: 3,
+          labelStyle: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+          unselectedLabelStyle: AppTextStyles.bodyMedium,
           tabs: const [
             Tab(text: '진행중'),
             Tab(text: '종료됨'),
@@ -159,6 +159,7 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadPolls,
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
               child: const Text('다시 시도'),
             ),
           ],
@@ -203,8 +204,9 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
 
     return RefreshIndicator(
       onRefresh: _loadPolls,
+      color: AppColors.primary,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         itemCount: polls.length,
         itemBuilder: (context, index) {
           final poll = polls[index];
@@ -234,9 +236,9 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
                   Expanded(
                     child: Text(
                       poll.title,
-                      style: const TextStyle(
-                        fontSize: 18,
+                      style: AppTextStyles.headline3.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: AppColors.darkGray,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -249,9 +251,8 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
                 const SizedBox(height: 8),
                 Text(
                   poll.description,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.mediumGray,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -298,14 +299,14 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1F3B5C).withOpacity(0.1),
+                        color: AppColors.primary.withOpacity(0.08),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         '#$tag',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF1F3B5C),
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     );

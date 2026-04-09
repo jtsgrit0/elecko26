@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:elecko26/app/injection_container.dart';
+import 'package:elecko26/core/theme/app_theme.dart';
 import '../../../auth/domain/entities/user.dart' as auth;
 import '../../domain/entities/poll.dart';
 import '../../domain/usecases/poll_usecases.dart';
-import '../../data/repositories/poll_repository_impl.dart';
 
 class PollDetailPage extends StatefulWidget {
   final Poll poll;
@@ -19,13 +20,9 @@ class PollDetailPage extends StatefulWidget {
 }
 
 class _PollDetailPageState extends State<PollDetailPage> {
-  late final PollRepositoryImpl _pollRepository;
-  late final VoteUseCase _voteUseCase;
-  late final GetPollResultsUseCase _getPollResultsUseCase;
-  late final UpdatePollStatusUseCase _updatePollStatusUseCase;
-
   Poll? _currentPoll;
   PollResult? _pollResult;
+  List<String> _userVoteIds = [];
   bool _isLoading = true;
   String? _errorMessage;
   bool _isVoting = false;
@@ -33,11 +30,6 @@ class _PollDetailPageState extends State<PollDetailPage> {
   @override
   void initState() {
     super.initState();
-    _pollRepository = PollRepositoryImpl();
-    _voteUseCase = VoteUseCase(_pollRepository);
-    _getPollResultsUseCase = GetPollResultsUseCase(_pollRepository);
-    _updatePollStatusUseCase = UpdatePollStatusUseCase(_pollRepository);
-
     _loadPollData();
   }
 
@@ -49,27 +41,35 @@ class _PollDetailPageState extends State<PollDetailPage> {
 
     try {
       // 투표 결과 가져오기
-      final result = await _getPollResultsUseCase.execute(widget.poll.id);
-      if (result != null) {
+      final result = await sl<GetPollResultsUseCase>().execute(widget.poll.id);
+      
+      // 내 투표 기록 가져오기
+      final myVotes = await sl<GetUserVotesUseCase>().execute(widget.poll.id, widget.currentUser.id);
+
+      if (mounted) {
         setState(() {
-          _currentPoll = result.poll;
-          _pollResult = result;
-        });
-      } else {
-        setState(() {
-          _currentPoll = widget.poll;
-          _errorMessage = '투표 데이터를 불러올 수 없습니다.';
+          if (result != null) {
+            _currentPoll = result.poll;
+            _pollResult = result;
+          } else {
+            _currentPoll = widget.poll;
+          }
+          _userVoteIds = myVotes;
         });
       }
     } catch (e) {
-      setState(() {
-        _currentPoll = widget.poll;
-        _errorMessage = '투표 데이터를 불러오는 중 오류가 발생했습니다.';
-      });
+      if (mounted) {
+        setState(() {
+          _currentPoll = widget.poll;
+          _errorMessage = '투표 데이터를 불러오는 중 오류가 발생했습니다.';
+        });
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -81,26 +81,34 @@ class _PollDetailPageState extends State<PollDetailPage> {
     });
 
     try {
-      final result = await _voteUseCase.execute(_currentPoll!.id, widget.currentUser.id, optionIds);
+      final result = await sl<VoteUseCase>().execute(_currentPoll!.id, widget.currentUser.id, optionIds);
 
       if (result.isSuccess) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('투표가 완료되었습니다.')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('투표가 완료되었습니다.')),
+          );
+        }
         _loadPollData(); // 데이터 새로고침
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result.errorMessage ?? '투표에 실패했습니다.')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result.errorMessage ?? '투표에 실패했습니다.')),
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('투표 처리 중 오류가 발생했습니다.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('투표 처리 중 오류가 발생했습니다.')),
+        );
+      }
     } finally {
-      setState(() {
-        _isVoting = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isVoting = false;
+        });
+      }
     }
   }
 
@@ -128,22 +136,28 @@ class _PollDetailPageState extends State<PollDetailPage> {
     if (confirmed != true) return;
 
     try {
-      final result = await _updatePollStatusUseCase.execute(_currentPoll!.id, PollStatus.ended);
+      final result = await sl<UpdatePollStatusUseCase>().execute(_currentPoll!.id, PollStatus.ended);
 
       if (result) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('투표가 종료되었습니다.')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('투표가 종료되었습니다.')),
+          );
+        }
         _loadPollData();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('투표 종료에 실패했습니다.')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('투표 종료에 실패했습니다.')),
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('투표 종료 처리 중 오류가 발생했습니다.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('투표 종료 처리 중 오류가 발생했습니다.')),
+        );
+      }
     }
   }
 
@@ -153,8 +167,8 @@ class _PollDetailPageState extends State<PollDetailPage> {
       appBar: AppBar(
         title: const Text('투표 상세'),
         centerTitle: true,
-        backgroundColor: const Color(0xFF1F3B5C),
-        actions: [
+        backgroundColor: AppColors.primary,
+        elevation: 0,
           if (_currentPoll?.creatorId == widget.currentUser.id &&
               _currentPoll?.status == PollStatus.active)
             IconButton(
@@ -248,33 +262,31 @@ class _PollDetailPageState extends State<PollDetailPage> {
             const SizedBox(height: 16),
             Row(
               children: [
-                Icon(
-                  Icons.people,
-                  size: 16,
-                  color: Colors.grey[600],
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${_currentPoll!.totalVotes}명 참여',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Icon(
-                  Icons.access_time,
-                  size: 16,
-                  color: Colors.grey[600],
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  _formatDateTime(_currentPoll!.createdAt),
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
-                ),
+                    Icon(
+                      Icons.people,
+                      size: 16,
+                      color: AppColors.mediumGray,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${_currentPoll!.totalVotes}명 참여',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.mediumGray,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Icon(
+                      Icons.access_time,
+                      size: 16,
+                      color: AppColors.mediumGray,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatDateTime(_currentPoll!.createdAt),
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.mediumGray,
+                      ),
+                    ),
               ],
             ),
             if (_currentPoll!.tags.isNotEmpty) ...[
@@ -286,14 +298,14 @@ class _PollDetailPageState extends State<PollDetailPage> {
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1F3B5C).withOpacity(0.1),
+                      color: AppColors.primary.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       '#$tag',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF1F3B5C),
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   );
@@ -307,7 +319,7 @@ class _PollDetailPageState extends State<PollDetailPage> {
   }
 
   Widget _buildPollOptions() {
-    final canVote = _currentPoll!.status == PollStatus.active && false; // TODO: 실제 투표 기록 확인
+    final canVote = _currentPoll!.status == PollStatus.active && _userVoteIds.isEmpty;
 
     return Card(
       elevation: 4,
@@ -345,10 +357,11 @@ class _PollDetailPageState extends State<PollDetailPage> {
           child: ElevatedButton(
             onPressed: _isVoting ? null : () => _vote([option.id]),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF1F3B5C),
-              side: const BorderSide(color: Color(0xFF1F3B5C)),
+              backgroundColor: AppColors.white,
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary),
               padding: const EdgeInsets.all(16),
+              elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -378,18 +391,16 @@ class _PollDetailPageState extends State<PollDetailPage> {
   Widget _buildViewOnlyOptions() {
     return Column(
       children: _currentPoll!.options.map((option) {
-        final hasVoted = false; // TODO: 실제 투표 기록 확인
-        final userVote = hasVoted ? null : null; // TODO: 실제 투표 기록 확인
-        final isSelected = userVote?.optionIds.contains(option.id) ?? false;
+        final isSelected = _userVoteIds.contains(option.id);
 
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF1F3B5C).withOpacity(0.1) : Colors.grey[100],
+            color: isSelected ? AppColors.primary.withOpacity(0.08) : AppColors.lightGray.withOpacity(0.3),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isSelected ? const Color(0xFF1F3B5C) : Colors.grey[300]!,
+              color: isSelected ? AppColors.primary : AppColors.lightGray,
             ),
           ),
           child: Row(
@@ -397,9 +408,8 @@ class _PollDetailPageState extends State<PollDetailPage> {
               Expanded(
                 child: Text(
                   option.text,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: isSelected ? const Color(0xFF1F3B5C) : Colors.black,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: isSelected ? AppColors.primary : AppColors.darkGray,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
@@ -407,7 +417,7 @@ class _PollDetailPageState extends State<PollDetailPage> {
               if (isSelected)
                 const Icon(
                   Icons.check_circle,
-                  color: Color(0xFF1F3B5C),
+                  color: AppColors.primary,
                 ),
             ],
           ),
@@ -472,8 +482,10 @@ class _PollDetailPageState extends State<PollDetailPage> {
                       value: _currentPoll!.totalVotes > 0
                           ? voteCount / _currentPoll!.totalVotes
                           : 0,
-                      backgroundColor: Colors.grey[300],
-                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1F3B5C)),
+                      backgroundColor: AppColors.lightGray,
+                      minHeight: 8,
+                      borderRadius: BorderRadius.circular(4),
+                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                     ),
                   ],
                 ),

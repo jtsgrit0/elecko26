@@ -20,6 +20,9 @@ import 'package:elecko26/features/auth/domain/usecases/auth_usecases.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:elecko26/data/datasources/local_storage_service.dart';
 import 'package:elecko26/data/datasources/shared_prefs_local_storage_service.dart';
+import 'package:elecko26/features/voting/data/repositories/poll_repository_impl.dart';
+import 'package:elecko26/features/voting/domain/repositories/poll_repository.dart';
+import 'package:elecko26/features/voting/domain/usecases/poll_usecases.dart';
 
 
 final sl = GetIt.instance;
@@ -165,6 +168,55 @@ Future<void> init() async {
   
   sl.registerSingleton<GetElectionMapDataUseCase>(
     GetElectionMapDataUseCase(sl<MapRepository>()),
+  );
+  
+  //! Features - Voting
+  sl.registerSingleton<PollRepository>(
+    PollRepositoryImpl(),
+  );
+
+  sl.registerSingleton<GetPollsUseCase>(
+    GetPollsUseCase(sl<PollRepository>()),
+  );
+
+  sl.registerSingleton<GetPollUseCase>(
+    GetPollUseCase(sl<PollRepository>()),
+  );
+
+  sl.registerSingleton<CreatePollUseCase>(
+    CreatePollUseCase(sl<PollRepository>()),
+  );
+
+  sl.registerSingleton<UpdatePollUseCase>(
+    UpdatePollUseCase(sl<PollRepository>()),
+  );
+
+  sl.registerSingleton<DeletePollUseCase>(
+    DeletePollUseCase(sl<PollRepository>()),
+  );
+
+  sl.registerSingleton<UpdatePollStatusUseCase>(
+    UpdatePollStatusUseCase(sl<PollRepository>()),
+  );
+
+  sl.registerSingleton<VoteUseCase>(
+    VoteUseCase(sl<PollRepository>()),
+  );
+
+  sl.registerSingleton<GetPollResultsUseCase>(
+    GetPollResultsUseCase(sl<PollRepository>()),
+  );
+
+  sl.registerSingleton<GetUserVotesUseCase>(
+    GetUserVotesUseCase(sl<PollRepository>()),
+  );
+
+  sl.registerSingleton<StartPollUseCase>(
+    StartPollUseCase(sl<PollRepository>()),
+  );
+
+  sl.registerSingleton<EndPollUseCase>(
+    EndPollUseCase(sl<PollRepository>()),
   );
   
   //! Core
