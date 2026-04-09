@@ -98,6 +98,13 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<AuthResult> signInWithGoogle() async {
     try {
       if (Firebase.apps.isEmpty) return AuthResult.failure('Firebase가 활성화되지 않았습니다.');
+      if (kIsWeb) {
+        final authProvider = firebase_auth.GoogleAuthProvider();
+        final userCredential = await _firebaseAuth.signInWithPopup(authProvider);
+        if (userCredential.user == null) return AuthResult.failure('구글 로그인 연동에 실패했습니다.');
+        return AuthResult.success(_mapFirebaseUser(userCredential.user)!);
+      }
+
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return AuthResult.failure('구글 로그인이 취소되었습니다.');
 
