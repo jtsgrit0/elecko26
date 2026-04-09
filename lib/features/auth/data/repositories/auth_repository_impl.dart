@@ -20,7 +20,9 @@ class AuthRepositoryImpl implements AuthRepository {
     return firebase_auth.FirebaseAuth.instance;
   }
 
-  GoogleSignIn get _googleSignIn => GoogleSignIn();
+  GoogleSignIn get _googleSignIn => GoogleSignIn(
+    clientId: kIsWeb ? '813263083099-8t9v3406hbl85rkfh1n8a9vloq2qn5re.apps.googleusercontent.com' : null,
+  );
 
   AuthRepositoryImpl();
 
