@@ -6,6 +6,7 @@ import 'package:elecko26/domain/repositories/member_repository.dart';
 import 'package:elecko26/app/injection_container.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:elecko26/data/datasources/local_storage_service.dart';
+import 'dart:async';
 
 class RegionalMemberVotingList extends StatefulWidget {
   final String region;
@@ -27,11 +28,27 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
   Map<String, String> _votes = {}; // district -> memberId
   Map<String, int> _voteTimestamps = {}; // district -> timestamp
   bool _isLoading = true;
+  StreamSubscription<List<Member>>? _memberSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadRegionalMembers();
+    _startMemberSubscription();
+  }
+
+  void _startMemberSubscription() {
+    _memberSubscription?.cancel();
+    _memberSubscription = sl<MemberRepository>().watchAllMembers().listen((allMembers) {
+      if (mounted) {
+        final filtered = allMembers.where((m) {
+          return districtMatchesRegion(m.district, widget.region);
+        }).toList();
+        setState(() {
+          _members = filtered;
+        });
+      }
+    });
   }
 
   @override
@@ -39,7 +56,14 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.region != widget.region) {
       _loadRegionalMembers();
+      _startMemberSubscription();
     }
+  }
+
+  @override
+  void dispose() {
+    _memberSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadRegionalMembers() async {

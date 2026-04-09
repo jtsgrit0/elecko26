@@ -617,7 +617,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('로그아웃'),
-        content: const Text('정말 로그아웃하시겠습니까?'),
+        content: const Text('정말 로그아웃하시겠습니까?\n(보안을 위해 로컬 투표 및 설정 데이터도 초기화됩니다.)'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -639,14 +639,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     if (shouldSignOut != true) return;
 
+    // 로컬 데이터 초기화 (투표, 즐겨찾기, 지역 설정 등 완전 삭제)
+    await sl<MemberRepository>().resetSettings();
     await sl<SignOutUseCase>().execute();
-    // _authSubscription이 즉시 _currentUser를 null로 업데이트함
+    
+    // _authSubscription이 업데이트하겠지만, UI 즉각 반응을 위해 수동 설정
     if (!mounted) return;
     setState(() {
+      _currentUser = null;
       _selectedIndex = 0;
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('로그아웃되었습니다.')),
+      const SnackBar(content: Text('로그아웃 및 로컬 데이터가 초기화되었습니다.')),
     );
   }
 
