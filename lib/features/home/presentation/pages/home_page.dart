@@ -505,46 +505,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       return PollsPage(currentUser: _currentUser!);
     }
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.how_to_vote_rounded, size: 56, color: AppColors.primary),
-                  const SizedBox(height: 16),
-                  const Text(
-                    '로그인 후 투표 기능을 이용할 수 있습니다.',
-                    style: AppTextStyles.headline4,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '이메일 로그인 후 투표 및 프로필 기능을 사용할 수 있습니다.',
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () => _handleBottomNavTap(5),
-                    child: const Text('로그인하기'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+    return AuthGate(
+      isEmbedded: true,
+      onSuccess: () => _loadCurrentUser(),
     );
   }
 
   Widget _buildProfileGatewayPage() {
+    if (_currentUser == null) {
+      return AuthGate(
+        isEmbedded: true,
+        onSuccess: () => _loadCurrentUser(),
+      );
+    }
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -564,39 +538,33 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    _currentUser == null ? '로그인이 필요합니다.' : (_currentUser!.displayName ?? '내 프로필'),
+                    _currentUser!.displayName ?? '내 프로필',
                     style: AppTextStyles.headline4,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _currentUser?.email ?? '로그인 후 프로필과 즐겨찾기 흐름을 사용할 수 있습니다.',
+                    _currentUser!.email,
                     style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 20),
-                  if (_currentUser == null)
-                    ElevatedButton(
-                      onPressed: () => _handleBottomNavTap(6),
-                      child: const Text('로그인하기'),
-                    )
-                  else
-                    OutlinedButton(
-                      onPressed: () async {
-                        await sl<SignOutUseCase>().execute();
-                        await _loadCurrentUser();
-                        if (!mounted) {
-                          return;
-                        }
-                        setState(() {
-                          _selectedIndex = 0;
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('로그아웃되었습니다.')),
-                        );
-                      },
-                      child: const Text('로그아웃'),
-                    ),
+                  OutlinedButton(
+                    onPressed: () async {
+                      await sl<SignOutUseCase>().execute();
+                      await _loadCurrentUser();
+                      if (!mounted) {
+                        return;
+                      }
+                      setState(() {
+                        _selectedIndex = 0;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('로그아웃되었습니다.')),
+                      );
+                    },
+                    child: const Text('로그아웃'),
+                  ),
                 ],
               ),
             ),

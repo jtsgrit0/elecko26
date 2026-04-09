@@ -5,7 +5,14 @@ import 'package:elecko26/features/auth/domain/usecases/auth_usecases.dart';
 import 'package:elecko26/features/auth/domain/entities/user.dart';
 
 class AuthGate extends StatefulWidget {
-  const AuthGate({Key? key}) : super(key: key);
+  final VoidCallback? onSuccess;
+  final bool isEmbedded;
+
+  const AuthGate({
+    Key? key,
+    this.onSuccess,
+    this.isEmbedded = false,
+  }) : super(key: key);
 
   @override
   State<AuthGate> createState() => _AuthGateState();
@@ -54,7 +61,11 @@ class _AuthGateState extends State<AuthGate> {
     });
 
     if (result.isSuccess) {
-      Navigator.of(context).pop(true);
+      if (widget.onSuccess != null) {
+        widget.onSuccess!();
+      } else {
+        Navigator.of(context).pop(true);
+      }
     }
   }
 
@@ -75,7 +86,11 @@ class _AuthGateState extends State<AuthGate> {
     });
 
     if (result.isSuccess) {
-      Navigator.of(context).pop(true);
+      if (widget.onSuccess != null) {
+        widget.onSuccess!();
+      } else {
+        Navigator.of(context).pop(true);
+      }
     }
   }
 
@@ -111,15 +126,17 @@ class _AuthGateState extends State<AuthGate> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton.icon(
-                        onPressed: () => Navigator.of(context).maybePop(),
-                        icon: const Icon(Icons.arrow_back_rounded),
-                        label: const Text('돌아가기'),
+                    if (!widget.isEmbedded) ...[
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () => Navigator.of(context).maybePop(),
+                          icon: const Icon(Icons.arrow_back_rounded),
+                          label: const Text('돌아가기'),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
+                      const SizedBox(height: 12),
+                    ],
                     Container(
                       padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
                       decoration: BoxDecoration(
