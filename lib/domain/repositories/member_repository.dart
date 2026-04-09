@@ -43,4 +43,7 @@ abstract class MemberRepository {
   Future<void> saveSelectedRegion(String region);
 
   Future<void> resetSettings();
+
+  /// 사용자 설정을 클라우드와 동기화합니다.
+  Future<void> syncUserSettings();
 }

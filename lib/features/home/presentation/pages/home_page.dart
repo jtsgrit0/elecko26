@@ -344,6 +344,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           MaterialPageRoute(builder: (_) => const AuthGate()),
         );
         await _loadCurrentUser();
+        if (_currentUser != null) {
+          // 로그인 성공 시 설정을 클라우드에서 동기화
+          await sl<MemberRepository>().syncUserSettings();
+          await _loadUserSettings(); // UI 상태 업데이트
+        }
         if (!mounted) {
           return;
         }

@@ -31,4 +31,52 @@ class SharedPreferencesService implements LocalStorageService {
   Future<bool> clear() async {
     return await prefs.clear();
   }
+
+  // Implementation of specific methods
+  static const String _keyFavorites = 'favorites';
+  static const String _keyRegion = 'selected_region';
+
+  @override
+  Future<List<String>> getFavorites() async {
+    return prefs.getStringList(_keyFavorites) ?? [];
+  }
+
+  @override
+  Future<void> addFavorite(String id) async {
+    final list = await getFavorites();
+    if (!list.contains(id)) {
+      list.add(id);
+      await prefs.setStringList(_keyFavorites, list);
+    }
+  }
+
+  @override
+  Future<void> removeFavorite(String id) async {
+    final list = await getFavorites();
+    if (list.contains(id)) {
+      list.remove(id);
+      await prefs.setStringList(_keyFavorites, list);
+    }
+  }
+
+  @override
+  Future<bool> isFavorite(String id) async {
+    final list = await getFavorites();
+    return list.contains(id);
+  }
+
+  @override
+  Future<String> getSelectedRegion() async {
+    return prefs.getString(_keyRegion) ?? '전국';
+  }
+
+  @override
+  Future<void> saveSelectedRegion(String region) async {
+    await prefs.setString(_keyRegion, region);
+  }
+
+  @override
+  Future<void> clearAll() async {
+    await prefs.clear();
+  }
 }

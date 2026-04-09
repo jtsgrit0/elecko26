@@ -1,5 +1,5 @@
-import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:elecko26/data/datasources/local_storage_service.dart';
 import 'package:elecko26/data/models/member_model.dart';
 import 'package:elecko26/domain/entities/member.dart';
@@ -22,8 +22,53 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
   Future<void> _ensureInitialized() async {
     if (_isInitialized) return;
+    await _syncUserSettingsWithCloud();
     await refreshMembers();
     _isInitialized = true;
+  }
+
+  Future<void> _syncUserSettingsWithCloud() async {
+    final user = auth.FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final localService = sl<LocalStorageService>();
+    
+    try {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      if (doc.exists) {
+        final data = doc.data() ?? {};
+        
+        // Sync Region
+        final cloudRegion = data['selectedRegion'] as String?;
+        if (cloudRegion != null && cloudRegion.isNotEmpty) {
+          await localService.saveSelectedRegion(cloudRegion);
+        }
+
+        // Sync Favorites
+        final cloudFavorites = List<String>.from(data['favorites'] ?? []);
+        if (cloudFavorites.isNotEmpty) {
+          final localFavorites = await localService.getFavorites();
+          // Merge logic: Combine both
+          final mergedSet = {...cloudFavorites, ...localFavorites};
+          final mergedList = mergedSet.toList();
+          
+          // Update local
+          for (final id in mergedList) {
+            if (!localFavorites.contains(id)) {
+              await localService.addFavorite(id);
+            }
+          }
+          
+          // Update cloud with merge result
+          await _firestore.collection('users').doc(user.uid).set({
+            'favorites': mergedList,
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+        }
+      }
+    } catch (e) {
+      print('[FirestoreMemberRepository] Sync error: $e');
+    }
   }
 
   @override
@@ -141,10 +186,26 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<void> toggleFavorite(String memberId) async {
     final localService = sl<LocalStorageService>();
     final isFav = await localService.isFavorite(memberId);
+    
+    // Update Local
     if (isFav) {
       await localService.removeFavorite(memberId);
     } else {
       await localService.addFavorite(memberId);
+    }
+    
+    // Update Cloud if logged in
+    final user = auth.FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        final favorites = await localService.getFavorites();
+        await _firestore.collection('users').doc(user.uid).set({
+          'favorites': favorites,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        print('[FirestoreMemberRepository] Failed to sync favorite to cloud: $e');
+      }
     }
     
     final members = List<Member>.from(_membersController.value);
@@ -165,12 +226,31 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<void> saveSelectedRegion(String region) async {
     final localService = sl<LocalStorageService>();
     await localService.saveSelectedRegion(region);
+
+    // Update Cloud if logged in
+    final user = auth.FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        await _firestore.collection('users').doc(user.uid).set({
+          'selectedRegion': region,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        print('[FirestoreMemberRepository] Failed to sync region to cloud: $e');
+      }
+    }
   }
 
   @override
   Future<void> resetSettings() async {
     final localService = sl<LocalStorageService>();
     await localService.clearAll();
+  }
+  
+  @override
+  Future<void> syncUserSettings() async {
+    await _syncUserSettingsWithCloud();
+    await refreshMembers();
   }
   
   @override

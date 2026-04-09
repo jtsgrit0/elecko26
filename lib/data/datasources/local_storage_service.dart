@@ -6,4 +6,13 @@ abstract class LocalStorageService {
   List<String>? getStringList(String key);
   Future<bool> setStringList(String key, List<String> value);
   Future<bool> clear();
+
+  // Settings specific
+  Future<List<String>> getFavorites();
+  Future<void> addFavorite(String id);
+  Future<void> removeFavorite(String id);
+  Future<bool> isFavorite(String id);
+  Future<String> getSelectedRegion();
+  Future<void> saveSelectedRegion(String region);
+  Future<void> clearAll();
 }
