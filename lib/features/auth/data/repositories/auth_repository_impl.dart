@@ -2,12 +2,24 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 
 /// Firebase를 사용한 인증 리포지토리 구현
 class AuthRepositoryImpl implements AuthRepository {
-  firebase_auth.FirebaseAuth get _firebaseAuth => firebase_auth.FirebaseAuth.instance;
+  // Firebase 초기화 상태를 안전하게 확인하는 Getter
+  firebase_auth.FirebaseAuth get _firebaseAuth {
+    if (Firebase.apps.isEmpty) {
+      throw FirebaseException(
+        plugin: 'firebase_auth',
+        message: 'Firebase가 활성화되지 않았습니다. AppConfig를 확인해주세요.',
+      );
+    }
+    return firebase_auth.FirebaseAuth.instance;
+  }
+
   GoogleSignIn get _googleSignIn => GoogleSignIn();
 
   AuthRepositoryImpl();
@@ -36,7 +48,12 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<User?> getCurrentUser() async {
-    return _mapFirebaseUser(_firebaseAuth.currentUser);
+    try {
+      if (Firebase.apps.isEmpty) return null;
+      return _mapFirebaseUser(_firebaseAuth.currentUser);
+    } catch (e) {
+      return null;
+    }
   }
 
   @override
@@ -50,6 +67,8 @@ class AuthRepositoryImpl implements AuthRepository {
       return AuthResult.success(_mapFirebaseUser(credential.user)!);
     } on firebase_auth.FirebaseAuthException catch (e) {
       return AuthResult.failure(_handleAuthException(e));
+    } on FirebaseException catch (e) {
+      return AuthResult.failure('Firebase 오류: ${e.message ?? e.code}');
     } catch (e) {
       return AuthResult.failure('알 수 없는 오류가 발생했습니다: $e');
     }
@@ -66,6 +85,8 @@ class AuthRepositoryImpl implements AuthRepository {
       return AuthResult.success(_mapFirebaseUser(credential.user)!);
     } on firebase_auth.FirebaseAuthException catch (e) {
       return AuthResult.failure(_handleAuthException(e));
+    } on FirebaseException catch (e) {
+      return AuthResult.failure('Firebase 오류: ${e.message ?? e.code}');
     } catch (e) {
       return AuthResult.failure('알 수 없는 오류가 발생했습니다: $e');
     }
@@ -74,6 +95,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<AuthResult> signInWithGoogle() async {
     try {
+      if (Firebase.apps.isEmpty) return AuthResult.failure('Firebase가 활성화되지 않았습니다.');
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return AuthResult.failure('구글 로그인이 취소되었습니다.');
 
@@ -87,6 +109,8 @@ class AuthRepositoryImpl implements AuthRepository {
       if (userCredential.user == null) return AuthResult.failure('구글 로그인 연동에 실패했습니다.');
 
       return AuthResult.success(_mapFirebaseUser(userCredential.user)!);
+    } on FirebaseException catch (e) {
+      return AuthResult.failure('Firebase 오류: ${e.message ?? e.code}');
     } catch (e) {
       return AuthResult.failure('구글 로그인 중 오류 발생: $e');
     }
@@ -95,6 +119,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<AuthResult> signInWithApple() async {
     try {
+      if (Firebase.apps.isEmpty) return AuthResult.failure('Firebase가 활성화되지 않았습니다.');
       final credential = await SignInWithApple.getAppleIDCredential(
         scopes: [
           AppleIDAuthorizationScopes.email,
@@ -112,6 +137,8 @@ class AuthRepositoryImpl implements AuthRepository {
       if (userCredential.user == null) return AuthResult.failure('애플 로그인 연동에 실패했습니다.');
 
       return AuthResult.success(_mapFirebaseUser(userCredential.user)!);
+    } on FirebaseException catch (e) {
+      return AuthResult.failure('Firebase 오류: ${e.message ?? e.code}');
     } catch (e) {
       return AuthResult.failure('애플 로그인 중 오류 발생: $e');
     }
@@ -129,12 +156,19 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
-    await _firebaseAuth.signOut();
+    try {
+      await _googleSignIn.signOut();
+      if (Firebase.apps.isNotEmpty) {
+        await _firebaseAuth.signOut();
+      }
+    } catch (e) {
+      debugPrint('SignOut error: $e');
+    }
   }
 
   @override
   Future<void> deleteAccount() async {
+    if (Firebase.apps.isEmpty) return;
     final user = _firebaseAuth.currentUser;
     if (user != null) {
       await user.delete();
@@ -143,6 +177,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Stream<User?> get authStateChanges {
+    if (Firebase.apps.isEmpty) return Stream.value(null);
     return _firebaseAuth.authStateChanges().map(_mapFirebaseUser);
   }
 
@@ -154,9 +189,9 @@ class AuthRepositoryImpl implements AuthRepository {
       case 'invalid-email': return '유효하지 않은 이메일 형식입니다.';
       case 'weak-password': return '비밀번호가 너무 취약합니다.';
       case 'operation-not-allowed': return '해당 인증 방식이 비활성화되어 있습니다.';
+      case 'network-request-failed': return '네트워크 연결이 원활하지 않습니다.';
+      case 'too-many-requests': return '너무 많은 시도가 있었습니다. 잠시 후 다시 시도해주세요.';
       default: return e.message ?? '인증 오류가 발생했습니다.';
     }
   }
-
-
 }
