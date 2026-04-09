@@ -364,13 +364,17 @@ class _RegionalMemberCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        member.name,
-                        style: AppTextStyles.headline3
-                            .copyWith(fontWeight: FontWeight.bold),
+                      Expanded(
+                        child: Text(
+                          member.name,
+                          style: AppTextStyles.headline3
+                              .copyWith(fontWeight: FontWeight.bold),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       if (isVoted) ...[
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 4),
                         const Icon(Icons.check_circle, size: 16, color: AppColors.primary),
                       ],
                     ],
@@ -380,32 +384,35 @@ class _RegionalMemberCard extends StatelessWidget {
                     member.party,
                     style: AppTextStyles.bodySmall
                         .copyWith(color: AppColors.mediumGray),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 36,
-                    child: ElevatedButton(
-                      onPressed: onVote,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isVoted 
-                            ? AppColors.primary 
-                            : AppColors.primary.withOpacity(0.1),
-                        foregroundColor: isVoted 
-                            ? AppColors.white 
-                            : AppColors.primary,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: Text(
-                        isVoted ? '지지함' : '지지하기',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            // 우측 '지지하기' 버튼
+            SizedBox(
+              height: 36,
+              child: ElevatedButton(
+                onPressed: onVote,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  backgroundColor: isVoted 
+                      ? AppColors.primary 
+                      : AppColors.primary.withOpacity(0.1),
+                  foregroundColor: isVoted 
+                      ? AppColors.white 
+                      : AppColors.primary,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  isVoted ? '지지함' : '지지하기',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
               ),
             ),
           ],

@@ -101,7 +101,7 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
       ]);
 
       final votesMap = await localService.getAllVotes();
-      final allMembers = await memberRepo.getCachedMembers();
+      final allMembers = await memberRepo.getAllMembers();
       final votedList = allMembers.where((m) => votesMap.values.contains(m.id)).toList();
 
       if (mounted) {
