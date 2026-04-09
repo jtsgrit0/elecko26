@@ -544,7 +544,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _currentUser!.email,
+                    _currentUser!.email ?? '',
                     style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
                     textAlign: TextAlign.center,
                   ),
