@@ -466,9 +466,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       );
     }
     
-    switch (_selectedIndex) {
-      case 0:
-        return HomeDashboardView(
+    return IndexedStack(
+      index: _selectedIndex,
+      children: [
+        HomeDashboardView(
           isLoading: _isLoading,
           membersStream: _membersStream,
           cachedMembers: _cachedMembers,
@@ -476,42 +477,27 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           onRefresh: () => _triggerNesdcRefresh(isSilent: false),
           onMemberSelected: (m) => setState(() => _selectedMember = m),
           onNavigateToSearch: () => setState(() => _selectedIndex = 1),
-        );
-      case 1:
-        return SearchView(
+        ),
+        SearchView(
           membersStream: _membersStream,
           cachedMembers: _cachedMembers,
           userRegion: _userRegion,
           onMemberSelected: (m) => setState(() => _selectedMember = m),
-        );
-      case 2:
-        return _buildFavoritesPage();
-      case 3:
-        return IntegratedNewsView(
+        ),
+        _buildFavoritesPage(),
+        IntegratedNewsView(
           membersStream: _membersStream,
           cachedMembers: _cachedMembers,
-        );
-      case 4:
-        return ComparisonView(
+        ),
+        ComparisonView(
           membersStream: _membersStream,
           cachedMembers: _cachedMembers,
           onMemberSelected: (m) => setState(() => _selectedMember = m),
-        );
-      case 5:
-        return _buildVotingGatewayPage();
-      case 6:
-        return _buildProfileGatewayPage();
-      default:
-        return HomeDashboardView(
-          isLoading: _isLoading,
-          membersStream: _membersStream,
-          cachedMembers: _cachedMembers,
-          userRegion: _userRegion,
-          onRefresh: () => _triggerNesdcRefresh(isSilent: false),
-          onMemberSelected: (m) => setState(() => _selectedMember = m),
-          onNavigateToSearch: () => setState(() => _selectedIndex = 1),
-        );
-    }
+        ),
+        _buildVotingGatewayPage(),
+        _buildProfileGatewayPage(),
+      ],
+    );
   }
 
   Widget _buildVotingGatewayPage() {

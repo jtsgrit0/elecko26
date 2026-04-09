@@ -151,17 +151,11 @@ class MemberCard extends StatelessWidget {
                       color: AppColors.success.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: FutureBuilder<AnalysisResult>(
-                      future: sl<CalculateElectionPossibilityUseCase>().call(member.id),
-                      builder: (context, snapshot) {
-                        final possibility = snapshot.data?.electionPossibility ?? member.electionPossibility;
-                        return Text(
-                          '당선 가능성: ${(possibility * 100).toStringAsFixed(0)}%',
-                          style: AppTextStyles.labelSmall.copyWith(
-                            color: AppColors.success,
-                          ),
-                        );
-                      },
+                    child: Text(
+                      '당선 가능성: ${(member.electionPossibility * 100).toStringAsFixed(0)}%',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.success,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 4),
