@@ -1,15 +1,18 @@
 import 'dart:convert';
 import 'dart:typed_data';
-
+import 'package:elecko26/core/config/app_config.dart';
 import 'package:elecko26/core/platform/platform_info.dart';
 import 'package:html/dom.dart' as html_dom;
 import 'package:html/parser.dart' as html_parser;
 import 'package:http/http.dart' as http;
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/foundation.dart' show debugPrint;
 
 import 'nesdc_pdf_text_extractor_stub.dart'
     if (dart.library.ui) 'nesdc_pdf_text_extractor.dart';
 
 import 'package:elecko26/core/config/refresh_config.dart';
+import 'package:elecko26/data/datasources/local_storage_service.dart';
 
 final Uri _nesdcOrigin = Uri.parse('https://www.nesdc.go.kr');
 
@@ -182,12 +185,38 @@ class NesdcPollDetail {
 }
 
 class NesdcPollDataSource {
-  NesdcPollDataSource({http.Client? client}) : _client = client ?? http.Client();
+  NesdcPollDataSource({
+    http.Client? client,
+    LocalStorageService? localStorageService,
+  }) : _client = client ?? http.Client(),
+       _localStorageService = localStorageService;
 
   final http.Client _client;
+  final LocalStorageService? _localStorageService;
   final Map<String, NesdcPollDetail> _detailCache = {};
+  
+  static const String _kPollsCacheKey = 'cached_nesdc_polls_json';
 
   Future<List<NesdcPollEntry>> fetchLatest({int pages = kNesdcPagesToFetch}) async {
+    // 1단계: GitHub에서 최신 데이터 다운로드 시도
+    final remoteEntries = await _fetchFromRemoteGitHub();
+    if (remoteEntries != null && remoteEntries.isNotEmpty) {
+      return remoteEntries;
+    }
+
+    // 2단계: 로컬 캐시 확인
+    final cachedEntries = await _fetchFromLocalCache();
+    if (cachedEntries != null && cachedEntries.isNotEmpty) {
+      return cachedEntries;
+    }
+
+    // 3단계: 기본 번들 자산(assets) 사용
+    final bundledEntries = await _fetchFromBundledAssets();
+    if (bundledEntries.isNotEmpty) {
+      return bundledEntries;
+    }
+
+    // 최종 폴더: 직접 크롤링 (기존 방식)
     final webOverride = _resolveWebBackendOverride();
     if (webOverride != null) {
       final fromBackend = await _fetchLatestFromBackend(pages, baseOverride: webOverride);
@@ -214,6 +243,85 @@ class NesdcPollDataSource {
       entries.addAll(_parseListHtml(body));
     }
 
+    return entries;
+  }
+
+  /// GitHub Raw 상의 최신 JSON 데이터를 다운로드하고 캐싱합니다.
+  Future<List<NesdcPollEntry>?> _fetchFromRemoteGitHub() async {
+    try {
+      final response = await _client.get(Uri.parse(AppConfig.nesdcDataUrl));
+      if (response.statusCode == 200) {
+        final jsonString = response.body;
+        // 로컬 캐시에 저장
+        if (_localStorageService != null) {
+          await _localStorageService!.setString(_kPollsCacheKey, jsonString);
+        }
+        return _parsePollsJson(jsonString);
+      }
+    } catch (e) {
+      debugPrint('⚠️ NesdcPollDataSource: Failed to download from GitHub: $e');
+    }
+    return null;
+  }
+
+  /// 로컬 스토리지에 캐시된 데이터를 로드합니다.
+  Future<List<NesdcPollEntry>?> _fetchFromLocalCache() async {
+    if (_localStorageService == null) return null;
+    try {
+      final cachedJson = _localStorageService!.getString(_kPollsCacheKey);
+      if (cachedJson != null && cachedJson.isNotEmpty) {
+        return _parsePollsJson(cachedJson);
+      }
+    } catch (e) {
+      debugPrint('⚠️ NesdcPollDataSource: Failed to load from local cache: $e');
+    }
+    return null;
+  }
+
+  /// 앱에 번들링된 기본 에셋 데이터를 로드합니다.
+  Future<List<NesdcPollEntry>> _fetchFromBundledAssets() async {
+    try {
+      final jsonString = await rootBundle.loadString('data/nesdc_polls.json');
+      return _parsePollsJson(jsonString);
+    } catch (e) {
+      debugPrint('⚠️ NesdcPollDataSource: Failed to load from bundled assets: $e');
+    }
+    return [];
+  }
+
+  /// JSON 문자열을 파싱하여 NesdcPollEntry 리스트로 변환합니다.
+  List<NesdcPollEntry> _parsePollsJson(String jsonString) {
+    final decoded = jsonDecode(jsonString);
+    final rawEntries = decoded is List ? decoded : (decoded is Map<String, dynamic> ? decoded['entries'] : null);
+    if (rawEntries is! List) return [];
+
+    final List<NesdcPollEntry> entries = [];
+    for (final raw in rawEntries) {
+      if (raw is! Map<String, dynamic>) continue;
+      
+      final registeredDate = DateTime.tryParse('${raw['registeredDate']}') ?? DateTime.now();
+      final entry = NesdcPollEntry(
+        registrationNo: '${raw['registrationNo'] ?? ''}',
+        agency: '${raw['agency'] ?? ''}',
+        client: '${raw['client'] ?? ''}',
+        method: '${raw['method'] ?? ''}',
+        sampleFrame: '${raw['sampleFrame'] ?? ''}',
+        pollName: '${raw['pollName'] ?? ''}',
+        registeredDate: registeredDate,
+        region: '${raw['region'] ?? ''}',
+        sourceUrl: '${raw['sourceUrl'] ?? ''}',
+        status: raw['status'] == null ? null : '${raw['status']}',
+      );
+      entries.add(entry);
+
+      final detailJson = raw['detail'];
+      if (detailJson is Map<String, dynamic>) {
+        _detailCache[entry.sourceUrl] = NesdcPollDetail.fromJson(
+          detailJson,
+          detailUrl: entry.sourceUrl,
+        );
+      }
+    }
     return entries;
   }
 

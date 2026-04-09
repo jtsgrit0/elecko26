@@ -16,7 +16,9 @@ const bool _kReleaseMode = bool.fromEnvironment('dart.vm.product');
 
 /// 멤버 저장소 구현체 (데이터 레이어)
 class MemberRepositoryImpl implements MemberRepository {
-  final NesdcPollDataSource _nesdcPollDataSource = NesdcPollDataSource();
+  final NesdcPollDataSource _nesdcPollDataSource = NesdcPollDataSource(
+    localStorageService: sl<LocalStorageService>(),
+  );
   bool _refreshInProgress = false;
   // 외부 크롤링 데이터 소스 (election_candidates.json) 기반 동적 로드를 위해 초기 명단은 비워둡니다.
   static final List<Member> _dummyMembers = [];
