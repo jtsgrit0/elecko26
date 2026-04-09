@@ -354,6 +354,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         final candidateNames = _staticCandidateNameVariants(member);
         final partyAliases = _staticPartyAliases(member.party);
 
+        double? supportRate = detail.findSupportRate(candidateNames);
         supportRate ??= detail.findSupportRate(partyAliases);
 
         newPolls.add(Poll(
