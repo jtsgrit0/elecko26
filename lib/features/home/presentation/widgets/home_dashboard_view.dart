@@ -349,7 +349,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: members.length > 10 ? 10 : members.length, // 상위 10명만 표시
+            itemCount: members.length, // 홈에서는 전체 목록을 노출
             itemBuilder: (context, index) {
               final member = members[index];
               return Padding(
