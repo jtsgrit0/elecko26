@@ -363,9 +363,7 @@ class MemberRepositoryImpl implements MemberRepository {
         final partyAliases = _staticPartyAliases(member.party);
 
         double? supportRate = detail.findSupportRate(candidateNames);
-        if (supportRate == null) {
-          supportRate = detail.findSupportRate(partyAliases);
-        }
+        supportRate ??= detail.findSupportRate(partyAliases);
 
         newPolls.add(Poll(
           id: 'nesdc_${entry.registrationNo}',

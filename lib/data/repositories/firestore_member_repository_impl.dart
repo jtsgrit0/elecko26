@@ -42,6 +42,9 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   static final BehaviorSubject<List<Member>> _membersController =
       BehaviorSubject<List<Member>>.seeded([]);
 
+  static final BehaviorSubject<String> _regionController =
+      BehaviorSubject<String>();
+
   bool _isInitialized = false;
 
   void _notifyListeners(List<Member> members) {
@@ -177,10 +180,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         }
       } catch (_) {}
 
-      if (jsonString == null) {
-        jsonString =
-            await rootBundle.loadString('data/election_candidates.json');
-      }
+      jsonString ??=
+          await rootBundle.loadString('data/election_candidates.json');
 
       final List<dynamic> jsonList = json.decode(jsonString);
       for (final item in jsonList) {
@@ -353,10 +354,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         final candidateNames = _staticCandidateNameVariants(member);
         final partyAliases = _staticPartyAliases(member.party);
 
-        double? supportRate = detail.findSupportRate(candidateNames);
-        if (supportRate == null) {
-          supportRate = detail.findSupportRate(partyAliases);
-        }
+        supportRate ??= detail.findSupportRate(partyAliases);
 
         newPolls.add(Poll(
           id: 'nesdc_${entry.registrationNo}',
@@ -409,9 +407,12 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
   static bool _staticMatchesRegion(String pollRegion, String targetRegion) {
     if (pollRegion.isEmpty) return false;
-    if (pollRegion.contains('전국') || pollRegion.contains(targetRegion))
+    if (pollRegion.contains('전국') || pollRegion.contains(targetRegion)) {
       return true;
-    if (targetRegion == '전북특별자치도' && pollRegion.contains('전라북도')) return true;
+    }
+    if (targetRegion == '전북특별자치도' && pollRegion.contains('전라북도')) {
+      return true;
+    }
     return false;
   }
 
@@ -562,14 +563,21 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<String> getSelectedRegion() async {
+    if (_regionController.hasValue) {
+      return _regionController.value;
+    }
     final localService = sl<LocalStorageService>();
-    return await localService.getSelectedRegion();
+    final region = await localService.getSelectedRegion();
+    _regionController.add(region);
+    return region;
   }
 
   @override
   Future<void> saveSelectedRegion(String region) async {
     final localService = sl<LocalStorageService>();
     await localService.saveSelectedRegion(region);
+
+    _regionController.add(region);
 
     final user = auth.FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -586,9 +594,16 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   }
 
   @override
+  Stream<String> watchSelectedRegion() {
+    getSelectedRegion();
+    return _regionController.stream;
+  }
+
+  @override
   Future<void> resetSettings() async {
     final localService = sl<LocalStorageService>();
     await localService.clearAll();
+    _regionController.add('전국');
   }
 
   @override
