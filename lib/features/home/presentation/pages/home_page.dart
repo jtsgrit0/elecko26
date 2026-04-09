@@ -2,16 +2,10 @@ import 'package:elecko26/features/home/presentation/widgets/search_view.dart';
 import 'package:elecko26/features/home/presentation/widgets/comparison_view.dart';
 import 'package:elecko26/features/home/presentation/widgets/integrated_news_view.dart';
 import 'package:elecko26/features/home/presentation/widgets/home_dashboard_view.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:characters/characters.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
-import 'package:elecko26/core/utils/image_util.dart';
 import 'package:elecko26/core/theme/app_theme.dart';
-import 'package:elecko26/domain/entities/analysis_result.dart';
 import 'package:elecko26/domain/entities/member.dart';
 import 'package:elecko26/domain/repositories/member_repository.dart';
-import 'package:elecko26/domain/usecases/calculate_election_possibility_usecase.dart';
 import 'package:elecko26/domain/usecases/member_usecases.dart';
 import 'package:elecko26/domain/usecases/export_election_data_usecase.dart';
 import 'package:elecko26/app/injection_container.dart';
@@ -20,8 +14,6 @@ import 'package:elecko26/features/auth/domain/entities/user.dart' as auth;
 import 'package:elecko26/features/auth/domain/usecases/auth_usecases.dart';
 import 'package:elecko26/features/home/presentation/pages/member_detail_page.dart';
 import 'package:elecko26/features/map/presentation/pages/map_screen.dart';
-import 'package:elecko26/core/utils/party_util.dart';
-import 'package:elecko26/core/utils/utility_functions.dart';
 import 'package:elecko26/features/home/presentation/widgets/member_card.dart';
 import 'package:elecko26/features/voting/presentation/pages/polls_page.dart';
 import 'package:elecko26/features/home/presentation/widgets/favorites_view.dart';
@@ -609,12 +601,55 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 20),
+                  OutlinedButton(
+                    onPressed: () => _confirmAndSignOut(),
+                    child: const Text('로그아웃'),
+                  ),
                 ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _confirmAndSignOut() async {
+    final shouldSignOut = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('로그아웃'),
+        content: const Text('정말 로그아웃하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('취소', style: TextStyle(color: AppColors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('로그아웃', style: TextStyle(color: AppColors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldSignOut != true) return;
+
+    await sl<SignOutUseCase>().execute();
+    await _loadCurrentUser();
+    if (!mounted) return;
+    setState(() {
+      _selectedIndex = 0;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('로그아웃되었습니다.')),
     );
   }
 
