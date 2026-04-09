@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:elecko26/app/injection_container.dart';
 import 'package:elecko26/features/auth/domain/usecases/auth_usecases.dart';
 import 'package:elecko26/features/auth/domain/entities/user.dart';
+import 'package:elecko26/features/auth/presentation/widgets/terms_agreement_modal.dart';
 
 class AuthGate extends StatefulWidget {
   final VoidCallback? onSuccess;
@@ -39,6 +40,12 @@ class _AuthGateState extends State<AuthGate> {
       return;
     }
 
+    // 회원가입 모드일 때 약관 동의 모달 먼저 표시
+    if (!_isLoginMode) {
+      final agreed = await TermsAgreementModal.show(context);
+      if (!agreed || !mounted) return;
+    }
+
     setState(() {
       _isSubmitting = true;
       _errorMessage = null;
@@ -70,6 +77,12 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   Future<void> _submitSocialLogin(Future<AuthResult> Function() action) async {
+    // 회원가입 모드일 때 약관 동의 모달 먼저 표시
+    if (!_isLoginMode) {
+      final agreed = await TermsAgreementModal.show(context);
+      if (!agreed || !mounted) return;
+    }
+
     setState(() {
       _isSubmitting = true;
       _errorMessage = null;
