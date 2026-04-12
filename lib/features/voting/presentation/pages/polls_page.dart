@@ -77,34 +77,46 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
         });
       }
 
-      // 2순위: 투표 목록 병렬 로드
+      // 2순위: 캐시된 멤버를 먼저 로드 (빠른 UI 표시)
       final localService = sl<LocalStorageService>();
       final memberRepo = sl<MemberRepository>();
-      
-      final results = await Future.wait([
-        sl<GetPollsUseCase>().execute(status: PollStatus.active),          // [0] List<Poll>
-        sl<GetPollsUseCase>().execute(creatorId: widget.currentUser.id),   // [1] List<Poll>
-      ]);
 
       final votesMap = await localService.getAllVotes();
-      final allMembers = await memberRepo.getAllMembers();
-      final votedList = allMembers.where((m) => votesMap.values.contains(m.id)).toList();
+      final cachedMembers = await memberRepo.getCachedMembers();
+      final cachedVotedList = cachedMembers.where((m) => votesMap.values.contains(m.id)).toList();
 
+      // 캐시 데이터로 먼저 표시
       if (mounted) {
         setState(() {
-          _myPolls = results[1];
-          _myVotedMembers = votedList;
+          _myVotedMembers = cachedVotedList;
+          _isLoading = false; // 탭 구조를 즉시 보여주기 위해 로딩 해제
         });
       }
+
+      // 3순위: 투표 목록 (가벼운 연산)
+      final myPollsResult = await sl<GetPollsUseCase>().execute(creatorId: widget.currentUser.id);
+      if (mounted) {
+        setState(() {
+          _myPolls = myPollsResult;
+        });
+      }
+
+      // 4순위: 전체 멤버 새로고침 (백그라운드, 블로킹 없음)
+      // 이미 캐시로 UI가 표시되었으므로 await하지 않음
+      unawaited(
+        memberRepo.getAllMembers().then((allMembers) {
+          if (mounted) {
+            final votedList = allMembers.where((m) => votesMap.values.contains(m.id)).toList();
+            setState(() {
+              _myVotedMembers = votedList;
+            });
+          }
+        }).catchError((_) {}),
+      );
     } catch (e) {
       if (mounted) {
         setState(() {
           _errorMessage = '투표 목록을 불러오는 중 오류가 발생했습니다.';
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
           _isLoading = false;
         });
       }
