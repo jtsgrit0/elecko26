@@ -2,6 +2,7 @@ import 'package:elecko26/features/home/presentation/widgets/search_view.dart';
 import 'package:elecko26/features/home/presentation/widgets/comparison_view.dart';
 import 'package:elecko26/features/home/presentation/widgets/integrated_news_view.dart';
 import 'package:elecko26/features/home/presentation/widgets/home_dashboard_view.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:elecko26/core/theme/app_theme.dart';
 import 'package:elecko26/domain/entities/member.dart';
@@ -489,12 +490,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             )
           : null, // 상세 페이지는 자체 AppBar 사용
       body: PopScope(
-        canPop: _selectedMember == null,
+        canPop: !kIsWeb && _selectedMember == null,
         onPopInvokedWithResult: (bool didPop, dynamic result) {
-          if (!didPop && _selectedMember != null) {
-            setState(() {
-              _selectedMember = null;
-            });
+          if (!didPop) {
+            if (_selectedMember != null) {
+              // 상세 페이지 열려있으면 닫기
+              setState(() {
+                _selectedMember = null;
+              });
+            } else if (kIsWeb) {
+              // 웹에서 메인 화면일 때 뒤로가기 막음 (앱 종료 방지)
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('메인 화면입니다.'),
+                  duration: Duration(seconds: 1),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
           }
         },
         child: _buildBody(),
