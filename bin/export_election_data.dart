@@ -2,9 +2,9 @@
 /// 사용: dart run bin/export_election_data.dart
 /// 또는: flutter pub get && dart run bin/export_election_data.dart
 
-import 'package:flutter_application_1/core/di/cli_injection_container.dart' as di;
-import 'package:flutter_application_1/domain/usecases/export_election_data_usecase.dart';
-import 'package:flutter_application_1/data/datasources/github_datasource.dart';
+import 'package:elecko26/core/di/cli_injection_container.dart' as di;
+import 'package:elecko26/domain/usecases/export_election_data_usecase.dart';
+import 'package:elecko26/data/datasources/github_datasource.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -22,7 +22,6 @@ Future<void> main(List<String> args) async {
 
     // JSON 생성
     final jsonData = exportData.toJson();
-    final jsonString = jsonEncode(jsonData);
     final prettyJson = JsonEncoder.withIndent('  ').convert(jsonData);
 
     // 파일 저장 (로컬)
@@ -32,13 +31,8 @@ Future<void> main(List<String> args) async {
     }
 
     final jsonFile = File('${outputDir.path}/election_data.json');
-    await jsonFile.writeAsString(jsonString);
+    await jsonFile.writeAsString(prettyJson);
     print('✓ JSON saved to: ${jsonFile.path}');
-
-    // 예쁜 JSON도 저장 (디버깅용)
-    final prettyJsonFile = File('${outputDir.path}/election_data_pretty.json');
-    await prettyJsonFile.writeAsString(prettyJson);
-    print('✓ Pretty JSON saved to: ${prettyJsonFile.path}');
 
     // 메타 정보 출력
     print('\n📊 Export Summary:');
@@ -47,7 +41,7 @@ Future<void> main(List<String> args) async {
     print('├─ Average Possibility: ${(exportData.metadata.averageElectionPossibility * 100).toStringAsFixed(1)}%');
     print('├─ Total Polls: ${exportData.metadata.totalPolls}');
     print('├─ Data Sources: ${exportData.metadata.dataSourcesCount}');
-    print('└─ File Size: ${(jsonString.length / 1024).toStringAsFixed(2)} KB');
+    print('└─ File Size: ${(prettyJson.length / 1024).toStringAsFixed(2)} KB');
 
     // 정당별 분석
     print('\n🏛️ Members by Party:');
