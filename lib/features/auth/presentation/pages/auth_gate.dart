@@ -4,6 +4,7 @@ import 'package:elecko26/app/injection_container.dart';
 import 'package:elecko26/features/auth/domain/usecases/auth_usecases.dart';
 import 'package:elecko26/features/auth/domain/entities/user.dart';
 import 'package:elecko26/features/auth/presentation/widgets/terms_agreement_modal.dart';
+import 'package:elecko26/data/datasources/local_storage_service.dart';
 
 class AuthGate extends StatefulWidget {
   final VoidCallback? onSuccess;
@@ -26,13 +27,38 @@ class _AuthGateState extends State<AuthGate> {
 
   bool _isLoginMode = true;
   bool _isSubmitting = false;
+  bool _autoLogin = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAutoLoginSetting();
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadAutoLoginSetting() async {
+    final localService = sl<LocalStorageService>();
+    final saved = await localService.getString('auto_login') == 'true';
+    if (saved && mounted) {
+      setState(() {
+        _autoLogin = true;
+      });
+      // 저장된 이메일/비밀번호가 있으면 자동 로그인 시도
+      final savedEmail = await localService.getString('auto_login_email');
+      final savedPassword = await localService.getString('auto_login_password');
+      if (savedEmail != null && savedPassword != null && mounted) {
+        _emailController.text = savedEmail;
+        _passwordController.text = savedPassword;
+        _submit();
+      }
+    }
   }
 
   Future<void> _submit() async {
@@ -68,6 +94,19 @@ class _AuthGateState extends State<AuthGate> {
     });
 
     if (result.isSuccess) {
+      // 자동 로그인 체크 시 이메일/비밀번호 저장
+      if (_autoLogin && _isLoginMode) {
+        final localService = sl<LocalStorageService>();
+        await localService.setString('auto_login', 'true');
+        await localService.setString('auto_login_email', email);
+        await localService.setString('auto_login_password', password);
+      } else {
+        final localService = sl<LocalStorageService>();
+        await localService.setString('auto_login', 'false');
+        await localService.setString('auto_login_email', '');
+        await localService.setString('auto_login_password', '');
+      }
+
       if (widget.onSuccess != null) {
         widget.onSuccess!();
       } else {
@@ -345,6 +384,43 @@ class _AuthGateState extends State<AuthGate> {
                                 return null;
                               },
                             ),
+                            if (_isLoginMode) ...[
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: Checkbox(
+                                      value: _autoLogin,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _autoLogin = value ?? false;
+                                        });
+                                      },
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _autoLogin = !_autoLogin;
+                                      });
+                                    },
+                                    child: const Text(
+                                      '자동 로그인',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                             if (_errorMessage != null) ...[
                               const SizedBox(height: 14),
                               Container(
