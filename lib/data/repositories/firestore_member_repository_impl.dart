@@ -601,8 +601,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       currentMembers[idx] = currentMembers[idx].copyWith(isFavorite: !isFav);
       _notifyListeners(currentMembers);
     } else {
-      // 리스트에 없더라도 일단 배포를 위해 전체 새로고침 트리거
-      await refreshMembers();
+      // 멤버가 리스트에 없으면 즐겨찾기 상태만 업데이트 (전체 새로고침보다 가벼움)
+      await _updateMembersFavoriteStatus();
     }
   }
 

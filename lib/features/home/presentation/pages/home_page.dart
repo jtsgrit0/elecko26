@@ -378,8 +378,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         await Navigator.of(context).push<bool>(
           MaterialPageRoute(builder: (_) => const AuthGate()),
         );
-        // 인증 스트림이 자동으로 _currentUser를 업데이트하므로 명시적 호출 불필요할 수 있으나,
-        // 즉각적인 동기화를 위해 유지하거나 스트림 결과를 기다릴 수 있음.
+        // 로그인 후 사용자 정보를 명시적으로 로드 (스트림 비동기 대기 방지)
+        await _loadCurrentUser();
         if (_currentUser != null) {
           // 로그인 성공 시 설정을 클라우드에서 동기화
           await sl<MemberRepository>().syncUserSettings();
