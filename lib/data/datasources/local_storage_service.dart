@@ -17,6 +17,7 @@ abstract class LocalStorageService {
   Future<void> clearAll();
 
   // 투표 관련
+  Future<void> clearVotes();
   /// 특정 선거구(district)에 투표한 후보 ID 저장
   Future<void> saveVote(String district, String memberId, {int? timestamp});
   /// 특정 선거구에 투표한 후보 ID 반환 (없으면 null)

@@ -80,35 +80,70 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
     try {
       final doc = await _firestore.collection('users').doc(user.uid).get();
+
+      // 로컬 즐겨찾기 항상 로드
+      final localFavorites = await localService.getFavorites();
+
       if (doc.exists) {
         final data = doc.data() ?? {};
 
+        // 지역 동기화
         final cloudRegion = data['selectedRegion'] as String?;
         if (cloudRegion != null && cloudRegion.isNotEmpty) {
           await localService.saveSelectedRegion(cloudRegion);
         }
 
+        // 즐겨찾기 양방향 동기화 (합집합 병합)
         final cloudFavorites = List<String>.from(data['favorites'] ?? []);
-        if (cloudFavorites.isNotEmpty) {
-          final localFavorites = await localService.getFavorites();
-          final mergedSet = {...cloudFavorites, ...localFavorites};
-          final mergedList = mergedSet.toList();
+        final mergedSet = {...cloudFavorites, ...localFavorites};
+        final mergedList = mergedSet.toList();
 
-          for (final id in mergedList) {
-            if (!localFavorites.contains(id)) {
-              await localService.addFavorite(id);
-            }
+        // 로컬에 없는 Cloud 즐겨찾기를 로컬에 추가
+        for (final id in cloudFavorites) {
+          if (!localFavorites.contains(id)) {
+            await localService.addFavorite(id);
           }
+        }
 
+        // 병합된 결과를 Cloud에 저장
+        await _firestore.collection('users').doc(user.uid).set({
+          'favorites': mergedList,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } else {
+        // Cloud에 user document가 없으면 (신규 계정) 로컬 -> Cloud 업로드
+        if (localFavorites.isNotEmpty) {
           await _firestore.collection('users').doc(user.uid).set({
-            'favorites': mergedList,
+            'favorites': localFavorites,
+            'selectedRegion': await localService.getSelectedRegion(),
+            'createdAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
         }
       }
+
+      // 멤버 리스트의 즐겨찾기 상태 갱신
+      await _updateMembersFavoriteStatus();
     } catch (e) {
       debugPrint('[FirestoreMemberRepository] Sync error: $e');
     }
+  }
+
+  /// 현재 멤버 리스트의 즐겨찾기 상태를 로컬 저장소와 동기화
+  Future<void> _updateMembersFavoriteStatus() async {
+    final localService = sl<LocalStorageService>();
+    final favorites = await localService.getFavorites();
+    final currentMembers = List<Member>.from(_membersController.value);
+
+    final updatedMembers = currentMembers.map((m) {
+      final newFavStatus = favorites.contains(m.id);
+      if (m.isFavorite != newFavStatus) {
+        return m.copyWith(isFavorite: newFavStatus);
+      }
+      return m;
+    }).toList();
+
+    _membersController.add(updatedMembers);
   }
 
   @override
@@ -612,8 +647,15 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   @override
   Future<void> resetSettings() async {
     final localService = sl<LocalStorageService>();
-    await localService.clearAll();
+
+    // 즐겨찾기는 Cloud에 동기화된 상태로 유지 (삭제하지 않음)
+    // 투표 기록, 지역 설정만 초기화
+    await localService.clearVotes();
+    await localService.saveSelectedRegion('전국');
     _regionController.add('전국');
+
+    // 멤버 리스트의 즐겨찾기 상태 갱신
+    await _updateMembersFavoriteStatus();
   }
 
   @override

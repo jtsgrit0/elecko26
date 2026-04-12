@@ -80,6 +80,16 @@ class SharedPreferencesService implements LocalStorageService {
     await prefs.clear();
   }
 
+  @override
+  Future<void> clearVotes() async {
+    final districts = prefs.getStringList(_keyVoteDistricts) ?? [];
+    for (final district in districts) {
+      await prefs.remove('$_keyVotePrefix$district');
+      await prefs.remove('$_keyTimePrefix$district');
+    }
+    await prefs.remove(_keyVoteDistricts);
+  }
+
   // 투표 관련 구현
   static const String _keyVotePrefix = 'vote_';
   static const String _keyTimePrefix = 'vote_time_';

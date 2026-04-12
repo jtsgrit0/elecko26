@@ -174,6 +174,14 @@ class InMemoryLocalStorageService implements LocalStorageService {
   @override Future<String> getSelectedRegion() async => _data['selected_region'] as String? ?? '전국';
   @override Future<void> saveSelectedRegion(String region) async => await setString('selected_region', region);
   @override Future<void> clearAll() async => _data.clear();
+  @override Future<void> clearVotes() async {
+    final districts = _data[_keyVoteDistricts] as List<String>? ?? [];
+    for (final district in districts) {
+      _data.remove('$_keyVotePrefix$district');
+      _data.remove('$_keyTimePrefix$district');
+    }
+    _data.remove(_keyVoteDistricts);
+  }
 
   // 투표 관련 구현 (In-Memory)
   static const String _keyVotePrefix = 'vote_';
