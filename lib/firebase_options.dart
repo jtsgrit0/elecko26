@@ -64,7 +64,7 @@ class DefaultFirebaseOptions {
     projectId: 'elecko26-585b0',
     storageBucket: 'elecko26-585b0.firebasestorage.app',
     iosClientId: '813263083099-qjvo3nju9r5v7e22955r3qbuik4nh81i.apps.googleusercontent.com',
-    iosBundleId: 'com.example.flutterApplication1',
+    iosBundleId: 'com.elecko26.app',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
