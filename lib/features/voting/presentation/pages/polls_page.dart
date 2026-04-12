@@ -182,57 +182,60 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
 
   void _showRegionSelectionDialog() {
     final regions = ['서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시', '세종특별자치시', '경기도', '강원도', '충청북도', '충청남도', '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도'];
-    
+
     // 선택된 지역을 모달 내에서 즉각적으로 반영하기 위해 로컬 상태 사용
     String tempSelected = _selectedRegion;
 
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) {
+        builder: (dialogContext, setDialogState) {
           return AlertDialog(
             title: const Text('지역 선택'),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             content: SizedBox(
               width: double.maxFinite,
-              child: ListView.separated(
-                shrinkWrap: true,
-                itemCount: regions.length,
-                separatorBuilder: (context, index) => const Divider(),
-                itemBuilder: (context, index) {
-                  final region = regions[index];
-                  final isSelected = region == tempSelected;
-                  return ListTile(
-                    title: Text(
-                      region,
-                      style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected ? AppColors.primary : AppColors.darkGray,
-                      ),
-                    ),
-                    trailing: isSelected 
-                        ? const Icon(Icons.check, color: AppColors.primary)
-                        : const Icon(Icons.chevron_right, size: 18),
-                    onTap: () async {
-                      // 즉각적으로 UI 업데이트 (체크마크 표시)
-                      setState(() {
-                        tempSelected = region;
-                      });
-                      
-                      // 지역을 저장
-                      await sl<MemberRepository>().saveSelectedRegion(region);
-                      
-                      // 사용자가 갱신된 UI를 인지할 수 있도록 짧은 딜레이 추가
-                      await Future.delayed(const Duration(milliseconds: 250));
-                      
-                      if (dialogContext.mounted) {
-                        Navigator.of(dialogContext).pop();
-                      }
-                      
-                      _loadPolls(); // 메인 화면 지역 변경 후 리로드
-                    },
-                  );
-                },
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: regions.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final region = entry.value;
+                    final isSelected = region == tempSelected;
+                    return Column(
+                      children: [
+                        ListTile(
+                          title: Text(
+                            region,
+                            style: TextStyle(
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              color: isSelected ? AppColors.primary : AppColors.darkGray,
+                            ),
+                          ),
+                          trailing: isSelected
+                              ? const Icon(Icons.check, color: AppColors.primary)
+                              : const Icon(Icons.chevron_right, size: 18),
+                          onTap: () async {
+                            // 즉각적으로 UI 업데이트 (체크마크 표시)
+                            setDialogState(() {
+                              tempSelected = region;
+                            });
+
+                            // 지역을 저장
+                            await sl<MemberRepository>().saveSelectedRegion(region);
+
+                            if (dialogContext.mounted) {
+                              Navigator.of(dialogContext).pop();
+                            }
+
+                            _loadPolls(); // 메인 화면 지역 변경 후 리로드
+                          },
+                        ),
+                        if (index < regions.length - 1) const Divider(),
+                      ],
+                    );
+                  }).toList(),
+                ),
               ),
             ),
           );
