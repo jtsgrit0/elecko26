@@ -15,7 +15,11 @@
       "oauth_client": [
         {
           "client_id": "790419883700-h41in708p3h0pa7j41o4nd4mf8o46on7.apps.googleusercontent.com",
-          "client_type": 3
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.elecko26.app",
+            "certificate_hash": "447a3e97ad71eedf37db39f80e0a3a9673dfea6d"
+          }
         }
       ],
       "api_key": [
