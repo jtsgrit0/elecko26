@@ -598,16 +598,9 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       }
     }
 
-    // 즉각적인 리스트 갱신 및 스트림 통지
-    final currentMembers = List<Member>.from(_membersController.value);
-    final idx = currentMembers.indexWhere((m) => m.id == sanitizedId);
-    if (idx != -1) {
-      currentMembers[idx] = currentMembers[idx].copyWith(isFavorite: !isFav);
-      _notifyListeners(currentMembers);
-    } else {
-      // 멤버가 리스트에 없으면 즐겨찾기 상태만 업데이트 (전체 새로고침보다 가벼움)
-      await _updateMembersFavoriteStatus();
-    }
+    // 실시간 UI 업데이트: 항상 전체 즐겨찾기 상태를 재적용하여 스트림 통지
+    debugPrint('[FirestoreMemberRepository] toggleFavorite: updating UI state');
+    await _updateMembersFavoriteStatus();
   }
 
   @override
