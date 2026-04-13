@@ -653,6 +653,9 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     if (user != null) {
       unawaited(_syncFavoriteToCloud(user.uid, localService));
     }
+
+    // 4. 즐겨찾기된 후보의 뉴스를 백그라운드로 수집
+    unawaited(_crawlNewsForFavorites());
   }
 
   /// Cloud Firestore에 즐겨찾기 동기화 (백그라운드용)
