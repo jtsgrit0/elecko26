@@ -668,8 +668,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     final user = _getCurrentUserSafe();
     debugPrint('[FirestoreMemberRepository] Current user: ${user?.uid ?? 'null'}');
     await _syncUserSettingsWithCloud();
-    debugPrint('[FirestoreMemberRepository] syncUserSettings() calling refreshMembers()');
-    await refreshMembers();
+    debugPrint('[FirestoreMemberRepository] syncUserSettings() updating favorite status only');
+    await _updateMembersFavoriteStatus();
     debugPrint('[FirestoreMemberRepository] syncUserSettings() completed');
   }
 
