@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:elecko26/app/injection_container.dart';
@@ -53,7 +54,12 @@ class _AuthGateState extends State<AuthGate> {
       // 저장된 이메일/비밀번호가 있으면 자동 로그인 시도
       final savedEmail = await localService.getString('auto_login_email');
       final savedPassword = await localService.getString('auto_login_password');
-      if (savedEmail != null && savedPassword != null && mounted) {
+      if (savedEmail != null && savedPassword != null && savedEmail.isNotEmpty && mounted) {
+        // 자동 로그인 전 Firebase 세션 초기화 (이전 프로젝트 캐시 제거)
+        try {
+          await auth.FirebaseAuth.instance.signOut();
+        } catch (_) {}
+        
         _emailController.text = savedEmail;
         _passwordController.text = savedPassword;
         _submit();
