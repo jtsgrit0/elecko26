@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:isolate';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -578,29 +579,44 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     final isFav = await localService.isFavorite(sanitizedId);
     debugPrint('[FirestoreMemberRepository] toggleFavorite: $sanitizedId, wasFavorite: $isFav');
 
+    // 1. LocalStorage 먼저 업데이트
     if (isFav) {
       await localService.removeFavorite(sanitizedId);
     } else {
       await localService.addFavorite(sanitizedId);
     }
 
-    final user = _getCurrentUserSafe();
-    if (user != null) {
-      try {
-        final favorites = await localService.getFavorites();
-        await _firestore.collection('users').doc(user.uid).set({
-          'favorites': favorites,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-      } catch (e) {
-        debugPrint(
-            '[FirestoreMemberRepository] Failed to sync favorite to cloud: $e');
-      }
+    // 2. 즉시 UI 업데이트 (MemberRepositoryImpl과 동일한 방식)
+    final currentMembers = List<Member>.from(_membersController.value);
+    final idx = currentMembers.indexWhere((m) => m.id == sanitizedId);
+    if (idx != -1) {
+      // 대상 멤버만 토글 → 즉시 스트림 통지
+      currentMembers[idx] = currentMembers[idx].copyWith(isFavorite: !isFav);
+      _notifyListeners(currentMembers);
+      debugPrint('[FirestoreMemberRepository] toggleFavorite: UI updated immediately for member');
+    } else {
+      // 대상 멤버가 현재 리스트에 없으면 전체 상태 재적용
+      await _updateMembersFavoriteStatus();
     }
 
-    // 실시간 UI 업데이트: 항상 전체 즐겨찾기 상태를 재적용하여 스트림 통지
-    debugPrint('[FirestoreMemberRepository] toggleFavorite: updating UI state');
-    await _updateMembersFavoriteStatus();
+    // 3. Cloud 동기화는 백그라운드로 (UI 블로킹 방지)
+    final user = _getCurrentUserSafe();
+    if (user != null) {
+      unawaited(_syncFavoriteToCloud(user.uid, localService));
+    }
+  }
+
+  /// Cloud Firestore에 즐겨찾기 동기화 (백그라운드용)
+  Future<void> _syncFavoriteToCloud(String userId, LocalStorageService localService) async {
+    try {
+      final favorites = await localService.getFavorites();
+      await _firestore.collection('users').doc(userId).set({
+        'favorites': favorites,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('[FirestoreMemberRepository] Failed to sync favorite to cloud: $e');
+    }
   }
 
   @override
