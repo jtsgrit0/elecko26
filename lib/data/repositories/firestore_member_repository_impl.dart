@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:elecko26/data/datasources/local_storage_service.dart';
 import 'package:elecko26/data/datasources/nesdc_poll_data_source.dart';
+import 'package:elecko26/data/datasources/news_crawler.dart';
 import 'package:elecko26/data/datasources/profile_image_resolver.dart';
 import 'package:elecko26/data/models/member_model.dart';
 import 'package:elecko26/domain/entities/member.dart';
@@ -737,7 +738,77 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     }
     debugPrint('[FirestoreMemberRepository] syncUserSettings() updating favorite status');
     await _updateMembersFavoriteStatus();
+
+    // 즐겨찾기된 후보들의 뉴스를 백그라운드로 수집
+    unawaited(_crawlNewsForFavorites());
+
     debugPrint('[FirestoreMemberRepository] syncUserSettings() completed');
+  }
+
+  /// 즐겨찾기된 후보들의 뉴스를 백그라운드로 수집 (Naver 뉴스 검색)
+  Future<void> _crawlNewsForFavorites() async {
+    try {
+      final localService = sl<LocalStorageService>();
+      final favorites = await localService.getFavorites();
+      if (favorites.isEmpty) return;
+
+      final currentMembers = List<Member>.from(_membersController.value);
+      final favoriteMembers =
+          currentMembers.where((m) => favorites.contains(m.id)).toList();
+
+      debugPrint(
+          '[NewsCrawler] Crawling news for ${favoriteMembers.length} favorite members...');
+
+      final crawler = NewsCrawler();
+      bool hasUpdate = false;
+
+      for (final member in favoriteMembers) {
+        try {
+          final newReports = await crawler.crawlNewsForCandidate(member.name);
+          if (newReports.isEmpty) continue;
+
+          final idx = currentMembers.indexWhere((m) => m.id == member.id);
+          if (idx == -1) continue;
+
+          // 기존 리포트와 병합 (URL 기준 중복 제거)
+          final existingMember = currentMembers[idx] as MemberModel;
+          final existingUrls =
+              existingMember.pressReports.map((r) => r.url).toSet();
+          final uniqueNewReports =
+              newReports.where((r) => !existingUrls.contains(r.url)).toList();
+
+          if (uniqueNewReports.isEmpty) continue;
+
+          final mergedReports = [
+            ...existingMember.pressReports,
+            ...uniqueNewReports,
+          ]..sort((a, b) => b.publishDate.compareTo(a.publishDate));
+
+          // 최대 20개로 제한
+          final limitedReports = mergedReports.take(20).toList();
+
+          currentMembers[idx] = existingMember.copyWith(
+            pressReports: limitedReports,
+          );
+          hasUpdate = true;
+
+          debugPrint(
+              '[NewsCrawler] Added ${uniqueNewReports.length} news for ${member.name}');
+        } catch (e) {
+          debugPrint('[NewsCrawler] Failed to crawl for ${member.name}: $e');
+        }
+
+        // 요청 간 지연 (rate limiting)
+        await Future.delayed(const Duration(seconds: 1));
+      }
+
+      if (hasUpdate) {
+        _notifyListeners(currentMembers);
+        debugPrint('[NewsCrawler] UI updated with new news reports');
+      }
+    } catch (e) {
+      debugPrint('[NewsCrawler] Error in crawlNewsForFavorites: $e');
+    }
   }
 
   @override
