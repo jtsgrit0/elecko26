@@ -777,26 +777,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 1),
-                  GestureDetector(
-                    onTap: () async {
-                      // if (!kIsWeb) {
-                      //   await firebase.FirebaseAuth.instance.signOut();
-                      // }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.logout,
-                        color: AppColors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ],

@@ -184,6 +184,17 @@ class _AuthGateState extends State<AuthGate> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (!widget.isEmbedded) ...[
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () => Navigator.of(context).maybePop(),
+                          icon: const Icon(Icons.arrow_back_rounded),
+                          label: const Text('돌아가기'),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     Container(
                       padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
                       decoration: BoxDecoration(
