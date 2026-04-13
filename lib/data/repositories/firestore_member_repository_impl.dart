@@ -46,6 +46,9 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   static final BehaviorSubject<String> _regionController =
       BehaviorSubject<String>();
 
+  // Firestore 실시간 즐겨찾기 리스너
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _favoritesStreamSubscription;
+
   bool _isInitialized = false;
 
   void _notifyListeners(List<Member> members) {
@@ -71,6 +74,51 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       }
     } catch (_) {}
     return null;
+  }
+
+  /// Firestore 즐겨찾기 실시간 리스너 시작
+  void _startFavoritesStreamListener(String userId) {
+    _stopFavoritesStreamListener();
+    debugPrint('[FirestoreMemberRepository] Starting favorites stream listener for user: $userId');
+    _favoritesStreamSubscription = _firestore
+        .collection('users')
+        .doc(userId)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists && snapshot.data() != null) {
+        final cloudFavorites = List<String>.from(snapshot.data()!['favorites'] ?? []);
+        debugPrint('[FirestoreMemberRepository] Firestore favorites changed: $cloudFavorites');
+        // LocalStorage 업데이트
+        _updateLocalStorageFromCloudFavorites(cloudFavorites);
+        // UI 업데이트
+        _updateMembersFavoriteStatus();
+      }
+    });
+  }
+
+  /// Firestore 즐겨찾기 실시간 리스너 중지
+  void _stopFavoritesStreamListener() {
+    _favoritesStreamSubscription?.cancel();
+    _favoritesStreamSubscription = null;
+    debugPrint('[FirestoreMemberRepository] Favorites stream listener cancelled');
+  }
+
+  /// Cloud Firestore 즐겨찾기로 LocalStorage 업데이트 (합집합)
+  Future<void> _updateLocalStorageFromCloudFavorites(List<String> cloudFavorites) async {
+    final localService = sl<LocalStorageService>();
+    final localFavorites = await localService.getFavorites();
+    // 합집합으로 병합 (Cloud 기준)
+    for (final id in cloudFavorites) {
+      if (!localFavorites.contains(id)) {
+        await localService.addFavorite(id);
+      }
+    }
+    // 로컬에는 있지만 Cloud에 없는 것은 제거 (Cloud가 권한)
+    for (final id in List.from(localFavorites)) {
+      if (!cloudFavorites.contains(id)) {
+        await localService.removeFavorite(id);
+      }
+    }
   }
 
   Future<void> _syncUserSettingsWithCloud() async {
@@ -661,6 +709,9 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<void> resetSettings() async {
     final localService = sl<LocalStorageService>();
 
+    // 로그아웃 시 실시간 리스너 중지
+    _stopFavoritesStreamListener();
+
     // 즐겨찾기는 Cloud에 동기화된 상태로 유지 (삭제하지 않음)
     // 투표 기록, 지역 설정만 초기화
     await localService.clearVotes();
@@ -676,8 +727,15 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     debugPrint('[FirestoreMemberRepository] syncUserSettings() called');
     final user = _getCurrentUserSafe();
     debugPrint('[FirestoreMemberRepository] Current user: ${user?.uid ?? 'null'}');
-    await _syncUserSettingsWithCloud();
-    debugPrint('[FirestoreMemberRepository] syncUserSettings() updating favorite status only');
+    if (user != null) {
+      // 로그인 시 실시간 리스너 시작
+      _startFavoritesStreamListener(user.uid);
+      await _syncUserSettingsWithCloud();
+    } else {
+      // 로그아웃 시 리스너 중지
+      _stopFavoritesStreamListener();
+    }
+    debugPrint('[FirestoreMemberRepository] syncUserSettings() updating favorite status');
     await _updateMembersFavoriteStatus();
     debugPrint('[FirestoreMemberRepository] syncUserSettings() completed');
   }
