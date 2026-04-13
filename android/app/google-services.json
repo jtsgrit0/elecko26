@@ -20,6 +20,10 @@
             "package_name": "com.elecko26.app",
             "certificate_hash": "447a3e97ad71eedf37db39f80e0a3a9673dfea6d"
           }
+        },
+        {
+          "client_id": "790419883700-gll4qfg88knqdv4detcml1agfce9n8f7.apps.googleusercontent.com",
+          "client_type": 3
         }
       ],
       "api_key": [
@@ -29,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "790419883700-gll4qfg88knqdv4detcml1agfce9n8f7.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "790419883700-03rnjkt5h69eomc77p9cketr23lhi3g6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.flutterApplication1"
+              }
+            }
+          ]
         }
       }
     }
