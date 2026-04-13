@@ -34,7 +34,7 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
   String _selectedRegion = '전국';
   StreamSubscription<String>? _regionSubscription;
 
-  bool _isLoading = true;
+  bool _isLoading = false; // 로딩 바 즉시 제거 (탭 구조를 먼저 표시)
   String? _errorMessage;
 
   @override
@@ -63,10 +63,6 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
 
   Future<void> _loadPolls() async {
     if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
 
     try {
       // 1순위: 지역 정보 먼저 로드하여 UI 반응성 확보
@@ -89,7 +85,6 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
       if (mounted) {
         setState(() {
           _myVotedMembers = cachedVotedList;
-          _isLoading = false; // 탭 구조를 즉시 보여주기 위해 로딩 해제
         });
       }
 
@@ -102,7 +97,6 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
       }
 
       // 4순위: 전체 멤버 새로고침 (백그라운드, 블로킹 없음)
-      // 이미 캐시로 UI가 표시되었으므로 await하지 않음
       unawaited(
         memberRepo.getAllMembers().then((allMembers) {
           if (mounted) {
@@ -117,7 +111,6 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
       if (mounted) {
         setState(() {
           _errorMessage = '투표 목록을 불러오는 중 오류가 발생했습니다.';
-          _isLoading = false;
         });
       }
     }
