@@ -23,7 +23,9 @@ class PollsPage extends StatefulWidget {
   State<PollsPage> createState() => _PollsPageState();
 }
 
-class _PollsPageState extends State<PollsPage> {
+class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
+  late TabController _tabController;
+
   List<Member> _myVotedMembers = [];
   String _selectedRegion = '전국';
   StreamSubscription<String>? _regionSubscription;
@@ -34,6 +36,7 @@ class _PollsPageState extends State<PollsPage> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadPolls();
 
     // 지역 설정 변경 감지 구독
@@ -49,6 +52,7 @@ class _PollsPageState extends State<PollsPage> {
 
   @override
   void dispose() {
+    _tabController.dispose();
     _regionSubscription?.cancel();
     super.dispose();
   }
@@ -107,99 +111,31 @@ class _PollsPageState extends State<PollsPage> {
         centerTitle: true,
         backgroundColor: AppColors.primary,
         elevation: 0,
-        actions: [
-          Flexible(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 200),
-              child: _buildSupportedCandidatesBar(),
-            ),
-          ),
-          const SizedBox(width: 8),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: AppColors.white,
+          indicatorWeight: 3,
+          labelStyle: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+          unselectedLabelStyle: AppTextStyles.bodyMedium,
+          tabs: const [
+            Tab(text: '진행중'),
+            Tab(text: '지지후보'),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // 진행중 탭
+          _buildVotingTab(),
+          // 지지후보 탭
+          _buildSupportedCandidatesTab(),
         ],
       ),
-      body: _buildBody(),
     );
   }
 
-  Widget _buildSupportedCandidatesBar() {
-    return StreamBuilder<List<Member>>(
-      stream: sl<MemberRepository>().watchAllMembers(),
-      builder: (context, snapshot) {
-        final allMembers = snapshot.data ?? [];
-        final votedMembers = allMembers.where((m) => _myVotedMembers.map((v) => v.id).contains(m.id)).toList();
-
-        if (votedMembers.isEmpty) return const SizedBox.shrink();
-
-        return SizedBox(
-          height: 40,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: votedMembers.length,
-            itemBuilder: (context, index) {
-              final member = votedMembers[index];
-              return Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: InkWell(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => MemberDetailPage(
-                          member: member,
-                          onBack: () => Navigator.pop(context),
-                        ),
-                      ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.3)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircleAvatar(
-                          radius: 10,
-                          backgroundColor: AppColors.white,
-                          backgroundImage: member.imageUrl.trim().isEmpty
-                              ? null
-                              : NetworkImage(member.imageUrl) as ImageProvider,
-                          child: member.imageUrl.trim().isEmpty
-                              ? Text(
-                                  member.name.characters.first,
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
-                                  ),
-                                )
-                              : null,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          member.name,
-                          style: const TextStyle(
-                            color: AppColors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildBody() {
+  Widget _buildVotingTab() {
     if (_errorMessage != null) {
       return Center(
         child: Column(
@@ -221,7 +157,6 @@ class _PollsPageState extends State<PollsPage> {
       );
     }
 
-    // 진행중 탭: 지역 설정 여부에 따라 분기
     return _selectedRegion == '전국' || _selectedRegion == '미설정'
         ? RegionSelectionPrompt(onSelectRegion: _showRegionSelectionDialog)
         : RegionalMemberVotingList(
@@ -229,6 +164,67 @@ class _PollsPageState extends State<PollsPage> {
             onChangeRegion: _showRegionSelectionDialog,
             onVoteChanged: _loadPolls,
           );
+  }
+
+  Widget _buildSupportedCandidatesTab() {
+    return RefreshIndicator(
+      onRefresh: _loadPolls,
+      color: AppColors.primary,
+      child: StreamBuilder<List<Member>>(
+        stream: sl<MemberRepository>().watchAllMembers(),
+        builder: (context, snapshot) {
+          final allMembers = snapshot.data ?? [];
+          final votedIds = _myVotedMembers.map((m) => m.id).toSet();
+          final votedMembers = allMembers.where((m) => votedIds.contains(m.id)).toList();
+
+          if (votedMembers.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.how_to_vote, size: 64, color: AppColors.mediumGray),
+                  const SizedBox(height: 16),
+                  Text(
+                    '아직 지지한 후보가 없습니다',
+                    style: AppTextStyles.bodyLarge.copyWith(color: AppColors.mediumGray),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '진행중 탭에서 후보를 지지해보세요!',
+                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.mediumGray),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: votedMembers.length,
+            itemBuilder: (context, index) {
+              final member = votedMembers[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: MemberCard(
+                  key: ValueKey(member.id),
+                  member: member,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => MemberDetailPage(
+                          member: member,
+                          onBack: () => Navigator.pop(context),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
   }
 
   void _showRegionSelectionDialog() {
@@ -294,50 +290,6 @@ class _PollsPageState extends State<PollsPage> {
           );
         }
       ),
-    );
-  }
-
-  Widget _buildMyVotesTab() {
-    return RefreshIndicator(
-      onRefresh: _loadPolls,
-      color: AppColors.primary,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        children: [
-          StreamBuilder<List<Member>>(
-            stream: sl<MemberRepository>().watchAllMembers(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox.shrink();
-
-              final currentVotedIds = _myVotedMembers.map((m) => m.id).toSet();
-              if (currentVotedIds.isEmpty) return const SizedBox.shrink();
-
-              final latestVotedMembers = snapshot.data!
-                  .where((m) => currentVotedIds.contains(m.id))
-                  .toList();
-
-              if (latestVotedMembers.isEmpty) return const SizedBox.shrink();
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('내가 지지한 후보', style: AppTextStyles.headline3.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 12),
-                  ...latestVotedMembers.map((m) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: MemberCard(
-                      member: m,
-                      onTap: () {
-                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => MemberDetailPage(member: m, onBack: () => Navigator.pop(context))));
-                      }
-                    )
-                  )),
-                ],
-              );
-            }
-          ),
-        ],
-      )
     );
   }
 }

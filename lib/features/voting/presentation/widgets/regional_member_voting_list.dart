@@ -29,7 +29,6 @@ class RegionalMemberVotingList extends StatefulWidget {
 
 class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
   List<Member> _members = [];
-  List<Member> _myVotedMembers = [];
   Map<String, String> _votes = {}; // district -> memberId
   Map<String, int> _voteTimestamps = {}; // district -> timestamp
   bool _isLoading = true;
@@ -49,10 +48,8 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
         final filtered = allMembers.where((m) {
           return districtMatchesRegion(m.district, widget.region);
         }).toList();
-        final votedList = allMembers.where((m) => _votes.values.contains(m.id)).toList();
         setState(() {
           _members = filtered;
-          _myVotedMembers = votedList;
         });
       }
     });
@@ -86,13 +83,11 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
         final filtered = cached.where((m) {
           return districtMatchesRegion(m.district, widget.region);
         }).toList();
-        final votedList = cached.where((m) => votes.values.contains(m.id)).toList();
         if (mounted) {
           setState(() {
             _members = filtered;
             _votes = votes;
             _voteTimestamps = timestamps;
-            _myVotedMembers = votedList;
             _isLoading = false;
           });
         }
@@ -104,14 +99,12 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
       final filtered = allMembers.where((m) {
         return districtMatchesRegion(m.district, widget.region);
       }).toList();
-      final votedList = allMembers.where((m) => votes.values.contains(m.id)).toList();
 
       if (mounted) {
         setState(() {
           _members = filtered;
           _votes = votes;
           _voteTimestamps = timestamps;
-          _myVotedMembers = votedList;
           _isLoading = false;
         });
       }
@@ -150,7 +143,6 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
       await localStorage.removeVote(district);
       setState(() {
         _votes.remove(district);
-        _myVotedMembers.removeWhere((m) => m.id == member.id);
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -165,9 +157,6 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
       setState(() {
         _votes[district] = member.id;
         _voteTimestamps[district] = now;
-        // 내가 지지한 후보 목록 업데이트
-        _myVotedMembers.removeWhere((m) => m.id == member.id);
-        _myVotedMembers.add(member);
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -260,12 +249,8 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            itemCount: groupedMembers.length + 1,
+            itemCount: groupedMembers.length,
             itemBuilder: (context, index) {
-              // 마지막 인덱스는 '내가 지지한 후보' 섹션
-              if (index == groupedMembers.length) {
-                return _buildMyVotedSection();
-              }
               final district = groupedMembers.keys.elementAt(index);
               final membersInDistrict = groupedMembers[district]!;
               return _buildDistrictSection(district, membersInDistrict);
@@ -317,54 +302,6 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
           );
         }),
         const SizedBox(height: 16),
-      ],
-    );
-  }
-
-  Widget _buildMyVotedSection() {
-    if (_myVotedMembers.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Divider(height: 32),
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            children: [
-              Icon(Icons.how_to_vote, color: AppColors.primary, size: 20),
-              SizedBox(width: 8),
-              Text(
-                '내가 지지한 후보',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.darkGray,
-                ),
-              ),
-            ],
-          ),
-        ),
-        ..._myVotedMembers.map((member) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: MemberCard(
-            key: ValueKey(member.id),
-            member: member,
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => MemberDetailPage(
-                    member: member,
-                    onBack: () => Navigator.pop(context),
-                  ),
-                ),
-              );
-            },
-          ),
-        )),
-        const SizedBox(height: 24),
       ],
     );
   }
