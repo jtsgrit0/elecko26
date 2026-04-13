@@ -107,8 +107,95 @@ class _PollsPageState extends State<PollsPage> {
         centerTitle: true,
         backgroundColor: AppColors.primary,
         elevation: 0,
+        actions: [
+          Flexible(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 200),
+              child: _buildSupportedCandidatesBar(),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: _buildBody(),
+    );
+  }
+
+  Widget _buildSupportedCandidatesBar() {
+    return StreamBuilder<List<Member>>(
+      stream: sl<MemberRepository>().watchAllMembers(),
+      builder: (context, snapshot) {
+        final allMembers = snapshot.data ?? [];
+        final votedMembers = allMembers.where((m) => _myVotedMembers.map((v) => v.id).contains(m.id)).toList();
+
+        if (votedMembers.isEmpty) return const SizedBox.shrink();
+
+        return SizedBox(
+          height: 40,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: votedMembers.length,
+            itemBuilder: (context, index) {
+              final member = votedMembers[index];
+              return Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => MemberDetailPage(
+                          member: member,
+                          onBack: () => Navigator.pop(context),
+                        ),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircleAvatar(
+                          radius: 10,
+                          backgroundColor: AppColors.white,
+                          backgroundImage: member.imageUrl.trim().isEmpty
+                              ? null
+                              : NetworkImage(member.imageUrl) as ImageProvider,
+                          child: member.imageUrl.trim().isEmpty
+                              ? Text(
+                                  member.name.characters.first,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          member.name,
+                          style: const TextStyle(
+                            color: AppColors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
