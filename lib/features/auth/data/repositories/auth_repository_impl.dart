@@ -21,7 +21,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   GoogleSignIn get _googleSignIn => GoogleSignIn(
-    clientId: kIsWeb ? '813263083099-8t9v3406hbl85rkfh1n8a9vloq2qn5re.apps.googleusercontent.com' : null,
+    clientId: kIsWeb ? '790419883700-gll4qfg88knqdv4detcml1agfce9n8f7.apps.googleusercontent.com' : null,
   );
 
   AuthRepositoryImpl();
