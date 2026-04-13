@@ -133,7 +133,9 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<void> _updateMembersFavoriteStatus() async {
     final localService = sl<LocalStorageService>();
     final favorites = await localService.getFavorites();
+    debugPrint('[FirestoreMemberRepository] _updateMembersFavoriteStatus: ${favorites.length} favorites found');
     final currentMembers = List<Member>.from(_membersController.value);
+    debugPrint('[FirestoreMemberRepository] _updateMembersFavoriteStatus: ${currentMembers.length} members in controller');
 
     final updatedMembers = currentMembers.map((m) {
       final newFavStatus = favorites.contains(m.id);
@@ -144,6 +146,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     }).toList();
 
     _membersController.add(updatedMembers);
+    debugPrint('[FirestoreMemberRepository] _updateMembersFavoriteStatus: ${updatedMembers.where((m) => m.isFavorite).length} members marked as favorite');
   }
 
   @override
@@ -573,6 +576,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     final sanitizedId = memberId.trim();
     final localService = sl<LocalStorageService>();
     final isFav = await localService.isFavorite(sanitizedId);
+    debugPrint('[FirestoreMemberRepository] toggleFavorite: $sanitizedId, wasFavorite: $isFav');
 
     if (isFav) {
       await localService.removeFavorite(sanitizedId);
@@ -660,8 +664,13 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<void> syncUserSettings() async {
+    debugPrint('[FirestoreMemberRepository] syncUserSettings() called');
+    final user = _getCurrentUserSafe();
+    debugPrint('[FirestoreMemberRepository] Current user: ${user?.uid ?? 'null'}');
     await _syncUserSettingsWithCloud();
+    debugPrint('[FirestoreMemberRepository] syncUserSettings() calling refreshMembers()');
     await refreshMembers();
+    debugPrint('[FirestoreMemberRepository] syncUserSettings() completed');
   }
 
   @override

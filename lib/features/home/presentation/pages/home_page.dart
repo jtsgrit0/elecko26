@@ -380,9 +380,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         );
         // 로그인 후 사용자 정보를 명시적으로 로드 (스트림 비동기 대기 방지)
         await _loadCurrentUser();
+        debugPrint('[HomePage] After login, _currentUser: ${_currentUser?.email ?? 'null'}');
         if (_currentUser != null) {
           // 로그인 성공 시 설정을 클라우드에서 동기화
+          debugPrint('[HomePage] Calling syncUserSettings()');
           await sl<MemberRepository>().syncUserSettings();
+          debugPrint('[HomePage] syncUserSettings() completed');
           await _loadUserSettings(); // UI 상태 업데이트
         }
         if (!mounted) {
