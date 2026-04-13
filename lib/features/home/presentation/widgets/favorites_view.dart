@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:elecko26/app/injection_container.dart';
 import 'package:elecko26/core/theme/app_theme.dart';
 import 'package:elecko26/core/utils/party_util.dart';
 import 'package:elecko26/domain/entities/member.dart';
+import 'package:elecko26/domain/usecases/member_usecases.dart';
 import 'package:elecko26/features/home/presentation/widgets/member_card.dart';
 
 class FavoritesView extends StatelessWidget {
@@ -221,9 +223,12 @@ class FavoritesView extends StatelessWidget {
               // 즐겨찾기 버튼
               IconButton(
                 icon: const Icon(Icons.star_border, color: AppColors.mediumGray),
-                onPressed: () {
-                  // 즐겨찾기 추가 (MemberCard의 toggleFavorite 사용)
-                  // 사용자가 직접 탭해서 추가하도록 유도
+                onPressed: () async {
+                  try {
+                    await sl<ToggleFavoriteUseCase>().call(member.id);
+                  } catch (e) {
+                    debugPrint('[FavoritesView] toggleFavorite failed: $e');
+                  }
                 },
               ),
             ],
