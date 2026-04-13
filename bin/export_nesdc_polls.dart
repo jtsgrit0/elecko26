@@ -4,8 +4,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter_application_1/core/config/refresh_config.dart';
-import 'package:flutter_application_1/data/datasources/nesdc_poll_data_source.dart';
+import 'package:elecko26/core/config/refresh_config.dart';
+import 'package:elecko26/data/datasources/nesdc_poll_data_source.dart';
 
 Future<void> main(List<String> args) async {
   try {
