@@ -147,11 +147,11 @@ class _PollsPageState extends State<PollsPage> {
   void _showRegionSelectionDialog() {
     final regions = ['서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시', '세종특별자치시', '경기도', '강원도', '충청북도', '충청남도', '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도'];
 
-    // 선택된 지역을 모달 내에서 즉각적으로 반영하기 위해 로컬 상태 사용
     String tempSelected = _selectedRegion;
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) {
           return AlertDialog(
@@ -179,20 +179,22 @@ class _PollsPageState extends State<PollsPage> {
                           trailing: isSelected
                               ? const Icon(Icons.check, color: AppColors.primary)
                               : const Icon(Icons.chevron_right, size: 18),
-                          onTap: () async {
-                            // 즉각적으로 UI 업데이트 (체크마크 표시)
+                          onTap: () {
+                            // 체크마크 즉시 표시
                             setDialogState(() {
                               tempSelected = region;
                             });
 
-                            // 지역을 저장
-                            await sl<MemberRepository>().saveSelectedRegion(region);
+                            // 지역을 백그라운드로 저장 (UI 블로킹 방지)
+                            unawaited(sl<MemberRepository>().saveSelectedRegion(region));
 
-                            if (dialogContext.mounted) {
-                              Navigator.of(dialogContext).pop();
-                            }
-
-                            _loadPolls(); // 메인 화면 지역 변경 후 리로드
+                            // 체크마크가 보이는 시간을 확보한 후 다이얼로그 닫기
+                            Future.delayed(const Duration(milliseconds: 200), () {
+                              if (dialogContext.mounted) {
+                                Navigator.of(dialogContext).pop();
+                                _loadPolls();
+                              }
+                            });
                           },
                         ),
                         if (index < regions.length - 1) const Divider(),
