@@ -140,6 +140,7 @@ class _PollsPageState extends State<PollsPage> {
         : RegionalMemberVotingList(
             region: _selectedRegion,
             onChangeRegion: _showRegionSelectionDialog,
+            onVoteChanged: _loadPolls,
           );
   }
 

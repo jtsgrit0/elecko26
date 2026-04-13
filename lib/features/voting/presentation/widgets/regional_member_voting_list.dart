@@ -11,11 +11,13 @@ import 'dart:async';
 class RegionalMemberVotingList extends StatefulWidget {
   final String region;
   final VoidCallback? onChangeRegion;
+  final VoidCallback? onVoteChanged;
 
   const RegionalMemberVotingList({
     super.key,
     required this.region,
     this.onChangeRegion,
+    this.onVoteChanged,
   });
 
   @override
@@ -139,13 +141,12 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
       await localStorage.removeVote(district);
       setState(() {
         _votes.remove(district);
-        // 취소 시에는 timestamp를 지울지 유지할지 결정 필요. 
-        // "바꿀 수 없도록"이 목적이므로 취소도 제한하는 것이 맞음.
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${member.name} 의원 지지를 취소했습니다.')),
         );
+        WidgetsBinding.instance.addPostFrameCallback((_) => widget.onVoteChanged?.call());
       }
     } else {
       // 투표하기 (또는 변경)
@@ -159,6 +160,7 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${member.name} 의원을 지지하셨습니다!')),
         );
+        WidgetsBinding.instance.addPostFrameCallback((_) => widget.onVoteChanged?.call());
       }
     }
   }
