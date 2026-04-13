@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:elecko26/core/theme/app_theme.dart';
 import 'package:elecko26/core/utils/party_util.dart';
 import 'package:elecko26/domain/entities/member.dart';
+import 'package:elecko26/features/home/presentation/widgets/member_card.dart';
 
 class FavoritesView extends StatelessWidget {
   final Stream<List<Member>> membersStream;
