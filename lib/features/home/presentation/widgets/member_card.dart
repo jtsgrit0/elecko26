@@ -43,7 +43,7 @@ class MemberCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   child: member.imageUrl.isNotEmpty
                       ? CachedNetworkImage(
-                          imageUrl: '${ImageUtil.getProxyUrl(member.imageUrl, width: 160, height: 160)}&v=2',
+                          imageUrl: ImageUtil.getProxyUrl(member.imageUrl, width: 120, height: 120),
                           width: 60,
                           height: 60,
                           fit: BoxFit.cover,
