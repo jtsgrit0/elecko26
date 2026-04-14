@@ -51,6 +51,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _favoritesStreamSubscription;
 
   bool _isInitialized = false;
+  Future<void>? _initializationFuture;
 
   void _notifyListeners(List<Member> members) {
     _membersController.add(List.from(members));
@@ -58,14 +59,32 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
   Future<void> _ensureInitialized() async {
     if (_isInitialized) return;
+    if (_initializationFuture != null) {
+      await _initializationFuture;
+      return;
+    }
+    _initializationFuture = _performInitialization();
+    await _initializationFuture;
+  }
+
+  Future<void> _performInitialization() async {
     try {
       if (Firebase.apps.isNotEmpty) {
         await _syncUserSettingsWithCloud();
       }
     } catch (_) {}
-    // refreshMembers는 내부에서 비동기로 돌거나 즉시 첫 결과를 줄 수 있음
-    await refreshMembers();
-    _isInitialized = true;
+    try {
+      // refreshMembers는 내부에서 비동기로 돌거나 즉시 첫 결과를 줄 수 있음
+      await refreshMembers();
+      _isInitialized = true;
+    } finally {
+      _initializationFuture = null;
+    }
+  }
+
+  void _ensureInitializedInBackground() {
+    if (_isInitialized) return;
+    unawaited(_ensureInitialized());
   }
 
   auth.User? _getCurrentUserSafe() {
@@ -570,18 +589,28 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<List<Member>> getAllMembers() async {
+    if (_membersController.value.isNotEmpty) {
+      _ensureInitializedInBackground();
+      return _membersController.value;
+    }
     await _ensureInitialized();
     return _membersController.value;
   }
 
   @override
   Future<List<Member>> getCachedMembers() async {
-    await _ensureInitialized();
+    _ensureInitializedInBackground();
     return _membersController.value;
   }
 
   @override
   Future<Member> getMemberById(String memberId) async {
+    final cachedMembers = _membersController.value;
+    final cachedIndex = cachedMembers.indexWhere((m) => m.id == memberId);
+    if (cachedIndex != -1) {
+      _ensureInitializedInBackground();
+      return cachedMembers[cachedIndex];
+    }
     await _ensureInitialized();
     final members = _membersController.value;
     return members.firstWhere((m) => m.id == memberId,
@@ -590,7 +619,11 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<List<Member>> searchMembers(String query) async {
-    await _ensureInitialized();
+    if (_membersController.value.isEmpty) {
+      await _ensureInitialized();
+    } else {
+      _ensureInitializedInBackground();
+    }
     final lowerQuery = query.toLowerCase();
     return _membersController.value
         .where((m) =>
@@ -604,21 +637,26 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   @override
   Stream<List<Member>> watchAllMembers(
       {Duration interval = const Duration(hours: 1)}) {
-    _ensureInitialized();
+    _ensureInitializedInBackground();
     return _membersController.stream;
   }
 
   @override
   Stream<Member> watchMemberById(String memberId,
       {Duration interval = const Duration(hours: 1)}) {
-    _ensureInitialized();
-    return _membersController.stream.map((members) {
-      try {
-        return members.firstWhere((m) => m.id == memberId);
-      } catch (e) {
-        throw Exception('Not found');
-      }
-    });
+    _ensureInitializedInBackground();
+
+    final cachedMembers = _membersController.value;
+    final cachedIndex = cachedMembers.indexWhere((m) => m.id == memberId);
+    final Member? cachedMember =
+        cachedIndex != -1 ? cachedMembers[cachedIndex] : null;
+
+    final stream = _membersController.stream
+        .where((members) => members.any((m) => m.id == memberId))
+        .map((members) => members.firstWhere((m) => m.id == memberId))
+        .distinct();
+
+    return cachedMember != null ? stream.startWith(cachedMember) : stream;
   }
 
   @override

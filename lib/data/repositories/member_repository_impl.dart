@@ -249,10 +249,16 @@ class MemberRepositoryImpl implements MemberRepository {
   @override
   Stream<Member> watchMemberById(String memberId,
       {Duration interval = const Duration(hours: 1)}) {
-    return watchAllMembers(interval: interval).map((members) {
-      return members.firstWhere((m) => m.id == memberId,
-          orElse: () => throw Exception('Not found'));
-    }).distinct();
+    final cachedIndex = _dummyMembers.indexWhere((m) => m.id == memberId);
+    final Member? cachedMember =
+        cachedIndex != -1 ? _dummyMembers[cachedIndex] : null;
+
+    final stream = watchAllMembers(interval: interval)
+        .where((members) => members.any((m) => m.id == memberId))
+        .map((members) => members.firstWhere((m) => m.id == memberId))
+        .distinct();
+
+    return cachedMember != null ? stream.startWith(cachedMember) : stream;
   }
 
   @override

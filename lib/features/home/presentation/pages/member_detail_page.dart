@@ -96,6 +96,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
   Widget build(BuildContext context) {
     return StreamBuilder<Member>(
       stream: _memberStream,
+      initialData: widget.member,
       builder: (context, memberSnapshot) {
         final member = memberSnapshot.data ?? widget.member;
 
