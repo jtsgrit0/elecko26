@@ -225,14 +225,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               await sl<MemberRepository>().saveSelectedRegion(region);
 
               if (context.mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('$region으로 지역이 설정되었습니다.'),
-                    backgroundColor: AppColors.primary,
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
+                // 체크표시를 사용자가 인지할 수 있도록 아주 짧은 대기 시간 추가
+                await Future.delayed(const Duration(milliseconds: 100));
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('$region으로 지역이 설정되었습니다.'),
+                      backgroundColor: AppColors.primary,
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                }
               }
             },
           ),
