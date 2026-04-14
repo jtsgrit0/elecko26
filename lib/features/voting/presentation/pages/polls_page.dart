@@ -269,19 +269,19 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
                               ? const Icon(Icons.check, color: AppColors.primary)
                               : const Icon(Icons.chevron_right, size: 18),
                           onTap: () {
-                            // 체크마크 즉시 표시
+                            // 1. 체크마크 즉시 표시 (UI 우선 업데이트)
                             setDialogState(() {
                               tempSelected = region;
                             });
 
-                            // 지역을 백그라운드로 저장 (UI 블로킹 방지)
-                            unawaited(sl<MemberRepository>().saveSelectedRegion(region));
-
-                            // 체크마크가 보이는 시간을 확보한 후 다이얼로그 닫기
+                            // 2. 저장은 백그라운드로 수행하면서 다이얼로그는 잠시 유지
+                            // (사용자가 체크 표시를 인식할 수 있도록 200ms 지연)
                             Future.delayed(const Duration(milliseconds: 200), () {
                               if (dialogContext.mounted) {
                                 Navigator.of(dialogContext).pop();
+                                // 메인 화면 업데이트 및 저장
                                 _loadPolls();
+                                sl<MemberRepository>().saveSelectedRegion(region);
                               }
                             });
                           },
