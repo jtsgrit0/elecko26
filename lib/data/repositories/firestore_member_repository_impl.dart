@@ -162,6 +162,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
           await localService.saveSelectedRegion(cloudRegion);
         }
 
+        await _mergeSupportVotes(localService, data['supportVotes']);
+
         // 즐겨찾기 양방향 동기화 (합집합 병합)
         final cloudFavorites = List<String>.from(data['favorites'] ?? []);
         final mergedSet = {...cloudFavorites, ...localFavorites};
@@ -175,16 +177,27 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         }
 
         // 병합된 결과를 Cloud에 저장
+        final supportVotes = await _buildSupportVotesPayload(localService);
         await _firestore.collection('users').doc(user.uid).set({
           'favorites': mergedList,
+          'supportVotes': supportVotes,
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
       } else {
         // Cloud에 user document가 없으면 (신규 계정) 로컬 -> Cloud 업로드
+        final supportVotes = await _buildSupportVotesPayload(localService);
         if (localFavorites.isNotEmpty) {
           await _firestore.collection('users').doc(user.uid).set({
             'favorites': localFavorites,
             'selectedRegion': await localService.getSelectedRegion(),
+            'supportVotes': supportVotes,
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+        } else if (supportVotes.isNotEmpty) {
+          await _firestore.collection('users').doc(user.uid).set({
+            'selectedRegion': await localService.getSelectedRegion(),
+            'supportVotes': supportVotes,
             'createdAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
@@ -195,6 +208,93 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       await _updateMembersFavoriteStatus();
     } catch (e) {
       debugPrint('[FirestoreMemberRepository] Sync error: $e');
+    }
+  }
+
+  Future<void> _mergeSupportVotes(
+    LocalStorageService localService,
+    dynamic cloudVotesRaw,
+  ) async {
+    final localVotes = await localService.getAllVotes();
+    final localTimestamps = await localService.getAllVoteTimestamps();
+    final cloudVotes = _parseSupportVotes(cloudVotesRaw);
+
+    final merged = <String, Map<String, dynamic>>{};
+
+    for (final entry in localVotes.entries) {
+      merged[entry.key] = {
+        'memberId': entry.value,
+        'timestamp': localTimestamps[entry.key],
+      };
+    }
+
+    for (final entry in cloudVotes.entries) {
+      final current = merged[entry.key];
+      final currentTimestamp = (current?['timestamp'] as int?) ?? 0;
+      final incomingTimestamp = (entry.value['timestamp'] as int?) ?? 0;
+      if (current == null || incomingTimestamp >= currentTimestamp) {
+        merged[entry.key] = entry.value;
+      }
+    }
+
+    await localService.clearVotes();
+    for (final entry in merged.entries) {
+      final memberId = entry.value['memberId'] as String?;
+      if (memberId == null || memberId.isEmpty) continue;
+      await localService.saveVote(
+        entry.key,
+        memberId,
+        timestamp: entry.value['timestamp'] as int?,
+      );
+    }
+  }
+
+  Map<String, Map<String, dynamic>> _parseSupportVotes(dynamic raw) {
+    if (raw is! Map) return const {};
+
+    final parsed = <String, Map<String, dynamic>>{};
+    for (final entry in raw.entries) {
+      final district = entry.key.toString();
+      final value = entry.value;
+      if (value is Map) {
+        final memberId = value['memberId']?.toString();
+        if (memberId == null || memberId.isEmpty) continue;
+        final timestampValue = value['timestamp'];
+        parsed[district] = {
+          'memberId': memberId,
+          'timestamp': timestampValue is num ? timestampValue.toInt() : null,
+        };
+      }
+    }
+    return parsed;
+  }
+
+  Future<Map<String, Map<String, dynamic>>> _buildSupportVotesPayload(
+    LocalStorageService localService,
+  ) async {
+    final votes = await localService.getAllVotes();
+    final timestamps = await localService.getAllVoteTimestamps();
+
+    final payload = <String, Map<String, dynamic>>{};
+    for (final entry in votes.entries) {
+      payload[entry.key] = {
+        'memberId': entry.value,
+        'timestamp': timestamps[entry.key],
+      };
+    }
+    return payload;
+  }
+
+  Future<void> _syncSupportVotesToCloud(String userId) async {
+    try {
+      final localService = sl<LocalStorageService>();
+      final supportVotes = await _buildSupportVotesPayload(localService);
+      await _firestore.collection('users').doc(userId).set({
+        'supportVotes': supportVotes,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('[FirestoreMemberRepository] Failed to sync support votes: $e');
     }
   }
 
@@ -694,6 +794,29 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
     // 4. 즐겨찾기된 후보의 뉴스를 백그라운드로 수집
     unawaited(_crawlNewsForFavorites());
+  }
+
+  @override
+  Future<void> saveSupportVote(String district, String memberId,
+      {required int timestamp}) async {
+    final localService = sl<LocalStorageService>();
+    await localService.saveVote(district, memberId, timestamp: timestamp);
+
+    final user = _getCurrentUserSafe();
+    if (user != null) {
+      await _syncSupportVotesToCloud(user.uid);
+    }
+  }
+
+  @override
+  Future<void> removeSupportVote(String district) async {
+    final localService = sl<LocalStorageService>();
+    await localService.removeVote(district);
+
+    final user = _getCurrentUserSafe();
+    if (user != null) {
+      await _syncSupportVotesToCloud(user.uid);
+    }
   }
 
   /// Cloud Firestore에 즐겨찾기 동기화 (백그라운드용)

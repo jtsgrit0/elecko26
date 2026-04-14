@@ -314,11 +314,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     });
 
     // 인증 상태 변경 감지 구독 (실시간 로그아웃/로그인 대응)
-    _authSubscription = sl<AuthRepository>().authStateChanges.listen((user) {
+    _authSubscription = sl<AuthRepository>().authStateChanges.listen((user) async {
       if (mounted) {
         setState(() {
           _currentUser = user;
         });
+      }
+      if (user != null) {
+        await sl<MemberRepository>().syncUserSettings();
+        await _loadUserSettings();
       }
     });
   }
@@ -343,6 +347,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         setState(() {
           _currentUser = user;
         });
+      }
+      if (user != null) {
+        await sl<MemberRepository>().syncUserSettings();
+        await _loadUserSettings();
       }
     } catch (e) {
       debugPrint('[HomePage] Failed to load current user: $e');
@@ -382,11 +390,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         await _loadCurrentUser();
         debugPrint('[HomePage] After login, _currentUser: ${_currentUser?.email ?? 'null'}');
         if (_currentUser != null) {
-          // 로그인 성공 시 설정을 클라우드에서 동기화
-          debugPrint('[HomePage] Calling syncUserSettings()');
-          await sl<MemberRepository>().syncUserSettings();
-          debugPrint('[HomePage] syncUserSettings() completed');
-          await _loadUserSettings(); // UI 상태 업데이트
+          debugPrint('[HomePage] User settings restored after login');
         }
         if (!mounted) {
           return;
@@ -633,7 +637,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('로그아웃'),
-        content: const Text('정말 로그아웃하시겠습니까?\n(보안을 위해 로컬 투표 및 설정 데이터도 초기화됩니다.)'),
+        content: const Text('정말 로그아웃하시겠습니까?\n(로컬 지지 후보와 설정은 지워지지만, 로그인한 계정의 지지 기록은 다시 로그인하면 복원됩니다.)'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -666,7 +670,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _selectedIndex = 0;
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('로그아웃 및 로컬 데이터가 초기화되었습니다.')),
+      const SnackBar(content: Text('로그아웃되었습니다. 계정에 저장된 지지 기록은 다시 로그인하면 복원됩니다.')),
     );
   }
 

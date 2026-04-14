@@ -287,6 +287,19 @@ class MemberRepositoryImpl implements MemberRepository {
   }
 
   @override
+  Future<void> saveSupportVote(String district, String memberId,
+      {required int timestamp}) async {
+    final localService = sl<LocalStorageService>();
+    await localService.saveVote(district, memberId, timestamp: timestamp);
+  }
+
+  @override
+  Future<void> removeSupportVote(String district) async {
+    final localService = sl<LocalStorageService>();
+    await localService.removeVote(district);
+  }
+
+  @override
   Future<String> getSelectedRegion() async {
     if (_regionController.hasValue) {
       return _regionController.value;

@@ -38,6 +38,12 @@ abstract class MemberRepository {
   /// 즐겨찾기 상태 토글
   Future<void> toggleFavorite(String memberId);
 
+  /// 사용자 지지 후보를 저장합니다. 첫 지지 시각도 함께 보관해 24시간 변경 제한에 사용합니다.
+  Future<void> saveSupportVote(String district, String memberId, {required int timestamp});
+
+  /// 저장된 지지 후보를 삭제합니다.
+  Future<void> removeSupportVote(String district);
+
   /// 사용자 지역 설정을 읽고 저장하는 메서드입니다.
   Future<String> getSelectedRegion();
   Future<void> saveSelectedRegion(String region);

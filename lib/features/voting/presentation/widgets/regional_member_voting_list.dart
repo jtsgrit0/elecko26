@@ -114,7 +114,7 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
   }
 
   void _handleVote(String district, Member member) async {
-    final localStorage = sl<LocalStorageService>();
+    final memberRepository = sl<MemberRepository>();
     final currentVote = _votes[district];
     final lastVoteTime = _voteTimestamps[district];
 
@@ -140,9 +140,10 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
 
     if (currentVote == member.id) {
       // 투표 취소
-      await localStorage.removeVote(district);
+      await memberRepository.removeSupportVote(district);
       setState(() {
         _votes.remove(district);
+        _voteTimestamps.remove(district);
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -153,7 +154,11 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
     } else {
       // 투표하기 (또는 변경)
       final now = DateTime.now().millisecondsSinceEpoch;
-      await localStorage.saveVote(district, member.id, timestamp: now);
+      await memberRepository.saveSupportVote(
+        district,
+        member.id,
+        timestamp: now,
+      );
       setState(() {
         _votes[district] = member.id;
         _voteTimestamps[district] = now;
