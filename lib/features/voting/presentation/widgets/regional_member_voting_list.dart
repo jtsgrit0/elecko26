@@ -14,12 +14,14 @@ class RegionalMemberVotingList extends StatefulWidget {
   final String region;
   final VoidCallback? onChangeRegion;
   final VoidCallback? onVoteChanged;
+  final Function(Member)? onMemberVoted;
 
   const RegionalMemberVotingList({
     super.key,
     required this.region,
     this.onChangeRegion,
     this.onVoteChanged,
+    this.onMemberVoted,
   });
 
   @override
@@ -167,7 +169,10 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${member.name} 의원을 지지하셨습니다!')),
         );
-        WidgetsBinding.instance.addPostFrameCallback((_) => widget.onVoteChanged?.call());
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          widget.onVoteChanged?.call();
+          widget.onMemberVoted?.call(member);
+        });
       }
     }
   }

@@ -163,7 +163,22 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
             region: _selectedRegion,
             onChangeRegion: _showRegionSelectionDialog,
             onVoteChanged: _loadPolls,
+            onMemberVoted: _onMemberVoted,
           );
+  }
+
+  void _onMemberVoted(Member member) {
+    // 1. 지지한 후보를 즉시 목록에 추가 (Optimistic Update)
+    if (!_myVotedMembers.any((m) => m.id == member.id)) {
+      setState(() {
+        _myVotedMembers.add(member);
+      });
+    }
+
+    // 2. '지지후보' 탭으로 즉시 이동
+    if (_tabController.index != 1) {
+      _tabController.animateTo(1);
+    }
   }
 
   Widget _buildSupportedCandidatesTab() {
