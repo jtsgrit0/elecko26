@@ -220,31 +220,32 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             trailing: isSelected
                 ? const Icon(Icons.check_circle, color: AppColors.primary)
                 : null,
-            onTap: () async {
+            onTap: () {
               // 1. 즉시 UI 피드백 (모달 내부 상태 갱신)
               setModalState(() {
                 _userRegion = region;
               });
 
-              // 2. 부모 스테이트 및 리포지토리 저장
+              // 2. 부모 스테이트 및 리포지토리 저장 (비동기로 실행하여 UI 차단 방지)
               setState(() {
                 _userRegion = region;
               });
-              await sl<MemberRepository>().saveSelectedRegion(region);
+              sl<MemberRepository>().saveSelectedRegion(region);
 
               if (context.mounted) {
-                // 체크표시를 사용자가 인지할 수 있도록 아주 짧은 대기 시간 추가
-                await Future.delayed(const Duration(milliseconds: 250));
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('$region으로 지역이 설정되었습니다.'),
-                      backgroundColor: AppColors.primary,
-                      duration: const Duration(seconds: 1),
-                    ),
-                  );
-                }
+                // 체크표시를 사용자가 인지할 수 있도록 아주 짧은 대기 시간(150ms) 추가
+                Future.delayed(const Duration(milliseconds: 150), () {
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('$region으로 지역이 설정되었습니다.'),
+                        backgroundColor: AppColors.primary,
+                        duration: const Duration(seconds: 1),
+                      ),
+                    );
+                  }
+                });
               }
             },
           ),
