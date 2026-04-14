@@ -190,25 +190,15 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
   }
 
   AnalysisResult _buildFallbackAnalysis(Member member) {
-    final pollRates = member.polls
-        .map((poll) => poll.supportRate)
-        .whereType<double>()
-        .toList();
-    final pollAverage = pollRates.isEmpty
-        ? null
-        : pollRates.reduce((a, b) => a + b) / pollRates.length / 100.0;
+    // 홈 화면과 동일한 기준 점수 사용 (단순 평균 평균치로 덮어쓰지 않음)
+    final electionPossibility = member.electionPossibility;
 
     final achievement = _estimateScore(member.achievementsList, 20);
     final activity = _estimateScore(member.actions, 30);
     final policy = _estimateScore(member.policies, 15);
-    final publicImage = pollAverage != null
-        ? pollAverage.clamp(0.2, 0.95)
-        : 0.55;
+    final publicImage = electionPossibility.clamp(0.2, 0.95);
     final socialContribution =
         _estimateSocialScore(member.socialContributions);
-
-    final electionPossibility = pollAverage ??
-        member.electionPossibility.clamp(0.05, 0.95);
 
     final now = DateTime.now();
     final trends = List.generate(7, (index) {
