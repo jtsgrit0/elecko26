@@ -5,8 +5,7 @@ import 'package:elecko26/core/platform/platform_info.dart' as platform;
 import 'package:html/dom.dart' as html_dom;
 import 'package:html/parser.dart' as html_parser;
 import 'package:http/http.dart' as http;
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:elecko26/core/utils/asset_loader.dart';
 
 import 'nesdc_pdf_text_extractor_stub.dart'
     if (dart.library.ui) 'nesdc_pdf_text_extractor.dart';
@@ -262,7 +261,7 @@ class NesdcPollDataSource {
         return _parsePollsJson(jsonString);
       }
     } catch (e) {
-      debugPrint('⚠️ NesdcPollDataSource: Failed to download from GitHub: $e');
+      print('⚠️ NesdcPollDataSource: Failed to download from GitHub: $e');
     }
     return null;
   }
@@ -276,7 +275,7 @@ class NesdcPollDataSource {
         return _parsePollsJson(cachedJson);
       }
     } catch (e) {
-      debugPrint('⚠️ NesdcPollDataSource: Failed to load from local cache: $e');
+      print('⚠️ NesdcPollDataSource: Failed to load from local cache: $e');
     }
     return null;
   }
@@ -284,10 +283,10 @@ class NesdcPollDataSource {
   /// 앱에 번들링된 기본 에셋 데이터를 로드합니다.
   Future<List<NesdcPollEntry>> _fetchFromBundledAssets() async {
     try {
-      final jsonString = await rootBundle.loadString('data/nesdc_polls.json');
+      final jsonString = await AssetLoader.loadString('data/nesdc_polls.json');
       return _parsePollsJson(jsonString);
     } catch (e) {
-      debugPrint('⚠️ NesdcPollDataSource: Failed to load from bundled assets: $e');
+      print('⚠️ NesdcPollDataSource: Failed to load from bundled assets: $e');
     }
     return [];
   }
@@ -411,16 +410,16 @@ class NesdcPollDataSource {
       if (fileResponse.statusCode == 200) {
         resultText = _tryExtractPdfText(fileResponse.bodyBytes);
         if (!platform.kReleaseMode) {
-          debugPrint('[NESDC] PDF extracted: url=$resultFileUrl bytes=${fileResponse.bodyBytes.length} textLen=${resultText?.length ?? 0}');
+          print('[NESDC] PDF extracted: url=$resultFileUrl bytes=${fileResponse.bodyBytes.length} textLen=${resultText?.length ?? 0}');
         }
       } else {
         if (!platform.kReleaseMode) {
-          debugPrint('[NESDC] PDF fetch failed: url=$resultFileUrl status=${fileResponse.statusCode}');
+          print('[NESDC] PDF fetch failed: url=$resultFileUrl status=${fileResponse.statusCode}');
         }
       }
     } else {
       if (!platform.kReleaseMode) {
-        debugPrint('[NESDC] No result file url for detail: $detailUrl');
+        print('[NESDC] No result file url for detail: $detailUrl');
       }
     }
 
@@ -437,7 +436,7 @@ class NesdcPollDataSource {
 
     _detailCache[detailUrl] = detail;
     if (!platform.kReleaseMode) {
-      debugPrint(
+      print(
         '[NESDC] detail parsed: url=$detailUrl survey=${surveyDate?.toIso8601String()} sample=$sampleSize margin=$marginOfError resultUrl=${resultFileUrl ?? "-"}',
       );
     }
