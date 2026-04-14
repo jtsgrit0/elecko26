@@ -131,7 +131,7 @@ class ExportElectionDataUseCase {
       activityScore: analysis.activityScore,
       policyScore: analysis.policyScore,
       publicImageScore: analysis.publicImageScore,
-      pollScore: _calculatePollScoreFromPolls(member),
+      pollScore: analysis.pollScore,
       polls: pollsExport,
       snsAnalysis: snsAnalysisExport,
       pressReportsCount: member.pressReports.length,
@@ -145,49 +145,4 @@ class ExportElectionDataUseCase {
     );
   }
 
-  /// 여론조사 데이터로부터 여론 점수 계산
-  double _calculatePollScoreFromPolls(Member member) {
-    if (member.polls.isEmpty) {
-      return 0.5; // 기본값
-    }
-
-    final validRates = member.polls
-        .map((p) => p.supportRate)
-        .whereType<double>()
-        .toList();
-
-    if (validRates.isEmpty) {
-      return 0.5;
-    }
-
-    // NESDC 여론조사 분리
-    final nesdcPolls = member.polls
-        .where((p) => p.id.startsWith('nesdc_'))
-        .map((p) => p.supportRate)
-        .whereType<double>()
-        .toList();
-
-    final otherPolls = member.polls
-        .where((p) => !p.id.startsWith('nesdc_'))
-        .map((p) => p.supportRate)
-        .whereType<double>()
-        .toList();
-
-    // NESDC 60%, 기타 40% 가중치
-    double pollScore = 0.5;
-    
-    if (nesdcPolls.isNotEmpty) {
-      final nesdcAvg =
-          nesdcPolls.fold<double>(0, (sum, r) => sum + r) / nesdcPolls.length;
-      final otherAvg = otherPolls.isEmpty
-          ? 0.5
-          : otherPolls.fold<double>(0, (sum, r) => sum + r) / otherPolls.length;
-      pollScore = (nesdcAvg * 0.6) + (otherAvg * 0.4);
-    } else if (otherPolls.isNotEmpty) {
-      pollScore =
-          otherPolls.fold<double>(0, (sum, r) => sum + r) / otherPolls.length;
-    }
-
-    return pollScore.clamp(0.0, 1.0);
-  }
 }

@@ -55,40 +55,14 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
   void _onStreamData(List<Member> members) {
     if (members.isEmpty) return;
 
-    // 1. 즉시 raw 데이터로 UI 업데이트 (정적 점수 표시)
+    // 즉시 raw 데이터로 UI 업데이트 (리포지토리에서 이미 계산된 점수가 포함되어 있음)
     if (mounted) {
       setState(() {
         _displayMembers = members;
       });
     }
-
-    // 2. 백그라운드에서 당선 가능성 재계산 (상세보기와 동일한 로직 적용)
-    _calculateDynamicScores(members);
   }
 
-  Future<void> _calculateDynamicScores(List<Member> members) async {
-    try {
-      // 각 회원의 점수를 병렬로 계산
-      final futures = members.map((m) async {
-        try {
-          final analysis = await sl<CalculateElectionPossibilityUseCase>().call(m.id);
-          return m.copyWith(electionPossibility: analysis.electionPossibility);
-        } catch (e) {
-          return m; // 계산 실패 시 원본 유지
-        }
-      }).toList();
-
-      final updatedMembers = await Future.wait(futures);
-
-      if (mounted) {
-        setState(() {
-          _displayMembers = updatedMembers;
-        });
-      }
-    } catch (e) {
-      debugPrint('[HomeDashboard] Score calculation error: $e');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

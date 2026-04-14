@@ -11,6 +11,9 @@ import 'package:elecko26/data/datasources/nesdc_poll_data_source.dart';
 import 'package:elecko26/data/datasources/profile_image_resolver.dart';
 import 'package:get_it/get_it.dart';
 import 'package:elecko26/data/datasources/local_storage_service.dart';
+import 'package:elecko26/domain/usecases/possibility_calculator.dart';
+import 'package:elecko26/domain/repositories/historical_election_repository.dart';
+import 'package:elecko26/core/utils/utility_functions.dart';
 import 'package:rxdart/rxdart.dart';
 
 final sl = GetIt.instance;
@@ -178,8 +181,36 @@ class MemberRepositoryImpl implements MemberRepository {
                 now,
               ));
 
+      // 당선 가능성 최신화 (상세 페이지와 동일 로직 적용)
+      final historicalRepo = sl<HistoricalElectionRepository>();
+      final List<Member> finalMembers = [];
+      
+      for (final member in updatedMembers) {
+        double historicalBaseSupport = 0.5;
+        double voterInterest = 0.5;
+        try {
+          final region = _staticMapDistrictToRegion(member.district);
+          final averages = await historicalRepo.getRegionalPartyAverages(region);
+          voterInterest = await historicalRepo.getVoterInterest(region);
+          final partyRate = averages[member.party];
+          if (partyRate != null) {
+            historicalBaseSupport = (partyRate / 100.0).clamp(0.0, 1.0);
+          }
+        } catch (_) {}
+
+        final scores = PossibilityCalculator.calculateMultiFactorScores(
+          member: member,
+          historicalBaseSupport: historicalBaseSupport,
+          voterInterest: voterInterest,
+        );
+
+        finalMembers.add(member.copyWith(
+          electionPossibility: scores['overall']!,
+        ));
+      }
+
       _dummyMembers.clear();
-      _dummyMembers.addAll(updatedMembers);
+      _dummyMembers.addAll(finalMembers);
       _notifyListeners();
     } catch (e, st) {
       debugPrint('[MemberRepo] Refresh Failed: $e\n$st');
@@ -407,32 +438,7 @@ class MemberRepositoryImpl implements MemberRepository {
   }
 
   static String _staticMapDistrictToRegion(String district) {
-    final normalized = district.replaceAll(' ', '');
-    const regionMap = {
-      '서울': '서울특별시',
-      '부산': '부산광역시',
-      '대구': '대구광역시',
-      '인천': '인천광역시',
-      '광주': '광주광역시',
-      '대전': '대전광역시',
-      '울산': '울산광역시',
-      '세종': '세종특별자치시',
-      '경기': '경기도',
-      '강원': '강원도',
-      '충북': '충청북도',
-      '충남': '충청남도',
-      '전북': '전북특별자치도',
-      '전남': '전라남도',
-      '경북': '경상북도',
-      '경남': '경상남도',
-      '제주': '제주특별자치도',
-    };
-    for (final entry in regionMap.entries) {
-      if (normalized.contains(entry.key)) {
-        return entry.value;
-      }
-    }
-    return '전국';
+    return getParentRegion(district) == '' ? '전국' : getParentRegion(district);
   }
 
   static bool _staticMatchesRegion(String pollRegion, String targetRegion) {

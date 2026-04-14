@@ -3,7 +3,9 @@ import 'dart:math' as math;
 import 'package:elecko26/domain/entities/analysis_result.dart';
 import 'package:elecko26/domain/entities/member.dart';
 import 'package:elecko26/domain/entities/poll.dart';
+import 'package:elecko26/domain/usecases/possibility_calculator.dart';
 import 'package:elecko26/domain/repositories/member_repository.dart';
+import 'package:elecko26/core/utils/utility_functions.dart';
 import 'package:elecko26/domain/repositories/historical_election_repository.dart';
 
 /// 당선 가능성을 다각적으로 산정하는 UseCase
@@ -36,7 +38,7 @@ class CalculateElectionPossibilityUseCase {
     String? historicalContext;
     if (historicalRepository != null) {
       try {
-        final region = _mapDistrictToRegion(member.district);
+        final region = getParentRegion(member.district) == '' ? '전국' : getParentRegion(member.district);
         final averages = await historicalRepository!.getRegionalPartyAverages(region);
         voterInterest = await historicalRepository!.getVoterInterest(region);
 
@@ -54,10 +56,10 @@ class CalculateElectionPossibilityUseCase {
       } catch (_) {}
     }
 
-    // A) 다중 요소 가중치 방식 계산
-    final scores = _calculateMultiFactorScores(
-      member, 
-      historicalBaseSupport,
+    // A) 다중 요소 가중치 방식 계산 (공통 계산기 사용)
+    final scores = PossibilityCalculator.calculateMultiFactorScores(
+      member: member,
+      historicalBaseSupport: historicalBaseSupport,
       voterInterest: voterInterest,
     );
 
@@ -95,6 +97,8 @@ class CalculateElectionPossibilityUseCase {
       policyScore: scores['policy']!,
       publicImageScore: scores['publicImage']!,
       socialContributionScore: scores['socialContribution']!,
+      pollScore: scores['poll']!,
+      historicalScore: scores['historical']!,
       improvements: analysis['improvements']!,
       strengths: analysis['strengths']!,
       weaknesses: analysis['weaknesses']!,
@@ -104,110 +108,7 @@ class CalculateElectionPossibilityUseCase {
     );
   }
 
-  /// A) 다중 요소 가중치 방식 (여론조사 + 역대 선거 포함)
-  /// 성과도(12%) + 활동도(12%) + 정책도(12%) + 언론도(12%) + 여론조사(32%) + 역대선거(20%)
-  Map<String, double> _calculateMultiFactorScores(
-    Member member,
-    double historicalBaseSupport, {
-    double voterInterest = 0.5,
-  }) {
-    // 1. 성과도 (0~1)
-    final achievementScore = _calculateDetailScore(
-      member.achievementsList,
-      maxValue: 20,
-      memberId: member.id,
-      seed: 1,
-    );
 
-    // 2. 활동도 (0~1)
-    final activityScore = _calculateDetailScore(
-      member.actions,
-      maxValue: 30,
-      memberId: member.id,
-      seed: 2,
-    );
-
-    // 3. 정책도 (0~1)
-    final policyScore = _calculateDetailScore(
-      member.policies,
-      maxValue: 15,
-      memberId: member.id,
-      seed: 3,
-    );
-
-    // 4. 언론도 + 감정 분석 (0~1)
-    final publicImageScore = _calculatePublicImageScore(member);
-
-    // 5. 여론조사 평균 (0~1)
-    final pollScore = _calculatePollScore(member);
-
-    // 6. 역대 선거 지역 기반 지지율 (0~1)
-    final historicalScore = historicalBaseSupport;
-
-    // 7. 사회적 헌신도 (기부, 봉사 등)
-    final socialScore = _calculateSocialScore(member);
-
-    // 가중치 동적 재분배 시스템 (사회적 헌신도 10~12% 반영)
-    double overall;
-    if (pollScore != null) {
-      // (1) 여론조사가 있는 경우 (Poll 30%, Social 10%)
-      overall = (achievementScore * 0.10) +
-          (activityScore * 0.10) +
-          (policyScore * 0.10) +
-          (publicImageScore * 0.10) +
-          (socialScore * 0.10) +
-          (pollScore * 0.30) +
-          (historicalScore * 0.20);
-    } else {
-      // (2) 여론조사가 미공개인 경우 (Social 12%, History 40%)
-      overall = (achievementScore * 0.12) +
-          (activityScore * 0.12) +
-          (policyScore * 0.12) +
-          (publicImageScore * 0.12) +
-          (socialScore * 0.12) +
-          (historicalScore * 0.40);
-    }
-    
-    // PDF 기반 투표 관심도 조정 (관심도 높을수록 조직표/집중력 강화 효과, 최대 +/- 3%p)
-    final interestAdjustment = (voterInterest - 0.5) * 0.06;
-    overall = (overall + interestAdjustment).clamp(0.01, 0.99);
-
-    return {
-      'achievement': achievementScore,
-      'activity': activityScore,
-      'policy': policyScore,
-      'publicImage': publicImageScore,
-      'socialContribution': socialScore,
-      'poll': pollScore ?? -1.0, 
-      'historical': historicalScore,
-      'overall': overall,
-      'voterInterest': voterInterest,
-    };
-  }
-
-  /// 상세 점수 계산 (개수 + 내용 길이 + 고유 변동치)
-  double _calculateDetailScore(
-    List<String> items, {
-    required int maxValue,
-    required String memberId,
-    required int seed,
-  }) {
-    if (items.isEmpty) return 0.2; // 최소 기본 점수
-
-    // 1. 개수 점수 (최대 70%)
-    final countScore = (items.length / maxValue).clamp(0.0, 1.0) * 0.7;
-
-    // 2. 내용 충실도 점수 (글자 수 기반, 최대 20%)
-    final totalLength = items.fold<int>(0, (sum, item) => sum + item.length);
-    final avgLength = totalLength / items.length;
-    final qualityScore = (avgLength / 50).clamp(0.0, 1.0) * 0.2;
-
-    // 3. 고유 변동치 (멤버 ID 기반 시뮬레이션, 최대 10%)
-    // 같은 데이터라도 멤버마다 AI가 판단하는 가중치가 다름을 시뮬레이션
-    final uniqueness = (memberId.hashCode + seed).abs() % 100 / 1000.0; // 0.0 ~ 0.1
-
-    return (countScore + qualityScore + uniqueness).clamp(0.05, 0.98);
-  }
 
   /// B) 30초 간격 추세 생성/갱신
   List<DailyPossibility> _getOrUpdateTrends({
@@ -421,59 +322,7 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
     return buffer.toString();
   }
 
-  /// 언론도 + 감정 분석 계산
-  double _calculatePublicImageScore(Member member) {
-    if (member.pressReports.isEmpty) {
-      return 0.5; // 언론 보도가 없으면 중립
-    }
 
-    final pressCount = member.pressReports.length;
-    final countScore = _normalizeScore(pressCount, maxValue: 50);
-
-    // 감정 분석
-    int positiveCount = 0;
-    int neutralCount = 0;
-    int negativeCount = 0;
-
-    for (var report in member.pressReports) {
-      if (report.sentiment == 'positive') positiveCount++;
-      if (report.sentiment == 'neutral') neutralCount++;
-      if (report.sentiment == 'negative') negativeCount++;
-    }
-
-    final sentimentScore = (positiveCount * 1.0 + neutralCount * 0.5 - negativeCount * 0.5) /
-        member.pressReports.length.clamp(1, double.infinity);
-
-    return ((countScore * 0.6) + (sentimentScore.clamp(0, 1) * 0.4)).clamp(0, 1);
-  }
-
-  /// 사회적 헌신도 점수 계산
-  double _calculateSocialScore(Member member) {
-    if (member.socialContributions.isEmpty) return 0.3; // 기본 도덕성 점수
-
-    // 1. 공헌 횟수 (최대 50%)
-    final countScore = (member.socialContributions.length / 5).clamp(0.0, 1.0) * 0.5;
-
-    // 2. 내용 진정성 (유형별 가중치, 최대 30%)
-    double typeScore = 0.0;
-    for (var contrib in member.socialContributions) {
-      if (contrib.type.contains('기부')) typeScore += 0.1;
-      if (contrib.type.contains('노블레스')) typeScore += 0.15;
-      if (contrib.type.contains('봉사')) typeScore += 0.05;
-    }
-    typeScore = typeScore.clamp(0.0, 0.3);
-
-    // 3. 최근성 (최근 3년 내 데이터 비중 상향, 최대 20%)
-    final now = DateTime.now();
-    double recencyScore = 0.0;
-    for (var contrib in member.socialContributions) {
-      final yearsDiff = now.difference(contrib.date).inDays / 365;
-      if (yearsDiff <= 3) recencyScore += 0.05;
-    }
-    recencyScore = recencyScore.clamp(0.0, 0.2);
-
-    return (countScore + typeScore + recencyScore).clamp(0.1, 0.99);
-  }
 
   /// 사회 공헌 요약 리포트 생성
   String _generateSocialSummary(Member member) {
@@ -491,60 +340,7 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
     return buffer.toString();
   }
 
-  /// 0~1 범위로 점수 정규화
-  /// 여론조사 점수 계산 (최근 여론조사 평균)
-  /// 수치가 모두 미공개인 경우 null을 반환하여 가중치 재분배를 유도함
-  double? _calculatePollScore(Member member) {
-    if (member.polls.isEmpty) {
-      return null; 
-    }
 
-    // 최근 여론조사부터 최대 5개만 사용 (최근성 반영)
-    final recentPolls = member.polls.length > 5
-        ? member.polls.sublist(member.polls.length - 5)
-        : member.polls;
-
-    final validRates = recentPolls
-        .map((poll) => poll.supportRate)
-        .whereType<double>()
-        .toList();
-    if (validRates.isEmpty) {
-      return null;
-    }
-
-    final averageSupportRate =
-        validRates.fold<double>(0, (sum, rate) => sum + rate) / validRates.length;
-
-    final nesdcRates = recentPolls
-        .where(_isNesdcPoll)
-        .map((poll) => poll.supportRate)
-        .whereType<double>()
-        .toList();
-
-    if (nesdcRates.isEmpty) {
-      // 지지율을 0~1로 정규화 (50% = 0.5, 70% = 0.7)
-      return averageSupportRate.clamp(0, 1);
-    }
-
-    final nesdcAverage =
-        nesdcRates.fold<double>(0, (sum, rate) => sum + rate) / nesdcRates.length;
-
-    // NESDC 데이터를 우선 반영하되 기존 여론조사도 일부 반영
-    final blended = (nesdcAverage * 0.60) + (averageSupportRate * 0.40);
-    return blended.clamp(0, 1);
-  }
-
-  bool _isNesdcPoll(Poll poll) {
-    if (poll.id.startsWith('nesdc_')) {
-      return true;
-    }
-    final source = poll.source.toLowerCase();
-    return source.contains('nesdc.go.kr');
-  }
-
-  double _normalizeScore(int actual, {required int maxValue}) {
-    return (actual / maxValue).clamp(0, 1);
-  }
 
   /// SNS 분석 계산 (감정분석 + 언급량)
   SnsAnalysis? _calculateSnsAnalysis(Member member) {
@@ -655,34 +451,4 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
     return sb.toString();
   }
 
-  /// 지역구 문자열 → 광역 시·도명 매핑
-  String _mapDistrictToRegion(String district) {
-    final normalized = district.replaceAll(' ', '');
-    const regionMap = {
-      '서울': '서울특별시',
-      '부산': '부산광역시',
-      '대구': '대구광역시',
-      '인천': '인천광역시',
-      '광주': '광주광역시',
-      '대전': '대전광역시',
-      '울산': '울산광역시',
-      '세종': '세종특별자치시',
-      '경기': '경기도',
-      '강원': '강원도',
-      '충북': '충청북도',
-      '충남': '충청남도',
-      '전북': '전라북도',
-      '전남': '전라남도',
-      '경북': '경상북도',
-      '경남': '경상남도',
-      '제주': '제주특별자치도',
-    };
-
-    for (final entry in regionMap.entries) {
-      if (normalized.contains(entry.key)) {
-        return entry.value;
-      }
-    }
-    return '전국';
-  }
 }
