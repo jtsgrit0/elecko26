@@ -75,7 +75,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
         height: MediaQuery.of(context).size.height * 0.75,
         decoration: const BoxDecoration(
           color: AppColors.white,
@@ -111,7 +112,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               Expanded(
                 child: TabBarView(
                   children: [
-                    _buildRegionSettingTab(),
+                    _buildRegionSettingTab(setModalState),
                     _buildFavoritesTab(),
                   ],
                 ),
@@ -141,8 +142,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _showResetConfirmation() {
     showDialog(
@@ -185,7 +187,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildRegionSettingTab() {
+  Widget _buildRegionSettingTab(StateSetter setModalState) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: _regions.length,
@@ -219,6 +221,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ? const Icon(Icons.check_circle, color: AppColors.primary)
                 : null,
             onTap: () async {
+              // 1. 즉시 UI 피드백 (모달 내부 상태 갱신)
+              setModalState(() {
+                _userRegion = region;
+              });
+
+              // 2. 부모 스테이트 및 리포지토리 저장
               setState(() {
                 _userRegion = region;
               });
@@ -226,7 +234,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
               if (context.mounted) {
                 // 체크표시를 사용자가 인지할 수 있도록 아주 짧은 대기 시간 추가
-                await Future.delayed(const Duration(milliseconds: 100));
+                await Future.delayed(const Duration(milliseconds: 250));
                 if (context.mounted) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
