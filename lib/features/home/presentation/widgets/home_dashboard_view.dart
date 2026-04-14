@@ -1,10 +1,14 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:elecko26/app/injection_container.dart';
 import 'package:elecko26/core/theme/app_theme.dart';
 import 'package:elecko26/core/utils/image_util.dart';
 import 'package:elecko26/core/utils/party_util.dart';
 import 'package:elecko26/core/utils/utility_functions.dart';
 import 'package:elecko26/domain/entities/member.dart';
+import 'package:elecko26/domain/usecases/member_usecases.dart';
 import 'package:elecko26/features/home/presentation/widgets/member_card.dart';
 
 class HomeDashboardView extends StatefulWidget {
@@ -32,70 +36,99 @@ class HomeDashboardView extends StatefulWidget {
 }
 
 class _HomeDashboardViewState extends State<HomeDashboardView> {
-  List<Member> __localCachedMembers = [];
+  List<Member> _displayMembers = [];
+  StreamSubscription<List<Member>>? _subscription;
 
   @override
   void initState() {
     super.initState();
-    __localCachedMembers = widget.cachedMembers;
+    _displayMembers = widget.cachedMembers;
+    _subscription = widget.membersStream.listen(_onStreamData);
   }
 
-  List<Member> _getFilteredMembers(List<Member> members) {
-    return members
-        .where((m) => districtMatchesRegion(m.district, widget.userRegion))
-        .toList();
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  void _onStreamData(List<Member> members) {
+    if (members.isEmpty) return;
+
+    // 1. 즉시 raw 데이터로 UI 업데이트 (정적 점수 표시)
+    if (mounted) {
+      setState(() {
+        _displayMembers = members;
+      });
+    }
+
+    // 2. 백그라운드에서 당선 가능성 재계산 (상세보기와 동일한 로직 적용)
+    _calculateDynamicScores(members);
+  }
+
+  Future<void> _calculateDynamicScores(List<Member> members) async {
+    try {
+      // 각 회원의 점수를 병렬로 계산
+      final futures = members.map((m) async {
+        try {
+          final analysis = await sl<CalculateElectionPossibilityUseCase>().call(m.id);
+          return m.copyWith(electionPossibility: analysis.electionPossibility);
+        } catch (e) {
+          return m; // 계산 실패 시 원본 유지
+        }
+      }).toList();
+
+      final updatedMembers = await Future.wait(futures);
+
+      if (mounted) {
+        setState(() {
+          _displayMembers = updatedMembers;
+        });
+      }
+    } catch (e) {
+      debugPrint('[HomeDashboard] Score calculation error: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Member>>(
-      stream: widget.membersStream,
-      builder: (context, snapshot) {
-        final freshMembers = snapshot.data ?? [];
-        if (freshMembers.isNotEmpty) {
-          __localCachedMembers = freshMembers;
-        }
-        final allMembers =
-            freshMembers.isNotEmpty ? freshMembers : __localCachedMembers;
-        final filteredMembers = _getFilteredMembers(allMembers);
+    // 지역 필터링 및 정렬
+    final filteredMembers = _displayMembers
+        .where((m) => districtMatchesRegion(m.district, widget.userRegion))
+        .toList();
 
-        // 정렬된 멤버 리스트 준비 (동기 방식)
-        final rankedMembers = List<Member>.from(filteredMembers)
-          ..sort(
-              (a, b) => b.electionPossibility.compareTo(a.electionPossibility));
+    final rankedMembers = List<Member>.from(filteredMembers)
+      ..sort((a, b) => b.electionPossibility.compareTo(a.electionPossibility));
 
-        return RefreshIndicator(
-          onRefresh: () => widget.onRefresh(),
-          color: AppColors.primary,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              children: [
-                if (widget.isLoading)
-                  const LinearProgressIndicator(
-                    backgroundColor: Colors.transparent,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(AppColors.primary),
-                    minHeight: 4,
-                  ),
-                if (!widget.isLoading) const SizedBox(height: 4),
-                // 2026 지방선거 배너
-                _buildElectionBanner(),
-                const SizedBox(height: 24),
-                // 주요 통계
-                _buildStatistics(filteredMembers),
-                const SizedBox(height: 24),
-                // 당선 가능성 TOP 3
-                _buildTop3Section(rankedMembers.take(3).toList()),
-                const SizedBox(height: 24),
-                // 의원 목록 요약
-                _buildMemberListSection(rankedMembers),
-                const SizedBox(height: 24),
-              ],
-            ),
-          ),
-        );
-      },
+    return RefreshIndicator(
+      onRefresh: () => widget.onRefresh(),
+      color: AppColors.primary,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          children: [
+            if (widget.isLoading)
+              const LinearProgressIndicator(
+                backgroundColor: Colors.transparent,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                minHeight: 4,
+              ),
+            if (!widget.isLoading) const SizedBox(height: 4),
+            // 2026 지방선거 배너
+            _buildElectionBanner(),
+            const SizedBox(height: 24),
+            // 주요 통계
+            _buildStatistics(filteredMembers),
+            const SizedBox(height: 24),
+            // 당선 가능성 TOP 3
+            _buildTop3Section(rankedMembers.take(3).toList()),
+            const SizedBox(height: 24),
+            // 의원 목록 요약
+            _buildMemberListSection(rankedMembers),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
     );
   }
 
