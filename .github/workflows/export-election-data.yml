@@ -1,100 +1,17 @@
 name: Export Election Data
 
-# 1분마다 실행 (또는 push 시)
+# DISABLED: Flutter 의존성(dart:ui)으로 인해 dart run 환경에서 실행 불가
+# on:
+#   schedule:
+#     - cron: '*/10 * * * *'
+#   workflow_dispatch:
+#   push:
+#     branches: [main]
 on:
-  schedule:
-    # 10분마다 실행 (시스템 부하 및 충돌 방지)
-    - cron: '*/10 * * * *'
-  # 수동 트리거
   workflow_dispatch:
-  # main 브랜치에 푸시 시 실행
-  push:
-    branches:
-      - main
 
 jobs:
   export-election-data:
     runs-on: ubuntu-latest
-    
-    permissions:
-      contents: write
-      
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.38.9'
-          cache: true
-          
-      - name: Install dependencies
-        run: flutter pub get
-        
-      - name: Export election data
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          ${FLUTTER_ROOT}/bin/dart run bin/export_election_data.dart
-
-      - name: Export NESDC poll cache
-        env:
-          NESDC_PAGES: '2'
-          NESDC_LIMIT: '120'
-        run: |
-          ${FLUTTER_ROOT}/bin/dart run bin/export_nesdc_polls.dart
-          
-      - name: Upload election data to GitHub Pages
-        uses: actions/upload-artifact@v4
-        with:
-          name: election-data-json
-          path: data/
-          retention-days: 90
-          
-      - name: Copy data to web root (for GitHub Pages)
-        run: |
-          mkdir -p build/web/data
-          cp -f data/election_data.json build/web/data/election_data.json || true
-          cp -f data/election_data_pretty.json build/web/data/election_data_pretty.json || true
-          cp -f data/nesdc_polls.json build/web/data/nesdc_polls.json || true
-          cp -f data/nesdc_polls_pretty.json build/web/data/nesdc_polls_pretty.json || true
-          
-      - name: Commit data files
-        run: |
-          git config --global user.name "Election Data Bot"
-          git config --global user.email "bot@election-analysis.app"
-          
-          # data 디렉토리 커밋
-          git add data/election_data.json || true
-          git add data/election_data_pretty.json || true
-          git add data/nesdc_polls.json || true
-          git add data/nesdc_polls_pretty.json || true
-          
-          # build/web/data 커밋
-          git add build/web/data/election_data.json || true
-          git add build/web/data/election_data_pretty.json || true
-          git add build/web/data/nesdc_polls.json || true
-          git add build/web/data/nesdc_polls_pretty.json || true
-          
-          # 변경사항이 있으면 커밋
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Update election data - $(date -u +'%Y-%m-%d %H:%M:%S') UTC" || true
-          fi
-          
-      - name: Push changes
-        run: |
-          git push origin main || true
-          
-      - name: Deploy to GitHub Pages
-        if: false
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: build/web
-          cname: election-analysis.app
-          force_orphan: false
+      - run: echo "Disabled - Flutter dependency not available in dart run"
