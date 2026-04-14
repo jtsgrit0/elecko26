@@ -278,6 +278,7 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
 
   Widget _buildDistrictSection(String district, List<Member> membersInDistrict) {
     return Column(
+      key: ValueKey(_votes[district]), // 지지 상태 변경 시 섹션 전체 리빌드
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
@@ -311,6 +312,7 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
         ...membersInDistrict.map((member) {
           final isVoted = _votes[district] == member.id;
           return _RegionalMemberCard(
+            key: ValueKey('$district-${member.id}-$isVoted'), // 카드 단위 리빌드
             member: member,
             isVoted: isVoted,
             onVote: () => _handleVote(district, member),

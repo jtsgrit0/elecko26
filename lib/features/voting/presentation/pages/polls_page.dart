@@ -169,9 +169,10 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
 
   void _onMemberVoted(Member member) {
     // 1. 지지한 후보를 즉시 목록에 추가 (Optimistic Update)
+    // 기존 리스트에 추가하는 대신 새 리스트를 생성하여 할당 (Flutter 리빌드 확실성 확보)
     if (!_myVotedMembers.any((m) => m.id == member.id)) {
       setState(() {
-        _myVotedMembers.add(member);
+        _myVotedMembers = [..._myVotedMembers, member];
       });
     }
 
@@ -183,7 +184,9 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
 
   Widget _buildSupportedCandidatesTab() {
     // StreamBuilder 대기 없이 _myVotedMembers 상태를 직접 렌더링하여 실시간 반영
+    // _myVotedMembers가 바뀔 때마다 ListView가 완전히 새로 그려지도록 ValueKey 사용
     return RefreshIndicator(
+      key: ValueKey(_myVotedMembers.map((e) => e.id).join(',')),
       onRefresh: _loadPolls,
       color: AppColors.primary,
       child: _myVotedMembers.isEmpty
@@ -206,7 +209,6 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
               ),
             )
           : ListView.builder(
-              key: ValueKey(_myVotedMembers.map((e) => e.id).join(',')), // 상태 변경 시 강제 리빌드
               padding: const EdgeInsets.all(16),
               itemCount: _myVotedMembers.length,
               itemBuilder: (context, index) {
