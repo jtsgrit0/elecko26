@@ -255,8 +255,8 @@ class MemberRepositoryImpl implements MemberRepository {
 
     final stream = watchAllMembers(interval: interval)
         .where((members) => members.any((m) => m.id == memberId))
-        .map((members) => members.firstWhere((m) => m.id == memberId))
-        .distinct();
+        .map((members) => members.firstWhere((m) => m.id == memberId));
+    // .distinct() 제거: isFavorite 변경 시에도 스트림 전파되도록
 
     return cachedMember != null ? stream.startWith(cachedMember) : stream;
   }
