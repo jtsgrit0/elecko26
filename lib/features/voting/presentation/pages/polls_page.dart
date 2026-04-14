@@ -182,18 +182,12 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
   }
 
   Widget _buildSupportedCandidatesTab() {
+    // StreamBuilder 대기 없이 _myVotedMembers 상태를 직접 렌더링하여 실시간 반영
     return RefreshIndicator(
       onRefresh: _loadPolls,
       color: AppColors.primary,
-      child: StreamBuilder<List<Member>>(
-        stream: sl<MemberRepository>().watchAllMembers(),
-        builder: (context, snapshot) {
-          final allMembers = snapshot.data ?? [];
-          final votedIds = _myVotedMembers.map((m) => m.id).toSet();
-          final votedMembers = allMembers.where((m) => votedIds.contains(m.id)).toList();
-
-          if (votedMembers.isEmpty) {
-            return Center(
+      child: _myVotedMembers.isEmpty
+          ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -210,35 +204,32 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
                   ),
                 ],
               ),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: votedMembers.length,
-            itemBuilder: (context, index) {
-              final member = votedMembers[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: MemberCard(
-                  key: ValueKey(member.id),
-                  member: member,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => MemberDetailPage(
-                          member: member,
-                          onBack: () => Navigator.pop(context),
+            )
+          : ListView.builder(
+              key: ValueKey(_myVotedMembers.map((e) => e.id).join(',')), // 상태 변경 시 강제 리빌드
+              padding: const EdgeInsets.all(16),
+              itemCount: _myVotedMembers.length,
+              itemBuilder: (context, index) {
+                final member = _myVotedMembers[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: MemberCard(
+                    key: ValueKey(member.id),
+                    member: member,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => MemberDetailPage(
+                            member: member,
+                            onBack: () => Navigator.pop(context),
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-          );
-        },
-      ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
     );
   }
 

@@ -140,31 +140,25 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
       }
     }
 
-    if (currentVote == member.id) {
-      // 투표 취소
-      await memberRepository.removeSupportVote(district);
-      setState(() {
-        _votes.remove(district);
-        _voteTimestamps.remove(district);
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${member.name} 의원 지지를 취소했습니다.')),
-        );
-        WidgetsBinding.instance.addPostFrameCallback((_) => widget.onVoteChanged?.call());
-      }
-    } else {
-      // 투표하기 (또는 변경)
-      final now = DateTime.now().millisecondsSinceEpoch;
+    // 상태 백업 (실패 시 롤백용)
+    final prevVote = currentVote;
+    final prevTimestamp = lastVoteTime;
+
+    // [Optimistic Update] 네트워크 요청 전 즉시 UI 반영
+    final now = DateTime.now().millisecondsSinceEpoch;
+    setState(() {
+      _votes[district] = member.id;
+      _voteTimestamps[district] = now;
+    });
+
+    try {
+      // 백그라운드에서 실제 저장
       await memberRepository.saveSupportVote(
         district,
         member.id,
         timestamp: now,
       );
-      setState(() {
-        _votes[district] = member.id;
-        _voteTimestamps[district] = now;
-      });
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${member.name} 의원을 지지하셨습니다!')),
@@ -173,6 +167,17 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
           widget.onVoteChanged?.call();
           widget.onMemberVoted?.call(member);
         });
+      }
+    } catch (e) {
+      // 실패 시 원래 상태로 복구
+      if (mounted) {
+        setState(() {
+          _votes[district] = prevVote;
+          _voteTimestamps[district] = prevTimestamp;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('지지하기 처리 중 오류가 발생했습니다.')),
+        );
       }
     }
   }
