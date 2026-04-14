@@ -194,65 +194,28 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
         (sum, m) =>
             sum + m.polls.where((p) => p.id.startsWith('nesdc_')).length);
 
-    // 상세보기 수치 적용 (평균 당선 가능성, 여론조사 수, SNS 언급 수 등)
-    final validPossibilities =
-        members.map((m) => m.electionPossibility).where((p) => p > 0).toList();
-    final avgPossibility = validPossibilities.isEmpty
-        ? 0.0
-        : validPossibilities.reduce((a, b) => a + b) / validPossibilities.length;
-
-    final totalPolls = members.fold<int>(0, (sum, m) => sum + m.polls.length);
-    final agencies = members
-        .expand((m) => m.polls.map((p) => p.pollAgency))
-        .toSet()
-        .length;
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _StatisticCard(
-                  title: '분석 의원',
-                  value: members.length.toString(),
-                  icon: Icons.people,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _StatisticCard(
-                  title: '평균 당선 가능성',
-                  value: '${(avgPossibility * 100).toStringAsFixed(1)}%',
-                  icon: Icons.trending_up,
-                  color: AppColors.success,
-                ),
-              ),
-            ],
+          Expanded(
+            flex: 3,
+            child: _StatisticCard(
+              title: '분석 중인 의원',
+              value: members.length.toString(),
+              icon: Icons.people,
+              color: AppColors.primary,
+            ),
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _StatisticCard(
-                  title: '여론조사 반영',
-                  value: '$totalPolls건',
-                  icon: Icons.poll,
-                  color: AppColors.accent,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _StatisticCard(
-                  title: '조사 기관',
-                  value: '$agencies개',
-                  icon: Icons.business,
-                  color: AppColors.secondary,
-                ),
-              ),
-            ],
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 7,
+            child: _StatisticCard(
+              title: '여론조사심의위 반영 · $updateValue',
+              value: '$nesdcCount건',
+              icon: Icons.update,
+              color: AppColors.secondary,
+            ),
           ),
         ],
       ),
