@@ -517,7 +517,11 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         }
 
         final resolved =
-            await _profileImageResolver.resolveImageUrlByName(member.name);
+            await _profileImageResolver.resolveImageUrlByName(
+              member.name,
+              party: member.party,
+              district: member.district,
+            );
         if (resolved == null || resolved.trim().isEmpty) {
           await _profileImageResolver.cacheNegative(member.id);
           continue;
