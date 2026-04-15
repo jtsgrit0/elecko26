@@ -18,6 +18,7 @@ import 'package:elecko26/domain/repositories/member_repository.dart';
 import 'package:elecko26/domain/repositories/historical_election_repository.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:get_it/get_it.dart';
 
 final sl = GetIt.instance;
 

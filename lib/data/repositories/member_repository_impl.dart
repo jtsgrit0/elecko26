@@ -484,4 +484,34 @@ class MemberRepositoryImpl implements MemberRepository {
     merged.sort((a, b) => b.surveyDate.compareTo(a.surveyDate));
     return merged;
   }
+
+  @override
+  Future<void> apply2018RegionalPartyRates() async {
+    // TODO: implement apply2018RegionalPartyRates
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateMember2018Rates(String memberId) async {
+    // TODO: implement updateMember2018Rates
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateParkSugiImage() {
+    // TODO: implement updateParkSugiImage
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateSeoJaeyeolImage() {
+    // TODO: implement updateSeoJaeyeolImage
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateYoonDaegiImage() {
+    // TODO: implement updateYoonDaegiImage
+    throw UnimplementedError();
+  }
 }
