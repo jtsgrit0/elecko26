@@ -71,6 +71,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
 
   void _showSettingsModal() {
+    String tempSelectedRegion = _userRegion;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -112,7 +114,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               Expanded(
                 child: TabBarView(
                   children: [
-                    _buildRegionSettingTab(setModalState),
+                    _buildRegionSettingTab(
+                      setModalState,
+                      tempSelectedRegion,
+                      (region) {
+                        tempSelectedRegion = region;
+                      },
+                    ),
                     _buildFavoritesTab(),
                   ],
                 ),
@@ -187,13 +195,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildRegionSettingTab(StateSetter setModalState) {
+  Widget _buildRegionSettingTab(
+    StateSetter setModalState,
+    String tempSelectedRegion,
+    ValueChanged<String> onRegionSelected,
+  ) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: _regions.length,
       itemBuilder: (context, index) {
         final region = _regions[index];
-        final isSelected = _userRegion == region;
+        final isSelected = tempSelectedRegion == region;
 
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
@@ -220,24 +232,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             trailing: isSelected
                 ? const Icon(Icons.check_circle, color: AppColors.primary)
                 : null,
-            onTap: () async {
-              // 즉시 UI 피드백 (모달 내부 상태 갱신)
+            onTap: () {
+              // 투표탭과 동일하게 모달 내부 선택 상태를 먼저 갱신해 즉시 체크 표시
               setModalState(() {
-                _userRegion = region;
+                onRegionSelected(region);
               });
 
-              // 리포지토리에 저장 (스트림을 통해 알림)
-              await sl<MemberRepository>().saveSelectedRegion(region);
-
-              // 부모 위젯의 상태도 갱신
+              // 메인 화면도 즉시 반영
               if (mounted) {
                 setState(() {
                   _userRegion = region;
                 });
               }
 
-              // 투표탭과 동일하게 즉시 체크표시 후 200ms 지연으로 다이얼로그 닫기
-              Future.delayed(const Duration(milliseconds: 200), () {
+              // 체크 표시를 인식할 수 있도록 잠시 유지 후 저장/닫기 처리
+              Future.delayed(const Duration(milliseconds: 200), () async {
+                await sl<MemberRepository>().saveSelectedRegion(region);
+
                 if (context.mounted) {
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
