@@ -89,14 +89,6 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
       }
     }
   }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = '투표 목록을 불러오는 중 오류가 발생했습니다.';
-        });
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
