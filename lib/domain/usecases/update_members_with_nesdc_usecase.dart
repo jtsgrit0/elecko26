@@ -84,26 +84,10 @@ class UpdateMembersWithNesdcDataUseCase {
 
     final updatedPolls = [nesdcPoll, ...existingPolls];
 
-    // 새로운 Member 객체 생성 (불변성 유지)
-    return Member(
-      id: member.id,
-      name: member.name,
-      party: member.party,
-      district: member.district,
-      imageUrl: member.imageUrl,
-      bio: member.bio,
-      electionDate: member.electionDate,
-      term: member.term,
-      policies: member.policies,
-      achievementsList: member.achievementsList,
-      actions: member.actions,
-      pressReports: member.pressReports,
+    // 새로운 Member 객체 생성 (copyWith 사용)
+    return member.copyWith(
       polls: updatedPolls,
-      electionPossibility: member.electionPossibility,
       lastAnalysisDate: DateTime.now(),
-      improvementPoints: member.improvementPoints,
-      socialContributions: member.socialContributions,
-      isFavorite: member.isFavorite,
     );
   }
 

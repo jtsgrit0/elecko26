@@ -21,19 +21,20 @@ class NesdcPdfExtractor {
         final line = lines[i].trim();
         
         // 한글 이름과 숫자 패턴 찾기: "김철수 45.2" 또는 "김철수 45.2%"
+        // 이름과 숫자 사이에 다양한 공백이나 기호가 올 수 있음
         final match = RegExp(
-          r'([가-힣]{2,})\s+([\d.]+)\s*(%|점|point)?',
+          r'([가-힣]{2,4})\s*[:：=]\s*([\d.]+)\s*(%|점|point)?|([가-힣]{2,4})\s+([\d.]+)\s*(%|점|point)?',
           unicode: true,
         ).firstMatch(line);
         
         if (match != null) {
-          final name = match.group(1)!;
-          final rateStr = match.group(2)!;
+          final name = (match.group(1) ?? match.group(4))!.trim();
+          final rateStr = (match.group(2) ?? match.group(5))!;
           
           try {
             final rate = double.parse(rateStr);
-            // 100 이상이면 퍼센트 단위가 아님
-            if (rate <= 100) {
+            // 100 이상이면 퍼센트 단위가 아님 (보통 0~100 사이)
+            if (rate > 0 && rate <= 100) {
               supportRates[name] = rate / 100.0; // 0-1 범위로 정규화
             }
           } catch (e) {
@@ -176,13 +177,23 @@ class NesdcPdfExtractor {
   static bool _isSimilarName(String name1, String name2) {
     if (name1 == name2) return true;
     
-    // 성 추출 (보통 첫 글자, 또는 첫 두 글자가 성)
-    final firstName1 = name1.substring(0, 1); // 첫 한글자
-    final firstName2 = name2.substring(0, 1);
-    
-    if (firstName1 == firstName2) {
-      // 성이 같으면 이름이 부분적으로 포함되는지 확인
-      return name1.contains(name2) || name2.contains(name1);
+    // 공백 제거 후 비교
+    final n1 = name1.replaceAll(' ', '');
+    final n2 = name2.replaceAll(' ', '');
+    if (n1 == n2) return true;
+
+    // 성 추출 (보통 첫 글자, 또는 첫 두 글자가 성 - 남궁, 황보 등은 2글자)
+    // 여기서는 간단히 첫 글자로 비교하거나 전체 포함여부 확인
+    if (n1.length >= 2 && n2.length >= 2) {
+      final firstName1 = n1.substring(0, 1);
+      final firstName2 = n2.substring(0, 1);
+      
+      if (firstName1 == firstName2) {
+        // 성이 같으면 이름 부분이 포함되는지 확인 (외자 이름 등 고려)
+        final lastName1 = n1.substring(1);
+        final lastName2 = n2.substring(1);
+        return lastName1.contains(lastName2) || lastName2.contains(lastName1);
+      }
     }
     
     return false;
