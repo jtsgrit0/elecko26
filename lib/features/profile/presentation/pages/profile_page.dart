@@ -4,7 +4,7 @@ import '../../domain/entities/profile.dart';
 import '../../domain/usecases/profile_usecases.dart';
 import '../../data/repositories/profile_repository_impl.dart';
 import 'edit_profile_page.dart';
-import '../../../settings/presentation/pages/settings_page.dart';
+import '../../../map/presentation/pages/map_screen.dart';
 
 class ProfilePage extends StatefulWidget {
   final auth.User currentUser;
@@ -80,8 +80,8 @@ class _ProfilePageState extends State<ProfilePage> {
         backgroundColor: const Color(0xFF1F3B5C),
         actions: [
           IconButton(
-            onPressed: () => _navigateToSettings(),
-            icon: const Icon(Icons.settings),
+            onPressed: () => _navigateToMap(),
+            icon: const Icon(Icons.map),
           ),
           IconButton(
             onPressed: () => _navigateToEditProfile(),
@@ -272,10 +272,10 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  void _navigateToSettings() {
+  void _navigateToMap() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => SettingsPage(currentUser: widget.currentUser),
+        builder: (context) => const MapScreen(),
       ),
     );
   }
