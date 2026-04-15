@@ -220,32 +220,36 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             trailing: isSelected
                 ? const Icon(Icons.check_circle, color: AppColors.primary)
                 : null,
-            onTap: () {
-              // 1. 즉시 UI 피드백 (모달 내부 상태 갱신)
+            onTap: () async {
+              // 즉시 UI 피드백 (모달 내부 상태 갱신)
               setModalState(() {
                 _userRegion = region;
               });
 
-              // 2. 부모 스테이트 및 리포지토리 저장 (비동기로 실행하여 UI 차단 방지)
-              setState(() {
-                _userRegion = region;
-              });
-              sl<MemberRepository>().saveSelectedRegion(region);
+              // 리포지토리에 저장 (스트림을 통해 알림)
+              await sl<MemberRepository>().saveSelectedRegion(region);
+
+              // 부모 위젯의 상태도 갱신
+              if (mounted) {
+                setState(() {
+                  _userRegion = region;
+                });
+              }
 
               if (context.mounted) {
-                // 체크표시를 사용자가 인지할 수 있도록 아주 짧은 대기 시간(150ms) 추가
-                Future.delayed(const Duration(milliseconds: 150), () {
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('$region으로 지역이 설정되었습니다.'),
-                        backgroundColor: AppColors.primary,
-                        duration: const Duration(seconds: 1),
-                      ),
-                    );
-                  }
-                });
+                // 체크표시를 사용자가 인지할 수 있도록 아주 짧은 대기 시간(200ms) 추가
+                await Future.delayed(const Duration(milliseconds: 200));
+                
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('$region으로 지역이 설정되었습니다.'),
+                      backgroundColor: AppColors.primary,
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                }
               }
             },
           ),
