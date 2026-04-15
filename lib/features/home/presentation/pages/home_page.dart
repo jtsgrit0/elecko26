@@ -236,12 +236,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 });
               }
 
-              if (context.mounted) {
-                // 체크표시를 사용자가 인지할 수 있도록 아주 짧은 대기 시간(200ms) 추가
-                await Future.delayed(const Duration(milliseconds: 200));
-                
+              // 투표탭과 동일하게 즉시 체크표시 후 200ms 지연으로 다이얼로그 닫기
+              Future.delayed(const Duration(milliseconds: 200), () {
                 if (context.mounted) {
-                  Navigator.pop(context);
+                  Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('$region으로 지역이 설정되었습니다.'),
@@ -250,7 +248,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     ),
                   );
                 }
-              }
+              });
             },
           ),
         );
