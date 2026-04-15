@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:elecko26/core/utils/image_util.dart';
 import 'package:elecko26/core/utils/party_util.dart';
 import 'package:elecko26/core/theme/app_theme.dart';
-import 'package:elecko26/domain/entities/analysis_result.dart';
 import 'package:elecko26/domain/entities/member.dart';
 import 'package:elecko26/domain/usecases/calculate_election_possibility_usecase.dart';
 import 'package:elecko26/domain/usecases/member_usecases.dart';
@@ -17,7 +16,11 @@ class MemberCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return FutureBuilder<double>(
+      future: _getElectionPossibility(),
+      builder: (context, snapshot) {
+        final possibility = snapshot.data ?? member.electionPossibility;
+        return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -152,7 +155,7 @@ class MemberCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      '당선 가능성: ${(member.electionPossibility * 100).toStringAsFixed(0)}%',
+                      '당선 가능성: ${(possibility * 100).toStringAsFixed(0)}%',
                       style: AppTextStyles.labelSmall.copyWith(
                         color: AppColors.success,
                       ),
@@ -192,6 +195,19 @@ class MemberCard extends StatelessWidget {
         ),
       ),
     );
+      },
+    );
+  }
+
+  Future<double> _getElectionPossibility() async {
+    try {
+      final result = await sl<CalculateElectionPossibilityUseCase>()
+          .call(member.id)
+          .timeout(const Duration(seconds: 3));
+      return result.electionPossibility;
+    } catch (e) {
+      return member.electionPossibility;
+    }
   }
 
   String _formatRelativeTime(DateTime date) {

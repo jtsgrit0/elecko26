@@ -5,10 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:elecko26/app/injection_container.dart';
 import 'package:elecko26/core/theme/app_theme.dart';
 import 'package:elecko26/core/utils/image_util.dart';
-import 'package:elecko26/core/utils/party_util.dart';
 import 'package:elecko26/core/utils/utility_functions.dart';
 import 'package:elecko26/domain/entities/member.dart';
-import 'package:elecko26/domain/usecases/member_usecases.dart';
+import 'package:elecko26/domain/usecases/calculate_election_possibility_usecase.dart';
 import 'package:elecko26/features/home/presentation/widgets/member_card.dart';
 
 class HomeDashboardView extends StatefulWidget {
@@ -38,6 +37,7 @@ class HomeDashboardView extends StatefulWidget {
 class _HomeDashboardViewState extends State<HomeDashboardView> {
   List<Member> _displayMembers = [];
   StreamSubscription<List<Member>>? _subscription;
+  final Map<String, double> _possibilityCache = {};
 
   @override
   void initState() {
@@ -63,16 +63,53 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     }
   }
 
+  Future<void> _calculatePossibilities(List<Member> members) async {
+    for (final member in members) {
+      if (!_possibilityCache.containsKey(member.id)) {
+        try {
+          final result = await sl<CalculateElectionPossibilityUseCase>()
+              .call(member.id)
+              .timeout(const Duration(seconds: 2));
+          _possibilityCache[member.id] = result.electionPossibility;
+        } catch (e) {
+          _possibilityCache[member.id] = member.electionPossibility;
+        }
+      }
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _scheduleCalculation(List<Member> members) {
+    // 캐시에 없는 후보자들만 계산
+    final uncached = members.where((m) => !_possibilityCache.containsKey(m.id)).toList();
+    if (uncached.isNotEmpty) {
+      // 다음 프레임에서 계산 실행 (빌드 중 setState 방지)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _calculatePossibilities(uncached);
+      });
+    }
+  }
+
+  double _getPossibility(Member member) {
+    return _possibilityCache[member.id] ?? member.electionPossibility;
+  }
+
 
   @override
   Widget build(BuildContext context) {
-    // 지역 필터링 및 정렬
+    // 지역 필터링
     final filteredMembers = _displayMembers
         .where((m) => districtMatchesRegion(m.district, widget.userRegion))
         .toList();
 
+    // 당선 가능성 기준으로 정렬 (캐시된 값 사용)
     final rankedMembers = List<Member>.from(filteredMembers)
-      ..sort((a, b) => b.electionPossibility.compareTo(a.electionPossibility));
+      ..sort((a, b) => _getPossibility(b).compareTo(_getPossibility(a)));
+
+    // 캐시에 없는 후보자들의 당선 가능성 계산
+    _scheduleCalculation(rankedMembers);
 
     return RefreshIndicator(
       onRefresh: () => widget.onRefresh(),
@@ -258,6 +295,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
               children: List.generate(top3.length, (index) {
                 final member = top3[index];
                 final rank = index + 1;
+                final possibility = _getPossibility(member);
                 return Padding(
                   padding:
                       EdgeInsets.only(bottom: index < top3.length - 1 ? 12 : 0),
@@ -310,7 +348,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                           ),
                         ),
                         Text(
-                          '${(member.electionPossibility * 100).toStringAsFixed(0)}%',
+                          '${(possibility * 100).toStringAsFixed(0)}%',
                           style: AppTextStyles.headline4.copyWith(
                             color: AppColors.success,
                           ),
