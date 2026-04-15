@@ -74,6 +74,11 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
   Future<void> _loadPolls() async {
     if (!mounted) return;
 
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
     try {
       final region = await sl<MemberRepository>().getSelectedRegion();
       if (mounted) {
@@ -85,6 +90,12 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
       if (mounted) {
         setState(() {
           _errorMessage = '투표 목록을 불러오는 중 오류가 발생했습니다.';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
         });
       }
     }
@@ -275,7 +286,6 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
                               if (dialogContext.mounted) {
                                 Navigator.of(dialogContext).pop();
                                 // 메인 화면 업데이트 및 저장
-                                _loadPolls();
                                 sl<MemberRepository>().saveSelectedRegion(region);
                               }
                             });
