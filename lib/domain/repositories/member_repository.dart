@@ -58,4 +58,13 @@ abstract class MemberRepository {
 
   /// 사용자 설정을 클라우드와 동기화합니다.
   Future<void> syncUserSettings();
+
+  /// 박수기 후보의 프로필 이미지를 업데이트합니다.
+  Future<void> updateParkSugiImage();
+
+  /// 윤대기 후보의 프로필 이미지를 업데이트합니다.
+  Future<void> updateYoonDaegiImage();
+
+  /// 서재열 후보의 프로필 이미지를 업데이트합니다.
+  Future<void> updateSeoJaeyeolImage();
 }

@@ -319,6 +319,34 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     debugPrint('[FirestoreMemberRepository] _updateMembersFavoriteStatus: ${updatedMembers.where((m) => m.isFavorite).length} members marked as favorite');
   }
 
+  // 김재식 님의 프로필 이미지 URL을 업데이트
+  Future<void> updateKimJaesikImage() async {
+    await _ensureInitialized();
+    try {
+      const String kimJaesikImageUrl = 'https://img1.daumcdn.net/thumb/R658x0.q70/?fname=https://t1.daumcdn.net/news/202603/18/551730-ch1iKEu/20260318200506839ispp.jpg';
+      
+      // 이름이 '김재식'인 멤버 찾기
+      final querySnapshot = await _firestore
+          .collection('members')
+          .where('name', isEqualTo: '김재식')
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        // 첫 번째 김재식 문서 업데이트
+        final doc = querySnapshot.docs.first;
+        await doc.reference.update({'imageUrl': kimJaesikImageUrl});
+        debugPrint('김재식 님의 프로필 이미지가 업데이트되었습니다.');
+        
+        // 로컬 캐시도 업데이트
+        await refreshMembers();
+      } else {
+        debugPrint('김재식 님을 찾을 수 없습니다.');
+      }
+    } catch (e) {
+      debugPrint('김재식 님 프로필 이미지 업데이트 중 오류: $e');
+    }
+  }
+
   @override
   Future<void> refreshMembers() async {
     List<Member> loadedMembers = [];
@@ -1030,5 +1058,83 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       }
     }
     await batch.commit();
+  }
+
+  // 박수기 후보의 프로필 이미지 URL을 업데이트
+  Future<void> updateParkSugiImage() async {
+    await _ensureInitialized();
+    try {
+      const String parkSugiImageUrl = 'https://cpmadang.org/sites/default/files/100142312.JPG';
+      
+      // member_sugi_gwangsan ID를 가진 박수기 후보 찾기
+      final doc = await _firestore
+          .collection('members')
+          .doc('member_sugi_gwangsan')
+          .get();
+
+      if (doc.exists) {
+        await doc.reference.update({'imageUrl': parkSugiImageUrl});
+        debugPrint('박수기 후보(광산구청장)의 프로필 이미지가 업데이트되었습니다.');
+        
+        // 로컬 캐시도 업데이트
+        await refreshMembers();
+      } else {
+        debugPrint('박수기 후보(member_sugi_gwangsan)를 찾을 수 없습니다.');
+      }
+    } catch (e) {
+      debugPrint('박수기 후보 프로필 이미지 업데이트 중 오류: $e');
+    }
+  }
+
+  // 윤대기 후보의 프로필 이미지 URL을 업데이트
+  Future<void> updateYoonDaegiImage() async {
+    await _ensureInitialized();
+    try {
+      const String yoonDaegiImageUrl = 'https://wimg.kyeongin.com/news/cms/2026/02/03/news-p.v1.20260203.184429b9bc80491b96a8a5114aa2e092_P3.jpg';
+      
+      // member_daegi ID를 가진 윤대기 후보 찾기
+      final doc = await _firestore
+          .collection('members')
+          .doc('member_daegi')
+          .get();
+
+      if (doc.exists) {
+        await doc.reference.update({'imageUrl': yoonDaegiImageUrl});
+        debugPrint('윤대기 후보(인천 계양을)의 프로필 이미지가 업데이트되었습니다.');
+        
+        // 로컬 캐시도 업데이트
+        await refreshMembers();
+      } else {
+        debugPrint('윤대기 후보(member_daegi)를 찾을 수 없습니다.');
+      }
+    } catch (e) {
+      debugPrint('윤대기 후보 프로필 이미지 업데이트 중 오류: $e');
+    }
+  }
+
+  // 서재열 후보의 프로필 이미지 URL을 업데이트
+  Future<void> updateSeoJaeyeolImage() async {
+    await _ensureInitialized();
+    try {
+      const String seoJaeyeolImageUrl = 'https://cpmadang.org/sites/default/files/thumbnail.100162022.JPG';
+      
+      // member_jaeyeol ID를 가진 서재열 후보 찾기
+      final doc = await _firestore
+          .collection('members')
+          .doc('member_jaeyeol')
+          .get();
+
+      if (doc.exists) {
+        await doc.reference.update({'imageUrl': seoJaeyeolImageUrl});
+        debugPrint('서재열 후보(경기 평택을)의 프로필 이미지가 업데이트되었습니다.');
+        
+        // 로컬 캐시도 업데이트
+        await refreshMembers();
+      } else {
+        debugPrint('서재열 후보(member_jaeyeol)를 찾을 수 없습니다.');
+      }
+    } catch (e) {
+      debugPrint('서재열 후보 프로필 이미지 업데이트 중 오류: $e');
+    }
   }
 }
