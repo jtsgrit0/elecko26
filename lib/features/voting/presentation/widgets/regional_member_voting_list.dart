@@ -35,12 +35,14 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
   Map<String, int> _voteTimestamps = {}; // district -> timestamp
   bool _isLoading = true;
   StreamSubscription<List<Member>>? _memberSubscription;
+  StreamSubscription<Map<String, String>>? _voteSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadRegionalMembers();
     _startMemberSubscription();
+    _startVoteSubscription();
   }
 
   void _startMemberSubscription() {
@@ -57,18 +59,31 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
     });
   }
 
+  void _startVoteSubscription() {
+    _voteSubscription?.cancel();
+    _voteSubscription = sl<MemberRepository>().watchAllVotes().listen((votes) {
+      if (mounted) {
+        setState(() {
+          _votes = votes;
+        });
+      }
+    });
+  }
+
   @override
   void didUpdateWidget(RegionalMemberVotingList oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.region != widget.region) {
       _loadRegionalMembers();
       _startMemberSubscription();
+      _startVoteSubscription();
     }
   }
 
   @override
   void dispose() {
     _memberSubscription?.cancel();
+    _voteSubscription?.cancel();
     super.dispose();
   }
 

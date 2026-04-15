@@ -859,6 +859,11 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   }
 
   @override
+  Stream<Map<String, String>> watchAllVotes() {
+    return sl<LocalStorageService>().watchAllVotes();
+  }
+
+  @override
   Future<void> saveSelectedRegion(String region) async {
     final localService = sl<LocalStorageService>();
     await localService.saveSelectedRegion(region);

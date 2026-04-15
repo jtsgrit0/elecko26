@@ -9,7 +9,9 @@ import '../widgets/regional_member_voting_list.dart';
 import 'package:elecko26/data/datasources/local_storage_service.dart';
 import 'package:elecko26/domain/entities/member.dart';
 import 'package:elecko26/features/home/presentation/widgets/member_card.dart';
+import 'package:elecko26/features/home/presentation/widgets/member_card.dart';
 import 'package:elecko26/features/home/presentation/pages/member_detail_page.dart';
+import 'package:rxdart/rxdart.dart';
 
 class PollsPage extends StatefulWidget {
   final auth.User currentUser;
@@ -26,7 +28,7 @@ class PollsPage extends StatefulWidget {
 class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
   late TabController _tabController;
 
-  List<Member> _myVotedMembers = [];
+  late Stream<List<Member>> _votedMembersStream;
   String _selectedRegion = '전국';
   StreamSubscription<String>? _regionSubscription;
 
@@ -37,15 +39,15 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _initVotedMembersStream();
     _loadPolls();
 
-    // 지역 설정 변경 감지 구독
+    // 지역 설정 변경 감지 구독 (전역 지역 설정 동기화용)
     _regionSubscription = sl<MemberRepository>().watchSelectedRegion().listen((region) {
       if (mounted && _selectedRegion != region) {
         setState(() {
           _selectedRegion = region;
         });
-        _loadPolls(); // 지역 변경 시 재로딩
       }
     });
   }
@@ -57,43 +59,36 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  void _initVotedMembersStream() {
+    final memberRepo = sl<MemberRepository>();
+    _votedMembersStream = Rx.combineLatest2<List<Member>, Map<String, String>, List<Member>>(
+      memberRepo.watchAllMembers(),
+      memberRepo.watchAllVotes(),
+      (members, votes) {
+        final votedIds = votes.values.toSet();
+        return members.where((m) => votedIds.contains(m.id)).toList();
+      },
+    ).shareValueSeeded([]);
+  }
+
   Future<void> _loadPolls() async {
     if (!mounted) return;
 
     try {
-      // 1순위: 지역 정보 먼저 로드
       final region = await sl<MemberRepository>().getSelectedRegion();
       if (mounted) {
         setState(() {
           _selectedRegion = region;
         });
       }
-
-      // 2순위: 캐시된 멤버 로드 (투표한 멤버 표시용)
-      final localService = sl<LocalStorageService>();
-      final memberRepo = sl<MemberRepository>();
-
-      final votesMap = await localService.getAllVotes();
-      final cachedMembers = await memberRepo.getCachedMembers();
-      final cachedVotedList = cachedMembers.where((m) => votesMap.values.contains(m.id)).toList();
-
+    } catch (e) {
       if (mounted) {
         setState(() {
-          _myVotedMembers = cachedVotedList;
+          _errorMessage = '투표 목록을 불러오는 중 오류가 발생했습니다.';
         });
       }
-
-      // 3순위: 전체 멤버 새로고침 (백그라운드)
-      unawaited(
-        memberRepo.getAllMembers().then((allMembers) {
-          if (mounted) {
-            final votedList = allMembers.where((m) => votesMap.values.contains(m.id)).toList();
-            setState(() {
-              _myVotedMembers = votedList;
-            });
-          }
-        }).catchError((_) {}),
-      );
+    }
+  }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -168,70 +163,76 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
   }
 
   void _onMemberVoted(Member member) {
-    // 1. 지지한 후보를 즉시 목록에 추가 (Optimistic Update)
-    // 기존 리스트에 추가하는 대신 새 리스트를 생성하여 할당 (Flutter 리빌드 확실성 확보)
-    if (!_myVotedMembers.any((m) => m.id == member.id)) {
-      setState(() {
-        _myVotedMembers = [..._myVotedMembers, member];
-      });
-    }
-
-    // 2. '지지후보' 탭으로 즉시 이동
+    // 탭 전환만 처리 (데이터는 스트림을 통해 자동 업데이트됨)
     if (_tabController.index != 1) {
       _tabController.animateTo(1);
     }
   }
 
   Widget _buildSupportedCandidatesTab() {
-    // StreamBuilder 대기 없이 _myVotedMembers 상태를 직접 렌더링하여 실시간 반영
-    // _myVotedMembers가 바뀔 때마다 ListView가 완전히 새로 그려지도록 ValueKey 사용
-    return RefreshIndicator(
-      key: ValueKey(_myVotedMembers.map((e) => e.id).join(',')),
-      onRefresh: _loadPolls,
-      color: AppColors.primary,
-      child: _myVotedMembers.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.how_to_vote, size: 64, color: AppColors.mediumGray),
-                  const SizedBox(height: 16),
-                  Text(
-                    '아직 지지한 후보가 없습니다',
-                    style: AppTextStyles.bodyLarge.copyWith(color: AppColors.mediumGray),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '진행중 탭에서 후보를 지지해보세요!',
-                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.mediumGray),
-                  ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _myVotedMembers.length,
-              itemBuilder: (context, index) {
-                final member = _myVotedMembers[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: MemberCard(
-                    key: ValueKey(member.id),
+    return StreamBuilder<List<Member>>(
+      stream: _votedMembersStream,
+      builder: (context, snapshot) {
+        final votedMembers = snapshot.data ?? [];
+        
+        return RefreshIndicator(
+          onRefresh: () async {
+            await sl<MemberRepository>().refreshMembers();
+          },
+          color: AppColors.primary,
+          child: votedMembers.isEmpty
+              ? _buildEmptySupportedTab()
+              : _buildVotedMembersList(votedMembers),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptySupportedTab() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.how_to_vote, size: 64, color: AppColors.mediumGray),
+          const SizedBox(height: 16),
+          Text(
+            '아직 지지한 후보가 없습니다',
+            style: AppTextStyles.bodyLarge.copyWith(color: AppColors.mediumGray),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '진행중 탭에서 후보를 지지해보세요!',
+            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.mediumGray),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVotedMembersList(List<Member> votedMembers) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: votedMembers.length,
+      itemBuilder: (context, index) {
+        final member = votedMembers[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: MemberCard(
+            key: ValueKey(member.id),
+            member: member,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => MemberDetailPage(
                     member: member,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => MemberDetailPage(
-                            member: member,
-                            onBack: () => Navigator.pop(context),
-                          ),
-                        ),
-                      );
-                    },
+                    onBack: () => Navigator.pop(context),
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 

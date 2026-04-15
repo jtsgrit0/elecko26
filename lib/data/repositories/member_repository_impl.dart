@@ -342,6 +342,9 @@ class MemberRepositoryImpl implements MemberRepository {
   }
 
   @override
+  Stream<Map<String, String>> watchAllVotes() => _localStorage.watchAllVotes();
+
+  @override
   Future<void> saveSelectedRegion(String region) async {
     final localService = sl<LocalStorageService>();
     await localService.saveSelectedRegion(region);

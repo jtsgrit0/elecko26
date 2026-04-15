@@ -32,6 +32,9 @@ abstract class MemberRepository {
   /// 특정 의원 데이터 갱신 스트림 제공
   Stream<Member> watchMemberById(String memberId, {Duration interval = const Duration(hours: 1)});
 
+  /// 투표 현황을 감시함 (district -> memberId map)
+  Stream<Map<String, String>> watchAllVotes();
+
   /// 외부 데이터 소스에서 최신 데이터 갱신
   Future<void> refreshMembers();
 

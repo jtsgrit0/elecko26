@@ -24,6 +24,7 @@ import 'package:elecko26/features/voting/data/repositories/poll_repository_impl.
 import 'package:elecko26/features/voting/domain/repositories/poll_repository.dart';
 import 'package:elecko26/features/voting/domain/usecases/poll_usecases.dart';
 import 'package:flutter/foundation.dart';
+import 'package:rxdart/rxdart.dart';
 
 final sl = GetIt.instance;
 
@@ -152,6 +153,14 @@ void _registerAll() {
 /// Fallback storage for cases where SharedPreferences is unavailable (e.g. CLI tools or failing Web)
 class InMemoryLocalStorageService implements LocalStorageService {
   final Map<String, dynamic> _data = {};
+  final _votesController = BehaviorSubject<Map<String, String>>();
+
+  InMemoryLocalStorageService() {
+    _votesController.add({});
+  }
+
+  @override
+  Stream<Map<String, String>> watchAllVotes() => _votesController.stream;
 
   @override String? getString(String key) => _data[key] as String?;
   @override Future<bool> setString(String key, String value) async { _data[key] = value; return true; }
@@ -194,11 +203,12 @@ class InMemoryLocalStorageService implements LocalStorageService {
     if (timestamp != null) {
       _data['$_keyTimePrefix$district'] = timestamp;
     }
-    final districts = _data[_keyVoteDistricts] as List<String>? ?? [];
     if (!districts.contains(district)) {
       districts.add(district);
       _data[_keyVoteDistricts] = districts;
     }
+    
+    _votesController.add(await getAllVotes());
   }
 
   @override
@@ -238,11 +248,10 @@ class InMemoryLocalStorageService implements LocalStorageService {
   }
 
   @override
-  Future<void> removeVote(String district) async {
-    _data.remove('$_keyVotePrefix$district');
-    _data.remove('$_keyTimePrefix$district');
     final List<String> districts = List<String>.from(_data[_keyVoteDistricts] as List<dynamic>? ?? []);
     districts.remove(district);
     _data[_keyVoteDistricts] = districts;
+    
+    _votesController.add(await getAllVotes());
   }
 }

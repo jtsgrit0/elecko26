@@ -6,6 +6,9 @@ abstract class LocalStorageService {
   List<String>? getStringList(String key);
   Future<bool> setStringList(String key, List<String> value);
   Future<bool> clear();
+  
+  /// 투표 상태를 감시하는 스트림
+  Stream<Map<String, String>> watchAllVotes();
 
   // Settings specific
   Future<List<String>> getFavorites();

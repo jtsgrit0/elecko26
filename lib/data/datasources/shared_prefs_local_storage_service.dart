@@ -1,11 +1,24 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:elecko26/data/datasources/local_storage_service.dart';
+import 'package:rxdart/rxdart.dart';
 
 /// SharedPreferences 기반의 플러터 환경용 로컬 스토리지 서비스입니다.
 class SharedPreferencesService implements LocalStorageService {
   final SharedPreferences prefs;
+  final _votesController = BehaviorSubject<Map<String, String>>();
 
-  SharedPreferencesService(this.prefs);
+  SharedPreferencesService(this.prefs) {
+    // 초기화 시 기존 데이터를 로드하여 스트림에 전송
+    _initVotesStream();
+  }
+
+  Future<void> _initVotesStream() async {
+    final votes = await getAllVotes();
+    _votesController.add(votes);
+  }
+
+  @override
+  Stream<Map<String, String>> watchAllVotes() => _votesController.stream;
 
   @override
   String? getString(String key) {
@@ -107,6 +120,10 @@ class SharedPreferencesService implements LocalStorageService {
       districts.add(district);
       await prefs.setStringList(_keyVoteDistricts, districts);
     }
+    
+    // 스트림 업데이트
+    final allVotes = await getAllVotes();
+    _votesController.add(allVotes);
   }
 
   @override
@@ -152,5 +169,9 @@ class SharedPreferencesService implements LocalStorageService {
     final districts = prefs.getStringList(_keyVoteDistricts) ?? [];
     districts.remove(district);
     await prefs.setStringList(_keyVoteDistricts, districts);
+
+    // 스트림 업데이트
+    final allVotes = await getAllVotes();
+    _votesController.add(allVotes);
   }
 }
