@@ -115,7 +115,7 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
     }
   }
 
-  void _handleVote(String district, Member member) async {
+  void _handleVote(String district, Member member) {
     final memberRepository = sl<MemberRepository>();
     final currentVote = _votes[district];
     final lastVoteTime = _voteTimestamps[district];
@@ -140,10 +140,6 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
       }
     }
 
-    // 상태 백업 (실패 시 롤백용)
-    final prevVote = currentVote;
-    final prevTimestamp = lastVoteTime;
-
     // [Optimistic Update] 네트워크 요청 전 즉시 UI 반영
     final now = DateTime.now().millisecondsSinceEpoch;
     setState(() {
@@ -151,34 +147,40 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
       _voteTimestamps[district] = now;
     });
 
-    try {
-      // 백그라운드에서 실제 저장
-      await memberRepository.saveSupportVote(
-        district,
-        member.id,
-        timestamp: now,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${member.name} 의원을 지지하셨습니다!')),
-        );
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          widget.onVoteChanged?.call();
-          widget.onMemberVoted?.call(member);
-        });
-      }
-    } catch (e) {
+    // 백그라운드에서 실제 저장 (UI 블로킹 방지)
+    memberRepository.saveSupportVote(
+      district,
+      member.id,
+      timestamp: now,
+    ).catchError((e) {
       // 실패 시 원래 상태로 복구
       if (mounted) {
         setState(() {
-          _votes[district] = prevVote;
-          _voteTimestamps[district] = prevTimestamp;
+          _votes[district] = currentVote;
+          _voteTimestamps[district] = lastVoteTime;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('지지하기 처리 중 오류가 발생했습니다.')),
         );
       }
+      return null;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${member.name} 의원을 지지하셨습니다!'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+      
+      // 사용자가 체크 표시를 인지할 수 있도록 약 200ms 대기 후 탭 전환 및 데이터 갱신 실행
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) {
+          widget.onVoteChanged?.call();
+          widget.onMemberVoted?.call(member);
+        }
+      });
     }
   }
 
