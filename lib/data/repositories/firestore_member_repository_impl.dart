@@ -22,8 +22,6 @@ import 'package:get_it/get_it.dart';
 
 final sl = GetIt.instance;
 
-final sl = GetIt.instance;
-
 class FirestoreMemberRepositoryImpl implements MemberRepository {
   // NESDC 여론조사 데이터 소스 엔진
   final NesdcPollDataSource _nesdcPollDataSource = NesdcPollDataSource(
