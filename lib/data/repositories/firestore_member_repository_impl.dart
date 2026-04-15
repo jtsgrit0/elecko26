@@ -13,8 +13,9 @@ import 'package:elecko26/data/datasources/profile_image_resolver.dart';
 import 'package:elecko26/data/models/member_model.dart';
 import 'package:elecko26/domain/entities/member.dart';
 import 'package:elecko26/domain/entities/poll.dart';
+import 'package:elecko26/domain/usecases/possibility_calculator.dart';
 import 'package:elecko26/domain/repositories/member_repository.dart';
-import 'package:get_it/get_it.dart';
+import 'package:elecko26/domain/repositories/historical_election_repository.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -591,9 +592,19 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         ));
       }
 
-      updatedMembers.add(member.copyWith(
+      final updatedMember = member.copyWith(
         polls: _staticMergePolls(member.polls, newPolls),
         lastAnalysisDate: now,
+      );
+
+      // 최신 데이터를 바탕으로 당선 가능성 재계산 (상세보기와 동일한 로직 적용)
+      final scores = PossibilityCalculator.calculateMultiFactorScores(
+        member: updatedMember,
+        historicalBaseSupport: 0.5, // 이펙트 가중치 기본값
+      );
+
+      updatedMembers.add(updatedMember.copyWith(
+        electionPossibility: scores['overall']!,
       ));
     }
     return updatedMembers;
