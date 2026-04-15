@@ -310,7 +310,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                           ),
                         ),
                         Text(
-                          '${(member.electionPossibility * 100).toStringAsFixed(0)}%',
+                          '${(member.electionPossibility * 100).toStringAsFixed(1)}%',
                           style: AppTextStyles.headline4.copyWith(
                             color: AppColors.success,
                           ),

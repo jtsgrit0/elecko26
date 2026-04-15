@@ -152,7 +152,7 @@ class MemberCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      '당선 가능성: ${(member.electionPossibility * 100).toStringAsFixed(0)}%',
+                      '당선 가능성: ${(member.electionPossibility * 100).toStringAsFixed(1)}%',
                       style: AppTextStyles.labelSmall.copyWith(
                         color: AppColors.success,
                       ),
