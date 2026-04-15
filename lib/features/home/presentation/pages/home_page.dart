@@ -776,7 +776,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const MapScreen()),
+                        builder: (context) => const MapScreen(),
+                      ),
                     ),
                     child: Container(
                       padding: const EdgeInsets.all(8),
