@@ -1223,6 +1223,230 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
     );
   }
 
+  Widget _build2018RegionalPartyRatesSection(Member member) {
+    if (member.historical2018PartyRates.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.lightGray),
+            color: AppColors.white,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '📊 2018년 지방선거 지역 득표율',
+                style: AppTextStyles.headline3.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.darkGray,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '2018년 제7회 지방선거 ${member.district} 지역의 정당별 득표율 데이터를 준비 중입니다.',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.mediumGray,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: () async {
+                  try {
+                    await sl<MemberRepository>().updateMember2018Rates(member.id);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${member.name} 의원의 2018년 득표율 데이터를 업데이트했습니다.'),
+                        backgroundColor: AppColors.primary,
+                      ),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('데이터 업데이트 중 오류가 발생했습니다.'),
+                        backgroundColor: AppColors.danger,
+                      ),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+                child: Text('데이터 업데이트'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final currentPartyRate = member.historical2018PartyRates[member.party] ?? 0.0;
+    final sortedRates = member.historical2018PartyRates.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.lightGray),
+          color: AppColors.white,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '📊 2018년 지방선거 지역 득표율',
+                  style: AppTextStyles.headline3.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.darkGray,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    '${member.district}',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: AppColors.primary.withOpacity(0.05),
+                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.flag,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        member.party,
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.darkGray,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '${currentPartyRate.toStringAsFixed(1)}%',
+                    style: AppTextStyles.headline3.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            Text(
+              '정당별 득표율 순위',
+              style: AppTextStyles.bodyLarge.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.darkGray,
+              ),
+            ),
+            const SizedBox(height: 8),
+            
+            ...sortedRates.asMap().entries.map((entry) {
+              final index = entry.key;
+              final partyEntry = entry.value;
+              return _buildPartyRateItem(
+                partyEntry.key,
+                partyEntry.value,
+                partyEntry.key == member.party,
+                index + 1,
+              );
+            }).toList(),
+            
+            const SizedBox(height: 12),
+            Text(
+              '* 2018년 제7회 전국동시지방선거 기준',
+              style: AppTextStyles.labelSmall.copyWith(
+                color: AppColors.mediumGray,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPartyRateItem(String party, double rate, bool isCurrentParty, int rank) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: isCurrentParty ? AppColors.primary : AppColors.lightGray,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Center(
+              child: Text(
+                '$rank',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: isCurrentParty ? AppColors.white : AppColors.mediumGray,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              party,
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontWeight: isCurrentParty ? FontWeight.bold : FontWeight.normal,
+                color: isCurrentParty ? AppColors.primary : AppColors.darkGray,
+              ),
+            ),
+          ),
+          Text(
+            '${rate.toStringAsFixed(1)}%',
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontWeight: isCurrentParty ? FontWeight.bold : FontWeight.normal,
+              color: isCurrentParty ? AppColors.primary : AppColors.darkGray,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTrendChartSection(AnalysisResult analysis) {
     final recentTrends = analysis.dailyTrends.length > 30
         ? analysis.dailyTrends.sublist(analysis.dailyTrends.length - 30)
