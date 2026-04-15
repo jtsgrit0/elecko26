@@ -29,6 +29,12 @@ abstract class MemberRepository {
   /// 일정 주기로 의원 데이터 갱신 스트림 제공
   Stream<List<Member>> watchAllMembers({Duration interval = const Duration(hours: 1)});
 
+  /// 2018년 지방선거 지역별 정당 득표율을 모든 회원 데이터에 반영
+  Future<void> apply2018RegionalPartyRates();
+
+  /// 특정 회원의 2018년 지방선거 지역별 정당 득표율을 업데이트
+  Future<void> updateMember2018Rates(String memberId);
+
   /// 특정 의원 데이터 갱신 스트림 제공
   Stream<Member> watchMemberById(String memberId, {Duration interval = const Duration(hours: 1)});
 

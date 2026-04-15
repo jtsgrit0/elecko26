@@ -1049,6 +1049,61 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   }
 
   @override
+  Future<void> apply2018RegionalPartyRates() async {
+    await _ensureInitialized();
+    
+    try {
+      final historicalRepo = sl<HistoricalElectionRepository>();
+      final members = await getAllMembers();
+      final updatedMembers = <Member>[];
+
+      for (final member in members) {
+        // 의원의 지역구로 2018년 득표율 조회
+        final regionalRates = await historicalRepo.get2018RegionalPartyRates(member.district);
+        
+        if (regionalRates.isNotEmpty) {
+          // 2018년 득표율이 있는 경우 업데이트
+          final updatedMember = member.copyWith(historical2018PartyRates: regionalRates);
+          updatedMembers.add(updatedMember);
+          
+          debugPrint('${member.name} (${member.district})의 2018년 득표율 업데이트: $regionalRates');
+        }
+      }
+
+      // 업데이트된 회원들을 일괄 저장
+      if (updatedMembers.isNotEmpty) {
+        await updateMembers(updatedMembers);
+        debugPrint('총 ${updatedMembers.length}명의 의원 2018년 득표율 업데이트 완료');
+      }
+    } catch (e) {
+      debugPrint('2018년 지방선거 득표율 반영 중 오류: $e');
+    }
+  }
+
+  @override
+  Future<void> updateMember2018Rates(String memberId) async {
+    await _ensureInitialized();
+    
+    try {
+      final member = await getMemberById(memberId);
+      final historicalRepo = sl<HistoricalElectionRepository>();
+      
+      // 해당 의원의 지역구로 2018년 득표율 조회
+      final regionalRates = await historicalRepo.get2018RegionalPartyRates(member.district);
+      
+      if (regionalRates.isNotEmpty) {
+        // 2018년 득표율이 있는 경우 업데이트
+        final updatedMember = member.copyWith(historical2018PartyRates: regionalRates);
+        await updateMember(updatedMember);
+        
+        debugPrint('${member.name} (${member.district})의 2018년 득표율 업데이트: $regionalRates');
+      }
+    } catch (e) {
+      debugPrint('${memberId} 의원의 2018년 득표율 업데이트 중 오류: $e');
+    }
+  }
+
+  @override
   Future<void> updateMembers(List<Member> members) async {
     final batch = _firestore.batch();
     for (var member in members) {
@@ -1116,7 +1171,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<void> updateSeoJaeyeolImage() async {
     await _ensureInitialized();
     try {
-      const String seoJaeyeolImageUrl = 'https://cpmadang.org/sites/default/files/thumbnail.100162022.JPG';
+      const String seoJaeyeolImageUrl = 'https://dimg.donga.com/wps/NEWS/IMAGE/2004/02/16/6913540.1.jpg';
       
       // member_jaeyeol ID를 가진 서재열 후보 찾기
       final doc = await _firestore

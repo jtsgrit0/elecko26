@@ -80,6 +80,24 @@ class HistoricalElectionRepositoryImpl implements HistoricalElectionRepository {
   }
 
   @override
+  Future<Map<String, double>> get2018RegionalPartyRates(String region) async {
+    final election = await getElectionByNumber(7); // 2018년 제7회 지방선거
+    if (election == null) return {};
+
+    final regionData = election.regionalAverages[region];
+    if (regionData == null) return {};
+
+    // 정당명을 현재 이름으로 정규화하여 반환
+    final normalizedRates = <String, double>{};
+    for (final entry in regionData.entries) {
+      final normalizedParty = _normalizeParty(entry.key);
+      normalizedRates[normalizedParty] = entry.value;
+    }
+
+    return normalizedRates;
+  }
+
+  @override
   Future<double> getVoterInterest(String region) async {
     final pdfData = await _dataSource.loadPdfData();
     

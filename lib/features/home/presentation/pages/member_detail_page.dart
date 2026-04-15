@@ -151,6 +151,10 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                     _buildElectionPossibilitySection(analysis),
                     const SizedBox(height: 24),
 
+                    // 2018년 지방선거 득표율 섹션
+                    _build2018RegionalPartyRatesSection(member),
+                    const SizedBox(height: 24),
+
                     // 상세 점수 섹션
                     _buildDetailedScoresSection(analysis),
                     const SizedBox(height: 24),

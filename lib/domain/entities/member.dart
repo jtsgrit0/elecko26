@@ -20,6 +20,7 @@ class Member {
   final List<String> improvementPoints;
   final List<SocialContribution> socialContributions;
   final bool isFavorite;
+  final Map<String, double> historical2018PartyRates; // 2018년 지방선거 지역별 정당 득표율
 
   Member({
     required this.id,
@@ -40,6 +41,7 @@ class Member {
     required this.improvementPoints,
     required this.socialContributions,
     this.isFavorite = false,
+    this.historical2018PartyRates = const {},
   });
 
   Member copyWith({
@@ -61,6 +63,7 @@ class Member {
     List<String>? improvementPoints,
     List<SocialContribution>? socialContributions,
     bool? isFavorite,
+    Map<String, double>? historical2018PartyRates,
   }) {
     return Member(
       id: id ?? this.id,
@@ -81,6 +84,7 @@ class Member {
       improvementPoints: improvementPoints ?? this.improvementPoints,
       socialContributions: socialContributions ?? this.socialContributions,
       isFavorite: isFavorite ?? this.isFavorite,
+      historical2018PartyRates: historical2018PartyRates ?? this.historical2018PartyRates,
     );
   }
 
