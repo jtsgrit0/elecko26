@@ -171,8 +171,16 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
       // 실패 시 원래 상태로 복구
       if (mounted) {
         setState(() {
-          _votes[district] = currentVote;
-          _voteTimestamps[district] = lastVoteTime;
+          if (currentVote != null) {
+            _votes[district] = currentVote;
+          } else {
+            _votes.remove(district);
+          }
+          if (lastVoteTime != null) {
+            _voteTimestamps[district] = lastVoteTime;
+          } else {
+            _voteTimestamps.remove(district);
+          }
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('지지하기 처리 중 오류가 발생했습니다.')),
@@ -347,10 +355,11 @@ class _RegionalMemberCard extends StatelessWidget {
   final VoidCallback onVote;
 
   const _RegionalMemberCard({
+    Key? key,
     required this.member,
     required this.isVoted,
     required this.onVote,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

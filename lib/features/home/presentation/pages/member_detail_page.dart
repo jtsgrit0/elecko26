@@ -206,6 +206,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
         _estimateSocialScore(member.socialContributions);
 
     final pollScore = (achievement + activity + policy + publicImage) / 4;
+    final historicalScore = pollScore; // 기본값으로 pollScore 사용
 
     final now = DateTime.now();
     final trends = List.generate(7, (index) {
@@ -229,6 +230,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
       publicImageScore: publicImage,
       socialContributionScore: socialContribution,
       pollScore: pollScore,
+      historicalScore: historicalScore,
       improvements: member.policies.isEmpty
           ? ['정책 정보를 보강하면 상세 분석 정확도가 높아집니다.']
           : ['지역 현안 중심 메시지를 더 강화하면 좋습니다.'],
