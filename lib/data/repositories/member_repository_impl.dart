@@ -20,6 +20,7 @@ final sl = GetIt.instance;
 
 /// 멤버 저장소 구현체 (데이터 레이어)
 class MemberRepositoryImpl implements MemberRepository {
+  final LocalStorageService _localStorage = sl<LocalStorageService>();
   final NesdcPollDataSource _nesdcPollDataSource = NesdcPollDataSource(
     localStorageService: sl<LocalStorageService>(),
   );

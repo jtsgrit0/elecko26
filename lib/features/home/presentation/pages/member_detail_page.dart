@@ -11,6 +11,7 @@ import 'package:elecko26/domain/usecases/calculate_election_possibility_usecase.
 import 'package:elecko26/domain/usecases/member_usecases.dart';
 import 'package:elecko26/app/injection_container.dart';
 import 'package:elecko26/core/utils/image_util.dart';
+import 'package:elecko26/domain/repositories/member_repository.dart';
 
 class MemberDetailPage extends StatefulWidget {
   final Member member;
@@ -204,6 +205,8 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
     final socialContribution =
         _estimateSocialScore(member.socialContributions);
 
+    final pollScore = (achievement + activity + policy + publicImage) / 4;
+
     final now = DateTime.now();
     final trends = List.generate(7, (index) {
       final dayOffset = 6 - index;
@@ -225,6 +228,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
       policyScore: policy,
       publicImageScore: publicImage,
       socialContributionScore: socialContribution,
+      pollScore: pollScore,
       improvements: member.policies.isEmpty
           ? ['정책 정보를 보강하면 상세 분석 정확도가 높아집니다.']
           : ['지역 현안 중심 메시지를 더 강화하면 좋습니다.'],

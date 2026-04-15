@@ -203,6 +203,7 @@ class InMemoryLocalStorageService implements LocalStorageService {
     if (timestamp != null) {
       _data['$_keyTimePrefix$district'] = timestamp;
     }
+    final districts = List<String>.from(_data[_keyVoteDistricts] as List<dynamic>? ?? []);
     if (!districts.contains(district)) {
       districts.add(district);
       _data[_keyVoteDistricts] = districts;
