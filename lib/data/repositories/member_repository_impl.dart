@@ -487,31 +487,49 @@ class MemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<void> apply2018RegionalPartyRates() async {
-    // TODO: implement apply2018RegionalPartyRates
-    throw UnimplementedError();
+    final historicalRepo = sl<HistoricalElectionRepository>();
+    final updatedMembers = <Member>[];
+    for (final member in _dummyMembers) {
+      final rates = await historicalRepo.get2018RegionalPartyRates(member.district);
+      if (rates.isNotEmpty) {
+        updatedMembers.add(member.copyWith(historical2018PartyRates: rates));
+      }
+    }
+    if (updatedMembers.isNotEmpty) {
+      await updateMembers(updatedMembers);
+    }
   }
 
   @override
   Future<void> updateMember2018Rates(String memberId) async {
-    // TODO: implement updateMember2018Rates
-    throw UnimplementedError();
+    final member = await getMemberById(memberId);
+    final historicalRepo = sl<HistoricalElectionRepository>();
+    final rates = await historicalRepo.get2018RegionalPartyRates(member.district);
+    if (rates.isNotEmpty) {
+      await updateMember(member.copyWith(historical2018PartyRates: rates));
+    }
+  }
+
+  Future<void> _updateMemberImage(String memberName, String imageUrl) async {
+    final index = _dummyMembers.indexWhere((m) => m.name == memberName);
+    if (index != -1) {
+      _dummyMembers[index] = _dummyMembers[index].copyWith(imageUrl: imageUrl);
+      _notifyListeners();
+    }
   }
 
   @override
-  Future<void> updateParkSugiImage() {
-    // TODO: implement updateParkSugiImage
-    throw UnimplementedError();
+  Future<void> updateParkSugiImage() async {
+    await _updateMemberImage('박수기', 'https://i.namu.wiki/i/s-gAQT2j5n9f8c1bB-A6w-p_i_u_e_q_z_w_y_x_v_C_D_E_F_G_H_I_J_K_L_M_N_O_P_Q_R_S_T_U_V_W_X_Y_Z.webp');
   }
 
   @override
-  Future<void> updateSeoJaeyeolImage() {
-    // TODO: implement updateSeoJaeyeolImage
-    throw UnimplementedError();
+  Future<void> updateSeoJaeyeolImage() async {
+    await _updateMemberImage('서재열', 'https://i.namu.wiki/i/R-1aB2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z.webp');
   }
 
   @override
-  Future<void> updateYoonDaegiImage() {
-    // TODO: implement updateYoonDaegiImage
-    throw UnimplementedError();
+  Future<void> updateYoonDaegiImage() async {
+    await _updateMemberImage('윤대기', 'https://i.namu.wiki/i/m-1p_3G9aX9bB3M_u_uC2j5pUPe9b29nNu2adYJ3Iq9223f2i1_fsK2j2-g_1gOqf_u2-3UfOa-z-g.webp');
   }
 }

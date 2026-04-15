@@ -23,7 +23,7 @@ Future<void> _run() async {
 
   print('[NESDC] Export start: pages=$pages limit=${limit <= 0 ? 'all' : limit}');
 
-  final dataSource = NesdcPollDataSource();
+  final dataSource = NesdcPollDataSourceCli();
   final entries = await dataSource.fetchLatest(pages: pages);
   final maxItems = limit <= 0 ? entries.length : limit;
   final sliced = entries.length > maxItems ? entries.take(maxItems).toList() : entries;

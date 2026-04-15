@@ -251,11 +251,10 @@ class InMemoryLocalStorageService implements LocalStorageService {
   Future<void> removeVote(String district) async {
     _data.remove('$_keyVotePrefix$district');
     _data.remove('$_keyTimePrefix$district');
-
-    final districts = List<String>.from(_data[_keyVoteDistricts] as List<dynamic>? ?? []);
+    final List<String> districts = List<String>.from(_data[_keyVoteDistricts] as List<dynamic>? ?? []);
     districts.remove(district);
     _data[_keyVoteDistricts] = districts;
-
+    
     _votesController.add(await getAllVotes());
   }
 }
