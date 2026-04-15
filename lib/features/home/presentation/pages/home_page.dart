@@ -116,7 +116,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   children: [
                     _buildRegionSettingTab(
                       setModalState,
-                      tempSelectedRegion,
+                      () => tempSelectedRegion,
                       (region) {
                         tempSelectedRegion = region;
                       },
@@ -197,7 +197,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Widget _buildRegionSettingTab(
     StateSetter setModalState,
-    String tempSelectedRegion,
+    String Function() getTempSelectedRegion,
     ValueChanged<String> onRegionSelected,
   ) {
     return ListView.builder(
@@ -205,7 +205,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       itemCount: _regions.length,
       itemBuilder: (context, index) {
         final region = _regions[index];
-        final isSelected = tempSelectedRegion == region;
+        final isSelected = getTempSelectedRegion() == region;
 
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
@@ -786,22 +786,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                       child: const Icon(
                         Icons.map,
-                        color: AppColors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 1), // 1px 간격
-                  GestureDetector(
-                    onTap: () => _showSettingsModal(),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.settings,
                         color: AppColors.white,
                         size: 24,
                       ),
