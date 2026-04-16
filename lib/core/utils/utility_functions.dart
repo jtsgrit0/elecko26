@@ -111,10 +111,14 @@ bool districtMatchesRegion(String district, String region) {
   final parentRegion = getParentRegion(district);
   if (parentRegion == region) return true;
 
-  // 2. 텍스트 포함 여부로 매칭 (기존 방식 보완)
-  final normalizedDistrict = district.replaceAll(' ', '');
-  for (final keyword in _regionKeywords(region)) {
-    if (normalizedDistrict.contains(keyword)) return true;
+  // 2. getParentRegion으로도 매칭되지 않은 경우에만 텍스트 포함 매칭 시도
+  // 이미 매핑 테이블에 있는 지역은 정확히 매칭되도록 함
+  if (parentRegion.isEmpty) {
+    // 텍스트 포함 여부로 매칭 (fallback)
+    final normalizedDistrict = district.replaceAll(' ', '');
+    for (final keyword in _regionKeywords(region)) {
+      if (normalizedDistrict.contains(keyword)) return true;
+    }
   }
 
   return false;
