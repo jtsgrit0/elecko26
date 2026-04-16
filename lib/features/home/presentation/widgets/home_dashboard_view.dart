@@ -267,8 +267,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     );
   }
 
-  Widget _buildRecommendedSection(List<Member> recommended) {
-    if (recommended.isEmpty) return const SizedBox.shrink();
+  Widget _buildMemberList(List<Member> members) {
+    if (members.isEmpty) return const SizedBox.shrink();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
@@ -279,7 +279,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '추천 후보자',
+                '후보자 목록',
                 style: AppTextStyles.headline4.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -291,35 +291,27 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
             ],
           ),
           const SizedBox(height: 8),
-          if (recommended.isEmpty)
-            Center(
-              child: Text(
-                '추천 후보자가 없습니다.',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.mediumGray,
-                ),
-              ),
-            )
-          else
-            Column(
-              children: List.generate(
-                recommended.length > 3 ? 3 : recommended.length,
-                (index) {
-                  final member = recommended[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: MemberCard(
-                      member: member,
-                      onTap: () => widget.onMemberSelected(member),
-                    ),
-                  );
-                },
-              ),
+          Column(
+            children: List.generate(
+              members.length,
+              (index) {
+                final member = members[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: MemberCard(
+                    member: member,
+                    onTap: () => widget.onMemberSelected(member),
+                  ),
+                );
+              },
             ),
+          ),
         ],
       ),
     );
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -343,11 +335,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     // TOP 3 추출
     final top3 = sortedMembers.take(3).toList();
 
-    // 추천 후보자 (당선 가능성 30% 이상)
-    final recommended = sortedMembers
-        .where((member) => member.electionPossibility >= 30)
-        .take(5)
-        .toList();
+    // 전체 멤버 리스트 (TOP3 제외)
+    final memberList = sortedMembers.skip(3).toList();
 
     return RefreshIndicator(
       onRefresh: widget.onRefresh,
@@ -358,7 +347,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
           children: [
             if (!widget.isLoading) ...[
               _buildTop3Section(top3),
-              _buildRecommendedSection(recommended),
+              _buildMemberList(memberList),
             ] else if (_displayMembers.isEmpty) ...[
               const Center(child: CircularProgressIndicator()),
             ],
