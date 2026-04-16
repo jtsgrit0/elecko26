@@ -33,7 +33,7 @@ class HomeDashboardView extends StatefulWidget {
   State<HomeDashboardView> createState() => _HomeDashboardViewState();
 }
 
-class _HomeDashboardViewState extends State<HomeDashboardView> {
+class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKeepAliveClientMixin {
   List<Member> _displayMembers = [];
   StreamSubscription<List<Member>>? _subscription;
   Map<String, double> _memberPossibilities = {}; // 멤버별 실제 당선 가능성 저장
@@ -50,17 +50,29 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
   @override
   void initState() {
     super.initState();
+    
+    // 캐시된 데이터가 있으면 먼저 표시하고 계산 시작
+    if (widget.cachedMembers.isNotEmpty) {
+      _displayMembers = widget.cachedMembers;
+      // 비동기로 당선 가능성 계산 시작
+      _calculateMemberPossibilities(widget.cachedMembers);
+    }
+    
+    // 스트림 데이터가 도착하면 업데이트
     _subscription = widget.membersStream.listen((members) {
-      if (mounted) {
+      if (mounted && members.isNotEmpty) {
         setState(() => _displayMembers = members);
         _calculateMemberPossibilities(members);
       }
     });
     
-    // 실시간 시간 업데이트를 위한 타이머 시작 (1분마다 업데이트)
-    _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
+    // 실시간 시간 업데이트를 위한 타이머 시작 (3분마다 업데이트)
+    _timer = Timer.periodic(const Duration(minutes: 3), (timer) {
       if (mounted) {
-        setState(() {}); // UI 새로고침으로 시간 표시 업데이트
+        // 시간 표시만 업데이트하도록 최적화
+        setState(() {
+          // 시간 관련 위젯만 rebuild되도록 빈 setState 호출
+        });
       }
     });
   }
@@ -96,7 +108,13 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
   @override
   void didUpdateWidget(HomeDashboardView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.cachedMembers.isNotEmpty) {
+    // 캐시된 멤버가 있고 이전과 다른 경우에만 업데이트
+    if (widget.cachedMembers.isNotEmpty && 
+        widget.cachedMembers != oldWidget.cachedMembers) {
+      setState(() => _displayMembers = widget.cachedMembers);
+    }
+    // 현재 표시된 멤버가 없고 캐시된 데이터가 있으면 표시
+    else if (_displayMembers.isEmpty && widget.cachedMembers.isNotEmpty) {
       setState(() => _displayMembers = widget.cachedMembers);
     }
   }
@@ -107,6 +125,9 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     _timer?.cancel(); // 타이머 정리
     super.dispose();
   }
+
+  @override
+  bool get wantKeepAlive => true; // 상태 유지 활성화
 
   void _showRegionSelectionModal() {
     showModalBottomSheet(
@@ -239,14 +260,16 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
               final possibility = _getMemberPossibility(member);
               return Padding(
                 padding: EdgeInsets.only(bottom: index < top3.length - 1 ? 12 : 0),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    children: [
+                child: GestureDetector(
+                  onTap: () => widget.onMemberSelected(member),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
                       Text(
                         '${rank}위',
                         style: AppTextStyles.headline4.copyWith(
@@ -322,7 +345,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                     ],
                   ),
                 ),
-              );
+              ),
+            );
             }),
           ),
         ],
@@ -375,7 +399,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '후보자 목록 (4위부터)',
+                '후보자 목록',
                 style: AppTextStyles.headline4.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -392,37 +416,11 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
               members.length,
               (index) {
                 final member = members[index];
-                final rank = index + 4; // TOP3 다음부터 4위부터 시작
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 24,
-                        height: 24,
-                        margin: const EdgeInsets.only(right: 8, top: 8),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '${rank}위',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: MemberCard(
-                          member: member,
-                          onTap: () => widget.onMemberSelected(member),
-                        ),
-                      ),
-                    ],
+                  child: MemberCard(
+                    member: member,
+                    onTap: () => widget.onMemberSelected(member),
                   ),
                 );
               },
@@ -437,7 +435,10 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.isLoading && _displayMembers.isEmpty) {
+    super.build(context); // AutomaticKeepAliveClientMixin 필요
+    
+    // 캐시된 데이터가 있으면 바로 표시, 로딩 중이어도 기존 데이터 유지
+    if (widget.isLoading && _displayMembers.isEmpty && widget.cachedMembers.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
