@@ -491,14 +491,26 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!widget.isLoading && !_isCalculatingPossibilities) ...[
+            // 데이터가 있으면 항상 표시 (로딩 중이어도 기존 데이터 유지)
+            if (filteredMembers.isNotEmpty) ...[
               // 통계 섹션 (분석의원, 여론조사심의회)
               _buildStatisticsSection(filteredMembers.length, nesdcCount, updateValue),
               const SizedBox(height: 24),
               _buildTop3Section(top3),
               _buildMemberList(memberList),
             ] else if (widget.isLoading || _isCalculatingPossibilities) ...[
+              // 데이터가 없고 로딩 중일 때만 로딩바 표시
               const Center(child: CircularProgressIndicator()),
+            ] else ...[
+              // 데이터가 없고 로딩도 안할 때는 빈 상태 표시
+              Center(
+                child: Text(
+                  '표시할 후보자가 없습니다.',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.mediumGray,
+                  ),
+                ),
+              ),
             ],
           ],
         ),

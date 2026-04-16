@@ -159,6 +159,14 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
       }
     }
 
+    // 기존 지지 후보가 있다면 즉시 삭제 (같은 지역구)
+    if (currentVote != null && currentVote != member.id) {
+      // 기존 후보의 체크 표시 제거
+      setState(() {
+        _recentlyVoted.remove(currentVote);
+      });
+    }
+
     // [Optimistic Update] 네트워크 요청 전 즉시 UI 반영
     final now = DateTime.now().millisecondsSinceEpoch;
     setState(() {
@@ -220,13 +228,9 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
         ),
       );
       
-      // 사용자가 체크 표시를 인지할 수 있도록 약 200ms 대기 후 데이터 갱신 실행 (탭 전환 없음)
-      Future.delayed(const Duration(milliseconds: 200), () {
-        if (mounted) {
-          widget.onVoteChanged?.call();
-          widget.onMemberVoted?.call(member);
-        }
-      });
+      // 즉시 실시간 업데이트 - 새로고침 없이 바로 반영
+      widget.onVoteChanged?.call();
+      widget.onMemberVoted?.call(member);
     }
   }
 

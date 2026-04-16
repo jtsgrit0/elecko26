@@ -185,7 +185,11 @@ String getParentRegion(String district) {
     '남구': '대구광역시', '북구': '대구광역시', '서구': '대구광역시', '동구': '대구광역시', '중구': '대구광역시',
   };
 
-  for (final entry in districtToRegion.entries) {
+  // 정확한 매칭을 위해 긴 키워드부터 검사 (예: "해운대"가 "남구"보다 먼저 매칭되도록)
+  final sortedEntries = districtToRegion.entries.toList()
+    ..sort((a, b) => b.key.length.compareTo(a.key.length));
+  
+  for (final entry in sortedEntries) {
     if (district.contains(entry.key)) {
       return entry.value;
     }
