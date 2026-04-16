@@ -25,32 +25,6 @@ class HomeDashboardView extends StatefulWidget {
     required this.onMemberSelected,
     required this.onNavigateToSearch,
     required this.onRegionChanged,
-  }
-
-  Widget _buildStatisticsSection(int memberCount, int nesdcCount, String updateValue) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 3,
-          child: _StatisticCard(
-            title: '분석의원',
-            value: memberCount.toString(),
-            icon: Icons.people,
-            color: AppColors.primary,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          flex: 7,
-          child: _StatisticCard(
-            title: '여론조사심의회 · $updateValue',
-            value: '${nesdcCount}건',
-            icon: Icons.update,
-            color: AppColors.secondary,
-          ),
-        ),
-      ],
-    );
   }) : super(key: key);
 
   @override
@@ -447,6 +421,32 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildStatisticsSection(int memberCount, int nesdcCount, String updateValue) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: _StatisticCard(
+            title: '분석의원',
+            value: memberCount.toString(),
+            icon: Icons.people,
+            color: AppColors.primary,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          flex: 7,
+          child: _StatisticCard(
+            title: '여론조사심의회 · $updateValue',
+            value: '${nesdcCount}건',
+            icon: Icons.update,
+            color: AppColors.secondary,
+          ),
+        ),
+      ],
     );
   }
 }
