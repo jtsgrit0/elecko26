@@ -168,6 +168,7 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
   void _onMemberVoted(Member member) {
     // 지지후보 등록만 처리하고 탭 전환은 하지 않음
     // 데이터는 스트림을 통해 자동 업데이트됨
+    debugPrint('후보 지지 완료: ${member.name} (${member.district})');
   }
 
   Widget _buildSupportedCandidatesTab() {
