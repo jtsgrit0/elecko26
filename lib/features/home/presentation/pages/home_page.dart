@@ -48,6 +48,44 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // 유저 상단 설정 상태
   String _userRegion = '전국';
 
+  /// 지역 변경 처리
+  void _onRegionChanged(String region) {
+    setState(() {
+      _userRegion = region;
+    });
+    
+    // 지역 변경 시 멤버 목록 새로고침
+    _refreshMembers();
+  }
+
+  /// 멤버 목록 새로고침
+  Future<void> _refreshMembers() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      // 현재 스트림을 새로고침
+      _membersStream = sl<WatchMembersUseCase>().call();
+      
+      // 잠시 대기 후 로딩 상태 해제
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('멤버 목록 새로고침 실패: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   static const List<String> _regions = [
     '전국',
     '서울특별시',
@@ -569,6 +607,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           onRefresh: () => _triggerNesdcRefresh(isSilent: false),
           onMemberSelected: (m) => setState(() => _selectedMember = m),
           onNavigateToSearch: () => setState(() => _selectedIndex = 1),
+          onRegionChanged: (region) async {
+            setState(() {
+              _userRegion = region;
+            });
+            await sl<MemberRepository>().saveSelectedRegion(region);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('$region으로 지역이 설정되었습니다.'),
+                  backgroundColor: AppColors.primary,
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            }
+          },
         ),
         SearchView(
           membersStream: _membersStream,
