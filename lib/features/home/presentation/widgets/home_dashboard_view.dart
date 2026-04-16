@@ -38,6 +38,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
   StreamSubscription<List<Member>>? _subscription;
   Map<String, double> _memberPossibilities = {}; // 멤버별 실제 당선 가능성 저장
   bool _isCalculatingPossibilities = false;
+  Timer? _timer; // 실시간 시간 업데이트를 위한 타이머
   
   final List<String> _regions = [
     '전국', '서울특별시', '부산광역시', '대구광역시', '인천광역시',
@@ -53,6 +54,13 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
       if (mounted) {
         setState(() => _displayMembers = members);
         _calculateMemberPossibilities(members);
+      }
+    });
+    
+    // 실시간 시간 업데이트를 위한 타이머 시작 (1분마다 업데이트)
+    _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      if (mounted) {
+        setState(() {}); // UI 새로고침으로 시간 표시 업데이트
       }
     });
   }
@@ -96,6 +104,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
   @override
   void dispose() {
     _subscription?.cancel();
+    _timer?.cancel(); // 타이머 정리
     super.dispose();
   }
 
@@ -195,11 +204,11 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '당선 가능성 TOP3',
-                style: AppTextStyles.headline4.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+              '당선 가능성 TOP 3 (1,2,3위)',
+              style: AppTextStyles.headline4.copyWith(
+                fontWeight: FontWeight.bold,
               ),
+            ),
               GestureDetector(
                 onTap: () => _showRegionSelectionModal(),
                 child: Row(
@@ -366,7 +375,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '후보자 목록',
+                '후보자 목록 (4위부터)',
                 style: AppTextStyles.headline4.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -383,11 +392,37 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
               members.length,
               (index) {
                 final member = members[index];
+                final rank = index + 4; // TOP3 다음부터 4위부터 시작
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: MemberCard(
-                    member: member,
-                    onTap: () => widget.onMemberSelected(member),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 24,
+                        height: 24,
+                        margin: const EdgeInsets.only(right: 8, top: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${rank}위',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: MemberCard(
+                          member: member,
+                          onTap: () => widget.onMemberSelected(member),
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
@@ -429,15 +464,21 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
         .take(10) // 최대 10명
         .toList();
 
-    // 통계 계산
+    // 통계 계산 - 실제 업데이트 시간 표시
     final latestAnalysis = filteredMembers.isNotEmpty
         ? filteredMembers
             .map((m) => m.lastAnalysisDate)
             .reduce((a, b) => a.isAfter(b) ? a : b)
         : null;
-    final updateValue = latestAnalysis == null 
-        ? '-' 
-        : '${latestAnalysis.difference(DateTime.now()).inDays.abs()}일 전';
+    
+    // 실시간 업데이트 시간 표시 (형식: YYYY-MM-DD HH:MM)
+    final updateValue = latestAnalysis != null 
+        ? '${latestAnalysis.year}-${latestAnalysis.month.toString().padLeft(2, '0')}-${latestAnalysis.day.toString().padLeft(2, '0')} ${latestAnalysis.hour.toString().padLeft(2, '0')}:${latestAnalysis.minute.toString().padLeft(2, '0')}'
+        : DateTime.now().year.toString() + '-' + 
+          DateTime.now().month.toString().padLeft(2, '0') + '-' + 
+          DateTime.now().day.toString().padLeft(2, '0') + ' ' +
+          DateTime.now().hour.toString().padLeft(2, '0') + ':' + 
+          DateTime.now().minute.toString().padLeft(2, '0');
     final nesdcCount = filteredMembers.fold<int>(
         0,
         (sum, member) => sum + member.polls.where((p) => p.id.startsWith('nesdc_')).length);
