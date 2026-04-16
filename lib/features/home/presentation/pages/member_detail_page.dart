@@ -779,11 +779,11 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                         color: AppColors.mediumGray,
                       ),
                     ),
-                      Text(
-                        supportText,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
+                    Text(
+                      supportText,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
@@ -799,11 +799,11 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                         color: AppColors.mediumGray,
                       ),
                     ),
-                      Text(
-                        sampleText,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.darkGray,
-                        ),
+                    Text(
+                      sampleText,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.darkGray,
+                      ),
                     ),
                   ],
                 ),
@@ -818,11 +818,11 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                         color: AppColors.mediumGray,
                       ),
                     ),
-                      Text(
-                        marginText,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.darkGray,
-                        ),
+                    Text(
+                      marginText,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.darkGray,
+                      ),
                     ),
                   ],
                 ),
@@ -1229,7 +1229,23 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
     );
   }
 
-
+  Widget _buildPartySupportRateItem(String party, double rate, int rank, bool isCurrentParty) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isCurrentParty ? AppColors.primary.withOpacity(0.3) : AppColors.lightGray,
+          width: isCurrentParty ? 2 : 1,
+        ),
+        color: isCurrentParty ? AppColors.primary.withOpacity(0.05) : AppColors.white,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
             decoration: BoxDecoration(
               color: isCurrentParty ? AppColors.primary : AppColors.lightGray,
               borderRadius: BorderRadius.circular(4),
@@ -1572,6 +1588,10 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
       ),
     );
   }
+}
+
+String _formatDateTime(DateTime date) {
+  return '${date.year}년 ${date.month}월 ${date.day}일';
 }
 
 String _getProfileInitial(String name) {

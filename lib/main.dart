@@ -40,16 +40,6 @@ Future<void> main(List<String> args) async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: '2026 지방선거 - 국회의원 AI 분석',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-
 /// 2018년도 PDF 데이터 자동 업데이트 (백그라운드에서 실행)
 Future<void> _update2018PartySupportData() async {
   try {
@@ -64,6 +54,16 @@ Future<void> _update2018PartySupportData() async {
     // 실패해도 앱 실행에는 영향 없음
   }
 }
+
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: '2026 지방선거 - 국회의원 AI 분석',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
       scrollBehavior: const MaterialScrollBehavior().copyWith(
         dragDevices: {
           PointerDeviceKind.touch,
