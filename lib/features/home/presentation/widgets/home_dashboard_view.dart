@@ -4,6 +4,8 @@ import 'package:elecko26/core/theme/app_theme.dart';
 import 'package:elecko26/core/utils/utility_functions.dart' show districtMatchesRegion;
 import 'package:elecko26/domain/entities/member.dart';
 import 'package:elecko26/features/home/presentation/widgets/member_card.dart';
+import 'package:elecko26/domain/usecases/calculate_election_possibility_usecase.dart';
+import 'package:get_it/get_it.dart';
 
 class HomeDashboardView extends StatefulWidget {
   final bool isLoading;
@@ -34,6 +36,8 @@ class HomeDashboardView extends StatefulWidget {
 class _HomeDashboardViewState extends State<HomeDashboardView> {
   List<Member> _displayMembers = [];
   StreamSubscription<List<Member>>? _subscription;
+  Map<String, double> _memberPossibilities = {}; // 멤버별 실제 당선 가능성 저장
+  bool _isCalculatingPossibilities = false;
   
   final List<String> _regions = [
     '전국', '서울특별시', '부산광역시', '대구광역시', '인천광역시',
@@ -46,8 +50,44 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
   void initState() {
     super.initState();
     _subscription = widget.membersStream.listen((members) {
-      if (mounted) setState(() => _displayMembers = members);
+      if (mounted) {
+        setState(() => _displayMembers = members);
+        _calculateMemberPossibilities(members);
+      }
     });
+  }
+
+  Future<void> _calculateMemberPossibilities(List<Member> members) async {
+    setState(() => _isCalculatingPossibilities = true);
+    
+    final Map<String, double> possibilities = {};
+    final useCase = GetIt.instance<CalculateElectionPossibilityUseCase>();
+    
+    for (final member in members) {
+      try {
+        final result = await useCase.call(member.id).timeout(const Duration(seconds: 2));
+        possibilities[member.id] = result.electionPossibility;
+      } catch (e) {
+        // 계산 실패 시 기존 값 사용
+        possibilities[member.id] = member.electionPossibility;
+      }
+    }
+    
+    if (mounted) {
+      setState(() {
+        _memberPossibilities = possibilities;
+        _isCalculatingPossibilities = false;
+      });
+    }
+  }
+
+  double _getMemberPossibility(Member member) {
+    return _memberPossibilities[member.id] ?? member.electionPossibility;
+  }
+
+  @override
+  void didUpdateWidget(HomeDashboardView oldWidget) {
+    super.didUpdateWidget(oldWidget);
     if (widget.cachedMembers.isNotEmpty) {
       setState(() => _displayMembers = widget.cachedMembers);
     }
@@ -187,7 +227,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
             children: List.generate(top3.length, (index) {
               final member = top3[index];
               final rank = index + 1;
-              final possibility = member.electionPossibility;
+              final possibility = _getMemberPossibility(member);
               return Padding(
                 padding: EdgeInsets.only(bottom: index < top3.length - 1 ? 12 : 0),
                 child: Container(
@@ -371,11 +411,11 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
         ? _displayMembers
         : _displayMembers.where((member) => districtMatchesRegion(member.district, widget.userRegion)).toList();
 
-    // 당선 가능성 기준 정렬
+    // 실제 계산된 당선 가능성을 사용하여 정렬
     final sortedMembers = List<Member>.from(filteredMembers)
       ..sort((a, b) {
-        final aPossibility = a.electionPossibility;
-        final bPossibility = b.electionPossibility;
+        final aPossibility = _getMemberPossibility(a);
+        final bPossibility = _getMemberPossibility(b);
         return bPossibility.compareTo(aPossibility);
       });
 
@@ -385,7 +425,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     // 당선 가능성이 높은 후보들만 표시 (TOP3 제외, 최소 5% 이상)
     final memberList = sortedMembers
         .skip(3)
-        .where((member) => member.electionPossibility >= 0.05) // 5% 이상
+        .where((member) => _getMemberPossibility(member) >= 0.05) // 5% 이상
         .take(10) // 최대 10명
         .toList();
 
@@ -409,13 +449,13 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!widget.isLoading) ...[
+            if (!widget.isLoading && !_isCalculatingPossibilities) ...[
               // 통계 섹션 (분석의원, 여론조사심의회)
               _buildStatisticsSection(filteredMembers.length, nesdcCount, updateValue),
               const SizedBox(height: 24),
               _buildTop3Section(top3),
               _buildMemberList(memberList),
-            ] else if (_displayMembers.isEmpty) ...[
+            ] else if (widget.isLoading || _isCalculatingPossibilities) ...[
               const Center(child: CircularProgressIndicator()),
             ],
           ],
