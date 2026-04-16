@@ -36,6 +36,17 @@ class CalculateElectionPossibilityUseCase {
     double historicalBaseSupport = 0.5;
     double voterInterest = 0.5; // 기본값
     String? historicalContext;
+    
+    // 2018년도 정당 지지율 데이터 활용
+    double party2018Support = 0.0;
+    if (member.historical2018PartyRates.isNotEmpty) {
+      final currentPartyRate = member.historical2018PartyRates[member.party] ?? 0.0;
+      if (currentPartyRate > 0) {
+        party2018Support = currentPartyRate / 100.0;
+        historicalBaseSupport = party2018Support.clamp(0.0, 1.0);
+      }
+    }
+    
     if (historicalRepository != null) {
       try {
         final region = getParentRegion(member.district) == '' ? '전국' : getParentRegion(member.district);
@@ -43,16 +54,18 @@ class CalculateElectionPossibilityUseCase {
         voterInterest = await historicalRepository!.getVoterInterest(region);
 
         final partyRate = averages[member.party];
-        if (partyRate != null) {
+        if (partyRate != null && party2018Support == 0.0) {
+          // 2018년 데이터가 없는 경우에만 역사적 평균 사용
           historicalBaseSupport = (partyRate / 100.0).clamp(0.0, 1.0);
-          final dominant = await historicalRepository!.getDominantParty(region);
-          final gap = dominant != null && averages[dominant] != null
-              ? (averages[dominant]! - (partyRate)).abs()
-              : 0.0;
-          historicalContext = _buildHistoricalContext(
-            region, member.party, partyRate, dominant, gap, voterInterest,
-          );
         }
+        
+        final dominant = await historicalRepository!.getDominantParty(region);
+        final gap = dominant != null && averages[dominant] != null
+            ? (averages[dominant]! - (partyRate ?? 0)).abs()
+            : 0.0;
+        historicalContext = _buildHistoricalContext(
+          region, member.party, (partyRate ?? party2018Support * 100), dominant, gap, voterInterest,
+        );
       } catch (_) {}
     }
 

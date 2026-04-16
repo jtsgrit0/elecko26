@@ -7,6 +7,7 @@ import 'package:elecko26/domain/usecases/member_usecases.dart';
 import 'package:elecko26/domain/usecases/calculate_election_possibility_usecase.dart';
 import 'package:elecko26/domain/usecases/export_election_data_usecase.dart';
 import 'package:elecko26/domain/usecases/update_members_with_nesdc_usecase.dart';
+import 'package:elecko26/domain/usecases/update_2018_party_support_from_pdf_usecase.dart';
 import 'package:elecko26/data/datasources/github_datasource.dart';
 import 'package:elecko26/data/datasources/historical_election_data_source.dart';
 import 'package:elecko26/data/repositories/historical_election_repository_impl.dart';
@@ -144,6 +145,9 @@ void _registerAll() {
     UpdateMembersWithNesdcDataUseCase(
       memberRepository: sl<MemberRepository>(),
     ),
+  );
+  sl.registerSingleton<Update2018PartySupportFromPdfUseCase>(
+    Update2018PartySupportFromPdfUseCase(repository: sl<MemberRepository>()),
   );
 
   sl.registerSingleton<MapRepository>(map_repo_impl.MapRepositoryImpl());
