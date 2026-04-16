@@ -166,10 +166,8 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
   }
 
   void _onMemberVoted(Member member) {
-    // 탭 전환만 처리 (데이터는 스트림을 통해 자동 업데이트됨)
-    if (_tabController.index != 1) {
-      _tabController.animateTo(1);
-    }
+    // 지지후보 등록만 처리하고 탭 전환은 하지 않음
+    // 데이터는 스트림을 통해 자동 업데이트됨
   }
 
   Widget _buildSupportedCandidatesTab() {

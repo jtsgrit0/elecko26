@@ -29,13 +29,17 @@ class RegionalMemberVotingList extends StatefulWidget {
       _RegionalMemberVotingListState();
 }
 
-class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
+class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> 
+    with SingleTickerProviderStateMixin {
   List<Member> _members = [];
   Map<String, String> _votes = {}; // district -> memberId
   Map<String, int> _voteTimestamps = {}; // district -> timestamp
   bool _isLoading = true;
   StreamSubscription<List<Member>>? _memberSubscription;
   StreamSubscription<Map<String, String>>? _voteSubscription;
+  
+  // 지지하기 성공 애니메이션을 위한 맵
+  Map<String, bool> _recentlyVoted = {}; // memberId -> recently voted
 
   @override
   void initState() {
@@ -160,6 +164,16 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
     setState(() {
       _votes[district] = member.id;
       _voteTimestamps[district] = now;
+      _recentlyVoted[member.id] = true; // 애니메이션 표시
+    });
+
+    // 애니메이션 효과 제거 (2초 후)
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _recentlyVoted.remove(member.id);
+        });
+      }
     });
 
     // 백그라운드에서 실제 저장 (UI 블로킹 방지)
@@ -192,12 +206,21 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${member.name} 의원을 지지하셨습니다!'),
-          duration: const Duration(seconds: 1),
+          content: Text('${member.name} 의원을 지지하셨습니다! \n지지후보 탭에서 확인하세요.'),
+          duration: const Duration(seconds: 2),
+          action: SnackBarAction(
+            label: '지지후보 보기',
+            textColor: AppColors.white,
+            onPressed: () {
+              // 부모 위젯에서 탭 전환을 처리할 수 있도록 콜백 호출
+              widget.onMemberVoted?.call(member);
+              // 필요하다면 여기서 탭 전환을 요청할 수 있음
+            },
+          ),
         ),
       );
       
-      // 사용자가 체크 표시를 인지할 수 있도록 약 200ms 대기 후 탭 전환 및 데이터 갱신 실행
+      // 사용자가 체크 표시를 인지할 수 있도록 약 200ms 대기 후 데이터 갱신 실행 (탭 전환 없음)
       Future.delayed(const Duration(milliseconds: 200), () {
         if (mounted) {
           widget.onVoteChanged?.call();
@@ -337,10 +360,11 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> {
         ...membersInDistrict.map((member) {
           final isVoted = _votes[district] == member.id;
           return _RegionalMemberCard(
-            key: ValueKey('$district-${member.id}-$isVoted'), // 카드 단위 리빌드
+            key: ValueKey('$district-${member.id}-$isVoted-${_recentlyVoted[member.id] ?? false}'), // 카드 단위 리빌드
             member: member,
             isVoted: isVoted,
             onVote: () => _handleVote(district, member),
+            recentlyVoted: _recentlyVoted[member.id] ?? false,
           );
         }),
         const SizedBox(height: 16),
@@ -353,12 +377,14 @@ class _RegionalMemberCard extends StatelessWidget {
   final Member member;
   final bool isVoted;
   final VoidCallback onVote;
+  final bool recentlyVoted;
 
   const _RegionalMemberCard({
     Key? key,
     required this.member,
     required this.isVoted,
     required this.onVote,
+    this.recentlyVoted = false,
   }) : super(key: key);
 
   @override
@@ -369,8 +395,10 @@ class _RegionalMemberCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: isVoted ? AppColors.primary : Colors.grey.withOpacity(0.2),
-          width: isVoted ? 2 : 1,
+          color: recentlyVoted 
+              ? AppColors.success 
+              : (isVoted ? AppColors.primary : Colors.grey.withOpacity(0.2)),
+          width: recentlyVoted ? 3 : (isVoted ? 2 : 1),
         ),
       ),
       child: Padding(
