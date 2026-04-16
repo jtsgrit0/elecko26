@@ -19,7 +19,6 @@ class HomeDashboardView extends StatefulWidget {
   final Function(Member) onMemberSelected;
   final VoidCallback onNavigateToSearch;
   final Function(String) onRegionChanged;
-  final Function(String) onRegionChanged;
 
   const HomeDashboardView({
     Key? key,
@@ -461,7 +460,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                     child: InkWell(
                       onTap: () {
                         Navigator.pop(context);
-                        // TODO: 지역 변경 로직 구현
+                        _onRegionSelected(region);
                       },
                       child: Container(
                         padding: const EdgeInsets.all(16),
@@ -504,6 +503,11 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
         ),
       ),
     );
+  }
+
+  void _onRegionSelected(String region) {
+    // 선택된 지역으로 업데이트
+    widget.onRegionChanged(region);
   }
 
   Widget _buildTop3Section(List<Member> top3) {
