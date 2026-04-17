@@ -225,7 +225,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-              '당선 가능성 TOP 3 (1,2,3위)',
+              '당선 가능성 TOP 3',
               style: AppTextStyles.headline4.copyWith(
                 fontWeight: FontWeight.bold,
               ),
