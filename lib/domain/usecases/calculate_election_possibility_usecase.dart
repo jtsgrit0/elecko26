@@ -450,6 +450,9 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
   ) {
     final sb = StringBuffer();
     sb.writeln('• 해당 지역은 $party의 역대 평균 지지율이 ${partyRate.toStringAsFixed(1)}%로 집계된 지역입니다.');
+    
+    // 2018년도 탄핵 이후 선거와 현재 상황 비교 분석
+    sb.writeln('• 2018년 박근혜 탄핵이후 열린 선거와 비슷하게 윤석열도 탄핵되어 유사한 양상을 띄고 있는 이번 선거에 2018년도 지방선거 결과를 충분히 반영하였습니다');
 
     if (dominant == party) {
       if (gap > 10) {
