@@ -94,8 +94,10 @@ void _registerAll() {
 
   // Repository
   if (AppConfig.enableFirebase) {
+    debugPrint('[DI] Firebase 활성화됨 - FirestoreMemberRepositoryImpl 등록');
     sl.registerSingleton<MemberRepository>(FirestoreMemberRepositoryImpl());
   } else {
+    debugPrint('[DI] Firebase 비활성화됨 - MemberRepositoryImpl 등록');
     sl.registerSingleton<MemberRepository>(MemberRepositoryImpl());
   }
   
@@ -184,7 +186,7 @@ class InMemoryLocalStorageService implements LocalStorageService {
     await setStringList('favorites', list);
   }
   @override Future<bool> isFavorite(String id) async => (await getFavorites()).contains(id);
-  @override Future<String> getSelectedRegion() async => _data['selected_region'] as String? ?? '전국';
+  @override Future<String> getSelectedRegion() async => _data['selected_region'] as String? ?? 'ì „êµ­';
   @override Future<void> saveSelectedRegion(String region) async => await setString('selected_region', region);
   @override Future<void> clearAll() async => _data.clear();
   @override Future<void> clearVotes() async {
@@ -196,7 +198,7 @@ class InMemoryLocalStorageService implements LocalStorageService {
     _data.remove(_keyVoteDistricts);
   }
 
-  // 투표 관련 구현 (In-Memory)
+  // íˆ¬í‘œ ê´€ë ¨ êµ¬í˜„ (In-Memory)
   static const String _keyVotePrefix = 'vote_';
   static const String _keyTimePrefix = 'vote_time_';
   static const String _keyVoteDistricts = 'vote_districts';
