@@ -466,13 +466,17 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<List<Member>> _loadFallbackMembersFromSplitFiles(
     List<String> favoriteIds,
   ) async {
-    final remoteMembers = await _loadSplitMembersFromRemote(favoriteIds);
-    if (remoteMembers.isNotEmpty) {
-      return remoteMembers;
+    // 에셋(번들 내 파일)을 우선으로 병렬 로드 → 빠르고 안정적
+    final assetMembers = await _loadSplitMembersFromAssets(favoriteIds);
+    if (assetMembers.isNotEmpty) {
+      debugPrint('[FirestoreMemberRepository] Asset split load: ${assetMembers.length} members');
+      return assetMembers;
     }
 
-    final assetMembers = await _loadSplitMembersFromAssets(favoriteIds);
-    return assetMembers;
+    // 에셋 로드 실패 시 GitHub Raw URL로 fallback
+    debugPrint('[FirestoreMemberRepository] Asset load failed, trying remote...');
+    final remoteMembers = await _loadSplitMembersFromRemote(favoriteIds);
+    return remoteMembers;
   }
 
   Future<List<Member>> _loadSplitMembersFromRemote(
@@ -481,16 +485,18 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     final members = <Member>[];
 
     try {
-      for (var i = 0; i < 100; i++) {
-        final content = await _loadRemoteSplitChunk(i);
-        if (content == null) {
-          break;
-        }
-
-        final chunk = _parseMembersFromJsonChunk(
-          content,
-          favoriteIds,
-        );
+      // 병렬로 모든 chunk 파일 시도 (최대 20개)
+      final futures = <Future<List<Member>>>[];
+      for (var i = 0; i < 20; i++) {
+        final idx = i;
+        futures.add(() async {
+          final content = await _loadRemoteSplitChunk(idx);
+          if (content == null) return <Member>[];
+          return _parseMembersFromJsonChunk(content, favoriteIds);
+        }());
+      }
+      final results = await Future.wait(futures);
+      for (final chunk in results) {
         members.addAll(chunk);
       }
     } catch (e) {
@@ -504,18 +510,28 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<List<Member>> _loadSplitMembersFromAssets(
     List<String> favoriteIds,
   ) async {
-    final members = <Member>[];
-
-    for (var i = 0; i < 100; i++) {
-      try {
-        final content = await _loadAssetSplitChunk(i);
-        final chunk = _parseMembersFromJsonChunk(content, favoriteIds);
-        members.addAll(chunk);
-      } catch (_) {
-        break;
-      }
+    // 몇 개의 파일이 있는지 먼저 파악한 뒤 병렬로 모두 로드
+    final List<Future<List<Member>>> futures = [];
+    for (var i = 0; i < 50; i++) {
+      final idx = i;
+      futures.add(() async {
+        try {
+          final content = await _loadAssetSplitChunk(idx);
+          return _parseMembersFromJsonChunk(content, favoriteIds);
+        } catch (_) {
+          return <Member>[];
+        }
+      }());
     }
 
+    // 병렬 로드: 빈 결과가 처음 나오면 그 이전까지가 유효한 파일
+    // (단순히 Future.wait으로 전체를 수집)
+    final results = await Future.wait(futures);
+    final members = <Member>[];
+    for (final chunk in results) {
+      if (chunk.isEmpty && members.isNotEmpty) break; // 파일 끝 감지
+      members.addAll(chunk);
+    }
     return members;
   }
 
@@ -528,7 +544,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
             'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/candidates_split/${prefix}$index.json';
         final response = await http
             .get(Uri.parse(rawUrl))
-            .timeout(const Duration(seconds: 10));
+            .timeout(const Duration(seconds: 30));
 
         if (response.statusCode == 200) {
           return utf8.decode(response.bodyBytes);
