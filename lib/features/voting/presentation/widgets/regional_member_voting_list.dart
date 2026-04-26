@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:elecko26/core/theme/app_theme.dart';
-import 'package:elecko26/core/utils/utility_functions.dart';
-import 'package:elecko26/domain/entities/member.dart';
-import 'package:elecko26/domain/repositories/member_repository.dart';
-import 'package:elecko26/app/injection_container.dart';
+import 'package:elecko26_new/core/theme/app_theme.dart';
+import 'package:elecko26_new/core/utils/utility_functions.dart';
+import 'package:elecko26_new/domain/entities/member.dart';
+import 'package:elecko26_new/domain/repositories/member_repository.dart';
+import 'package:elecko26_new/app/injection_container.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:elecko26/data/datasources/local_storage_service.dart';
+import 'package:elecko26_new/data/datasources/local_storage_service.dart';
 import 'dart:async';
-import 'package:elecko26/features/home/presentation/widgets/member_card.dart';
-import 'package:elecko26/features/home/presentation/pages/member_detail_page.dart';
+import 'package:elecko26_new/features/home/presentation/widgets/member_card.dart';
+import 'package:elecko26_new/features/home/presentation/pages/member_detail_page.dart';
 
 class RegionalMemberVotingList extends StatefulWidget {
   final String region;

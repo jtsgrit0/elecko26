@@ -1,12 +1,12 @@
 import 'dart:math' as math;
 
-import 'package:elecko26/domain/entities/analysis_result.dart';
-import 'package:elecko26/domain/entities/member.dart';
-import 'package:elecko26/domain/entities/poll.dart';
-import 'package:elecko26/domain/usecases/possibility_calculator.dart';
-import 'package:elecko26/domain/repositories/member_repository.dart';
-import 'package:elecko26/core/utils/utility_functions.dart';
-import 'package:elecko26/domain/repositories/historical_election_repository.dart';
+import 'package:elecko26_new/domain/entities/analysis_result.dart';
+import 'package:elecko26_new/domain/entities/member.dart';
+import 'package:elecko26_new/domain/entities/poll.dart';
+import 'package:elecko26_new/domain/usecases/possibility_calculator.dart';
+import 'package:elecko26_new/domain/repositories/member_repository.dart';
+import 'package:elecko26_new/core/utils/utility_functions.dart';
+import 'package:elecko26_new/domain/repositories/historical_election_repository.dart';
 
 /// 당선 가능성을 다각적으로 산정하는 UseCase
 class CalculateElectionPossibilityUseCase {
@@ -36,21 +36,25 @@ class CalculateElectionPossibilityUseCase {
     double historicalBaseSupport = 0.5;
     double voterInterest = 0.5; // 기본값
     String? historicalContext;
-    
+
     // 2018년도 정당 지지율 데이터 활용
     double party2018Support = 0.0;
     if (member.historical2018PartyRates.isNotEmpty) {
-      final currentPartyRate = member.historical2018PartyRates[member.party] ?? 0.0;
+      final currentPartyRate =
+          member.historical2018PartyRates[member.party] ?? 0.0;
       if (currentPartyRate > 0) {
         party2018Support = currentPartyRate / 100.0;
         historicalBaseSupport = party2018Support.clamp(0.0, 1.0);
       }
     }
-    
+
     if (historicalRepository != null) {
       try {
-        final region = getParentRegion(member.district) == '' ? '전국' : getParentRegion(member.district);
-        final averages = await historicalRepository!.getRegionalPartyAverages(region);
+        final region = getParentRegion(member.district) == ''
+            ? '전국'
+            : getParentRegion(member.district);
+        final averages =
+            await historicalRepository!.getRegionalPartyAverages(region);
         voterInterest = await historicalRepository!.getVoterInterest(region);
 
         final partyRate = averages[member.party];
@@ -58,13 +62,18 @@ class CalculateElectionPossibilityUseCase {
           // 2018년 데이터가 없는 경우에만 역사적 평균 사용
           historicalBaseSupport = (partyRate / 100.0).clamp(0.0, 1.0);
         }
-        
+
         final dominant = await historicalRepository!.getDominantParty(region);
         final gap = dominant != null && averages[dominant] != null
             ? (averages[dominant]! - (partyRate ?? 0)).abs()
             : 0.0;
         historicalContext = _buildHistoricalContext(
-          region, member.party, (partyRate ?? party2018Support * 100), dominant, gap, voterInterest,
+          region,
+          member.party,
+          (partyRate ?? party2018Support * 100),
+          dominant,
+          gap,
+          voterInterest,
         );
       } catch (_) {}
     }
@@ -83,7 +92,8 @@ class CalculateElectionPossibilityUseCase {
     );
 
     // C) 상세 분석 데이터
-    final analysis = _performDetailedAnalysis(member, scores, historicalContext);
+    final analysis =
+        _performDetailedAnalysis(member, scores, historicalContext);
 
     final recentSlice = dailyTrends.length > 7
         ? dailyTrends.sublist(dailyTrends.length - 7)
@@ -121,15 +131,14 @@ class CalculateElectionPossibilityUseCase {
     );
   }
 
-
-
   /// B) 30초 간격 추세 생성/갱신
   List<DailyPossibility> _getOrUpdateTrends({
     required String memberId,
     required double baseScore,
   }) {
     final now = DateTime.now();
-    final trends = _trendStore.putIfAbsent(memberId, () => <DailyPossibility>[]);
+    final trends =
+        _trendStore.putIfAbsent(memberId, () => <DailyPossibility>[]);
 
     if (trends.isEmpty) {
       const initialPoints = 30;
@@ -150,7 +159,8 @@ class CalculateElectionPossibilityUseCase {
         current = nextScore;
         trends.add(
           DailyPossibility(
-            date: startTime.add(Duration(seconds: _trendInterval.inSeconds * i)),
+            date:
+                startTime.add(Duration(seconds: _trendInterval.inSeconds * i)),
             possibility: current,
             reason: _trendReason(delta),
           ),
@@ -219,7 +229,8 @@ class CalculateElectionPossibilityUseCase {
       strengths.add('지지율: 상대적으로 높은 여론조사 지지율 확보');
     }
     // 긍정 보도 키워드 추출
-    final positivePress = member.pressReports.where((r) => r.sentiment == 'positive').toList();
+    final positivePress =
+        member.pressReports.where((r) => r.sentiment == 'positive').toList();
     if (positivePress.isNotEmpty) {
       strengths.add('평판: 언론의 긍정적 평가 (${positivePress.first.title})');
     }
@@ -228,7 +239,8 @@ class CalculateElectionPossibilityUseCase {
     if (member.policies.isEmpty) {
       weaknesses.add('정책: 아직 구체적인 정책 공약이 발표되지 않음');
     }
-    final negativePress = member.pressReports.where((r) => r.sentiment == 'negative').toList();
+    final negativePress =
+        member.pressReports.where((r) => r.sentiment == 'negative').toList();
     if (negativePress.isNotEmpty) {
       weaknesses.add('논란: 최근 부정적 이슈 감지 (${negativePress.first.title})');
     }
@@ -310,32 +322,32 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
     }
 
     final latestPoll = member.polls.last;
-    final validRates = member.polls
-        .map((p) => p.supportRate)
-        .whereType<double>()
-        .toList();
+    final validRates =
+        member.polls.map((p) => p.supportRate).whereType<double>().toList();
     final avgRate = validRates.isNotEmpty
         ? validRates.fold<double>(0, (sum, r) => sum + r) / validRates.length
         : null;
 
     final buffer = StringBuffer();
-    buffer.writeln('• 최신 조사: ${latestPoll.pollAgency} (${latestPoll.surveyDate.toString().split(' ')[0]})');
+    buffer.writeln(
+        '• 최신 조사: ${latestPoll.pollAgency} (${latestPoll.surveyDate.toString().split(' ')[0]})');
     final latestSupport = latestPoll.supportRate == null
         ? '미반영 (결과 미공개)'
         : '${(latestPoll.supportRate! * 100).toStringAsFixed(1)}%';
-    final sampleText = latestPoll.sampleSize == null ? '미공개' : '${latestPoll.sampleSize}명';
+    final sampleText =
+        latestPoll.sampleSize == null ? '미공개' : '${latestPoll.sampleSize}명';
     buffer.writeln('• 지지율: $latestSupport (표본: $sampleText)');
     if (avgRate == null) {
       buffer.writeln('• 평균 지지율: 미반영 (결과 미공개, ${member.polls.length}건 조사 기준)');
     } else {
-      buffer.writeln('• 평균 지지율: ${(avgRate * 100).toStringAsFixed(1)}% (${member.polls.length}건 조사 기준)');
+      buffer.writeln(
+          '• 평균 지지율: ${(avgRate * 100).toStringAsFixed(1)}% (${member.polls.length}건 조사 기준)');
     }
-    buffer.writeln('• 조사 기관: ${member.polls.map((p) => p.pollAgency).toSet().join(', ')}');
+    buffer.writeln(
+        '• 조사 기관: ${member.polls.map((p) => p.pollAgency).toSet().join(', ')}');
 
     return buffer.toString();
   }
-
-
 
   /// 사회 공헌 요약 리포트 생성
   String _generateSocialSummary(Member member) {
@@ -352,8 +364,6 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
     }
     return buffer.toString();
   }
-
-
 
   /// SNS 분석 계산 (감정분석 + 언급량)
   SnsAnalysis? _calculateSnsAnalysis(Member member) {
@@ -383,8 +393,10 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
 
     // 감정 점수 계산 (-1 ~ 1 범위를 0 ~ 1로 정규화)
     final denominator = totalMentions > 0 ? totalMentions.toDouble() : 1.0;
-    final sentimentScore = ((positiveMentions * 1.0 - negativeMentions * 1.0 + neutralMentions * 0.3) /
-        denominator)
+    final sentimentScore = ((positiveMentions * 1.0 -
+                negativeMentions * 1.0 +
+                neutralMentions * 0.3) /
+            denominator)
         .clamp(-1.0, 1.0)
         .clamp(0.0, 1.0);
 
@@ -395,8 +407,10 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
     final recentReports = member.pressReports.length > 3
         ? member.pressReports.sublist(member.pressReports.length - 3)
         : member.pressReports;
-    final recentPositive = recentReports.where((r) => r.sentiment == 'positive').length;
-    final engagementTrend = recentPositive > recentReports.length ~/ 2 ? '상승' : '하락';
+    final recentPositive =
+        recentReports.where((r) => r.sentiment == 'positive').length;
+    final engagementTrend =
+        recentPositive > recentReports.length ~/ 2 ? '상승' : '하락';
 
     return SnsAnalysis(
       totalMentions: totalMentions,
@@ -413,13 +427,36 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
   List<String> _extractTopKeywords(List<String> texts, {required int count}) {
     final keywords = <String>[];
     final stopWords = {
-      'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
-      '발표', '보도', '했', '한다', '입니다', '것', '수', '들', '등', '중'
+      'the',
+      'a',
+      'an',
+      'and',
+      'or',
+      'but',
+      'in',
+      'on',
+      'at',
+      'to',
+      'for',
+      '발표',
+      '보도',
+      '했',
+      '한다',
+      '입니다',
+      '것',
+      '수',
+      '들',
+      '등',
+      '중'
     };
 
     for (final text in texts) {
-      final words = text.split(RegExp(r'[^\w가-힣]+', multiLine: true))
-          .where((w) => w.isNotEmpty && w.length > 2 && !stopWords.contains(w.toLowerCase()))
+      final words = text
+          .split(RegExp(r'[^\w가-힣]+', multiLine: true))
+          .where((w) =>
+              w.isNotEmpty &&
+              w.length > 2 &&
+              !stopWords.contains(w.toLowerCase()))
           .toList();
       keywords.addAll(words);
     }
@@ -432,11 +469,8 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
 
     final sortedEntries = wordFreq.entries.toList();
     sortedEntries.sort((a, b) => b.value.compareTo(a.value));
-    
-    return sortedEntries
-        .take(count)
-        .map((e) => e.key)
-        .toList();
+
+    return sortedEntries.take(count).map((e) => e.key).toList();
   }
 
   /// 역대 선거 데이터 기반 맥락 텍스트 생성
@@ -449,22 +483,25 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
     double interest,
   ) {
     final sb = StringBuffer();
-    sb.writeln('• 해당 지역은 $party의 역대 평균 지지율이 ${partyRate.toStringAsFixed(1)}%로 집계된 지역입니다.');
-    
+    sb.writeln(
+        '• 해당 지역은 $party의 역대 평균 지지율이 ${partyRate.toStringAsFixed(1)}%로 집계된 지역입니다.');
+
     // 2018년도 탄핵 이후 선거와 현재 상황 비교 분석
-    sb.writeln('• 2018년 박근혜 탄핵이후 열린 선거와 비슷하게 윤석열도 탄핵되어 유사한 양상을 띄고 있는 이번 선거에 2018년도 지방선거 결과를 충분히 반영하였습니다');
+    sb.writeln(
+        '• 2018년 박근혜 탄핵이후 열린 선거와 비슷하게 윤석열도 탄핵되어 유사한 양상을 띄고 있는 이번 선거에 2018년도 지방선거 결과를 충분히 반영하였습니다');
 
     if (dominant == party) {
       if (gap > 10) {
-        sb.writeln('  ⚡ 압도적 우위 지역: 상대 정당 대비 ${gap.toStringAsFixed(1)}%p 차이로 매우 유리한 기반을 보유하고 있습니다.');
+        sb.writeln(
+            '  ⚡ 압도적 우위 지역: 상대 정당 대비 ${gap.toStringAsFixed(1)}%p 차이로 매우 유리한 기반을 보유하고 있습니다.');
       } else {
         sb.writeln('• 유지/수성 필요 지역: 현재 우위를 점하고 있으나 격차가 크지 않아 적극적인 관리가 필요합니다.');
       }
     } else if (dominant != null) {
-      sb.writeln('• 접전 및 탈환 가능 지역: $dominant와의 격차가 ${gap.toStringAsFixed(1)}%p로, 전략적 공략 시 승산이 있습니다.');
+      sb.writeln(
+          '• 접전 및 탈환 가능 지역: $dominant와의 격차가 ${gap.toStringAsFixed(1)}%p로, 전략적 공략 시 승산이 있습니다.');
     }
 
     return sb.toString();
   }
-
 }

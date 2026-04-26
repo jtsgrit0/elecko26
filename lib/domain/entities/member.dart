@@ -1,4 +1,4 @@
-import 'package:elecko26/domain/entities/poll.dart';
+import 'package:elecko26_new/domain/entities/poll.dart';
 
 /// 국회의원 엔티티
 class Member {
@@ -84,16 +84,15 @@ class Member {
       improvementPoints: improvementPoints ?? this.improvementPoints,
       socialContributions: socialContributions ?? this.socialContributions,
       isFavorite: isFavorite ?? this.isFavorite,
-      historical2018PartyRates: historical2018PartyRates ?? this.historical2018PartyRates,
+      historical2018PartyRates:
+          historical2018PartyRates ?? this.historical2018PartyRates,
     );
   }
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is Member &&
-          runtimeType == other.runtimeType &&
-          id == other.id;
+      other is Member && runtimeType == other.runtimeType && id == other.id;
 
   @override
   int get hashCode => id.hashCode;
@@ -118,6 +117,7 @@ class PressReport {
     required this.sentiment,
   });
 }
+
 class SocialContribution {
   final String title;
   final DateTime date;

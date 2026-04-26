@@ -3,17 +3,17 @@ import 'dart:isolate';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:elecko26/data/models/member_model.dart';
-import 'package:elecko26/domain/entities/member.dart';
-import 'package:elecko26/domain/entities/poll.dart';
-import 'package:elecko26/domain/repositories/member_repository.dart';
-import 'package:elecko26/data/datasources/nesdc_poll_data_source.dart';
-import 'package:elecko26/data/datasources/profile_image_resolver.dart';
+import 'package:elecko26_new/data/models/member_model.dart';
+import 'package:elecko26_new/domain/entities/member.dart';
+import 'package:elecko26_new/domain/entities/poll.dart';
+import 'package:elecko26_new/domain/repositories/member_repository.dart';
+import 'package:elecko26_new/data/datasources/nesdc_poll_data_source.dart';
+import 'package:elecko26_new/data/datasources/profile_image_resolver.dart';
 import 'package:get_it/get_it.dart';
-import 'package:elecko26/data/datasources/local_storage_service.dart';
-import 'package:elecko26/domain/usecases/possibility_calculator.dart';
-import 'package:elecko26/domain/repositories/historical_election_repository.dart';
-import 'package:elecko26/core/utils/utility_functions.dart';
+import 'package:elecko26_new/data/datasources/local_storage_service.dart';
+import 'package:elecko26_new/domain/usecases/possibility_calculator.dart';
+import 'package:elecko26_new/domain/repositories/historical_election_repository.dart';
+import 'package:elecko26_new/core/utils/utility_functions.dart';
 import 'package:rxdart/rxdart.dart';
 
 final sl = GetIt.instance;
@@ -103,6 +103,56 @@ class MemberRepositoryImpl implements MemberRepository {
     }
   }
 
+  Future<String?> _fetchAndCombineCandidates() async {
+    List<String> allCandidates = [];
+    bool fromGithub = true;
+
+    for (int i = 0; i < 100; i++) {
+      // Assuming max 100 split files
+      String? content;
+      try {
+        final rawUrl =
+            'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/candidates_split/election_candidates_part_$i.json';
+        final response = await http
+            .get(Uri.parse(rawUrl))
+            .timeout(const Duration(seconds: 10));
+        if (response.statusCode == 200) {
+          content = utf8.decode(response.bodyBytes);
+        } else {
+          break; // Stop if a file is not found
+        }
+      } catch (_) {
+        fromGithub = false;
+        break;
+      }
+
+      if (content != null) {
+        final List<dynamic> candidates = json.decode(content);
+        allCandidates.addAll(candidates.map((c) => json.encode(c)));
+      }
+    }
+
+    if (!fromGithub) {
+      allCandidates.clear();
+      for (int i = 0; i < 100; i++) {
+        try {
+          final content = await rootBundle.loadString(
+              'data/candidates_split/election_candidates_part_$i.json');
+          final List<dynamic> candidates = json.decode(content);
+          allCandidates.addAll(candidates.map((c) => json.encode(c)));
+        } catch (_) {
+          break; // Stop if a file is not found in assets
+        }
+      }
+    }
+
+    if (allCandidates.isEmpty) {
+      return null;
+    }
+
+    return '[' + allCandidates.join(',') + ']';
+  }
+
   @override
   Future<void> refreshMembers() async {
     if (_refreshInProgress) return;
@@ -113,24 +163,7 @@ class MemberRepositoryImpl implements MemberRepository {
       final localService = sl<LocalStorageService>();
       final favoriteIds = await localService.getFavorites();
 
-      String? candidatesJson;
-      try {
-        final rawUrl =
-            'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
-        final response = await http
-            .get(Uri.parse(rawUrl))
-            .timeout(const Duration(seconds: 10));
-        if (response.statusCode == 200) {
-          candidatesJson = utf8.decode(response.bodyBytes);
-        }
-      } catch (_) {}
-
-      if (candidatesJson == null) {
-        try {
-          candidatesJson =
-              await rootBundle.loadString('data/election_candidates.json');
-        } catch (_) {}
-      }
+      String? candidatesJson = await _fetchAndCombineCandidates();
 
       if (candidatesJson != null) {
         final membersFromIsolate = kIsWeb
@@ -185,13 +218,14 @@ class MemberRepositoryImpl implements MemberRepository {
       // 당선 가능성 최신화 (상세 페이지와 동일 로직 적용)
       final historicalRepo = sl<HistoricalElectionRepository>();
       final List<Member> finalMembers = [];
-      
+
       for (final member in updatedMembers) {
         double historicalBaseSupport = 0.5;
         double voterInterest = 0.5;
         try {
           final region = _staticMapDistrictToRegion(member.district);
-          final averages = await historicalRepo.getRegionalPartyAverages(region);
+          final averages =
+              await historicalRepo.getRegionalPartyAverages(region);
           voterInterest = await historicalRepo.getVoterInterest(region);
           final partyRate = averages[member.party];
           if (partyRate != null) {
@@ -491,7 +525,8 @@ class MemberRepositoryImpl implements MemberRepository {
     final historicalRepo = sl<HistoricalElectionRepository>();
     final updatedMembers = <Member>[];
     for (final member in _dummyMembers) {
-      final rates = await historicalRepo.get2018RegionalPartyRates(member.district);
+      final rates =
+          await historicalRepo.get2018RegionalPartyRates(member.district);
       if (rates.isNotEmpty) {
         updatedMembers.add(member.copyWith(historical2018PartyRates: rates));
       }
@@ -505,7 +540,8 @@ class MemberRepositoryImpl implements MemberRepository {
   Future<void> updateMember2018Rates(String memberId) async {
     final member = await getMemberById(memberId);
     final historicalRepo = sl<HistoricalElectionRepository>();
-    final rates = await historicalRepo.get2018RegionalPartyRates(member.district);
+    final rates =
+        await historicalRepo.get2018RegionalPartyRates(member.district);
     if (rates.isNotEmpty) {
       await updateMember(member.copyWith(historical2018PartyRates: rates));
     }
@@ -521,16 +557,19 @@ class MemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<void> updateParkSugiImage() async {
-    await _updateMemberImage('박수기', 'https://i.namu.wiki/i/s-gAQT2j5n9f8c1bB-A6w-p_i_u_e_q_z_w_y_x_v_C_D_E_F_G_H_I_J_K_L_M_N_O_P_Q_R_S_T_U_V_W_X_Y_Z.webp');
+    await _updateMemberImage('박수기',
+        'https://i.namu.wiki/i/s-gAQT2j5n9f8c1bB-A6w-p_i_u_e_q_z_w_y_x_v_C_D_E_F_G_H_I_J_K_L_M_N_O_P_Q_R_S_T_U_V_W_X_Y_Z.webp');
   }
 
   @override
   Future<void> updateSeoJaeyeolImage() async {
-    await _updateMemberImage('서재열', 'https://i.namu.wiki/i/R-1aB2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z.webp');
+    await _updateMemberImage('서재열',
+        'https://i.namu.wiki/i/R-1aB2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z.webp');
   }
 
   @override
   Future<void> updateYoonDaegiImage() async {
-    await _updateMemberImage('윤대기', 'https://i.namu.wiki/i/m-1p_3G9aX9bB3M_u_uC2j5pUPe9b29nNu2adYJ3Iq9223f2i1_fsK2j2-g_1gOqf_u2-3UfOa-z-g.webp');
+    await _updateMemberImage('윤대기',
+        'https://i.namu.wiki/i/m-1p_3G9aX9bB3M_u_uC2j5pUPe9b29nNu2adYJ3Iq9223f2i1_fsK2j2-g_1gOqf_u2-3UfOa-z-g.webp');
   }
 }

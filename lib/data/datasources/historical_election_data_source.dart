@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:elecko26/domain/entities/historical_election.dart';
+import 'package:elecko26_new/domain/entities/historical_election.dart';
 
 /// 역대 선거 데이터를 GitHub Raw 또는 로컬 JSON에서 로드하는 데이터 소스
 class HistoricalElectionDataSource {

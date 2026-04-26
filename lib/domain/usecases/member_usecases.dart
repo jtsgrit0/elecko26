@@ -1,6 +1,6 @@
-import 'package:elecko26/domain/entities/member.dart';
-import 'package:elecko26/domain/repositories/member_repository.dart';
-import 'package:elecko26/core/config/refresh_config.dart';
+import 'package:elecko26_new/domain/entities/member.dart';
+import 'package:elecko26_new/domain/repositories/member_repository.dart';
+import 'package:elecko26_new/core/config/refresh_config.dart';
 
 /// 의원 조회 UseCase
 class GetMembersUseCase {

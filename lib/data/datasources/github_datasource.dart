@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:elecko26/domain/entities/election_data_export.dart';
+import 'package:elecko26_new/domain/entities/election_data_export.dart';
 
 /// GitHub API를 통해 선거 데이터를 저장하는 데이터소스
 class GitHubDataSource {

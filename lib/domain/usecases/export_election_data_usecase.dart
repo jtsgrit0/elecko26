@@ -1,8 +1,8 @@
-import 'package:elecko26/domain/entities/analysis_result.dart';
-import 'package:elecko26/domain/entities/election_data_export.dart';
-import 'package:elecko26/domain/entities/member.dart';
-import 'package:elecko26/domain/repositories/member_repository.dart';
-import 'package:elecko26/domain/usecases/calculate_election_possibility_usecase.dart';
+import 'package:elecko26_new/domain/entities/analysis_result.dart';
+import 'package:elecko26_new/domain/entities/election_data_export.dart';
+import 'package:elecko26_new/domain/entities/member.dart';
+import 'package:elecko26_new/domain/repositories/member_repository.dart';
+import 'package:elecko26_new/domain/usecases/calculate_election_possibility_usecase.dart';
 
 /// 당선 가능성 데이터를 JSON으로 내보내는 Use Case
 class ExportElectionDataUseCase {
@@ -19,7 +19,7 @@ class ExportElectionDataUseCase {
     try {
       // 모든 멤버 가져오기
       final members = await memberRepository.getAllMembers();
-      
+
       // 각 멤버의 분석 결과 수집
       final memberDataList = <MemberElectionData>[];
       int totalPolls = 0;
@@ -29,7 +29,8 @@ class ExportElectionDataUseCase {
       for (final member in members) {
         try {
           // 각 멤버의 당선 가능성 분석
-          final analysis = await calculateElectionPossibilityUseCase.call(member.id);
+          final analysis =
+              await calculateElectionPossibilityUseCase.call(member.id);
 
           // 당선 가능성 데이터 생성
           final memberData = _createMemberElectionData(member, analysis);
@@ -144,5 +145,4 @@ class ExportElectionDataUseCase {
           .toList(),
     );
   }
-
 }

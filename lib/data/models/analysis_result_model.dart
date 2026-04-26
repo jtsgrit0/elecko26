@@ -1,4 +1,4 @@
-import 'package:elecko26/domain/entities/analysis_result.dart';
+import 'package:elecko26_new/domain/entities/analysis_result.dart';
 
 /// SnsAnalysis 모델
 class SnsAnalysisModel extends SnsAnalysis {

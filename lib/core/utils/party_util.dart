@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:elecko26/core/theme/app_theme.dart';
+import 'package:elecko26_new/core/theme/app_theme.dart';
 
 class PartyUtil {
   // 정당별 로고 URL (가로 3:1 비율 PNG)

@@ -1,5 +1,5 @@
-import 'package:elecko26/domain/entities/member.dart';
-import 'package:elecko26/domain/entities/poll.dart';
+import 'package:elecko26_new/domain/entities/member.dart';
+import 'package:elecko26_new/domain/entities/poll.dart';
 
 /// 당선 가능성 계산 로직을 담당하는 유틸리티 클래스
 class PossibilityCalculator {
@@ -66,7 +66,7 @@ class PossibilityCalculator {
           (socialScore * 0.12) +
           (historicalScore * 0.40);
     }
-    
+
     // 투표 관심도 조정
     final interestAdjustment = (voterInterest - 0.5) * 0.06;
     overall = (overall + interestAdjustment).clamp(0.01, 0.99);
@@ -77,7 +77,7 @@ class PossibilityCalculator {
       'policy': policyScore,
       'publicImage': publicImageScore,
       'socialContribution': socialScore,
-      'poll': pollScore ?? -1.0, 
+      'poll': pollScore ?? -1.0,
       'historical': historicalScore,
       'overall': overall,
       'voterInterest': voterInterest,
@@ -117,10 +117,12 @@ class PossibilityCalculator {
       if (report.sentiment == 'negative') negativeCount++;
     }
 
-    final sentimentScore = (positiveCount * 1.0 + neutralCount * 0.5 - negativeCount * 0.5) /
-        member.pressReports.length.clamp(1, double.infinity);
+    final sentimentScore =
+        (positiveCount * 1.0 + neutralCount * 0.5 - negativeCount * 0.5) /
+            member.pressReports.length.clamp(1, double.infinity);
 
-    return ((countScore * 0.6) + (sentimentScore.clamp(0, 1) * 0.4)).clamp(0, 1);
+    return ((countScore * 0.6) + (sentimentScore.clamp(0, 1) * 0.4))
+        .clamp(0, 1);
   }
 
   static double? _calculatePollScore(Member member) {
@@ -137,18 +139,21 @@ class PossibilityCalculator {
     if (validRates.isEmpty) return null;
 
     final averageSupportRate =
-        validRates.fold<double>(0, (sum, rate) => sum + rate) / validRates.length;
+        validRates.fold<double>(0, (sum, rate) => sum + rate) /
+            validRates.length;
 
     final nesdcRates = recentPolls
-        .where((p) => p.id.startsWith('nesdc_') || p.source.toLowerCase().contains('nesdc.go.kr'))
+        .where((p) =>
+            p.id.startsWith('nesdc_') ||
+            p.source.toLowerCase().contains('nesdc.go.kr'))
         .map((poll) => poll.supportRate)
         .whereType<double>()
         .toList();
 
     if (nesdcRates.isEmpty) return averageSupportRate.clamp(0, 1);
 
-    final nesdcAverage =
-        nesdcRates.fold<double>(0, (sum, rate) => sum + rate) / nesdcRates.length;
+    final nesdcAverage = nesdcRates.fold<double>(0, (sum, rate) => sum + rate) /
+        nesdcRates.length;
 
     final blended = (nesdcAverage * 0.60) + (averageSupportRate * 0.40);
     return blended.clamp(0, 1);
@@ -157,7 +162,8 @@ class PossibilityCalculator {
   static double _calculateSocialScore(Member member) {
     if (member.socialContributions.isEmpty) return 0.3;
 
-    final countScore = (member.socialContributions.length / 5).clamp(0.0, 1.0) * 0.5;
+    final countScore =
+        (member.socialContributions.length / 5).clamp(0.0, 1.0) * 0.5;
 
     double typeScore = 0.0;
     for (var contrib in member.socialContributions) {

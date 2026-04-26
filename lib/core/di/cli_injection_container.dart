@@ -1,15 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:get_it/get_it.dart';
-import 'package:elecko26/data/models/member_model.dart';
-import 'package:elecko26/domain/entities/member.dart';
-import 'package:elecko26/domain/repositories/member_repository.dart';
-import 'package:elecko26/domain/usecases/calculate_election_possibility_usecase.dart';
-import 'package:elecko26/domain/usecases/export_election_data_usecase.dart';
-import 'package:elecko26/data/datasources/github_datasource.dart';
-import 'package:elecko26/data/datasources/historical_election_data_source.dart';
-import 'package:elecko26/data/repositories/historical_election_repository_impl.dart';
-import 'package:elecko26/domain/repositories/historical_election_repository.dart';
+import 'package:elecko26_new/data/models/member_model.dart';
+import 'package:elecko26_new/domain/entities/member.dart';
+import 'package:elecko26_new/domain/repositories/member_repository.dart';
+import 'package:elecko26_new/domain/usecases/calculate_election_possibility_usecase.dart';
+import 'package:elecko26_new/domain/usecases/export_election_data_usecase.dart';
+import 'package:elecko26_new/data/datasources/github_datasource.dart';
+import 'package:elecko26_new/data/datasources/historical_election_data_source.dart';
+import 'package:elecko26_new/data/repositories/historical_election_repository_impl.dart';
+import 'package:elecko26_new/domain/repositories/historical_election_repository.dart';
 import 'package:http/http.dart' as http;
 
 final sl = GetIt.instance;

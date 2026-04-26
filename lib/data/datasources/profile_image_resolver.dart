@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:elecko26/data/datasources/local_storage_service.dart';
+import 'package:elecko26_new/data/datasources/local_storage_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' show parse;

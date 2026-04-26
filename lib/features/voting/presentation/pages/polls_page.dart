@@ -1,16 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:elecko26/app/injection_container.dart';
-import 'package:elecko26/core/theme/app_theme.dart';
-import 'package:elecko26/domain/repositories/member_repository.dart';
+import 'package:elecko26_new/app/injection_container.dart';
+import 'package:elecko26_new/core/theme/app_theme.dart';
+import 'package:elecko26_new/domain/repositories/member_repository.dart';
 import '../../../auth/domain/entities/user.dart' as auth;
 import '../widgets/region_selection_prompt.dart';
 import '../widgets/regional_member_voting_list.dart';
-import 'package:elecko26/data/datasources/local_storage_service.dart';
-import 'package:elecko26/domain/entities/member.dart';
-import 'package:elecko26/features/home/presentation/widgets/member_card.dart';
-import 'package:elecko26/features/home/presentation/widgets/member_card.dart';
-import 'package:elecko26/features/home/presentation/pages/member_detail_page.dart';
+import 'package:elecko26_new/data/datasources/local_storage_service.dart';
+import 'package:elecko26_new/domain/entities/member.dart';
+import 'package:elecko26_new/features/home/presentation/widgets/member_card.dart';
+import 'package:elecko26_new/features/home/presentation/widgets/member_card.dart';
+import 'package:elecko26_new/features/home/presentation/pages/member_detail_page.dart';
 import 'package:rxdart/rxdart.dart';
 
 class PollsPage extends StatefulWidget {

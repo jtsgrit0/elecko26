@@ -1,8 +1,8 @@
 import 'dart:io';
-import 'package:elecko26/domain/entities/member.dart';
-import 'package:elecko26/domain/repositories/member_repository.dart';
-import 'package:elecko26/domain/usecases/nesdc_pdf_extractor.dart';
-import 'package:elecko26/app/injection_container.dart';
+import 'package:elecko26_new/domain/entities/member.dart';
+import 'package:elecko26_new/domain/repositories/member_repository.dart';
+import 'package:elecko26_new/domain/usecases/nesdc_pdf_extractor.dart';
+import 'package:elecko26_new/app/injection_container.dart';
 
 /// 2018년도 PDF 데이터를 파싱해서 현재 정당 지지율에 반영하는 UseCase
 class Update2018PartySupportFromPdfUseCase {

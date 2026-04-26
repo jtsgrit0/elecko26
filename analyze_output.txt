@@ -73,14 +73,14 @@ Analyzing elecko26...
    info • Convert 'key' to a super parameter • lib/core/widgets/custom_widgets.dart:109:9 • use_super_parameters
    info • Don't invoke 'print' in production code • lib/data/datasources/github_datasource.dart:75:7 • avoid_print
 warning • The '!' will have no effect because the receiver can't be null • lib/data/datasources/nesdc_poll_data_source.dart:260:37 • unnecessary_non_null_assertion
-  error • The name 'debugPrint' is defined in the libraries 'package:elecko26/core/platform/platform_info_stub.dart (via package:elecko26/core/platform/platform_info.dart)' and 'package:flutter/src/foundation/print.dart (via package:flutter/foundation.dart)' • lib/data/datasources/nesdc_poll_data_source.dart:265:7 • ambiguous_import
+  error • The name 'debugPrint' is defined in the libraries 'package:elecko26_new/core/platform/platform_info_stub.dart (via package:elecko26_new/core/platform/platform_info.dart)' and 'package:flutter/src/foundation/print.dart (via package:flutter/foundation.dart)' • lib/data/datasources/nesdc_poll_data_source.dart:265:7 • ambiguous_import
 warning • The '!' will have no effect because the receiver can't be null • lib/data/datasources/nesdc_poll_data_source.dart:274:46 • unnecessary_non_null_assertion
-  error • The name 'debugPrint' is defined in the libraries 'package:elecko26/core/platform/platform_info_stub.dart (via package:elecko26/core/platform/platform_info.dart)' and 'package:flutter/src/foundation/print.dart (via package:flutter/foundation.dart)' • lib/data/datasources/nesdc_poll_data_source.dart:279:7 • ambiguous_import
-  error • The name 'debugPrint' is defined in the libraries 'package:elecko26/core/platform/platform_info_stub.dart (via package:elecko26/core/platform/platform_info.dart)' and 'package:flutter/src/foundation/print.dart (via package:flutter/foundation.dart)' • lib/data/datasources/nesdc_poll_data_source.dart:290:7 • ambiguous_import
-  error • The name 'debugPrint' is defined in the libraries 'package:elecko26/core/platform/platform_info_stub.dart (via package:elecko26/core/platform/platform_info.dart)' and 'package:flutter/src/foundation/print.dart (via package:flutter/foundation.dart)' • lib/data/datasources/nesdc_poll_data_source.dart:414:11 • ambiguous_import
-  error • The name 'debugPrint' is defined in the libraries 'package:elecko26/core/platform/platform_info_stub.dart (via package:elecko26/core/platform/platform_info.dart)' and 'package:flutter/src/foundation/print.dart (via package:flutter/foundation.dart)' • lib/data/datasources/nesdc_poll_data_source.dart:418:11 • ambiguous_import
-  error • The name 'debugPrint' is defined in the libraries 'package:elecko26/core/platform/platform_info_stub.dart (via package:elecko26/core/platform/platform_info.dart)' and 'package:flutter/src/foundation/print.dart (via package:flutter/foundation.dart)' • lib/data/datasources/nesdc_poll_data_source.dart:423:9 • ambiguous_import
-  error • The name 'debugPrint' is defined in the libraries 'package:elecko26/core/platform/platform_info_stub.dart (via package:elecko26/core/platform/platform_info.dart)' and 'package:flutter/src/foundation/print.dart (via package:flutter/foundation.dart)' • lib/data/datasources/nesdc_poll_data_source.dart:440:7 • ambiguous_import
+  error • The name 'debugPrint' is defined in the libraries 'package:elecko26_new/core/platform/platform_info_stub.dart (via package:elecko26_new/core/platform/platform_info.dart)' and 'package:flutter/src/foundation/print.dart (via package:flutter/foundation.dart)' • lib/data/datasources/nesdc_poll_data_source.dart:279:7 • ambiguous_import
+  error • The name 'debugPrint' is defined in the libraries 'package:elecko26_new/core/platform/platform_info_stub.dart (via package:elecko26_new/core/platform/platform_info.dart)' and 'package:flutter/src/foundation/print.dart (via package:flutter/foundation.dart)' • lib/data/datasources/nesdc_poll_data_source.dart:290:7 • ambiguous_import
+  error • The name 'debugPrint' is defined in the libraries 'package:elecko26_new/core/platform/platform_info_stub.dart (via package:elecko26_new/core/platform/platform_info.dart)' and 'package:flutter/src/foundation/print.dart (via package:flutter/foundation.dart)' • lib/data/datasources/nesdc_poll_data_source.dart:414:11 • ambiguous_import
+  error • The name 'debugPrint' is defined in the libraries 'package:elecko26_new/core/platform/platform_info_stub.dart (via package:elecko26_new/core/platform/platform_info.dart)' and 'package:flutter/src/foundation/print.dart (via package:flutter/foundation.dart)' • lib/data/datasources/nesdc_poll_data_source.dart:418:11 • ambiguous_import
+  error • The name 'debugPrint' is defined in the libraries 'package:elecko26_new/core/platform/platform_info_stub.dart (via package:elecko26_new/core/platform/platform_info.dart)' and 'package:flutter/src/foundation/print.dart (via package:flutter/foundation.dart)' • lib/data/datasources/nesdc_poll_data_source.dart:423:9 • ambiguous_import
+  error • The name 'debugPrint' is defined in the libraries 'package:elecko26_new/core/platform/platform_info_stub.dart (via package:elecko26_new/core/platform/platform_info.dart)' and 'package:flutter/src/foundation/print.dart (via package:flutter/foundation.dart)' • lib/data/datasources/nesdc_poll_data_source.dart:440:7 • ambiguous_import
    info • Don't invoke 'print' in production code • lib/data/repositories/firestore_member_repository_impl.dart:70:7 • avoid_print
    info • Don't invoke 'print' in production code • lib/data/repositories/firestore_member_repository_impl.dart:129:7 • avoid_print
    info • Don't invoke 'print' in production code • lib/data/repositories/firestore_member_repository_impl.dart:207:9 • avoid_print
@@ -136,11 +136,11 @@ warning • Unused import: 'package:cached_network_image/cached_network_image.da
    info • The imported package 'characters' isn't a dependency of the importing package • lib/features/home/presentation/pages/home_page.dart:6:8 • depend_on_referenced_packages
 warning • Unused import: 'package:characters/characters.dart' • lib/features/home/presentation/pages/home_page.dart:6:8 • unused_import
    info • The import of 'package:flutter/foundation.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' • lib/features/home/presentation/pages/home_page.dart:8:8 • unnecessary_import
-warning • Unused import: 'package:elecko26/core/utils/image_util.dart' • lib/features/home/presentation/pages/home_page.dart:9:8 • unused_import
-warning • Unused import: 'package:elecko26/domain/entities/analysis_result.dart' • lib/features/home/presentation/pages/home_page.dart:11:8 • unused_import
-warning • Unused import: 'package:elecko26/domain/usecases/calculate_election_possibility_usecase.dart' • lib/features/home/presentation/pages/home_page.dart:14:8 • unused_import
-warning • Unused import: 'package:elecko26/core/utils/party_util.dart' • lib/features/home/presentation/pages/home_page.dart:23:8 • unused_import
-warning • Unused import: 'package:elecko26/core/utils/utility_functions.dart' • lib/features/home/presentation/pages/home_page.dart:24:8 • unused_import
+warning • Unused import: 'package:elecko26_new/core/utils/image_util.dart' • lib/features/home/presentation/pages/home_page.dart:9:8 • unused_import
+warning • Unused import: 'package:elecko26_new/domain/entities/analysis_result.dart' • lib/features/home/presentation/pages/home_page.dart:11:8 • unused_import
+warning • Unused import: 'package:elecko26_new/domain/usecases/calculate_election_possibility_usecase.dart' • lib/features/home/presentation/pages/home_page.dart:14:8 • unused_import
+warning • Unused import: 'package:elecko26_new/core/utils/party_util.dart' • lib/features/home/presentation/pages/home_page.dart:23:8 • unused_import
+warning • Unused import: 'package:elecko26_new/core/utils/utility_functions.dart' • lib/features/home/presentation/pages/home_page.dart:24:8 • unused_import
    info • Convert 'key' to a super parameter • lib/features/home/presentation/pages/home_page.dart:31:9 • use_super_parameters
   error • Missing concrete implementation of 'State.build' • lib/features/home/presentation/pages/home_page.dart:37:7 • non_abstract_class_inherits_abstract_member
    info • The private field _selectedIndex could be 'final' • lib/features/home/presentation/pages/home_page.dart:38:7 • prefer_final_fields
@@ -342,11 +342,11 @@ warning • The operand can't be null, so the condition is always 'true' • lib
    info • Unnecessary use of 'toList' in a spread • lib/features/home/presentation/pages/member_detail_page.dart:1090:24 • unnecessary_to_list_in_spreads
    info • Unnecessary use of 'toList' in a spread • lib/features/home/presentation/pages/member_detail_page.dart:1163:18 • unnecessary_to_list_in_spreads
    info • Unnecessary use of 'toList' in a spread • lib/features/home/presentation/pages/member_detail_page.dart:1471:16 • unnecessary_to_list_in_spreads
-warning • Unused import: 'package:elecko26/features/home/presentation/widgets/member_card.dart' • lib/features/home/presentation/widgets/comparison_view.dart:11:8 • unused_import
+warning • Unused import: 'package:elecko26_new/features/home/presentation/widgets/member_card.dart' • lib/features/home/presentation/widgets/comparison_view.dart:11:8 • unused_import
    info • Convert 'key' to a super parameter • lib/features/home/presentation/widgets/comparison_view.dart:18:9 • use_super_parameters
    info • Convert 'key' to a super parameter • lib/features/home/presentation/widgets/favorites_view.dart:11:9 • use_super_parameters
-warning • Unused import: 'package:elecko26/core/utils/party_util.dart' • lib/features/home/presentation/widgets/home_dashboard_view.dart:5:8 • unused_import
-warning • Unused import: 'package:elecko26/domain/entities/analysis_result.dart' • lib/features/home/presentation/widgets/home_dashboard_view.dart:7:8 • unused_import
+warning • Unused import: 'package:elecko26_new/core/utils/party_util.dart' • lib/features/home/presentation/widgets/home_dashboard_view.dart:5:8 • unused_import
+warning • Unused import: 'package:elecko26_new/domain/entities/analysis_result.dart' • lib/features/home/presentation/widgets/home_dashboard_view.dart:7:8 • unused_import
    info • Convert 'key' to a super parameter • lib/features/home/presentation/widgets/home_dashboard_view.dart:22:9 • use_super_parameters
    info • Unnecessary braces in a string interpolation • lib/features/home/presentation/widgets/home_dashboard_view.dart:312:32 • unnecessary_brace_in_string_interps
    info • A value for optional parameter 'subtitle' isn't ever given • lib/features/home/presentation/widgets/home_dashboard_view.dart:628:10 • unused_element

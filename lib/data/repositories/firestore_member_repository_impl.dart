@@ -6,16 +6,16 @@ import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:elecko26/data/datasources/local_storage_service.dart';
-import 'package:elecko26/data/datasources/nesdc_poll_data_source.dart';
-import 'package:elecko26/data/datasources/news_crawler.dart';
-import 'package:elecko26/data/datasources/profile_image_resolver.dart';
-import 'package:elecko26/data/models/member_model.dart';
-import 'package:elecko26/domain/entities/member.dart';
-import 'package:elecko26/domain/entities/poll.dart';
-import 'package:elecko26/domain/usecases/possibility_calculator.dart';
-import 'package:elecko26/domain/repositories/member_repository.dart';
-import 'package:elecko26/domain/repositories/historical_election_repository.dart';
+import 'package:elecko26_new/data/datasources/local_storage_service.dart';
+import 'package:elecko26_new/data/datasources/nesdc_poll_data_source.dart';
+import 'package:elecko26_new/data/datasources/news_crawler.dart';
+import 'package:elecko26_new/data/datasources/profile_image_resolver.dart';
+import 'package:elecko26_new/data/models/member_model.dart';
+import 'package:elecko26_new/domain/entities/member.dart';
+import 'package:elecko26_new/domain/entities/poll.dart';
+import 'package:elecko26_new/domain/usecases/possibility_calculator.dart';
+import 'package:elecko26_new/domain/repositories/member_repository.dart';
+import 'package:elecko26_new/domain/repositories/historical_election_repository.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:get_it/get_it.dart';
@@ -412,6 +412,14 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   }
 
   Future<List<Member>> _loadFallbackMembers() async {
+    final localService = sl<LocalStorageService>();
+    final favoriteIds = await localService.getFavorites();
+
+    final splitMembers = await _loadFallbackMembersFromSplitFiles(favoriteIds);
+    if (splitMembers.isNotEmpty) {
+      return splitMembers;
+    }
+
     final fallbackMembers = <Member>[];
     try {
       String? jsonString;
@@ -432,14 +440,126 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       final List<dynamic> jsonList = json.decode(jsonString);
       for (final item in jsonList) {
         try {
-          fallbackMembers
-              .add(MemberModel.fromJson(item as Map<String, dynamic>));
+          final member = MemberModel.fromJson(item as Map<String, dynamic>);
+          fallbackMembers.add(
+            member.copyWith(isFavorite: favoriteIds.contains(member.id)),
+          );
         } catch (_) {}
       }
     } catch (e) {
       debugPrint('[FirestoreMemberRepository] Local Fallback Error: $e');
     }
     return fallbackMembers;
+  }
+
+  Future<List<Member>> _loadFallbackMembersFromSplitFiles(
+    List<String> favoriteIds,
+  ) async {
+    final remoteMembers = await _loadSplitMembersFromRemote(favoriteIds);
+    if (remoteMembers.isNotEmpty) {
+      return remoteMembers;
+    }
+
+    final assetMembers = await _loadSplitMembersFromAssets(favoriteIds);
+    return assetMembers;
+  }
+
+  Future<List<Member>> _loadSplitMembersFromRemote(
+    List<String> favoriteIds,
+  ) async {
+    final members = <Member>[];
+
+    try {
+      for (var i = 0; i < 100; i++) {
+        final content = await _loadRemoteSplitChunk(i);
+        if (content == null) {
+          break;
+        }
+
+        final chunk = _parseMembersFromJsonChunk(
+          content,
+          favoriteIds,
+        );
+        members.addAll(chunk);
+      }
+    } catch (e) {
+      debugPrint('[FirestoreMemberRepository] Split remote load failed: $e');
+      return <Member>[];
+    }
+
+    return members;
+  }
+
+  Future<List<Member>> _loadSplitMembersFromAssets(
+    List<String> favoriteIds,
+  ) async {
+    final members = <Member>[];
+
+    for (var i = 0; i < 100; i++) {
+      try {
+        final content = await _loadAssetSplitChunk(i);
+        final chunk = _parseMembersFromJsonChunk(content, favoriteIds);
+        members.addAll(chunk);
+      } catch (_) {
+        break;
+      }
+    }
+
+    return members;
+  }
+
+  Future<String?> _loadRemoteSplitChunk(int index) async {
+    const prefixes = ['election_candidates_part_', 'candidates_'];
+
+    for (final prefix in prefixes) {
+      try {
+        final rawUrl =
+            'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/candidates_split/${prefix}$index.json';
+        final response = await http
+            .get(Uri.parse(rawUrl))
+            .timeout(const Duration(seconds: 10));
+
+        if (response.statusCode == 200) {
+          return utf8.decode(response.bodyBytes);
+        }
+      } catch (_) {}
+    }
+
+    return null;
+  }
+
+  Future<String> _loadAssetSplitChunk(int index) async {
+    const prefixes = ['election_candidates_part_', 'candidates_'];
+
+    for (final prefix in prefixes) {
+      try {
+        return await rootBundle.loadString(
+          'data/candidates_split/${prefix}$index.json',
+        );
+      } catch (_) {}
+    }
+
+    throw FlutterError('Split candidate asset not found: index=$index');
+  }
+
+  static List<Member> _parseMembersFromJsonChunk(
+    String jsonString,
+    List<String> favoriteIds,
+  ) {
+    final favoriteSet = favoriteIds.toSet();
+    final members = <Member>[];
+
+    final jsonList = json.decode(jsonString) as List<dynamic>;
+    for (final item in jsonList) {
+      try {
+        final member = MemberModel.fromJson(item as Map<String, dynamic>);
+        members.add(
+          member.copyWith(isFavorite: favoriteSet.contains(member.id)),
+        );
+      } catch (_) {}
+    }
+
+    return members;
   }
 
   List<Member> _mergeMembersByIdPreferCloud(

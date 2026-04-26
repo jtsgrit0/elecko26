@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:elecko26/domain/usecases/nesdc_pdf_extractor.dart';
+import 'package:elecko26_new/domain/usecases/nesdc_pdf_extractor.dart';
 
 void main() {
   test('Analyze extracted PDF text for support rates', () async {
@@ -15,7 +15,7 @@ void main() {
 
       print('Analyzing $filePath...');
       final text = await file.readAsString();
-      
+
       final rates = NesdcPdfExtractor.extractSupportRates(text);
       print('  Found ${rates.length} support rate entries');
       if (rates.isNotEmpty) {

@@ -1,5 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:elecko26/data/datasources/local_storage_service.dart';
+import 'package:elecko26_new/data/datasources/local_storage_service.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// SharedPreferences 기반의 플러터 환경용 로컬 스토리지 서비스입니다.

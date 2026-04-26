@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:elecko26/app/injection_container.dart';
-import 'package:elecko26/core/theme/app_theme.dart';
+import 'package:elecko26_new/app/injection_container.dart';
+import 'package:elecko26_new/core/theme/app_theme.dart';
 import '../../../auth/domain/entities/user.dart' as auth;
 import '../../domain/entities/poll.dart';
 import '../../domain/usecases/poll_usecases.dart';

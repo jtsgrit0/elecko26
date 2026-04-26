@@ -1,11 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:elecko26/app/injection_container.dart';
-import 'package:elecko26/features/auth/domain/usecases/auth_usecases.dart';
-import 'package:elecko26/features/auth/domain/entities/user.dart';
-import 'package:elecko26/features/auth/presentation/widgets/terms_agreement_modal.dart';
-import 'package:elecko26/data/datasources/local_storage_service.dart';
+import 'package:elecko26_new/app/injection_container.dart';
+import 'package:elecko26_new/features/auth/domain/usecases/auth_usecases.dart';
+import 'package:elecko26_new/features/auth/domain/entities/user.dart';
+import 'package:elecko26_new/features/auth/presentation/widgets/terms_agreement_modal.dart';
+import 'package:elecko26_new/data/datasources/local_storage_service.dart';
 
 class AuthGate extends StatefulWidget {
   final VoidCallback? onSuccess;

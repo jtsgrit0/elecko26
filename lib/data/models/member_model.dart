@@ -1,5 +1,5 @@
-import 'package:elecko26/domain/entities/member.dart';
-import 'package:elecko26/domain/entities/poll.dart';
+import 'package:elecko26_new/domain/entities/member.dart';
+import 'package:elecko26_new/domain/entities/poll.dart';
 
 /// Member 모델 (API 응답용)
 class MemberModel extends Member {
@@ -34,6 +34,50 @@ class MemberModel extends Member {
       return DateTime.now();
     }
 
+    int parseInt(dynamic value) {
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
+
+    double parseDouble(dynamic value) {
+      if (value is num) return value.toDouble();
+      if (value is String) return double.tryParse(value) ?? 0.0;
+      return 0.0;
+    }
+
+    List<String> parseStringList(dynamic value) {
+      if (value is! List) {
+        return <String>[];
+      }
+      return value
+          .map((e) => e?.toString() ?? '')
+          .where((e) => e.trim().isNotEmpty)
+          .toList();
+    }
+
+    List<PressReport> parsePressReports(dynamic value) {
+      if (value is! List) {
+        return <PressReport>[];
+      }
+      return value
+          .whereType<Map>()
+          .map((e) => PressReportModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+
+    List<SocialContribution> parseSocialContributions(dynamic value) {
+      if (value is! List) {
+        return <SocialContribution>[];
+      }
+      return value
+          .whereType<Map>()
+          .map((e) =>
+              SocialContributionModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+
     return MemberModel(
       id: (json['id'] ?? '') as String,
       name: (json['name'] ?? '알 수 없음') as String,
@@ -42,24 +86,20 @@ class MemberModel extends Member {
       imageUrl: (json['imageUrl'] ?? '') as String,
       bio: (json['bio'] ?? '') as String,
       electionDate: parseDate(json['electionDate']),
-      term: (json['term'] ?? 0) as int,
-      achievementsList: List<String>.from(json['achievementsList'] as List? ?? []),
-      actions: List<String>.from(json['actions'] as List? ?? []),
-      policies: List<String>.from(json['policies'] as List? ?? []),
-      pressReports: (json['pressReports'] as List? ?? [])
-          .map((e) => PressReportModel.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      term: parseInt(json['term']),
+      achievementsList: parseStringList(json['achievementsList']),
+      actions: parseStringList(json['actions']),
+      policies: parseStringList(json['policies']),
+      pressReports: parsePressReports(json['pressReports']),
       polls: (json['polls'] as List? ?? [])
           .map((e) => PollModel.fromJson(e as Map<String, dynamic>))
           .toList(),
-      electionPossibility: (json['electionPossibility'] ?? 0.0) is num 
-          ? (json['electionPossibility'] as num).toDouble() 
-          : 0.0,
+      electionPossibility: parseDouble(json['electionPossibility']),
       lastAnalysisDate: parseDate(json['lastAnalysisDate']),
-      improvementPoints: List<String>.from(json['improvementPoints'] as List? ?? []),
-      socialContributions: (json['socialContributions'] as List? ?? [])
-          .map((e) => SocialContributionModel.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      improvementPoints: parseStringList(json['improvementPoints']),
+      socialContributions: parseSocialContributions(
+        json['socialContributions'],
+      ),
       isFavorite: json['isFavorite'] as bool? ?? false,
     );
   }
@@ -164,9 +204,9 @@ class PressReportModel extends PressReport {
       id: (json['id'] ?? '') as String,
       title: (json['title'] ?? '') as String,
       source: (json['source'] ?? '') as String,
-      url: (json['url'] ?? '') as String,
+      url: (json['url'] ?? json['link'] ?? '') as String,
       publishDate: DateTime.tryParse(json['publishDate'] as String? ?? '') ?? DateTime.now(),
-      summary: (json['summary'] ?? '') as String,
+      summary: (json['summary'] ?? json['content'] ?? '') as String,
       sentiment: (json['sentiment'] ?? 'neutral') as String,
     );
   }

@@ -1,24 +1,24 @@
-import 'package:elecko26/features/home/presentation/widgets/search_view.dart';
-import 'package:elecko26/features/home/presentation/widgets/comparison_view.dart';
-import 'package:elecko26/features/home/presentation/widgets/integrated_news_view.dart';
-import 'package:elecko26/features/home/presentation/widgets/home_dashboard_view.dart';
+import 'package:elecko26_new/features/home/presentation/widgets/search_view.dart';
+import 'package:elecko26_new/features/home/presentation/widgets/comparison_view.dart';
+import 'package:elecko26_new/features/home/presentation/widgets/integrated_news_view.dart';
+import 'package:elecko26_new/features/home/presentation/widgets/home_dashboard_view.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:elecko26/core/theme/app_theme.dart';
-import 'package:elecko26/domain/entities/member.dart';
-import 'package:elecko26/domain/repositories/member_repository.dart';
-import 'package:elecko26/domain/usecases/member_usecases.dart';
-import 'package:elecko26/domain/usecases/export_election_data_usecase.dart';
-import 'package:elecko26/app/injection_container.dart';
-import 'package:elecko26/features/auth/presentation/pages/auth_gate.dart';
-import 'package:elecko26/features/auth/domain/entities/user.dart' as auth;
-import 'package:elecko26/features/auth/domain/usecases/auth_usecases.dart';
-import 'package:elecko26/features/home/presentation/pages/member_detail_page.dart';
-import 'package:elecko26/features/map/presentation/pages/map_screen.dart';
-import 'package:elecko26/features/home/presentation/widgets/member_card.dart';
-import 'package:elecko26/features/voting/presentation/pages/polls_page.dart';
-import 'package:elecko26/features/home/presentation/widgets/favorites_view.dart';
-import 'package:elecko26/features/auth/domain/repositories/auth_repository.dart';
+import 'package:elecko26_new/core/theme/app_theme.dart';
+import 'package:elecko26_new/domain/entities/member.dart';
+import 'package:elecko26_new/domain/repositories/member_repository.dart';
+import 'package:elecko26_new/domain/usecases/member_usecases.dart';
+import 'package:elecko26_new/domain/usecases/export_election_data_usecase.dart';
+import 'package:elecko26_new/app/injection_container.dart';
+import 'package:elecko26_new/features/auth/presentation/pages/auth_gate.dart';
+import 'package:elecko26_new/features/auth/domain/entities/user.dart' as auth;
+import 'package:elecko26_new/features/auth/domain/usecases/auth_usecases.dart';
+import 'package:elecko26_new/features/home/presentation/pages/member_detail_page.dart';
+import 'package:elecko26_new/features/map/presentation/pages/map_screen.dart';
+import 'package:elecko26_new/features/home/presentation/widgets/member_card.dart';
+import 'package:elecko26_new/features/voting/presentation/pages/polls_page.dart';
+import 'package:elecko26_new/features/home/presentation/widgets/favorites_view.dart';
+import 'package:elecko26_new/features/auth/domain/repositories/auth_repository.dart';
 import 'dart:async';
 
 class HomePage extends StatefulWidget {
@@ -53,7 +53,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     setState(() {
       _userRegion = region;
     });
-    
+
     // 지역 변경 시 멤버 목록 새로고침
     _refreshMembers();
   }
@@ -63,14 +63,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       // 현재 스트림을 새로고침
       _membersStream = sl<WatchMembersUseCase>().call();
-      
+
       // 잠시 대기 후 로딩 상태 해제
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -107,7 +107,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     '제주특별자치도'
   ];
 
-
   void _showSettingsModal() {
     String tempSelectedRegion = _userRegion;
 
@@ -117,80 +116,80 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Container(
-        height: MediaQuery.of(context).size.height * 0.75,
-        decoration: const BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
           ),
-        ),
-        child: DefaultTabController(
-          length: 2,
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.lightGrey,
-                  borderRadius: BorderRadius.circular(2),
+          child: DefaultTabController(
+            length: 2,
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.lightGrey,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              const TabBar(
-                labelColor: AppColors.primary,
-                unselectedLabelColor: AppColors.grey,
-                indicatorColor: AppColors.primary,
-                indicatorWeight: 3,
-                tabs: [
-                  Tab(text: '지역 설정', icon: Icon(Icons.location_on_outlined)),
-                  Tab(text: '즐겨찾기', icon: Icon(Icons.star_outline)),
-                ],
-              ),
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    _buildRegionSettingTab(
-                      setModalState,
-                      () => tempSelectedRegion,
-                      (region) {
-                        tempSelectedRegion = region;
-                      },
-                    ),
-                    _buildFavoritesTab(),
+                const SizedBox(height: 8),
+                const TabBar(
+                  labelColor: AppColors.primary,
+                  unselectedLabelColor: AppColors.grey,
+                  indicatorColor: AppColors.primary,
+                  indicatorWeight: 3,
+                  tabs: [
+                    Tab(text: '지역 설정', icon: Icon(Icons.location_on_outlined)),
+                    Tab(text: '즐겨찾기', icon: Icon(Icons.star_outline)),
                   ],
                 ),
-              ),
-              const Divider(height: 1),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: TextButton.icon(
-                  onPressed: () => _showResetConfirmation(),
-                  icon: const Icon(Icons.refresh, color: Colors.redAccent),
-                  label: const Text(
-                    '설정 및 데이터 초기화',
-                    style: TextStyle(
-                        color: Colors.redAccent, fontWeight: FontWeight.bold),
-                  ),
-                  style: TextButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 50),
-                    backgroundColor: Colors.redAccent.withOpacity(0.05),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _buildRegionSettingTab(
+                        setModalState,
+                        () => tempSelectedRegion,
+                        (region) {
+                          tempSelectedRegion = region;
+                        },
+                      ),
+                      _buildFavoritesTab(),
+                    ],
                   ),
                 ),
-              ),
-              SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
-            ],
+                const Divider(height: 1),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: TextButton.icon(
+                    onPressed: () => _showResetConfirmation(),
+                    icon: const Icon(Icons.refresh, color: Colors.redAccent),
+                    label: const Text(
+                      '설정 및 데이터 초기화',
+                      style: TextStyle(
+                          color: Colors.redAccent, fontWeight: FontWeight.bold),
+                    ),
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 50),
+                      backgroundColor: Colors.redAccent.withOpacity(0.05),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+                SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   void _showResetConfirmation() {
     showDialog(
@@ -369,7 +368,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
 
     // 지역 설정 변경 감지 구독
-    _regionSubscription = sl<MemberRepository>().watchSelectedRegion().listen((region) {
+    _regionSubscription =
+        sl<MemberRepository>().watchSelectedRegion().listen((region) {
       if (mounted) {
         setState(() {
           _userRegion = region;
@@ -378,7 +378,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     });
 
     // 인증 상태 변경 감지 구독 (실시간 로그아웃/로그인 대응)
-    _authSubscription = sl<AuthRepository>().authStateChanges.listen((user) async {
+    _authSubscription =
+        sl<AuthRepository>().authStateChanges.listen((user) async {
       if (mounted) {
         setState(() {
           _currentUser = user;
@@ -452,7 +453,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         );
         // 로그인 후 사용자 정보를 명시적으로 로드 (스트림 비동기 대기 방지)
         await _loadCurrentUser();
-        debugPrint('[HomePage] After login, _currentUser: ${_currentUser?.email ?? 'null'}');
+        debugPrint(
+            '[HomePage] After login, _currentUser: ${_currentUser?.email ?? 'null'}');
         if (_currentUser != null) {
           debugPrint('[HomePage] User settings restored after login');
         }
@@ -561,24 +563,33 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             )
           : null, // 상세 페이지는 자체 AppBar 사용
       body: PopScope(
-        canPop: !kIsWeb && _selectedMember == null,
-        onPopInvokedWithResult: (bool didPop, dynamic result) {
-          if (!didPop) {
-            if (_selectedMember != null) {
-              // 상세 페이지 열려있으면 닫기
-              setState(() {
-                _selectedMember = null;
-              });
-            } else if (kIsWeb) {
-              // 웹에서 메인 화면일 때 뒤로가기 막음 (앱 종료 방지)
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('메인 화면입니다.'),
-                  duration: Duration(seconds: 1),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            }
+        canPop: !kIsWeb && _selectedMember == null && _selectedIndex == 0,
+        onPopInvoked: (bool didPop) {
+          if (didPop) return;
+
+          if (_selectedMember != null) {
+            setState(() {
+              _selectedMember = null;
+            });
+            return;
+          }
+
+          if (_selectedIndex != 0) {
+            setState(() {
+              _selectedIndex = 0;
+            });
+            return;
+          }
+
+          // On the web, we don't want to pop the last route, which might close the tab.
+          if (kIsWeb) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('메인 화면입니다.'),
+                duration: Duration(seconds: 1),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
           }
         },
         child: _buildBody(),
@@ -587,7 +598,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  // 바디 위젯 필터リング
+  // 바디 위젯 필터링
   Widget _buildBody() {
     if (_selectedMember != null) {
       return MemberDetailPage(
@@ -629,223 +640,116 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           userRegion: _userRegion,
           onMemberSelected: (m) => setState(() => _selectedMember = m),
         ),
-        _buildFavoritesPage(),
-        IntegratedNewsView(
-          membersStream: _membersStream,
-          cachedMembers: _cachedMembers,
-        ),
         ComparisonView(
           membersStream: _membersStream,
           cachedMembers: _cachedMembers,
           onMemberSelected: (m) => setState(() => _selectedMember = m),
         ),
-        _buildVotingGatewayPage(),
-        _buildProfileGatewayPage(),
+        IntegratedNewsView(
+          membersStream: _membersStream,
+          cachedMembers: _cachedMembers,
+        ),
+        PollsPage(
+          currentUser: _currentUser ??
+              auth.User(
+                id: 'guest',
+                provider: auth.AuthProvider.anonymous,
+                createdAt: DateTime.now(),
+                lastLoginAt: DateTime.now(),
+              ),
+        ),
+        FavoritesView(
+          membersStream: _membersStream,
+          cachedMembers: _cachedMembers,
+          onMemberSelected: (m) => setState(() => _selectedMember = m),
+        ),
+        const MapScreen(),
       ],
     );
   }
 
-  Widget _buildVotingGatewayPage() {
-    if (_currentUser != null) {
-      return PollsPage(currentUser: _currentUser!);
-    }
-
-    return AuthGate(
-      isEmbedded: true,
-      onSuccess: () => _loadCurrentUser(),
-    );
-  }
-
-  Widget _buildProfileGatewayPage() {
-    if (_currentUser == null) {
-      return AuthGate(
-        isEmbedded: true,
-        onSuccess: () => _loadCurrentUser(),
-      );
-    }
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: Card(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircleAvatar(
-                    radius: 36,
-                    backgroundColor: Color(0xFFF2E7DA),
-                    child: Icon(Icons.person_rounded,
-                        size: 40, color: AppColors.primary),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _currentUser!.displayName ?? '내 프로필',
-                    style: AppTextStyles.headline4,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _currentUser!.email ?? '',
-                    style:
-                        AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  OutlinedButton(
-                    onPressed: () => _confirmAndSignOut(),
-                    child: const Text('로그아웃'),
-                  ),
-                ],
-              ),
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: AppColors.white,
+      surfaceTintColor: AppColors.white,
+      title: Row(
+        children: [
+          Image.asset(
+            'assets/images/election_icon.png',
+            height: 32,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Elecko26',
+            style: AppTextStyles.headline4.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
             ),
           ),
+        ],
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.settings, color: AppColors.dark),
+          onPressed: _showSettingsModal,
         ),
-      ),
-    );
-  }
-
-  Future<void> _confirmAndSignOut() async {
-    final shouldSignOut = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('로그아웃'),
-        content: const Text('정말 로그아웃하시겠습니까?\n(로컬 지지 후보와 설정은 지워지지만, 로그인한 계정의 지지 기록은 다시 로그인하면 복원됩니다.)'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('취소', style: TextStyle(color: AppColors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text('로그아웃', style: TextStyle(color: AppColors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (shouldSignOut != true) return;
-
-    // 로컬 데이터 초기화 (투표, 즐겨찾기, 지역 설정 등 완전 삭제)
-    await sl<MemberRepository>().resetSettings();
-    await sl<SignOutUseCase>().execute();
-    
-    // _authSubscription이 업데이트하겠지만, UI 즉각 반응을 위해 수동 설정
-    if (!mounted) return;
-    setState(() {
-      _currentUser = null;
-      _selectedIndex = 0;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('로그아웃되었습니다. 계정에 저장된 지지 기록은 다시 로그인하면 복원됩니다.')),
-    );
-  }
-
-  // 홈 대시보드
-
-  // 검색 페이지
-
-  // 검색 필드
-
-  // 검색 결과 목록
-
-  // 즐겨찾기 페이지
-  Widget _buildFavoritesPage() {
-    return FavoritesView(
-      membersStream: _membersStream,
-      cachedMembers: _cachedMembers,
-      onMemberSelected: (member) => setState(() => _selectedMember = member),
-    );
-  }
-
-  // 비교 페이지
-
-  // 비교 결과 화면
-
-  // 커스텀 앱바
-  Widget _buildAppBar() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: SafeArea(
+      ],
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(40),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              Expanded(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.lightGrey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          Image.asset(
-                            'assets/images/election_icon.png',
-                            width: 24,
-                            height: 24,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '2026 지방선거 당선 예측기',
-                            style: AppTextStyles.headline4.copyWith(
-                              color: AppColors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
+                      const Icon(Icons.location_on_outlined,
+                          color: AppColors.grey, size: 18),
+                      const SizedBox(width: 8),
                       Text(
-                        '누가 적토마에 올라탈 것인가!',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.white.withOpacity(0.9),
-                        ),
+                        _userRegion,
+                        style: AppTextStyles.bodyMedium
+                            .copyWith(color: AppColors.dark),
                       ),
                     ],
                   ),
-                  GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const MapScreen(),
-                      ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.lightGrey.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.person_outline,
+                        color: AppColors.grey, size: 18),
+                    const SizedBox(width: 8),
+                    StreamBuilder<List<Member>>(
+                      stream: _membersStream,
+                      builder: (context, snapshot) {
+                        final members = snapshot.data ?? _cachedMembers;
+                        final favoriteCount =
+                            members.where((m) => m.isFavorite).length;
+                        return Text(
+                          '즐겨찾기 $favoriteCount명',
+                          style: AppTextStyles.bodyMedium
+                              .copyWith(color: AppColors.dark),
+                        );
+                      },
                     ),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.map,
-                        color: AppColors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -854,65 +758,53 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  // 2026 지방선거 배너
-
-  // 주요 통계
-
-  // 의원 목록 섹션
-
-  // 통합 뉴스 피드 페이지
-
-  // 하단 네비게이션 바
   Widget _buildBottomNavBar() {
     return BottomNavigationBar(
-      currentIndex: _selectedIndex,
-      selectedItemColor: AppColors.primary,
-      unselectedItemColor: AppColors.grey,
-      backgroundColor: AppColors.white,
-      type: BottomNavigationBarType.fixed,
-      elevation: 8,
-      items: [
+      items: const <BottomNavigationBarItem>[
         BottomNavigationBarItem(
-          icon: Icon(Icons.home),
+          icon: Icon(Icons.home_outlined),
+          activeIcon: Icon(Icons.home),
           label: '홈',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.search),
+          icon: Icon(Icons.search_outlined),
+          activeIcon: Icon(Icons.search),
           label: '검색',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.star),
-          label: '즐겨찾기',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.newspaper),
-          label: '뉴스',
-        ),
-        BottomNavigationBarItem(
-          icon: Text(
-            'VS',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: _selectedIndex == 4 ? AppColors.primary : AppColors.grey,
-            ),
-          ),
+          icon: Icon(Icons.compare_arrows),
+          activeIcon: Icon(Icons.compare_arrows),
           label: '비교',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.poll),
+          icon: Icon(Icons.article_outlined),
+          activeIcon: Icon(Icons.article),
+          label: '뉴스',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.how_to_vote_outlined),
+          activeIcon: Icon(Icons.how_to_vote),
           label: '투표',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: '프로필',
+          icon: Icon(Icons.star_outline),
+          activeIcon: Icon(Icons.star),
+          label: '즐겨찾기',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.map_outlined),
+          activeIcon: Icon(Icons.map),
+          label: '지도',
         ),
       ],
+      currentIndex: _selectedIndex,
+      selectedItemColor: AppColors.primary,
+      unselectedItemColor: AppColors.grey,
       onTap: _handleBottomNavTap,
+      type: BottomNavigationBarType.fixed,
+      backgroundColor: AppColors.white,
+      selectedLabelStyle: AppTextStyles.labelSmall,
+      unselectedLabelStyle: AppTextStyles.labelSmall,
     );
   }
 }
-
-// 통계 카드 위젯
-
-// 의원 카드 위젯

@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:typed_data';
+
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 void main() async {
@@ -37,7 +37,8 @@ void main() async {
         final fileName = pdfPath.split('/').last.replaceAll('.pdf', '.txt');
         final outputFile = File('data/pdf_texts/$fileName');
         await outputFile.writeAsString(text);
-        print('  Successfully extracted to ${outputFile.path} (${text.length} chars)');
+        print(
+            '  Successfully extracted to ${outputFile.path} (${text.length} chars)');
       } else {
         print('  No text extracted from $pdfPath');
       }

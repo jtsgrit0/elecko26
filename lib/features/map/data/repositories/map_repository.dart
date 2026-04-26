@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
-import 'package:elecko26/features/map/domain/entities/election_map.dart';
-import 'package:elecko26/features/map/domain/repositories/map_repository.dart';
-import 'package:elecko26/core/utils/utility_functions.dart';
+import 'package:elecko26_new/features/map/domain/entities/election_map.dart';
+import 'package:elecko26_new/features/map/domain/repositories/map_repository.dart';
+import 'package:elecko26_new/core/utils/utility_functions.dart';
 
 class MapRepositoryImpl implements MapRepository {
   @override

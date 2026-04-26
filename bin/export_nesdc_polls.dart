@@ -1,11 +1,12 @@
 /// CLI script: export NESDC poll cache for web (CORS-safe)
 /// Usage: dart run bin/export_nesdc_polls.dart
+library;
 
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:elecko26/core/config/refresh_config.dart';
-import 'package:elecko26/data/datasources/nesdc_poll_data_source_cli.dart';
+import 'package:elecko26_new/core/config/refresh_config.dart';
+import 'package:elecko26_new/data/datasources/nesdc_poll_data_source_cli.dart';
 
 Future<void> main(List<String> args) async {
   try {
@@ -21,12 +22,14 @@ Future<void> _run() async {
   final pages = _readInt('NESDC_PAGES', kNesdcPagesToFetch);
   final limit = _readInt('NESDC_LIMIT', 0);
 
-  print('[NESDC] Export start: pages=$pages limit=${limit <= 0 ? 'all' : limit}');
+  print(
+      '[NESDC] Export start: pages=$pages limit=${limit <= 0 ? 'all' : limit}');
 
   final dataSource = NesdcPollDataSourceCli();
   final entries = await dataSource.fetchLatest(pages: pages);
   final maxItems = limit <= 0 ? entries.length : limit;
-  final sliced = entries.length > maxItems ? entries.take(maxItems).toList() : entries;
+  final sliced =
+      entries.length > maxItems ? entries.take(maxItems).toList() : entries;
 
   final outputEntries = <Map<String, dynamic>>[];
   var index = 0;
@@ -98,7 +101,8 @@ Future<void> _writePayload(Map<String, dynamic> payload) async {
   await compactFile.writeAsString(jsonEncode(payload));
 
   final prettyFile = File('${outputDir.path}/nesdc_polls_pretty.json');
-  await prettyFile.writeAsString(const JsonEncoder.withIndent('  ').convert(payload));
+  await prettyFile
+      .writeAsString(const JsonEncoder.withIndent('  ').convert(payload));
 
   print('[NESDC] Saved: ${compactFile.path}');
   print('[NESDC] Saved: ${prettyFile.path}');

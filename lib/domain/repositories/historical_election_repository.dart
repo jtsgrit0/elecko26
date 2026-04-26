@@ -1,4 +1,4 @@
-import 'package:elecko26/domain/entities/historical_election.dart';
+import 'package:elecko26_new/domain/entities/historical_election.dart';
 
 /// 역대 선거 데이터 저장소 인터페이스
 abstract class HistoricalElectionRepository {

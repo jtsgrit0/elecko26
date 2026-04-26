@@ -1,60 +1,51 @@
-# Miscellaneous
-*.class
+# Log files
 *.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+npm-debug.log*
+yarn-debug.log
+yarn-error.log
 
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
+# Dependency directories
+node_modules/
+jspm_packages/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# Backup files
+*backup*.json
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# Debug files
+debug_page_*.json
+
+# Document files
+*.pdf
+*.xls
+*.xlsx
+
+# Security files
+*.key
+firebase-admin-key.json
+firebase-token.txt
+
+# Flutter/Dart specific
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
+.packages
 .pub-cache/
 .pub/
-# /build/ - excluding build folder except build/web which is needed for GitHub Pages
-!/build/web/
 /build/
-/coverage/
+/ios/Pods/
+/ios/.symlinks/
+/android/key.properties
+/android/local.properties
+/android/app/src/main/assets/flutter_assets/
+/android/app/src/main/assets/app.flx
 
-# Symbolication related
-app.*.symbols
+# IDE specific
+.idea/
+.vscode/
 
-# Obfuscation related
-app.*.map.json
+# OS specific
+.DS_Store
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-
-# Raw Election Data (Excel, PDF, Zip)
-*.xlsx
-*.xls
-*.pdf
-*.zip
-data/pdf_texts/
-중앙선거관리위원회*/
-*.pyc
-
-# Local environment
-.env
-__pycache__/
+# Large files
+.local-chrome/
+data/election_candidates.json

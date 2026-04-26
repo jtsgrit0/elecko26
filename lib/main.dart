@@ -1,79 +1,106 @@
-import 'dart:ui';
-import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart';
-import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:elecko26/firebase_options.dart';
-import 'package:elecko26/app/injection_container.dart' as di;
-import 'package:elecko26/core/theme/app_theme.dart';
-import 'package:elecko26/features/home/presentation/pages/home_page.dart';
-import 'package:elecko26/core/config/app_config.dart';
-import 'package:elecko26/domain/usecases/update_2018_party_support_from_pdf_usecase.dart';
-import 'package:get_it/get_it.dart';
+import 'package:flutter/material.dart';
+import 'package:elecko26_new/app/injection_container.dart' as di;
+import 'package:elecko26_new/core/config/app_config.dart';
+import 'package:elecko26_new/core/theme/app_theme.dart';
+import 'package:elecko26_new/features/home/presentation/pages/home_page.dart';
+import 'package:elecko26_new/firebase_options.dart';
+// import 'package:elecko26_new/features/splash/presentation/pages/splash_page.dart';
+// import 'package:elecko26_new/features/on_boarding/presentation/pages/on_boarding_page.dart';
+// import 'package:elecko26_new/features/auth/presentation/pages/auth_gate.dart';
+// import 'package:elecko26_new/features/auth/presentation/pages/login_page.dart';
+// import 'package:elecko26_new/features/auth/presentation/pages/register_page.dart';
+// import 'package:elecko26_new/features/candidate_detail/presentation/pages/candidate_detail_page.dart';
 
-Future<void> main(List<String> args) async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-
-  if (AppConfig.enableFirebase) {
-    try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      print("✅ Firebase Initialize Success");
-    } catch (e) {
-      print("⚠️ Firebase Initialize Failed: $e");
-    }
-  }
-
-  try {
-    if (kIsWeb) {
-      await di.initMinimal();
-    } else {
-      await di.init();
-    }
-  } catch (e, st) {
-    print('DI init failed: $e\n$st');
-  }
-
-  // 2018년도 PDF 데이터 자동 업데이트 (백그라운드에서 실행)
-  _update2018PartySupportData();
-
   runApp(const MyApp());
 }
 
-/// 2018년도 PDF 데이터 자동 업데이트 (백그라운드에서 실행)
-Future<void> _update2018PartySupportData() async {
-  try {
-    print('🔄 2018년도 정당 지지율 데이터 자동 업데이트 시작...');
-    
-    final useCase = GetIt.instance<Update2018PartySupportFromPdfUseCase>();
-    await useCase.executeAutoUpdate();
-    
-    print('✅ 2018년도 정당 지지율 데이터 업데이트 완료');
-  } catch (e) {
-    print('⚠️ 2018년도 데이터 업데이트 실패: $e');
-    // 실패해도 앱 실행에는 영향 없음
-  }
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+class _MyAppState extends State<MyApp> {
+  late final Future<void> _bootstrapFuture = _bootstrap();
+
+  Future<void> _bootstrap() async {
+    if (AppConfig.enableFirebase && Firebase.apps.isEmpty) {
+      try {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+      } catch (e) {
+        debugPrint('[Bootstrap] Firebase initialization skipped: $e');
+      }
+    }
+
+    await di.initMinimal();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: '2026 지방선거 - 국회의원 AI 분석',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      scrollBehavior: const MaterialScrollBehavior().copyWith(
-        dragDevices: {
-          PointerDeviceKind.touch,
-          PointerDeviceKind.mouse,
-          PointerDeviceKind.trackpad,
-          PointerDeviceKind.stylus,
-        },
-      ),
-      home: const HomePage(),
+    return FutureBuilder<void>(
+      future: _bootstrapFuture,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return MaterialApp(
+            title: 'Elecko 26',
+            theme: AppTheme.lightTheme,
+            home: Scaffold(
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline, size: 56),
+                      const SizedBox(height: 16),
+                      const Text(
+                        '앱 초기화 중 문제가 발생했습니다.',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        '${snapshot.error}',
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        if (snapshot.connectionState != ConnectionState.done) {
+          return MaterialApp(
+            title: 'Elecko 26',
+            theme: AppTheme.lightTheme,
+            home: const Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('후보 데이터를 준비하는 중입니다...'),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        return MaterialApp(
+          title: 'Elecko 26',
+          theme: AppTheme.lightTheme,
+          home: const HomePage(),
+        );
+      },
     );
   }
 }
