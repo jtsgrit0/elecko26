@@ -28,13 +28,13 @@ class _MyAppState extends State<MyApp> {
   late final Future<void> _bootstrapFuture = _bootstrap();
 
   Future<void> _bootstrap() async {
-    if (AppConfig.enableFirebase && Firebase.apps.isEmpty) {
+    if (AppConfig.enableFirebase) {
       try {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
         );
       } catch (e) {
-        debugPrint('[Bootstrap] Firebase initialization skipped: $e');
+        debugPrint('[Bootstrap] Firebase initialization skipped/duplicate: $e');
       }
     }
 
