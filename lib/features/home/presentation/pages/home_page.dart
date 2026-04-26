@@ -377,6 +377,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       }
     });
 
+
     // 인증 상태 변경 감지 구독 (실시간 로그아웃/로그인 대응)
     _authSubscription =
         sl<AuthRepository>().authStateChanges.listen((user) async {
@@ -679,12 +680,29 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             height: 32,
           ),
           const SizedBox(width: 8),
-          Text(
-            'Elecko26',
-            style: AppTextStyles.headline4.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '2026 당예기',
+                style: AppTextStyles.headline4.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.bottom(2.0),
+                child: Text(
+                  '누가 적토마에 올라탈 것인가!',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.darkGrey,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

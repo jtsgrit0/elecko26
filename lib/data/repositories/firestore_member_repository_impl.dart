@@ -785,19 +785,34 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       '제주': '제주특별자치도',
     };
     for (final entry in regionMap.entries) {
-      if (normalized.contains(entry.key)) return entry.value;
+      if (normalized.contains(entry.key) || normalized.contains(entry.value)) {
+        return entry.value;
+      }
     }
     return '전국';
   }
 
   static bool _staticMatchesRegion(String pollRegion, String targetRegion) {
     if (pollRegion.isEmpty) return false;
-    if (pollRegion.contains('전국') || pollRegion.contains(targetRegion)) {
+    if (pollRegion.contains('전국')) return true;
+
+    final p = pollRegion.replaceAll(' ', '');
+    final t = targetRegion.replaceAll(' ', '');
+
+    // Handle mutual containment (e.g., '부산' and '부산광역시')
+    if (p.contains(t) || t.contains(p)) return true;
+
+    // Special cases for provinces with common abbreviations
+    if ((p.contains('경북') && t.contains('경상북도')) ||
+        (p.contains('경남') && t.contains('경상남도')) ||
+        (p.contains('전북') && (t.contains('전라북도') || t.contains('전북'))) ||
+        (p.contains('전남') && t.contains('전라남도')) ||
+        (p.contains('충북') && t.contains('충청북도')) ||
+        (p.contains('충남') && t.contains('충청남도')) ||
+        (p.contains('강원') && t.contains('강원'))) {
       return true;
     }
-    if (targetRegion == '전북특별자치도' && pollRegion.contains('전라북도')) {
-      return true;
-    }
+
     return false;
   }
 

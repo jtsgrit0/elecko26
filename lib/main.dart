@@ -48,7 +48,7 @@ class _MyAppState extends State<MyApp> {
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return MaterialApp(
-            title: 'Elecko 26',
+            title: '2026 당예기',
             theme: AppTheme.lightTheme,
             home: Scaffold(
               body: Center(
@@ -78,7 +78,7 @@ class _MyAppState extends State<MyApp> {
 
         if (snapshot.connectionState != ConnectionState.done) {
           return MaterialApp(
-            title: 'Elecko 26',
+            title: '2026 당예기',
             theme: AppTheme.lightTheme,
             home: const Scaffold(
               body: Center(
@@ -96,7 +96,7 @@ class _MyAppState extends State<MyApp> {
         }
 
         return MaterialApp(
-          title: 'Elecko 26',
+          title: '2026 당예기',
           theme: AppTheme.lightTheme,
           home: const HomePage(),
         );
