@@ -361,12 +361,10 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<void> refreshMembers() async {
-    List<Member> loadedMembers = [];
     final now = DateTime.now();
 
-    // --- [1단계: 즉시 로딩] 의원 기본 정보 로드 ---
-
-    // 1-1. Firestore(Cloud) 확인
+    // --- [1단계] Firestore에서 즉시 로드 → 빠르게 UI 표시 ---
+    List<Member> cloudMembers = [];
     try {
       if (Firebase.apps.isNotEmpty) {
         final snapshot = await _firestore
@@ -380,7 +378,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
               final data = doc.data();
               _normalizeFirestoreTimestamps(data);
               data['id'] = doc.id;
-              loadedMembers.add(MemberModel.fromJson(data));
+              cloudMembers.add(MemberModel.fromJson(data));
             } catch (e) {
               debugPrint('[FirestoreMemberRepository] Parse error: $e');
             }
@@ -391,35 +389,65 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       debugPrint('[FirestoreMemberRepository] Cloud Fetch Error: $e');
     }
 
-    // 1-2. 로컬 JSON 후보군을 항상 로드하여 Cloud 일부 누락 케이스를 보강
-    final fallbackMembers = await _loadFallbackMembers();
-    if (loadedMembers.isEmpty) {
-      loadedMembers = fallbackMembers;
-    } else if (fallbackMembers.isNotEmpty) {
-      loadedMembers =
-          _mergeMembersByIdPreferCloud(loadedMembers, fallbackMembers);
-    }
+    // Firestore 데이터를 즉시 표시 (빠름)
+    final localService = sl<LocalStorageService>();
+    final favoriteIds = await localService.getFavorites();
 
-    // 1-3. 즉시 첫 번째 결과 통지 (의원 리스트 노출)
-    if (loadedMembers.isNotEmpty) {
-      final localService = sl<LocalStorageService>();
-      final favorites = await localService.getFavorites();
-      final preliminaryMembers = loadedMembers.map((m) {
-        return m.copyWith(isFavorite: favorites.contains(m.id));
-      }).toList();
-      _notifyListeners(preliminaryMembers);
+    if (cloudMembers.isNotEmpty) {
+      final preliminary = cloudMembers
+          .map((m) => m.copyWith(isFavorite: favoriteIds.contains(m.id)))
+          .toList();
+      _notifyListeners(preliminary);
       debugPrint(
-          '[FirestoreMemberRepository] Phase 1 complete: ${loadedMembers.length} members shown.');
-
-      // --- [1.5단계: 백그라운드] 프로필 이미지 보강 ---
-      _resolveMissingProfileImagesInBackground(preliminaryMembers);
+          '[FirestoreMemberRepository] Phase 1 (cloud ${preliminary.length}명) 즉시 표시');
     }
 
-    // --- [2단계: 백그라운드 로딩] 여론조사 데이터 매칭 ---
+    // --- [2단계] 로컬 에셋 파일을 백그라운드에서 순차 로드 → 파일마다 UI 업데이트 ---
+    _loadAssetsAndMergeInBackground(cloudMembers, favoriteIds, now);
+  }
 
-    // 이 단계는 await 하지 않고 비동기로 처리하여 refreshMembers가 즉시 반환되게 할 수도 있지만,
-    // _ensureInitialized에서 대기하므로 여기서는 별도 Isolate/Future로 넘깁니다.
-    _performPollMatchingInBackground(loadedMembers, now);
+  /// 로컬 split JSON 파일을 순차적으로 로드하며 점진적으로 UI 업데이트
+  Future<void> _loadAssetsAndMergeInBackground(
+    List<Member> cloudMembers,
+    List<String> favoriteIds,
+    DateTime now,
+  ) async {
+    final allLocalMembers = <Member>[];
+
+    for (var i = 0; i < 20; i++) {
+      try {
+        final content = await _loadAssetSplitChunk(i);
+        final chunk = _parseMembersFromJsonChunk(content, favoriteIds);
+        allLocalMembers.addAll(chunk);
+
+        // 파일 하나 로드될 때마다 즉시 병합 후 UI 업데이트
+        final merged = _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers);
+        _notifyListeners(merged);
+        debugPrint(
+            '[FirestoreMemberRepository] 에셋 chunk $i 로드: 누적 ${merged.length}명');
+      } catch (_) {
+        break; // 파일 없으면 종료
+      }
+    }
+
+    // 로컬 에셋 로드 실패 시 GitHub Raw URL 시도
+    if (allLocalMembers.isEmpty) {
+      debugPrint('[FirestoreMemberRepository] 에셋 로드 실패, GitHub Raw 시도...');
+      final remoteMembers = await _loadSplitMembersFromRemote(favoriteIds);
+      if (remoteMembers.isNotEmpty) {
+        final merged = _mergeMembersByIdPreferCloud(cloudMembers, remoteMembers);
+        _notifyListeners(merged);
+        _performPollMatchingInBackground(merged, now);
+        return;
+      }
+    }
+
+    final finalMembers = allLocalMembers.isNotEmpty
+        ? _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers)
+        : cloudMembers;
+
+    _resolveMissingProfileImagesInBackground(finalMembers);
+    _performPollMatchingInBackground(finalMembers, now);
   }
 
   Future<List<Member>> _loadFallbackMembers() async {
@@ -510,27 +538,16 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<List<Member>> _loadSplitMembersFromAssets(
     List<String> favoriteIds,
   ) async {
-    // 몇 개의 파일이 있는지 먼저 파악한 뒤 병렬로 모두 로드
-    final List<Future<List<Member>>> futures = [];
-    for (var i = 0; i < 50; i++) {
-      final idx = i;
-      futures.add(() async {
-        try {
-          final content = await _loadAssetSplitChunk(idx);
-          return _parseMembersFromJsonChunk(content, favoriteIds);
-        } catch (_) {
-          return <Member>[];
-        }
-      }());
-    }
-
-    // 병렬 로드: 빈 결과가 처음 나오면 그 이전까지가 유효한 파일
-    // (단순히 Future.wait으로 전체를 수집)
-    final results = await Future.wait(futures);
+    // 순차 로드 (웹에서 메모리 압박 방지)
     final members = <Member>[];
-    for (final chunk in results) {
-      if (chunk.isEmpty && members.isNotEmpty) break; // 파일 끝 감지
-      members.addAll(chunk);
+    for (var i = 0; i < 20; i++) {
+      try {
+        final content = await _loadAssetSplitChunk(i);
+        final chunk = _parseMembersFromJsonChunk(content, favoriteIds);
+        members.addAll(chunk);
+      } catch (_) {
+        break; // 파일 없으면 종료
+      }
     }
     return members;
   }
