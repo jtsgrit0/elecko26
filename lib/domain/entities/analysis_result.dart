@@ -23,12 +23,12 @@ class SnsAnalysis {
 class AnalysisResult {
   final String memberId;
   final DateTime analysisDate;
-  
+
   // 당선 가능성 (0~100)
   final double electionPossibility;
   final double previousPossibility;
   final double possibilityChange;
-  
+
   // 분석 점수
   final double achievementScore;
   final double activityScore;
@@ -37,16 +37,16 @@ class AnalysisResult {
   final double socialContributionScore;
   final double pollScore;
   final double historicalScore;
-  
+
   // AI 분석 결과
   final List<String> improvements;
   final List<String> strengths;
   final List<String> weaknesses;
   final String analysisReport;
-  
+
   // 추세 데이터
   final List<DailyPossibility> dailyTrends;
-  
+
   // SNS 분석 데이터 (선택사항)
   final SnsAnalysis? snsAnalysis;
 

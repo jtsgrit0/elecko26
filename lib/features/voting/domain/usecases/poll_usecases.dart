@@ -102,7 +102,8 @@ class UpdatePollStatusUseCase extends PollUseCase {
 class VoteUseCase extends PollUseCase {
   VoteUseCase(super.repository);
 
-  Future<VoteResult> execute(String pollId, String userId, List<String> optionIds) async {
+  Future<VoteResult> execute(
+      String pollId, String userId, List<String> optionIds) async {
     // 투표 검증
     final poll = await repository.getPoll(pollId);
     if (poll == null) {

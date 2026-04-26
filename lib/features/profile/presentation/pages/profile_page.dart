@@ -32,7 +32,8 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     _profileRepository = ProfileRepositoryImpl();
     _getUserProfileUseCase = GetUserProfileUseCase(_profileRepository);
-    _initializeUserProfileUseCase = InitializeUserProfileUseCase(_profileRepository);
+    _initializeUserProfileUseCase =
+        InitializeUserProfileUseCase(_profileRepository);
     _loadUserProfile();
   }
 
@@ -43,7 +44,8 @@ class _ProfilePageState extends State<ProfilePage> {
     });
 
     try {
-      final profile = await _getUserProfileUseCase.execute(widget.currentUser.id);
+      final profile =
+          await _getUserProfileUseCase.execute(widget.currentUser.id);
 
       if (profile == null) {
         // 프로필이 없으면 초기화
@@ -192,9 +194,11 @@ class _ProfilePageState extends State<ProfilePage> {
             const Divider(),
             _buildInfoRow('전화번호', _userProfile!.phoneNumber ?? '정보 없음'),
             const Divider(),
-            _buildInfoRow('생년월일', _userProfile!.birthDate != null
-                ? '${_userProfile!.birthDate!.year}-${_userProfile!.birthDate!.month.toString().padLeft(2, '0')}-${_userProfile!.birthDate!.day.toString().padLeft(2, '0')}'
-                : '정보 없음'),
+            _buildInfoRow(
+                '생년월일',
+                _userProfile!.birthDate != null
+                    ? '${_userProfile!.birthDate!.year}-${_userProfile!.birthDate!.month.toString().padLeft(2, '0')}-${_userProfile!.birthDate!.day.toString().padLeft(2, '0')}'
+                    : '정보 없음'),
             const Divider(),
             _buildInfoRow('성별', _userProfile!.gender ?? '정보 없음'),
             const Divider(),
@@ -213,7 +217,8 @@ class _ProfilePageState extends State<ProfilePage> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        crossAxisAlignment: isMultiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        crossAxisAlignment:
+            isMultiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: [
           SizedBox(
             width: 80,

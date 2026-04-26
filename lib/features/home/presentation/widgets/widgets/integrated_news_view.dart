@@ -26,7 +26,7 @@ class IntegratedNewsView extends StatelessWidget {
       builder: (context, snapshot) {
         final members = snapshot.data ?? cachedMembers;
         final favorites = members.where((m) => m.isFavorite).toList();
-        
+
         // 모든 즐겨찾기 의원의 뉴스를 수집하여 날짜순 정렬
         final allNews = <Map<String, dynamic>>[];
         for (var m in favorites) {
@@ -37,7 +37,8 @@ class IntegratedNewsView extends StatelessWidget {
             });
           }
         }
-        allNews.sort((a, b) => (b['report'].publishDate as DateTime).compareTo(a['report'].publishDate));
+        allNews.sort((a, b) => (b['report'].publishDate as DateTime)
+            .compareTo(a['report'].publishDate));
 
         return Container(
           color: AppColors.white,
@@ -49,12 +50,16 @@ class IntegratedNewsView extends StatelessWidget {
                   color: AppColors.accent,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 16, bottom: 16, left: 16, right: 16),
+                  padding: const EdgeInsets.only(
+                      top: 16, bottom: 16, left: 16, right: 16),
                   child: Row(
                     children: [
-                      const Icon(Icons.newspaper, color: AppColors.dark, size: 28),
+                      const Icon(Icons.newspaper,
+                          color: AppColors.dark, size: 28),
                       const SizedBox(width: 12),
-                      Text('통합 뉴스 피드', style: AppTextStyles.headline3.copyWith(color: AppColors.dark)),
+                      Text('통합 뉴스 피드',
+                          style: AppTextStyles.headline3
+                              .copyWith(color: AppColors.dark)),
                     ],
                   ),
                 ),
@@ -68,7 +73,8 @@ class IntegratedNewsView extends StatelessWidget {
                   child: ListView.separated(
                     padding: const EdgeInsets.all(16),
                     itemCount: allNews.length,
-                    separatorBuilder: (context, index) => const Divider(height: 32),
+                    separatorBuilder: (context, index) =>
+                        const Divider(height: 32),
                     itemBuilder: (context, index) {
                       final item = allNews[index];
                       final Member m = item['member'];
@@ -86,12 +92,23 @@ class IntegratedNewsView extends StatelessWidget {
                                     child: m.imageUrl.isNotEmpty
                                         ? ClipOval(
                                             child: CachedNetworkImage(
-                                              imageUrl: ImageUtil.getProxyUrl(m.imageUrl, width: 48, height: 48),
+                                              imageUrl: ImageUtil.getProxyUrl(
+                                                  m.imageUrl,
+                                                  width: 48,
+                                                  height: 48),
                                               width: 24,
                                               height: 24,
                                               fit: BoxFit.cover,
-                                              placeholder: (context, url) => Container(width: 24, height: 24, color: AppColors.lightGrey),
-                                              errorWidget: (context, url, error) => const Icon(Icons.person, size: 12),
+                                              placeholder: (context, url) =>
+                                                  Container(
+                                                      width: 24,
+                                                      height: 24,
+                                                      color:
+                                                          AppColors.lightGrey),
+                                              errorWidget:
+                                                  (context, url, error) =>
+                                                      const Icon(Icons.person,
+                                                          size: 12),
                                             ),
                                           )
                                         : const Icon(Icons.person, size: 12),
@@ -104,7 +121,9 @@ class IntegratedNewsView extends StatelessWidget {
                                       child: Image.asset(
                                         PartyUtil.getPartyLogoUrl(m.party),
                                         fit: BoxFit.contain,
-                                        errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                const SizedBox(),
                                       ),
                                     ),
                                   ),
@@ -124,36 +143,66 @@ class IntegratedNewsView extends StatelessWidget {
                               RichText(
                                 text: TextSpan(
                                   children: [
-                                    TextSpan(text: '${m.name} • ', style: AppTextStyles.labelSmall.copyWith(color: AppColors.darkGray, fontWeight: FontWeight.bold)),
-                                    TextSpan(text: m.party, style: AppTextStyles.labelSmall.copyWith(color: PartyUtil.getPartyColor(m.party), fontWeight: FontWeight.bold)),
+                                    TextSpan(
+                                        text: '${m.name} • ',
+                                        style: AppTextStyles.labelSmall
+                                            .copyWith(
+                                                color: AppColors.darkGray,
+                                                fontWeight: FontWeight.bold)),
+                                    TextSpan(
+                                        text: m.party,
+                                        style: AppTextStyles.labelSmall
+                                            .copyWith(
+                                                color: PartyUtil.getPartyColor(
+                                                    m.party),
+                                                fontWeight: FontWeight.bold)),
                                   ],
                                 ),
                               ),
                               const Spacer(),
                               Row(
                                 children: [
-                                  const Icon(Icons.calendar_today, size: 12, color: AppColors.grey),
+                                  const Icon(Icons.calendar_today,
+                                      size: 12, color: AppColors.grey),
                                   const SizedBox(width: 4),
-                                  Text(report.publishDate.toString().split(' ')[0], style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey)),
+                                  Text(
+                                      report.publishDate
+                                          .toString()
+                                          .split(' ')[0],
+                                      style: AppTextStyles.bodySmall
+                                          .copyWith(color: AppColors.grey)),
                                 ],
                               ),
                             ],
                           ),
                           const SizedBox(height: 12),
-                          Text(report.title, style: AppTextStyles.headline4.copyWith(color: AppColors.darkGray)),
+                          Text(report.title,
+                              style: AppTextStyles.headline4
+                                  .copyWith(color: AppColors.darkGray)),
                           const SizedBox(height: 6),
-                          Text(report.summary, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.darkGray.withOpacity(0.8)), maxLines: 2, overflow: TextOverflow.ellipsis),
+                          Text(report.summary,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.darkGray.withOpacity(0.8)),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis),
                           const SizedBox(height: 12),
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(color: AppColors.lightGrey, borderRadius: BorderRadius.circular(4)),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                    color: AppColors.lightGrey,
+                                    borderRadius: BorderRadius.circular(4)),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.source, size: 12, color: AppColors.grey),
+                                    const Icon(Icons.source,
+                                        size: 12, color: AppColors.grey),
                                     const SizedBox(width: 4),
-                                    Text(report.source, style: AppTextStyles.labelSmall.copyWith(color: AppColors.darkGray)),
+                                    Text(report.source,
+                                        style: AppTextStyles.labelSmall
+                                            .copyWith(
+                                                color: AppColors.darkGray)),
                                   ],
                                 ),
                               ),
@@ -170,5 +219,4 @@ class IntegratedNewsView extends StatelessWidget {
       },
     );
   }
-
 }

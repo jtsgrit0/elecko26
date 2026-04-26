@@ -100,7 +100,7 @@ class HistoricalElectionRepositoryImpl implements HistoricalElectionRepository {
   @override
   Future<double> getVoterInterest(String region) async {
     final pdfData = await _dataSource.loadPdfData();
-    
+
     double totalInterest = 0;
     int count = 0;
 

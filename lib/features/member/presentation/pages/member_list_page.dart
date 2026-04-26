@@ -63,49 +63,57 @@ class _MemberListPageState extends State<MemberListPage> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                
+
                 var members = snapshot.data ?? [];
-                
+
                 // 지역 필터링
                 if (_userRegion != '전국') {
                   String shortRegion = _userRegion.substring(0, 2);
                   if (_userRegion == '세종특별자치시') shortRegion = '세종';
                   if (_userRegion == '제주특별자치도') shortRegion = '제주';
                   if (_userRegion == '전북특별자치도') shortRegion = '전북';
-                  
-                  members = members.where((m) => m.district.contains(shortRegion)).toList();
+
+                  members = members
+                      .where((m) => m.district.contains(shortRegion))
+                      .toList();
                 }
-                
+
                 // 검색 필터
                 if (_searchQuery.isNotEmpty) {
                   final query = _searchQuery.toLowerCase();
-                  members = members.where((m) => 
-                    m.name.toLowerCase().contains(query) || 
-                    m.party.toLowerCase().contains(query) ||
-                    m.district.toLowerCase().contains(query) ||
-                    m.bio.toLowerCase().contains(query) ||
-                    m.policies.any((p) => p.toLowerCase().contains(query)) ||
-                    m.achievementsList.any((a) => a.toLowerCase().contains(query))
-                  ).toList();
+                  members = members
+                      .where((m) =>
+                          m.name.toLowerCase().contains(query) ||
+                          m.party.toLowerCase().contains(query) ||
+                          m.district.toLowerCase().contains(query) ||
+                          m.bio.toLowerCase().contains(query) ||
+                          m.policies
+                              .any((p) => p.toLowerCase().contains(query)) ||
+                          m.achievementsList
+                              .any((a) => a.toLowerCase().contains(query)))
+                      .toList();
                 }
-                
+
                 // 정당 필터
                 if (_filterParty != 'all') {
                   members = members.where((m) {
-                    if (_filterParty == 'democratic') return m.party == '더불어민주당';
+                    if (_filterParty == 'democratic')
+                      return m.party == '더불어민주당';
                     if (_filterParty == 'power') return m.party == '국민의힘';
-                    if (_filterParty == 'other') return m.party != '더불어민주당' && m.party != '국민의힘';
+                    if (_filterParty == 'other')
+                      return m.party != '더불어민주당' && m.party != '국민의힘';
                     return true;
                   }).toList();
                 }
-                
+
                 // 정렬
                 if (_sortBy == 'name') {
                   members.sort((a, b) => a.name.compareTo(b.name));
                 } else if (_sortBy == 'party') {
                   members.sort((a, b) => a.party.compareTo(b.party));
                 } else if (_sortBy == 'possibility') {
-                  members.sort((a, b) => b.electionPossibility.compareTo(a.electionPossibility));
+                  members.sort((a, b) =>
+                      b.electionPossibility.compareTo(a.electionPossibility));
                 }
 
                 return ListView.builder(
@@ -299,9 +307,11 @@ class _MemberCard extends StatelessWidget {
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(35),
                         child: CachedNetworkImage(
-                          imageUrl: ImageUtil.getProxyUrl(member.imageUrl, width: 140, height: 140),
+                          imageUrl: ImageUtil.getProxyUrl(member.imageUrl,
+                              width: 140, height: 140),
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(color: AppColors.lightGrey.withOpacity(0.3)),
+                          placeholder: (context, url) => Container(
+                              color: AppColors.lightGrey.withOpacity(0.3)),
                           errorWidget: (context, url, error) => const Icon(
                             Icons.person,
                             color: AppColors.white,
@@ -392,7 +402,8 @@ class _MemberCard extends StatelessWidget {
                       IconButton(
                         icon: Icon(
                           member.isFavorite ? Icons.star : Icons.star_border,
-                          color: member.isFavorite ? Colors.amber : AppColors.grey,
+                          color:
+                              member.isFavorite ? Colors.amber : AppColors.grey,
                           size: 20,
                         ),
                         onPressed: () {
@@ -463,9 +474,8 @@ class _SortOption extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       title: Text(label),
-      trailing: isSelected
-          ? const Icon(Icons.check, color: AppColors.primary)
-          : null,
+      trailing:
+          isSelected ? const Icon(Icons.check, color: AppColors.primary) : null,
       onTap: onTap,
     );
   }

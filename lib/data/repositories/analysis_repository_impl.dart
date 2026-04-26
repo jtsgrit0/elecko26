@@ -4,7 +4,7 @@ import 'package:elecko26_new/domain/repositories/analysis_repository.dart';
 /// 분석 저장소 구현체 (데이터 레이어)
 class AnalysisRepositoryImpl implements AnalysisRepository {
   // TODO: DataSource inject
-  
+
   @override
   Future<AnalysisResult> analyzeElectionPossibility(String memberId) async {
     // TODO: 구현 - AI DataSource에서 처리
@@ -18,7 +18,8 @@ class AnalysisRepositoryImpl implements AnalysisRepository {
   }
 
   @override
-  Future<AnalysisResult> getDailyAnalysis(String memberId, DateTime date) async {
+  Future<AnalysisResult> getDailyAnalysis(
+      String memberId, DateTime date) async {
     // TODO: 구현 - 로컬/원격 DataSource에서 처리
     throw UnimplementedError();
   }

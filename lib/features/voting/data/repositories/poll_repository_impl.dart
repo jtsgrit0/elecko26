@@ -8,7 +8,7 @@ import 'package:firebase_core/firebase_core.dart';
 class PollRepositoryImpl implements PollRepository {
   // Firebase 초기화 전 접근 방지 및 안전한 Getter 구성
   FirebaseFirestore? _firestoreCache;
-  
+
   FirebaseFirestore get _firestore {
     if (_firestoreCache != null) return _firestoreCache!;
     try {
@@ -20,7 +20,8 @@ class PollRepositoryImpl implements PollRepository {
       debugPrint('[PollRepo] Firestore instance access failed: $e');
     }
     // Fallback 또는 에러 발생 시 명시적 예외 (Try-Catch로 호출부에서 처리됨)
-    throw UnsupportedError('Firebase is not initialized or not supported in this environment');
+    throw UnsupportedError(
+        'Firebase is not initialized or not supported in this environment');
   }
 
   CollectionReference get _pollsCollection => _firestore.collection('polls');
@@ -39,7 +40,8 @@ class PollRepositoryImpl implements PollRepository {
     try {
       if (Firebase.apps.isEmpty) return []; // Firebase 미설정 시 빈 목록 반환
 
-      Query query = _pollsCollection.orderBy('createdAt', descending: true).limit(limit);
+      Query query =
+          _pollsCollection.orderBy('createdAt', descending: true).limit(limit);
 
       if (creatorId != null) {
         query = query.where('creatorId', isEqualTo: creatorId);
@@ -92,7 +94,8 @@ class PollRepositoryImpl implements PollRepository {
   @override
   Future<PollCreationResult> createPoll(Poll poll) async {
     try {
-      if (Firebase.apps.isEmpty) return PollCreationResult.failure('Firebase 미연결 상태입니다.');
+      if (Firebase.apps.isEmpty)
+        return PollCreationResult.failure('Firebase 미연결 상태입니다.');
       final pollId = poll.id.isEmpty ? _pollsCollection.doc().id : poll.id;
       final pollWithId = poll.copyWith(id: pollId);
 
@@ -106,7 +109,8 @@ class PollRepositoryImpl implements PollRepository {
   @override
   Future<PollCreationResult> updatePoll(String pollId, Poll poll) async {
     try {
-      if (Firebase.apps.isEmpty) return PollCreationResult.failure('Firebase 미연결 상태입니다.');
+      if (Firebase.apps.isEmpty)
+        return PollCreationResult.failure('Firebase 미연결 상태입니다.');
       await _pollsCollection.doc(pollId).update(poll.toJson());
       return PollCreationResult.success(poll);
     } catch (e) {
@@ -119,7 +123,8 @@ class PollRepositoryImpl implements PollRepository {
     try {
       if (Firebase.apps.isEmpty) return false;
       await _pollsCollection.doc(pollId).delete();
-      final votesQuery = await _votesCollection.where('pollId', isEqualTo: pollId).get();
+      final votesQuery =
+          await _votesCollection.where('pollId', isEqualTo: pollId).get();
       final batch = _firestore.batch();
       for (final doc in votesQuery.docs) {
         batch.delete(doc.reference);
@@ -143,9 +148,11 @@ class PollRepositoryImpl implements PollRepository {
   }
 
   @override
-  Future<VoteResult> vote(String pollId, String userId, List<String> optionIds) async {
+  Future<VoteResult> vote(
+      String pollId, String userId, List<String> optionIds) async {
     try {
-      if (Firebase.apps.isEmpty) return VoteResult.failure('Firebase 미연결 상태입니다.');
+      if (Firebase.apps.isEmpty)
+        return VoteResult.failure('Firebase 미연결 상태입니다.');
       await _firestore.runTransaction((transaction) async {
         final voteDoc = _votesCollection.doc();
         transaction.set(voteDoc, {
@@ -163,7 +170,8 @@ class PollRepositoryImpl implements PollRepository {
         }
 
         final pollData = pollDoc.data() as Map<String, dynamic>;
-        final currentVoteCounts = Map<String, int>.from(pollData['voteCounts'] ?? {});
+        final currentVoteCounts =
+            Map<String, int>.from(pollData['voteCounts'] ?? {});
         final currentTotalVotes = pollData['totalVotes'] as int? ?? 0;
 
         for (final optionId in optionIds) {
@@ -239,7 +247,8 @@ class PollRepositoryImpl implements PollRepository {
   }) {
     if (Firebase.apps.isEmpty) return Stream.value([]);
     Query query = _pollsCollection.orderBy('createdAt', descending: true);
-    if (creatorId != null) query = query.where('creatorId', isEqualTo: creatorId);
+    if (creatorId != null)
+      query = query.where('creatorId', isEqualTo: creatorId);
     if (status != null) query = query.where('status', isEqualTo: status.index);
 
     return query.snapshots().map((snapshot) {

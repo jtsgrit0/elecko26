@@ -74,5 +74,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'elecko26-536e0.firebasestorage.app',
     measurementId: 'G-45N8FZKZR2',
   );
-
 }

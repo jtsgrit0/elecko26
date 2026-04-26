@@ -1,36 +1,36 @@
 /// NESDC 여론조사 PDF에서 데이터 추출
-/// 
+///
 /// 한국 국회 NESDC (National Election Survey & Data Center)에서 제공하는
 /// PDF 여론조사 결과에서 의원별 지지율을 추출합니다.
 
 class NesdcPdfExtractor {
   /// PDF에서 의원 지지율 추출
-  /// 
+  ///
   /// NESDC PDF 형식:
   /// - 정당별로 후보자 순서로 정렬
   /// - "지지율 XX.X%" 또는 "XX.X points" 형식
   /// - 이름, 정당, 지지율 순서로 표시
   static Map<String, double> extractSupportRates(String pdfText) {
     final supportRates = <String, double>{};
-    
+
     try {
       // 라인 단위로 분석
       final lines = pdfText.split('\n');
-      
+
       for (int i = 0; i < lines.length; i++) {
         final line = lines[i].trim();
-        
+
         // 한글 이름과 숫자 패턴 찾기: "김철수 45.2" 또는 "김철수 45.2%"
         // 이름과 숫자 사이에 다양한 공백이나 기호가 올 수 있음
         final match = RegExp(
           r'([가-힣]{2,4})\s*[:：=]\s*([\d.]+)\s*(%|점|point)?|([가-힣]{2,4})\s+([\d.]+)\s*(%|점|point)?',
           unicode: true,
         ).firstMatch(line);
-        
+
         if (match != null) {
           final name = (match.group(1) ?? match.group(4))!.trim();
           final rateStr = (match.group(2) ?? match.group(5))!;
-          
+
           try {
             final rate = double.parse(rateStr);
             // 100 이상이면 퍼센트 단위가 아님 (보통 0~100 사이)
@@ -45,7 +45,7 @@ class NesdcPdfExtractor {
     } catch (e) {
       print('Error extracting support rates: $e');
     }
-    
+
     return supportRates;
   }
 
@@ -64,17 +64,17 @@ class NesdcPdfExtractor {
         r'(?:표본|N\s*=)\s*(\d+)',
         unicode: true,
       ).firstMatch(pdfText);
-      
+
       if (sampleMatch != null) {
         metadata['sampleSize'] = int.parse(sampleMatch.group(1)!);
       }
 
-      // 오차 한계 찾기: "오차한계 ±X.X%" 
+      // 오차 한계 찾기: "오차한계 ±X.X%"
       final marginMatch = RegExp(
         r'오차한계\s*[±+-]\s*([\d.]+)\s*%',
         unicode: true,
       ).firstMatch(pdfText);
-      
+
       if (marginMatch != null) {
         metadata['marginOfError'] = double.parse(marginMatch.group(1)!);
       }
@@ -84,7 +84,7 @@ class NesdcPdfExtractor {
         r'(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일',
         unicode: true,
       ).firstMatch(pdfText);
-      
+
       if (dateMatch != null) {
         try {
           final year = int.parse(dateMatch.group(1)!);
@@ -103,13 +103,13 @@ class NesdcPdfExtractor {
   }
 
   /// PDF 텍스트에서 정당 정보 추출
-  /// 
+  ///
   /// NESDC PDF는 보통 정당별로 섹션을 나눔
   static Map<String, List<String>> extractByParty(String pdfText) {
     final partyDataMap = <String, List<String>>{};
-    
+
     final parties = ['민주당', '국민의힘', '기타 정당', '무소속'];
-    
+
     for (final party in parties) {
       // 각 정당 섹션 찾기
       // \s\S 대신 [\s\S]를 사용하거나 .와 DOTALL을 활용
@@ -117,33 +117,33 @@ class NesdcPdfExtractor {
         '($party)[^]*?(?=(?:${parties.where((p) => p != party).join('|')})|\$)',
         unicode: true,
       );
-      
+
       final match = pattern.firstMatch(pdfText);
       if (match != null) {
         final sectionText = match.group(0) ?? '';
         final candidates = <String>[];
-        
+
         // 후보자 이름 추출
         final nameMatches = RegExp(
           r'([가-힣]{2,})',
           unicode: true,
         ).allMatches(sectionText);
-        
+
         for (final nameMatch in nameMatches) {
           candidates.add(nameMatch.group(1)!);
         }
-        
+
         if (candidates.isNotEmpty) {
           partyDataMap[party] = candidates;
         }
       }
     }
-    
+
     return partyDataMap;
   }
 
   /// 추출된 지지율 데이터를 의원명으로 매칭
-  /// 
+  ///
   /// 의원 DB의 실명과 PDF의 이름이 다를 수 있으므로
   /// 유사도 기반 매칭 수행
   static Map<String, double> matchWithMembers(
@@ -151,14 +151,14 @@ class NesdcPdfExtractor {
     List<String> memberNames,
   ) {
     final matchedRates = <String, double>{};
-    
+
     for (final memberName in memberNames) {
       // 정확한 매칭 시도
       if (extractedRates.containsKey(memberName)) {
         matchedRates[memberName] = extractedRates[memberName]!;
         continue;
       }
-      
+
       // 부분 매칭: 성이나 이름 일부 매칭
       for (final pdfName in extractedRates.keys) {
         if (_isSimilarName(memberName, pdfName)) {
@@ -167,7 +167,7 @@ class NesdcPdfExtractor {
         }
       }
     }
-    
+
     return matchedRates;
   }
 
@@ -176,7 +176,7 @@ class NesdcPdfExtractor {
   /// - 이름이 포함되는 경우
   static bool _isSimilarName(String name1, String name2) {
     if (name1 == name2) return true;
-    
+
     // 공백 제거 후 비교
     final n1 = name1.replaceAll(' ', '');
     final n2 = name2.replaceAll(' ', '');
@@ -187,7 +187,7 @@ class NesdcPdfExtractor {
     if (n1.length >= 2 && n2.length >= 2) {
       final firstName1 = n1.substring(0, 1);
       final firstName2 = n2.substring(0, 1);
-      
+
       if (firstName1 == firstName2) {
         // 성이 같으면 이름 부분이 포함되는지 확인 (외자 이름 등 고려)
         final lastName1 = n1.substring(1);
@@ -195,7 +195,7 @@ class NesdcPdfExtractor {
         return lastName1.contains(lastName2) || lastName2.contains(lastName1);
       }
     }
-    
+
     return false;
   }
 }

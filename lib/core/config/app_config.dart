@@ -3,7 +3,8 @@ class AppConfig {
   static const bool enableFirebase = true;
 
   /// 여론조사 데이터 (nesdc_polls.json) GitHub Raw 주소
-  static const String nesdcDataUrl = 'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/nesdc_polls.json';
+  static const String nesdcDataUrl =
+      'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/nesdc_polls.json';
 
   /// NESDC 크롤링 프록시 서버 주소
   static const String kNesdcBaseUrl = 'https://elecko-nesdc-proxy.fly.io';

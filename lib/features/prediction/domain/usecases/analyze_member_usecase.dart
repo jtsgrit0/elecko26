@@ -4,13 +4,13 @@ import 'package:elecko26_new/domain/entities/analysis_result.dart';
 abstract class AnalyzeMemberUseCase {
   /// 특정 의원의 당선가능성 분석
   Future<AnalysisResult> analyzeMember(String memberId);
-  
+
   /// 모든 의원의 당선가능성 분석
   Future<List<AnalysisResult>> analyzeAllMembers();
-  
+
   /// 특정 의원의 일일 변화 분석
   Future<AnalysisResult> analyzeDailyChange(String memberId);
-  
+
   /// 보완점 추출
   Future<List<String>> extractImprovementPoints(String memberId);
 }

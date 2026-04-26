@@ -173,8 +173,10 @@ String getParentRegion(String district) {
 
     // 경기도
     '수원': '경기도', '용인': '경기도', '고양': '경기도', '화성': '경기도', '성남': '경기도',
-    '부천': '경기도', '남양주': '경기도', '안산': '경기도', '평택': '경기도', '안양': '경기도', '시흥': '경기도',
-    '파주': '경기도', '김포': '경기도', '의정부': '경기도', '하남': '경기도', '군포': '경기도', '오산': '경기도',
+    '부천': '경기도', '남양주': '경기도', '안산': '경기도', '평택': '경기도', '안양': '경기도',
+    '시흥': '경기도',
+    '파주': '경기도', '김포': '경기도', '의정부': '경기도', '하남': '경기도', '군포': '경기도',
+    '오산': '경기도',
 
     // 기타 주요 도시
     '청주': '충청북도', '충주': '충청북도', '제천': '충청북도',
@@ -192,7 +194,7 @@ String getParentRegion(String district) {
   // 정확한 매칭을 위해 긴 키워드부터 검사 (예: "해운대"가 "남구"보다 먼저 매칭되도록)
   final sortedEntries = districtToRegion.entries.toList()
     ..sort((a, b) => b.key.length.compareTo(a.key.length));
-  
+
   for (final entry in sortedEntries) {
     if (district.contains(entry.key)) {
       return entry.value;

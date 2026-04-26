@@ -35,7 +35,8 @@ class _SettingsPageState extends State<SettingsPage> {
     _settingsRepository = SettingsRepositoryImpl();
     _getAppSettingsUseCase = GetAppSettingsUseCase(_settingsRepository);
     _saveAppSettingsUseCase = SaveAppSettingsUseCase(_settingsRepository);
-    _toggleNotificationsUseCase = ToggleNotificationsUseCase(_settingsRepository);
+    _toggleNotificationsUseCase =
+        ToggleNotificationsUseCase(_settingsRepository);
     _toggleDarkModeUseCase = ToggleDarkModeUseCase(_settingsRepository);
     _changeLanguageUseCase = ChangeLanguageUseCase(_settingsRepository);
     _resetSettingsUseCase = ResetSettingsUseCase(_settingsRepository);
@@ -49,7 +50,8 @@ class _SettingsPageState extends State<SettingsPage> {
     });
 
     try {
-      final settings = await _getAppSettingsUseCase.execute(widget.currentUser.id);
+      final settings =
+          await _getAppSettingsUseCase.execute(widget.currentUser.id);
       setState(() => _settings = settings);
     } catch (e) {
       setState(() => _errorMessage = '설정을 불러오는 중 오류가 발생했습니다.');
@@ -58,7 +60,8 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  Future<void> _updateSetting(Future<SettingsUpdateResult> Function() updateFunction) async {
+  Future<void> _updateSetting(
+      Future<SettingsUpdateResult> Function() updateFunction) async {
     try {
       final result = await updateFunction();
       if (result.isSuccess && result.updatedSettings != null) {
@@ -98,7 +101,8 @@ class _SettingsPageState extends State<SettingsPage> {
     );
 
     if (confirmed == true) {
-      await _updateSetting(() => _resetSettingsUseCase.execute(widget.currentUser.id));
+      await _updateSetting(
+          () => _resetSettingsUseCase.execute(widget.currentUser.id));
     }
   }
 
@@ -156,7 +160,8 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: '앱 알림을 받습니다',
             value: _settings!.notificationsEnabled,
             onChanged: (value) => _updateSetting(
-              () => _toggleNotificationsUseCase.execute(widget.currentUser.id, value),
+              () => _toggleNotificationsUseCase.execute(
+                  widget.currentUser.id, value),
             ),
           ),
           const SizedBox(height: 8),
@@ -167,11 +172,11 @@ class _SettingsPageState extends State<SettingsPage> {
             onChanged: (value) async {
               final updatedSettings = _settings!.copyWith(soundEnabled: value);
               await _updateSetting(
-                () => _saveAppSettingsUseCase.execute(widget.currentUser.id, updatedSettings),
+                () => _saveAppSettingsUseCase.execute(
+                    widget.currentUser.id, updatedSettings),
               );
             },
           ),
-
           const SizedBox(height: 24),
           _buildSectionTitle('화면'),
           _buildSwitchSetting(
@@ -179,7 +184,8 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: '어두운 테마를 사용합니다',
             value: _settings!.darkModeEnabled,
             onChanged: (value) => _updateSetting(
-              () => _toggleDarkModeUseCase.execute(widget.currentUser.id, value),
+              () =>
+                  _toggleDarkModeUseCase.execute(widget.currentUser.id, value),
             ),
           ),
           const SizedBox(height: 8),
@@ -190,11 +196,11 @@ class _SettingsPageState extends State<SettingsPage> {
             onChanged: (value) async {
               final updatedSettings = _settings!.copyWith(showImages: value);
               await _updateSetting(
-                () => _saveAppSettingsUseCase.execute(widget.currentUser.id, updatedSettings),
+                () => _saveAppSettingsUseCase.execute(
+                    widget.currentUser.id, updatedSettings),
               );
             },
           ),
-
           const SizedBox(height: 24),
           _buildSectionTitle('데이터'),
           _buildSwitchSetting(
@@ -202,9 +208,11 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: '데이터를 자동으로 업데이트합니다',
             value: _settings!.autoRefreshEnabled,
             onChanged: (value) async {
-              final updatedSettings = _settings!.copyWith(autoRefreshEnabled: value);
+              final updatedSettings =
+                  _settings!.copyWith(autoRefreshEnabled: value);
               await _updateSetting(
-                () => _saveAppSettingsUseCase.execute(widget.currentUser.id, updatedSettings),
+                () => _saveAppSettingsUseCase.execute(
+                    widget.currentUser.id, updatedSettings),
               );
             },
           ),
@@ -216,13 +224,14 @@ class _SettingsPageState extends State<SettingsPage> {
             items: const [15, 30, 60, 120],
             itemLabelBuilder: (minutes) => '$minutes분',
             onChanged: (value) async {
-              final updatedSettings = _settings!.copyWith(refreshIntervalMinutes: value);
+              final updatedSettings =
+                  _settings!.copyWith(refreshIntervalMinutes: value);
               await _updateSetting(
-                () => _saveAppSettingsUseCase.execute(widget.currentUser.id, updatedSettings),
+                () => _saveAppSettingsUseCase.execute(
+                    widget.currentUser.id, updatedSettings),
               );
             },
           ),
-
           const SizedBox(height: 24),
           _buildSectionTitle('언어'),
           _buildDropdownSetting(
@@ -232,10 +241,10 @@ class _SettingsPageState extends State<SettingsPage> {
             items: const ['ko', 'en'],
             itemLabelBuilder: (code) => code == 'ko' ? '한국어' : 'English',
             onChanged: (value) => _updateSetting(
-              () => _changeLanguageUseCase.execute(widget.currentUser.id, value),
+              () =>
+                  _changeLanguageUseCase.execute(widget.currentUser.id, value),
             ),
           ),
-
           const SizedBox(height: 32),
           _buildActionButton(
             title: '설정 초기화',

@@ -117,7 +117,8 @@ class MemberModel extends Member {
       'achievementsList': achievementsList,
       'actions': actions,
       'policies': policies,
-      'pressReports': pressReports.map((e) => (e as PressReportModel).toJson()).toList(),
+      'pressReports':
+          pressReports.map((e) => (e as PressReportModel).toJson()).toList(),
       'polls': polls
           .map((e) => PollModel(
                 id: e.id,
@@ -163,11 +164,16 @@ class PollModel extends Poll {
     return PollModel(
       id: (json['id'] ?? '') as String,
       pollAgency: (json['pollAgency'] ?? '') as String,
-      surveyDate: DateTime.tryParse(json['surveyDate'] as String? ?? '') ?? DateTime.now(),
-      supportRate: supportRateValue == null ? null : (supportRateValue as num).toDouble(),
+      surveyDate: DateTime.tryParse(json['surveyDate'] as String? ?? '') ??
+          DateTime.now(),
+      supportRate: supportRateValue == null
+          ? null
+          : (supportRateValue as num).toDouble(),
       partyName: (json['partyName'] ?? '') as String,
-      sampleSize: sampleSizeValue == null ? null : (sampleSizeValue as num).toInt(),
-      marginOfError: marginValue == null ? null : (marginValue as num).toDouble(),
+      sampleSize:
+          sampleSizeValue == null ? null : (sampleSizeValue as num).toInt(),
+      marginOfError:
+          marginValue == null ? null : (marginValue as num).toDouble(),
       source: (json['source'] ?? '') as String,
       notes: json['notes'] as String?,
     );
@@ -205,7 +211,8 @@ class PressReportModel extends PressReport {
       title: (json['title'] ?? '') as String,
       source: (json['source'] ?? '') as String,
       url: (json['url'] ?? json['link'] ?? '') as String,
-      publishDate: DateTime.tryParse(json['publishDate'] as String? ?? '') ?? DateTime.now(),
+      publishDate: DateTime.tryParse(json['publishDate'] as String? ?? '') ??
+          DateTime.now(),
       summary: (json['summary'] ?? json['content'] ?? '') as String,
       sentiment: (json['sentiment'] ?? 'neutral') as String,
     );
@@ -223,6 +230,7 @@ class PressReportModel extends PressReport {
     };
   }
 }
+
 class SocialContributionModel extends SocialContribution {
   SocialContributionModel({
     required super.title,

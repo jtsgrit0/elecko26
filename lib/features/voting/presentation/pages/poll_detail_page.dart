@@ -42,9 +42,10 @@ class _PollDetailPageState extends State<PollDetailPage> {
     try {
       // 투표 결과 가져오기
       final result = await sl<GetPollResultsUseCase>().execute(widget.poll.id);
-      
+
       // 내 투표 기록 가져오기
-      final myVotes = await sl<GetUserVotesUseCase>().execute(widget.poll.id, widget.currentUser.id);
+      final myVotes = await sl<GetUserVotesUseCase>()
+          .execute(widget.poll.id, widget.currentUser.id);
 
       if (mounted) {
         setState(() {
@@ -81,7 +82,8 @@ class _PollDetailPageState extends State<PollDetailPage> {
     });
 
     try {
-      final result = await sl<VoteUseCase>().execute(_currentPoll!.id, widget.currentUser.id, optionIds);
+      final result = await sl<VoteUseCase>()
+          .execute(_currentPoll!.id, widget.currentUser.id, optionIds);
 
       if (result.isSuccess) {
         if (mounted) {
@@ -136,7 +138,8 @@ class _PollDetailPageState extends State<PollDetailPage> {
     if (confirmed != true) return;
 
     try {
-      final result = await sl<UpdatePollStatusUseCase>().execute(_currentPoll!.id, PollStatus.ended);
+      final result = await sl<UpdatePollStatusUseCase>()
+          .execute(_currentPoll!.id, PollStatus.ended);
 
       if (result) {
         if (mounted) {
@@ -263,31 +266,31 @@ class _PollDetailPageState extends State<PollDetailPage> {
             const SizedBox(height: 16),
             Row(
               children: [
-                    Icon(
-                      Icons.people,
-                      size: 16,
-                      color: AppColors.mediumGray,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${_currentPoll!.totalVotes}명 참여',
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.mediumGray,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Icon(
-                      Icons.access_time,
-                      size: 16,
-                      color: AppColors.mediumGray,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _formatDateTime(_currentPoll!.createdAt),
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.mediumGray,
-                      ),
-                    ),
+                Icon(
+                  Icons.people,
+                  size: 16,
+                  color: AppColors.mediumGray,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${_currentPoll!.totalVotes}명 참여',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.mediumGray,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Icon(
+                  Icons.access_time,
+                  size: 16,
+                  color: AppColors.mediumGray,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _formatDateTime(_currentPoll!.createdAt),
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.mediumGray,
+                  ),
+                ),
               ],
             ),
             if (_currentPoll!.tags.isNotEmpty) ...[
@@ -297,7 +300,8 @@ class _PollDetailPageState extends State<PollDetailPage> {
                 runSpacing: 6,
                 children: _currentPoll!.tags.map((tag) {
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(12),
@@ -320,7 +324,8 @@ class _PollDetailPageState extends State<PollDetailPage> {
   }
 
   Widget _buildPollOptions() {
-    final canVote = _currentPoll!.status == PollStatus.active && _userVoteIds.isEmpty;
+    final canVote =
+        _currentPoll!.status == PollStatus.active && _userVoteIds.isEmpty;
 
     return Card(
       elevation: 4,
@@ -340,10 +345,7 @@ class _PollDetailPageState extends State<PollDetailPage> {
               ),
             ),
             const SizedBox(height: 16),
-            if (canVote)
-              _buildVotingOptions()
-            else
-              _buildViewOnlyOptions(),
+            if (canVote) _buildVotingOptions() else _buildViewOnlyOptions(),
           ],
         ),
       ),
@@ -398,7 +400,9 @@ class _PollDetailPageState extends State<PollDetailPage> {
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary.withOpacity(0.08) : AppColors.lightGray.withOpacity(0.3),
+            color: isSelected
+                ? AppColors.primary.withOpacity(0.08)
+                : AppColors.lightGray.withOpacity(0.3),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isSelected ? AppColors.primary : AppColors.lightGray,
@@ -411,7 +415,8 @@ class _PollDetailPageState extends State<PollDetailPage> {
                   option.text,
                   style: AppTextStyles.bodyLarge.copyWith(
                     color: isSelected ? AppColors.primary : AppColors.darkGray,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
               ),
@@ -451,7 +456,8 @@ class _PollDetailPageState extends State<PollDetailPage> {
             ..._pollResult!.voteCounts.entries.map((entry) {
               final optionId = entry.key;
               final voteCount = entry.value;
-              final option = _pollResult!.poll.options.firstWhere((opt) => opt.id == optionId);
+              final option = _pollResult!.poll.options
+                  .firstWhere((opt) => opt.id == optionId);
               final percentage = _currentPoll!.totalVotes > 0
                   ? (voteCount / _currentPoll!.totalVotes * 100).round()
                   : 0;
@@ -486,7 +492,8 @@ class _PollDetailPageState extends State<PollDetailPage> {
                       backgroundColor: AppColors.lightGray,
                       minHeight: 8,
                       borderRadius: BorderRadius.circular(4),
-                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppColors.primary),
                     ),
                   ],
                 ),

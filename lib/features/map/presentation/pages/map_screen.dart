@@ -140,7 +140,9 @@ class _MapScreenState extends State<MapScreen> {
         MarkerLayer(
           markers: [
             // 다른 지역 마커들 (서울 제외)
-            ..._mapData!.regions.where((region) => region.region != '서울특별시').map((region) {
+            ..._mapData!.regions
+                .where((region) => region.region != '서울특별시')
+                .map((region) {
               final center = _getRegionCenter(region.region);
               return Marker(
                 point: center,
@@ -151,9 +153,11 @@ class _MapScreenState extends State<MapScreen> {
                   child: Column(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 6),
                         decoration: BoxDecoration(
-                          color: _getPartyColor(region.dominantParty).withOpacity(0.9),
+                          color: _getPartyColor(region.dominantParty)
+                              .withOpacity(0.9),
                           borderRadius: BorderRadius.circular(8),
                           boxShadow: [
                             BoxShadow(
@@ -197,7 +201,9 @@ class _MapScreenState extends State<MapScreen> {
               );
             }).toList(),
             // 서울특별시 마커 (제일 앞으로 표시)
-            ..._mapData!.regions.where((region) => region.region == '서울특별시').map((region) {
+            ..._mapData!.regions
+                .where((region) => region.region == '서울특별시')
+                .map((region) {
               final center = _getRegionCenter(region.region);
               return Marker(
                 point: center,
@@ -208,11 +214,14 @@ class _MapScreenState extends State<MapScreen> {
                   child: Column(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 6),
                         decoration: BoxDecoration(
-                          color: _getPartyColor(region.dominantParty).withOpacity(0.9),
+                          color: _getPartyColor(region.dominantParty)
+                              .withOpacity(0.9),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.yellow, width: 2), // 서울 강조
+                          border: Border.all(
+                              color: Colors.yellow, width: 2), // 서울 강조
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.3),
@@ -273,7 +282,8 @@ class _MapScreenState extends State<MapScreen> {
               const SizedBox(height: 8),
               Text(
                 '우세 정당: ${region.dominantParty}',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               Text(
                 '예상 득표율: ${region.dominantPercentage.toStringAsFixed(2)}%',
@@ -287,7 +297,8 @@ class _MapScreenState extends State<MapScreen> {
               ...region.partyPercentages.entries.map((entry) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Text('${entry.key}: ${entry.value.toStringAsFixed(2)}%'),
+                  child:
+                      Text('${entry.key}: ${entry.value.toStringAsFixed(2)}%'),
                 );
               }).toList(),
             ],

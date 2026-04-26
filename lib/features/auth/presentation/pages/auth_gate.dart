@@ -54,12 +54,15 @@ class _AuthGateState extends State<AuthGate> {
       // 저장된 이메일/비밀번호가 있으면 자동 로그인 시도
       final savedEmail = await localService.getString('auto_login_email');
       final savedPassword = await localService.getString('auto_login_password');
-      if (savedEmail != null && savedPassword != null && savedEmail.isNotEmpty && mounted) {
+      if (savedEmail != null &&
+          savedPassword != null &&
+          savedEmail.isNotEmpty &&
+          mounted) {
         // 자동 로그인 전 Firebase 세션 초기화 (이전 프로젝트 캐시 제거)
         try {
           await auth.FirebaseAuth.instance.signOut();
         } catch (_) {}
-        
+
         _emailController.text = savedEmail;
         _passwordController.text = savedPassword;
         _submit();
@@ -261,7 +264,9 @@ class _AuthGateState extends State<AuthGate> {
                           ),
                           const SizedBox(height: 24),
                           Text(
-                            _isLoginMode ? '투표 참여를\n계속하려면 로그인하세요' : '계정을 만들고\n바로 투표에 참여하세요',
+                            _isLoginMode
+                                ? '투표 참여를\n계속하려면 로그인하세요'
+                                : '계정을 만들고\n바로 투표에 참여하세요',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 30,
@@ -354,7 +359,8 @@ class _AuthGateState extends State<AuthGate> {
                               keyboardType: TextInputType.emailAddress,
                               decoration: InputDecoration(
                                 labelText: '이메일',
-                                prefixIcon: const Icon(Icons.alternate_email_rounded),
+                                prefixIcon:
+                                    const Icon(Icons.alternate_email_rounded),
                                 filled: true,
                                 fillColor: const Color(0xFFFCF8F3),
                                 border: OutlineInputBorder(
@@ -365,7 +371,8 @@ class _AuthGateState extends State<AuthGate> {
                               validator: (value) {
                                 final text = value?.trim() ?? '';
                                 if (text.isEmpty) return '이메일을 입력해주세요.';
-                                if (!text.contains('@')) return '유효한 이메일 형식을 입력해주세요.';
+                                if (!text.contains('@'))
+                                  return '유효한 이메일 형식을 입력해주세요.';
                                 return null;
                               },
                             ),
@@ -386,7 +393,8 @@ class _AuthGateState extends State<AuthGate> {
                               validator: (value) {
                                 final text = value ?? '';
                                 if (text.isEmpty) return '비밀번호를 입력해주세요.';
-                                if (!_isLoginMode && text.length < 6) return '비밀번호는 6자 이상이어야 합니다.';
+                                if (!_isLoginMode && text.length < 6)
+                                  return '비밀번호는 6자 이상이어야 합니다.';
                                 return null;
                               },
                             ),
@@ -434,7 +442,8 @@ class _AuthGateState extends State<AuthGate> {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFFFF1F2),
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: const Color(0xFFFDA4AF)),
+                                  border: Border.all(
+                                      color: const Color(0xFFFDA4AF)),
                                 ),
                                 child: Text(
                                   _errorMessage!,
@@ -459,7 +468,11 @@ class _AuthGateState extends State<AuthGate> {
                                   ),
                                 ),
                                 child: Text(
-                                  _isSubmitting ? '처리 중...' : (_isLoginMode ? '이메일로 로그인' : '이메일로 시작하기'),
+                                  _isSubmitting
+                                      ? '처리 중...'
+                                      : (_isLoginMode
+                                          ? '이메일로 로그인'
+                                          : '이메일로 시작하기'),
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w700,
@@ -470,9 +483,12 @@ class _AuthGateState extends State<AuthGate> {
                             const SizedBox(height: 20),
                             Row(
                               children: [
-                                Expanded(child: Divider(color: Colors.grey.shade300)),
+                                Expanded(
+                                    child:
+                                        Divider(color: Colors.grey.shade300)),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12),
                                   child: Text(
                                     '소셜 로그인',
                                     style: TextStyle(
@@ -481,7 +497,9 @@ class _AuthGateState extends State<AuthGate> {
                                     ),
                                   ),
                                 ),
-                                Expanded(child: Divider(color: Colors.grey.shade300)),
+                                Expanded(
+                                    child:
+                                        Divider(color: Colors.grey.shade300)),
                               ],
                             ),
                             const SizedBox(height: 16),
@@ -495,16 +513,24 @@ class _AuthGateState extends State<AuthGate> {
                                   color: const Color(0xFFDB4437),
                                   onTap: _isSubmitting
                                       ? null
-                                      : () => _submitSocialLogin(sl<SignInWithGoogleUseCase>().execute),
+                                      : () => _submitSocialLogin(
+                                          sl<SignInWithGoogleUseCase>()
+                                              .execute),
                                 ),
-                                if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS))
+                                if (!kIsWeb &&
+                                    (defaultTargetPlatform ==
+                                            TargetPlatform.iOS ||
+                                        defaultTargetPlatform ==
+                                            TargetPlatform.macOS))
                                   _buildSocialAction(
                                     label: 'Apple',
                                     icon: Icons.apple_rounded,
                                     color: Colors.black87,
                                     onTap: _isSubmitting
                                         ? null
-                                        : () => _submitSocialLogin(sl<SignInWithAppleUseCase>().execute),
+                                        : () => _submitSocialLogin(
+                                            sl<SignInWithAppleUseCase>()
+                                                .execute),
                                   ),
                                 _buildSocialAction(
                                   label: 'Facebook',
@@ -536,7 +562,9 @@ class _AuthGateState extends State<AuthGate> {
                                       });
                                     },
                               child: Text(
-                                _isLoginMode ? '계정이 없나요? 회원가입으로 전환' : '이미 계정이 있나요? 로그인으로 전환',
+                                _isLoginMode
+                                    ? '계정이 없나요? 회원가입으로 전환'
+                                    : '이미 계정이 있나요? 로그인으로 전환',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w700,
                                 ),

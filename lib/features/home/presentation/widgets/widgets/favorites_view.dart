@@ -52,7 +52,8 @@ class FavoritesView extends StatelessWidget {
   Widget _buildEmptyStateWithSuggestions(List<Member> members) {
     // 선거가능성 높은 후보 Top 6 추천
     final topCandidates = List<Member>.from(members)
-      ..sort((a, b) => (b.electionPossibility).compareTo(a.electionPossibility));
+      ..sort(
+          (a, b) => (b.electionPossibility).compareTo(a.electionPossibility));
     final suggestions = topCandidates.take(6).toList();
 
     return RefreshIndicator(
@@ -109,9 +110,9 @@ class FavoritesView extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           ...suggestions.map((member) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _buildSuggestionCard(member),
-          )),
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildSuggestionCard(member),
+              )),
 
           // 최신 뉴스 섹션
           const SizedBox(height: 24),
@@ -222,7 +223,8 @@ class FavoritesView extends StatelessWidget {
               const SizedBox(width: 8),
               // 즐겨찾기 버튼
               IconButton(
-                icon: const Icon(Icons.star_border, color: AppColors.mediumGray),
+                icon:
+                    const Icon(Icons.star_border, color: AppColors.mediumGray),
                 onPressed: () async {
                   try {
                     await sl<ToggleFavoriteUseCase>().call(member.id);
@@ -248,8 +250,8 @@ class FavoritesView extends StatelessWidget {
         });
       }
     }
-    allNews.sort((a, b) =>
-        (b['report'].publishDate as DateTime).compareTo(a['report'].publishDate));
+    allNews.sort((a, b) => (b['report'].publishDate as DateTime)
+        .compareTo(a['report'].publishDate));
 
     final latestNews = allNews.take(5).toList();
 

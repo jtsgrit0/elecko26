@@ -190,7 +190,8 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
-          textStyle: AppTextStyles.labelLarge.copyWith(color: AppColors.primary),
+          textStyle:
+              AppTextStyles.labelLarge.copyWith(color: AppColors.primary),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -200,7 +201,6 @@ class AppTheme {
           textStyle: AppTextStyles.labelMedium,
         ),
       ),
-
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.lightGrey,
         disabledColor: AppColors.grey.withOpacity(0.4),
@@ -219,7 +219,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.lightGrey,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: AppColors.lightGrey),
@@ -248,7 +249,6 @@ class AppTheme {
         thickness: 1,
         space: 16,
       ),
-
       iconTheme: const IconThemeData(
         color: AppColors.dark,
         size: 24,

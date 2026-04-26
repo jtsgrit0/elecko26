@@ -31,7 +31,7 @@ class Update2018PartySupportFromPdfUseCase {
     try {
       // 1. PDF에서 정당별 지지율 추출
       final partySupportRates = NesdcPdfExtractor.extractByParty(pdfText);
-      
+
       if (partySupportRates.isEmpty) {
         print('PDF에서 정당별 지지율 데이터를 찾을 수 없습니다.');
         return;
@@ -41,7 +41,7 @@ class Update2018PartySupportFromPdfUseCase {
 
       // 2. 모든 회원 조회
       final members = await repository.getAllMembers();
-      
+
       if (members.isEmpty) {
         print('회원 데이터가 없습니다.');
         return;
@@ -49,22 +49,23 @@ class Update2018PartySupportFromPdfUseCase {
 
       // 3. 각 회원의 지역구별 정당 지지율 업데이트
       final updatedMembers = <Member>[];
-      
+
       for (final member in members) {
         final district = member.district;
-        
+
         // 해당 지역구의 정당별 지지율 찾기
         final districtPartyRates = <String, double>{};
-        
+
         for (final entry in partySupportRates.entries) {
           final party = entry.key;
           final candidates = entry.value;
-          
+
           // 해당 정당의 후보자 중에서 지역구 매칭
           for (final candidate in candidates) {
             if (candidate.contains(district) || district.contains(candidate)) {
               // 간단한 매칭 로직 - 실제로는 더 정교한 매칭 필요
-              final supportRate = _extractSupportRateFromCandidate(candidate, pdfText);
+              final supportRate =
+                  _extractSupportRateFromCandidate(candidate, pdfText);
               if (supportRate > 0) {
                 districtPartyRates[party] = supportRate;
                 break;
@@ -79,8 +80,9 @@ class Update2018PartySupportFromPdfUseCase {
             historical2018PartyRates: districtPartyRates,
           );
           updatedMembers.add(updatedMember);
-          
-          print('${member.name} (${member.district})의 2018년 정당 지지율 업데이트: $districtPartyRates');
+
+          print(
+              '${member.name} (${member.district})의 2018년 정당 지지율 업데이트: $districtPartyRates');
         }
       }
 
@@ -96,15 +98,16 @@ class Update2018PartySupportFromPdfUseCase {
   }
 
   /// 후보자 정보에서 지지율 추출
-  double _extractSupportRateFromCandidate(String candidateInfo, String pdfText) {
+  double _extractSupportRateFromCandidate(
+      String candidateInfo, String pdfText) {
     // 간단한 지지율 추출 로직
     final ratePattern = RegExp(r'(\d+\.?\d*)%');
     final match = ratePattern.firstMatch(candidateInfo);
-    
+
     if (match != null) {
       return double.tryParse(match.group(1)!) ?? 0.0;
     }
-    
+
     return 0.0;
   }
 
@@ -129,7 +132,8 @@ class Update2018PartySupportFromPdfUseCase {
       }
 
       // 2. 가장 최근 파일 사용
-      pdfFiles.sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
+      pdfFiles.sort(
+          (a, b) => b.statSync().modified.compareTo(a.statSync().modified));
       final latestPdfFile = pdfFiles.first;
 
       print('최신 2018년도 PDF 파일 사용: ${latestPdfFile.path}');

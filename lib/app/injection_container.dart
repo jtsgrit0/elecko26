@@ -13,7 +13,8 @@ import 'package:elecko26_new/data/datasources/historical_election_data_source.da
 import 'package:elecko26_new/data/repositories/historical_election_repository_impl.dart';
 import 'package:elecko26_new/domain/repositories/historical_election_repository.dart';
 import 'package:elecko26_new/features/map/domain/repositories/map_repository.dart';
-import 'package:elecko26_new/features/map/data/repositories/map_repository.dart' as map_repo_impl;
+import 'package:elecko26_new/features/map/data/repositories/map_repository.dart'
+    as map_repo_impl;
 import 'package:elecko26_new/features/map/domain/usecases/get_election_map_data_usecase.dart';
 import 'package:elecko26_new/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:elecko26_new/features/auth/domain/repositories/auth_repository.dart';
@@ -71,7 +72,8 @@ Future<void> initMinimal() async {
     );
   } catch (e) {
     debugPrint('[DI] SharedPreferences Load failed, registering fallback: $e');
-    sl.registerLazySingleton<LocalStorageService>(() => InMemoryLocalStorageService());
+    sl.registerLazySingleton<LocalStorageService>(
+        () => InMemoryLocalStorageService());
   }
 
   _registerAll();
@@ -81,15 +83,22 @@ Future<void> initMinimal() async {
 void _registerAll() {
   //! Features
   sl.registerSingleton<AuthRepository>(AuthRepositoryImpl());
-  
+
   // Auth UseCases
-  sl.registerSingleton<GetCurrentUserUseCase>(GetCurrentUserUseCase(sl<AuthRepository>()));
-  sl.registerSingleton<SignInWithEmailUseCase>(SignInWithEmailUseCase(sl<AuthRepository>()));
-  sl.registerSingleton<SignUpWithEmailUseCase>(SignUpWithEmailUseCase(sl<AuthRepository>()));
-  sl.registerSingleton<SignInWithGoogleUseCase>(SignInWithGoogleUseCase(sl<AuthRepository>()));
-  sl.registerSingleton<SignInWithAppleUseCase>(SignInWithAppleUseCase(sl<AuthRepository>()));
-  sl.registerSingleton<SignInWithFacebookUseCase>(SignInWithFacebookUseCase(sl<AuthRepository>()));
-  sl.registerSingleton<SignInWithKakaoUseCase>(SignInWithKakaoUseCase(sl<AuthRepository>()));
+  sl.registerSingleton<GetCurrentUserUseCase>(
+      GetCurrentUserUseCase(sl<AuthRepository>()));
+  sl.registerSingleton<SignInWithEmailUseCase>(
+      SignInWithEmailUseCase(sl<AuthRepository>()));
+  sl.registerSingleton<SignUpWithEmailUseCase>(
+      SignUpWithEmailUseCase(sl<AuthRepository>()));
+  sl.registerSingleton<SignInWithGoogleUseCase>(
+      SignInWithGoogleUseCase(sl<AuthRepository>()));
+  sl.registerSingleton<SignInWithAppleUseCase>(
+      SignInWithAppleUseCase(sl<AuthRepository>()));
+  sl.registerSingleton<SignInWithFacebookUseCase>(
+      SignInWithFacebookUseCase(sl<AuthRepository>()));
+  sl.registerSingleton<SignInWithKakaoUseCase>(
+      SignInWithKakaoUseCase(sl<AuthRepository>()));
   sl.registerSingleton<SignOutUseCase>(SignOutUseCase(sl<AuthRepository>()));
 
   // Repository
@@ -100,8 +109,9 @@ void _registerAll() {
     debugPrint('[DI] Firebase 비활성화됨 - MemberRepositoryImpl 등록');
     sl.registerSingleton<MemberRepository>(MemberRepositoryImpl());
   }
-  
-  sl.registerSingleton<HistoricalElectionDataSource>(HistoricalElectionDataSource());
+
+  sl.registerSingleton<HistoricalElectionDataSource>(
+      HistoricalElectionDataSource());
   sl.registerSingleton<HistoricalElectionRepository>(
     HistoricalElectionRepositoryImpl(sl<HistoricalElectionDataSource>()),
   );
@@ -109,16 +119,24 @@ void _registerAll() {
   sl.registerSingleton<PollRepository>(PollRepositoryImpl());
 
   // UseCases
-  sl.registerSingleton<GetMembersUseCase>(GetMembersUseCase(repository: sl<MemberRepository>()));
-  sl.registerSingleton<SearchMembersUseCase>(SearchMembersUseCase(repository: sl<MemberRepository>()));
-  sl.registerSingleton<GetMemberByIdUseCase>(GetMemberByIdUseCase(repository: sl<MemberRepository>()));
-  sl.registerSingleton<WatchMembersUseCase>(WatchMembersUseCase(repository: sl<MemberRepository>()));
-  sl.registerSingleton<WatchMemberByIdUseCase>(WatchMemberByIdUseCase(repository: sl<MemberRepository>()));
-  sl.registerSingleton<ToggleFavoriteUseCase>(ToggleFavoriteUseCase(repository: sl<MemberRepository>()));
-  
+  sl.registerSingleton<GetMembersUseCase>(
+      GetMembersUseCase(repository: sl<MemberRepository>()));
+  sl.registerSingleton<SearchMembersUseCase>(
+      SearchMembersUseCase(repository: sl<MemberRepository>()));
+  sl.registerSingleton<GetMemberByIdUseCase>(
+      GetMemberByIdUseCase(repository: sl<MemberRepository>()));
+  sl.registerSingleton<WatchMembersUseCase>(
+      WatchMembersUseCase(repository: sl<MemberRepository>()));
+  sl.registerSingleton<WatchMemberByIdUseCase>(
+      WatchMemberByIdUseCase(repository: sl<MemberRepository>()));
+  sl.registerSingleton<ToggleFavoriteUseCase>(
+      ToggleFavoriteUseCase(repository: sl<MemberRepository>()));
+
   sl.registerSingleton<GetPollsUseCase>(GetPollsUseCase(sl<PollRepository>()));
-  sl.registerSingleton<CreatePollUseCase>(CreatePollUseCase(sl<PollRepository>()));
-  sl.registerSingleton<UpdatePollStatusUseCase>(UpdatePollStatusUseCase(sl<PollRepository>()));
+  sl.registerSingleton<CreatePollUseCase>(
+      CreatePollUseCase(sl<PollRepository>()));
+  sl.registerSingleton<UpdatePollStatusUseCase>(
+      UpdatePollStatusUseCase(sl<PollRepository>()));
 
   sl.registerSingleton<CalculateElectionPossibilityUseCase>(
     CalculateElectionPossibilityUseCase(
@@ -139,7 +157,8 @@ void _registerAll() {
   sl.registerSingleton<ExportElectionDataUseCase>(
     ExportElectionDataUseCase(
       memberRepository: sl<MemberRepository>(),
-      calculateElectionPossibilityUseCase: sl<CalculateElectionPossibilityUseCase>(),
+      calculateElectionPossibilityUseCase:
+          sl<CalculateElectionPossibilityUseCase>(),
     ),
   );
 
@@ -153,7 +172,8 @@ void _registerAll() {
   );
 
   sl.registerSingleton<MapRepository>(map_repo_impl.MapRepositoryImpl());
-  sl.registerSingleton<GetElectionMapDataUseCase>(GetElectionMapDataUseCase(sl<MapRepository>()));
+  sl.registerSingleton<GetElectionMapDataUseCase>(
+      GetElectionMapDataUseCase(sl<MapRepository>()));
 }
 
 /// Fallback storage for cases where SharedPreferences is unavailable (e.g. CLI tools or failing Web)
@@ -168,28 +188,58 @@ class InMemoryLocalStorageService implements LocalStorageService {
   @override
   Stream<Map<String, String>> watchAllVotes() => _votesController.stream;
 
-  @override String? getString(String key) => _data[key] as String?;
-  @override Future<bool> setString(String key, String value) async { _data[key] = value; return true; }
-  @override List<String>? getStringList(String key) => _data[key] as List<String>?;
-  @override Future<bool> setStringList(String key, List<String> value) async { _data[key] = value; return true; }
-  @override Future<bool> clear() async { _data.clear(); return true; }
+  @override
+  String? getString(String key) => _data[key] as String?;
+  @override
+  Future<bool> setString(String key, String value) async {
+    _data[key] = value;
+    return true;
+  }
 
-  @override Future<List<String>> getFavorites() async => (_data['favorites'] as List<String>?) ?? [];
-  @override Future<void> addFavorite(String id) async {
+  @override
+  List<String>? getStringList(String key) => _data[key] as List<String>?;
+  @override
+  Future<bool> setStringList(String key, List<String> value) async {
+    _data[key] = value;
+    return true;
+  }
+
+  @override
+  Future<bool> clear() async {
+    _data.clear();
+    return true;
+  }
+
+  @override
+  Future<List<String>> getFavorites() async =>
+      (_data['favorites'] as List<String>?) ?? [];
+  @override
+  Future<void> addFavorite(String id) async {
     final list = await getFavorites();
     if (!list.contains(id)) list.add(id);
     await setStringList('favorites', list);
   }
-  @override Future<void> removeFavorite(String id) async {
+
+  @override
+  Future<void> removeFavorite(String id) async {
     final list = await getFavorites();
     list.remove(id);
     await setStringList('favorites', list);
   }
-  @override Future<bool> isFavorite(String id) async => (await getFavorites()).contains(id);
-  @override Future<String> getSelectedRegion() async => _data['selected_region'] as String? ?? 'ì „êµ­';
-  @override Future<void> saveSelectedRegion(String region) async => await setString('selected_region', region);
-  @override Future<void> clearAll() async => _data.clear();
-  @override Future<void> clearVotes() async {
+
+  @override
+  Future<bool> isFavorite(String id) async =>
+      (await getFavorites()).contains(id);
+  @override
+  Future<String> getSelectedRegion() async =>
+      _data['selected_region'] as String? ?? 'ì „êµ­';
+  @override
+  Future<void> saveSelectedRegion(String region) async =>
+      await setString('selected_region', region);
+  @override
+  Future<void> clearAll() async => _data.clear();
+  @override
+  Future<void> clearVotes() async {
     final districts = _data[_keyVoteDistricts] as List<String>? ?? [];
     for (final district in districts) {
       _data.remove('$_keyVotePrefix$district');
@@ -204,17 +254,19 @@ class InMemoryLocalStorageService implements LocalStorageService {
   static const String _keyVoteDistricts = 'vote_districts';
 
   @override
-  Future<void> saveVote(String district, String memberId, {int? timestamp}) async {
+  Future<void> saveVote(String district, String memberId,
+      {int? timestamp}) async {
     _data['$_keyVotePrefix$district'] = memberId;
     if (timestamp != null) {
       _data['$_keyTimePrefix$district'] = timestamp;
     }
-    final districts = List<String>.from(_data[_keyVoteDistricts] as List<dynamic>? ?? []);
+    final districts =
+        List<String>.from(_data[_keyVoteDistricts] as List<dynamic>? ?? []);
     if (!districts.contains(district)) {
       districts.add(district);
       _data[_keyVoteDistricts] = districts;
     }
-    
+
     _votesController.add(await getAllVotes());
   }
 
@@ -258,10 +310,11 @@ class InMemoryLocalStorageService implements LocalStorageService {
   Future<void> removeVote(String district) async {
     _data.remove('$_keyVotePrefix$district');
     _data.remove('$_keyTimePrefix$district');
-    final List<String> districts = List<String>.from(_data[_keyVoteDistricts] as List<dynamic>? ?? []);
+    final List<String> districts =
+        List<String>.from(_data[_keyVoteDistricts] as List<dynamic>? ?? []);
     districts.remove(district);
     _data[_keyVoteDistricts] = districts;
-    
+
     _votesController.add(await getAllVotes());
   }
 }

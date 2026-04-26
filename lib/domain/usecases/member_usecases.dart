@@ -49,7 +49,8 @@ class WatchMembersUseCase {
   WatchMembersUseCase({required this.repository});
 
   Stream<List<Member>> call({Duration? interval}) {
-    return repository.watchAllMembers(interval: interval ?? defaultRefreshInterval());
+    return repository.watchAllMembers(
+        interval: interval ?? defaultRefreshInterval());
   }
 }
 
@@ -60,7 +61,8 @@ class WatchMemberByIdUseCase {
   WatchMemberByIdUseCase({required this.repository});
 
   Stream<Member> call(String memberId, {Duration? interval}) {
-    return repository.watchMemberById(memberId, interval: interval ?? defaultRefreshInterval());
+    return repository.watchMemberById(memberId,
+        interval: interval ?? defaultRefreshInterval());
   }
 }
 

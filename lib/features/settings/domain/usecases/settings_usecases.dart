@@ -21,7 +21,8 @@ class GetAppSettingsUseCase extends SettingsUseCase {
 class SaveAppSettingsUseCase extends SettingsUseCase {
   SaveAppSettingsUseCase(super.repository);
 
-  Future<SettingsUpdateResult> execute(String userId, AppSettings settings) async {
+  Future<SettingsUpdateResult> execute(
+      String userId, AppSettings settings) async {
     return await repository.saveAppSettings(userId, settings);
   }
 }
@@ -41,9 +42,11 @@ class ToggleNotificationsUseCase extends SettingsUseCase {
 
   Future<SettingsUpdateResult> execute(String userId, bool enabled) async {
     final currentSettings = await repository.getAppSettings(userId);
-    if (currentSettings == null) return SettingsUpdateResult.failure('설정을 불러올 수 없습니다.');
+    if (currentSettings == null)
+      return SettingsUpdateResult.failure('설정을 불러올 수 없습니다.');
 
-    final updatedSettings = currentSettings.copyWith(notificationsEnabled: enabled);
+    final updatedSettings =
+        currentSettings.copyWith(notificationsEnabled: enabled);
     return await repository.saveAppSettings(userId, updatedSettings);
   }
 }
@@ -54,7 +57,8 @@ class ToggleDarkModeUseCase extends SettingsUseCase {
 
   Future<SettingsUpdateResult> execute(String userId, bool enabled) async {
     final currentSettings = await repository.getAppSettings(userId);
-    if (currentSettings == null) return SettingsUpdateResult.failure('설정을 불러올 수 없습니다.');
+    if (currentSettings == null)
+      return SettingsUpdateResult.failure('설정을 불러올 수 없습니다.');
 
     final updatedSettings = currentSettings.copyWith(darkModeEnabled: enabled);
     return await repository.saveAppSettings(userId, updatedSettings);
@@ -65,9 +69,11 @@ class ToggleDarkModeUseCase extends SettingsUseCase {
 class ChangeLanguageUseCase extends SettingsUseCase {
   ChangeLanguageUseCase(super.repository);
 
-  Future<SettingsUpdateResult> execute(String userId, String languageCode) async {
+  Future<SettingsUpdateResult> execute(
+      String userId, String languageCode) async {
     final currentSettings = await repository.getAppSettings(userId);
-    if (currentSettings == null) return SettingsUpdateResult.failure('설정을 불러올 수 없습니다.');
+    if (currentSettings == null)
+      return SettingsUpdateResult.failure('설정을 불러올 수 없습니다.');
 
     final updatedSettings = currentSettings.copyWith(language: languageCode);
     return await repository.saveAppSettings(userId, updatedSettings);

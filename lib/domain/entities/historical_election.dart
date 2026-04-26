@@ -40,7 +40,8 @@ class HistoricalElection {
 
   /// 특정 지역에서 두 주요 정당의 격차를 반환 (양수면 첫 번째 정당이 우세)
   double getPartyGap(String region, String party1, String party2) {
-    return getRegionalPartyRate(region, party1) - getRegionalPartyRate(region, party2);
+    return getRegionalPartyRate(region, party1) -
+        getRegionalPartyRate(region, party2);
   }
 
   factory HistoricalElection.fromJson(Map<String, dynamic> json) {
@@ -53,7 +54,8 @@ class HistoricalElection {
 
     final regionalAverages = <String, Map<String, double>>{};
     if (json['regionalAverages'] != null) {
-      (json['regionalAverages'] as Map<String, dynamic>).forEach((region, parties) {
+      (json['regionalAverages'] as Map<String, dynamic>)
+          .forEach((region, parties) {
         final partyMap = <String, double>{};
         (parties as Map<String, dynamic>).forEach((party, rate) {
           partyMap[party] = (rate as num).toDouble();
@@ -73,11 +75,11 @@ class HistoricalElection {
   }
 
   Map<String, dynamic> toJson() => {
-    'electionName': electionName,
-    'electionDate': electionDate,
-    'electionNumber': electionNumber,
-    'totalDistricts': totalDistricts,
-    'partyWins': partyWins,
-    'regionalAverages': regionalAverages,
-  };
+        'electionName': electionName,
+        'electionDate': electionDate,
+        'electionNumber': electionNumber,
+        'totalDistricts': totalDistricts,
+        'partyWins': partyWins,
+        'regionalAverages': regionalAverages,
+      };
 }

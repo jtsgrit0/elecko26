@@ -6,7 +6,8 @@ abstract class ProfileRepository {
   Future<UserProfile?> getUserProfile(String userId);
 
   /// 사용자 프로필 생성/업데이트
-  Future<ProfileUpdateResult> updateUserProfile(String userId, UserProfile profile);
+  Future<ProfileUpdateResult> updateUserProfile(
+      String userId, UserProfile profile);
 
   /// 사용자 프로필 삭제
   Future<bool> deleteUserProfile(String userId);

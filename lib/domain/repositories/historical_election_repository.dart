@@ -13,6 +13,7 @@ abstract class HistoricalElectionRepository {
 
   /// 특정 지역의 과거 우세 정당 정보
   Future<String?> getDominantParty(String region);
+
   /// 2018년 제7회 지방선거 특정 지역의 정당 득표율을 가져옴
   Future<Map<String, double>> get2018RegionalPartyRates(String region);
 

@@ -1,19 +1,17 @@
-import 'dart:convert';
-import 'dart:isolate';
-import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:elecko26_new/core/utils/utility_functions.dart';
+import 'package:elecko26_new/data/datasources/local_storage_service.dart';
+import 'package:elecko26_new/data/datasources/nesdc_poll_data_source.dart';
+import 'package:elecko26_new/data/datasources/profile_image_resolver.dart';
 import 'package:elecko26_new/data/models/member_model.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/entities/poll.dart';
-import 'package:elecko26_new/domain/repositories/member_repository.dart';
-import 'package:elecko26_new/data/datasources/nesdc_poll_data_source.dart';
-import 'package:elecko26_new/data/datasources/profile_image_resolver.dart';
-import 'package:get_it/get_it.dart';
-import 'package:elecko26_new/data/datasources/local_storage_service.dart';
-import 'package:elecko26_new/domain/usecases/possibility_calculator.dart';
 import 'package:elecko26_new/domain/repositories/historical_election_repository.dart';
-import 'package:elecko26_new/core/utils/utility_functions.dart';
+import 'package:elecko26_new/domain/repositories/member_repository.dart';
+import 'package:elecko26_new/domain/usecases/possibility_calculator.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:get_it/get_it.dart';
+import 'package:http/http.dart' as http;
 import 'package:rxdart/rxdart.dart';
 
 final sl = GetIt.instance;
@@ -103,54 +101,24 @@ class MemberRepositoryImpl implements MemberRepository {
     }
   }
 
-  Future<String?> _fetchAndCombineCandidates() async {
-    List<String> allCandidates = [];
-    bool fromGithub = true;
-
-    for (int i = 0; i < 100; i++) {
-      // Assuming max 100 split files
-      String? content;
-      try {
-        final rawUrl =
-            'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/candidates_split/election_candidates_part_$i.json';
-        final response = await http
-            .get(Uri.parse(rawUrl))
-            .timeout(const Duration(seconds: 10));
-        if (response.statusCode == 200) {
-          content = utf8.decode(response.bodyBytes);
-        } else {
-          break; // Stop if a file is not found
-        }
-      } catch (_) {
-        fromGithub = false;
-        break;
-      }
-
-      if (content != null) {
-        final List<dynamic> candidates = json.decode(content);
-        allCandidates.addAll(candidates.map((c) => json.encode(c)));
-      }
-    }
-
-    if (!fromGithub) {
-      allCandidates.clear();
-      for (int i = 0; i < 100; i++) {
+  Future<String?> _fetchCandidatesFromLocalAssets() async {
+    try {
+      final List<Map<String, dynamic>> allCandidates = [];
+      for (int i = 0; i <= 8; i++) {
+        final String assetPath = 'data/candidates_split/candidates_$i.json';
         try {
-          final content = await rootBundle.loadString(
-              'data/candidates_split/election_candidates_part_$i.json');
-          final List<dynamic> candidates = json.decode(content);
-          allCandidates.addAll(candidates.map((c) => json.encode(c)));
-        } catch (_) {
-          break; // Stop if a file is not found in assets
+          final String jsonString = await rootBundle.loadString(assetPath);
+          final List<dynamic> candidates = json.decode(jsonString);
+          allCandidates.addAll(candidates.cast<Map<String, dynamic>>());
+        } catch (e) {
+          debugPrint('Error loading asset $assetPath: $e');
         }
       }
-    }
-
-    if (allCandidates.isEmpty) {
+      return json.encode(allCandidates);
+    } catch (e) {
+      debugPrint('Error loading candidate assets: $e');
       return null;
     }
-
-    return '[' + allCandidates.join(',') + ']';
   }
 
   @override
@@ -163,7 +131,7 @@ class MemberRepositoryImpl implements MemberRepository {
       final localService = sl<LocalStorageService>();
       final favoriteIds = await localService.getFavorites();
 
-      String? candidatesJson = await _fetchAndCombineCandidates();
+      String? candidatesJson = await _fetchCandidatesFromLocalAssets();
 
       if (candidatesJson != null) {
         final membersFromIsolate = kIsWeb

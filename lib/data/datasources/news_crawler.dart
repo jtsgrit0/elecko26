@@ -5,7 +5,8 @@ import 'package:elecko26_new/domain/entities/member.dart';
 
 /// Naver 뉴스 검색을 통해 후보자 관련 뉴스를 수집하는 데이터소스
 class NewsCrawler {
-  static const String _naverNewsSearchUrl = 'https://search.naver.com/search.naver';
+  static const String _naverNewsSearchUrl =
+      'https://search.naver.com/search.naver';
 
   /// 후보자 이름으로 Naver 뉴스 검색 후 PressReport 리스트 반환
   Future<List<PressReport>> crawlNewsForCandidate(String candidateName) async {
@@ -21,7 +22,8 @@ class NewsCrawler {
       final response = await http.get(uri, headers: {
         'User-Agent':
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept':
+            'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
       }).timeout(const Duration(seconds: 10));
 
@@ -46,8 +48,8 @@ class NewsCrawler {
           if (url.isEmpty || !url.contains('http')) continue;
 
           // 언론사
-          final sourceEl =
-              item.querySelector('.press_img a') ?? item.querySelector('.info_group ..press');
+          final sourceEl = item.querySelector('.press_img a') ??
+              item.querySelector('.info_group ..press');
           final source = sourceEl?.text.trim() ?? 'Naver';
 
           // 요약/내용
@@ -67,7 +69,9 @@ class NewsCrawler {
             source: source,
             url: url,
             publishDate: publishDate,
-            summary: summary.length > 200 ? '${summary.substring(0, 200)}...' : summary,
+            summary: summary.length > 200
+                ? '${summary.substring(0, 200)}...'
+                : summary,
             sentiment: 'neutral',
           ));
         } catch (_) {}

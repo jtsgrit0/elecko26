@@ -109,7 +109,8 @@ class SharedPreferencesService implements LocalStorageService {
   static const String _keyVoteDistricts = 'vote_districts';
 
   @override
-  Future<void> saveVote(String district, String memberId, {int? timestamp}) async {
+  Future<void> saveVote(String district, String memberId,
+      {int? timestamp}) async {
     await prefs.setString('$_keyVotePrefix$district', memberId);
     if (timestamp != null) {
       await prefs.setInt('$_keyTimePrefix$district', timestamp);
@@ -120,7 +121,7 @@ class SharedPreferencesService implements LocalStorageService {
       districts.add(district);
       await prefs.setStringList(_keyVoteDistricts, districts);
     }
-    
+
     // 스트림 업데이트
     final allVotes = await getAllVotes();
     _votesController.add(allVotes);

@@ -6,7 +6,8 @@ abstract class SettingsRepository {
   Future<AppSettings?> getAppSettings(String userId);
 
   /// 앱 설정 저장
-  Future<SettingsUpdateResult> saveAppSettings(String userId, AppSettings settings);
+  Future<SettingsUpdateResult> saveAppSettings(
+      String userId, AppSettings settings);
 
   /// 설정 초기화 (기본값으로)
   Future<SettingsUpdateResult> resetSettings(String userId);

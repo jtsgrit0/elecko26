@@ -29,7 +29,7 @@ class RegionalMemberVotingList extends StatefulWidget {
       _RegionalMemberVotingListState();
 }
 
-class _RegionalMemberVotingListState extends State<RegionalMemberVotingList> 
+class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
     with SingleTickerProviderStateMixin {
   List<Member> _members = [];
   Map<String, String> _votes = {}; // district -> memberId
@@ -37,7 +37,7 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
   bool _isLoading = true;
   StreamSubscription<List<Member>>? _memberSubscription;
   StreamSubscription<Map<String, String>>? _voteSubscription;
-  
+
   // 지지하기 성공 애니메이션을 위한 맵
   Map<String, bool> _recentlyVoted = {}; // memberId -> recently voted
 
@@ -51,7 +51,8 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
 
   void _startMemberSubscription() {
     _memberSubscription?.cancel();
-    _memberSubscription = sl<MemberRepository>().watchAllMembers().listen((allMembers) {
+    _memberSubscription =
+        sl<MemberRepository>().watchAllMembers().listen((allMembers) {
       if (mounted) {
         final filtered = allMembers.where((m) {
           return districtMatchesRegion(m.district, widget.region);
@@ -185,11 +186,13 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
     });
 
     // 백그라운드에서 실제 저장 (UI 블로킹 방지)
-    memberRepository.saveSupportVote(
+    memberRepository
+        .saveSupportVote(
       district,
       member.id,
       timestamp: now,
-    ).catchError((e) {
+    )
+        .catchError((e) {
       // 실패 시 원래 상태로 복구
       if (mounted) {
         setState(() {
@@ -227,7 +230,7 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
           ),
         ),
       );
-      
+
       // 즉시 실시간 업데이트 - 새로고침 없이 바로 반영
       widget.onVoteChanged?.call();
       widget.onMemberVoted?.call(member);
@@ -243,14 +246,15 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
       grouped[member.district]!.add(member);
     }
     // 선거구명(district)을 사용자 요청 순서(도지사 > 시장 > 구의원 > 군수 > 군의원)에 따라 정렬
-    final sortedKeys = grouped.keys.toList()..sort((a, b) {
-      final priorityA = getDistrictSortPriority(a);
-      final priorityB = getDistrictSortPriority(b);
-      if (priorityA != priorityB) {
-        return priorityA.compareTo(priorityB);
-      }
-      return a.compareTo(b); // 우선순위가 같으면 가나다순
-    });
+    final sortedKeys = grouped.keys.toList()
+      ..sort((a, b) {
+        final priorityA = getDistrictSortPriority(a);
+        final priorityB = getDistrictSortPriority(b);
+        if (priorityA != priorityB) {
+          return priorityA.compareTo(priorityB);
+        }
+        return a.compareTo(b); // 우선순위가 같으면 가나다순
+      });
     return {for (var key in sortedKeys) key: grouped[key]!};
   }
 
@@ -291,8 +295,7 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
           child: Row(
             children: [
-              const Icon(Icons.how_to_vote,
-                  color: AppColors.primary, size: 24),
+              const Icon(Icons.how_to_vote, color: AppColors.primary, size: 24),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -306,9 +309,11 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
                   onPressed: widget.onChangeRegion,
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
-                  child: const Text('지역 변경', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text('지역 변경',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
             ],
           ),
@@ -328,7 +333,8 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
     );
   }
 
-  Widget _buildDistrictSection(String district, List<Member> membersInDistrict) {
+  Widget _buildDistrictSection(
+      String district, List<Member> membersInDistrict) {
     return Column(
       key: ValueKey(_votes[district]), // 지지 상태 변경 시 섹션 전체 리빌드
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -364,7 +370,8 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
         ...membersInDistrict.map((member) {
           final isVoted = _votes[district] == member.id;
           return _RegionalMemberCard(
-            key: ValueKey('$district-${member.id}-$isVoted-${_recentlyVoted[member.id] ?? false}'), // 카드 단위 리빌드
+            key: ValueKey(
+                '$district-${member.id}-$isVoted-${_recentlyVoted[member.id] ?? false}'), // 카드 단위 리빌드
             member: member,
             isVoted: isVoted,
             onVote: () => _handleVote(district, member),
@@ -399,8 +406,8 @@ class _RegionalMemberCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: recentlyVoted 
-              ? AppColors.success 
+          color: recentlyVoted
+              ? AppColors.success
               : (isVoted ? AppColors.primary : Colors.grey.withOpacity(0.2)),
           width: recentlyVoted ? 3 : (isVoted ? 2 : 1),
         ),
@@ -454,7 +461,8 @@ class _RegionalMemberCard extends StatelessWidget {
                       ),
                       if (isVoted) ...[
                         const SizedBox(width: 4),
-                        const Icon(Icons.check_circle, size: 16, color: AppColors.primary),
+                        const Icon(Icons.check_circle,
+                            size: 16, color: AppColors.primary),
                       ],
                     ],
                   ),
@@ -477,12 +485,11 @@ class _RegionalMemberCard extends StatelessWidget {
                 onPressed: onVote,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 14),
-                  backgroundColor: isVoted 
-                      ? AppColors.primary 
+                  backgroundColor: isVoted
+                      ? AppColors.primary
                       : AppColors.primary.withOpacity(0.1),
-                  foregroundColor: isVoted 
-                      ? AppColors.white 
-                      : AppColors.primary,
+                  foregroundColor:
+                      isVoted ? AppColors.white : AppColors.primary,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -490,7 +497,8 @@ class _RegionalMemberCard extends StatelessWidget {
                 ),
                 child: Text(
                   isVoted ? '지지함' : '지지하기',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 13),
                 ),
               ),
             ),

@@ -21,7 +21,8 @@ class GetUserProfileUseCase extends ProfileUseCase {
 class UpdateUserProfileUseCase extends ProfileUseCase {
   UpdateUserProfileUseCase(super.repository);
 
-  Future<ProfileUpdateResult> execute(String userId, UserProfile profile) async {
+  Future<ProfileUpdateResult> execute(
+      String userId, UserProfile profile) async {
     return await repository.updateUserProfile(userId, profile);
   }
 }
@@ -39,7 +40,8 @@ class DeleteUserProfileUseCase extends ProfileUseCase {
 class InitializeUserProfileUseCase extends ProfileUseCase {
   InitializeUserProfileUseCase(super.repository);
 
-  Future<ProfileUpdateResult> execute(String userId, {
+  Future<ProfileUpdateResult> execute(
+    String userId, {
     String? displayName,
     String? email,
   }) async {

@@ -11,12 +11,12 @@ class RegionalPartyData {
     required this.partyPercentages,
   });
 
-  factory RegionalPartyData.fromJson(String regionName, Map<String, dynamic> partyData) {
+  factory RegionalPartyData.fromJson(
+      String regionName, Map<String, dynamic> partyData) {
     // partyData: {"한나라당": 44.4, "민주당": 47.7, ...}
-    final partyPercentages = Map<String, double>.from(
-      partyData.map((key, value) => MapEntry(key, (value as num).toDouble()))
-    );
-    
+    final partyPercentages = Map<String, double>.from(partyData
+        .map((key, value) => MapEntry(key, (value as num).toDouble())));
+
     final dominantEntry = partyPercentages.entries.reduce(
       (a, b) => a.value > b.value ? a : b,
     );
@@ -44,7 +44,8 @@ class ElectionMapData {
   factory ElectionMapData.fromJson(Map<String, dynamic> json) {
     final regionalAverages = json['regionalAverages'] as Map<String, dynamic>;
     final regions = regionalAverages.entries.map((entry) {
-      return RegionalPartyData.fromJson(entry.key, entry.value as Map<String, dynamic>);
+      return RegionalPartyData.fromJson(
+          entry.key, entry.value as Map<String, dynamic>);
     }).toList();
 
     return ElectionMapData(

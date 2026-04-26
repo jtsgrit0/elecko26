@@ -14,16 +14,19 @@ const _commonHeaders = {
 // 유효한 이미지인지 확인 (플레이스홀더, 아이콘, 로고 등 제외)
 bool isValidImage(String url) {
   final lower = url.toLowerCase();
-  if (lower.contains('ssl.pstatic.net/sstatic/search/common/og')) return false; // 네이버 검색 기본 이미지
+  if (lower.contains('ssl.pstatic.net/sstatic/search/common/og'))
+    return false; // 네이버 검색 기본 이미지
   if (lower.contains('daum_og.png')) return false; // 다음 검색 기본 이미지
   if (lower.contains('placeholder.com')) return false;
   if (lower.contains('replace_this_image')) return false; // 위키미디어 플레이스홀더
   if (lower.endsWith('.svg')) return false; // 벡터 아이콘 제외
-  if (lower.contains('logo') && lower.contains('.png')) return false; // 로고 이미지 제외 가능성
+  if (lower.contains('logo') && lower.contains('.png'))
+    return false; // 로고 이미지 제외 가능성
   return true;
 }
 
-Future<String?> fetchWikipediaThumb(String name, {String? party, String? district}) async {
+Future<String?> fetchWikipediaThumb(String name,
+    {String? party, String? district}) async {
   try {
     // 정치인 동명이인을 위해 "이름 (정치인)" 형식 우선 시도
     final titleQuery = '$name (정치인)';
@@ -40,7 +43,8 @@ Future<String?> fetchWikipediaThumb(String name, {String? party, String? distric
     final resp = await http.get(uri).timeout(const Duration(seconds: 5));
     if (resp.statusCode != 200) return null;
 
-    final jsonMap = json.decode(utf8.decode(resp.bodyBytes)) as Map<String, dynamic>;
+    final jsonMap =
+        json.decode(utf8.decode(resp.bodyBytes)) as Map<String, dynamic>;
     final query = jsonMap['query'] as Map<String, dynamic>?;
     final pages = query?['pages'] as Map<String, dynamic>?;
 
@@ -72,14 +76,16 @@ Future<String?> _searchWikipedia(String query) async {
     final resp = await http.get(uri).timeout(const Duration(seconds: 5));
     if (resp.statusCode != 200) return null;
 
-    final jsonMap = json.decode(utf8.decode(resp.bodyBytes)) as Map<String, dynamic>;
-    final results = (jsonMap['query'] as Map<String, dynamic>?)?['search'] as List<dynamic>?;
+    final jsonMap =
+        json.decode(utf8.decode(resp.bodyBytes)) as Map<String, dynamic>;
+    final results = (jsonMap['query'] as Map<String, dynamic>?)?['search']
+        as List<dynamic>?;
     if (results == null || results.isEmpty) return null;
 
     // 첫 번째 결과의 썸네일 가져오기
     final title = (results.first['title'] as String?)?.trim();
     if (title == null) return null;
-    
+
     final uriThumb = Uri.https('ko.wikipedia.org', '/w/api.php', {
       'action': 'query',
       'format': 'json',
@@ -90,10 +96,12 @@ Future<String?> _searchWikipedia(String query) async {
       'utf8': '1',
       'origin': '*',
     });
-    final respThumb = await http.get(uriThumb).timeout(const Duration(seconds: 5));
+    final respThumb =
+        await http.get(uriThumb).timeout(const Duration(seconds: 5));
     if (respThumb.statusCode != 200) return null;
-    
-    final jsonMapThumb = json.decode(utf8.decode(respThumb.bodyBytes)) as Map<String, dynamic>;
+
+    final jsonMapThumb =
+        json.decode(utf8.decode(respThumb.bodyBytes)) as Map<String, dynamic>;
     final queryThumb = jsonMapThumb['query'] as Map<String, dynamic>?;
     final pagesThumb = queryThumb?['pages'] as Map<String, dynamic>?;
     if (pagesThumb != null && pagesThumb.isNotEmpty) {
@@ -108,7 +116,8 @@ Future<String?> _searchWikipedia(String query) async {
   }
 }
 
-Future<String?> fetchNamuWikiImage(String name, {String? party, String? district}) async {
+Future<String?> fetchNamuWikiImage(String name,
+    {String? party, String? district}) async {
   try {
     // 나무위키 검색어 구성: "이름 선거구" 또는 "이름 정당"
     final parts = [name];
@@ -119,7 +128,8 @@ Future<String?> fetchNamuWikiImage(String name, {String? party, String? district
     final searchUri = Uri.parse('https://namu.wiki/api/v2/search').replace(
       queryParameters: {'query': searchQuery, 'target': 'name', 'display': '3'},
     );
-    final searchResp = await http.get(searchUri, headers: _commonHeaders)
+    final searchResp = await http
+        .get(searchUri, headers: _commonHeaders)
         .timeout(const Duration(seconds: 5));
     if (searchResp.statusCode != 200) return null;
 
@@ -132,7 +142,8 @@ Future<String?> fetchNamuWikiImage(String name, {String? party, String? district
       if (pageTitle == null) continue;
 
       final pageUri = Uri.parse('https://namu.wiki/w/$pageTitle');
-      final pageResp = await http.get(pageUri, headers: _commonHeaders)
+      final pageResp = await http
+          .get(pageUri, headers: _commonHeaders)
           .timeout(const Duration(seconds: 5));
       if (pageResp.statusCode != 200) continue;
 
@@ -149,7 +160,8 @@ Future<String?> fetchNamuWikiImage(String name, {String? party, String? district
   }
 }
 
-Future<String?> fetchNaverImage(String name, {String? party, String? district}) async {
+Future<String?> fetchNaverImage(String name,
+    {String? party, String? district}) async {
   try {
     // 네이버 뉴스 검색: "이름 선거구 정당"
     final parts = [name];
@@ -160,12 +172,13 @@ Future<String?> fetchNaverImage(String name, {String? party, String? district}) 
     final uri = Uri.parse('https://search.naver.com/search.naver').replace(
       queryParameters: {'where': 'news', 'query': searchQuery, 'sm': 'tab_nmr'},
     );
-    final resp = await http.get(uri, headers: _commonHeaders)
+    final resp = await http
+        .get(uri, headers: _commonHeaders)
         .timeout(const Duration(seconds: 8));
     if (resp.statusCode != 200) return null;
 
     final doc = parse(resp.body);
-    
+
     // 1. og:image 시도
     final ogImage = doc.querySelector('meta[property="og:image"]');
     final ogUrl = ogImage?.attributes['content'];
@@ -175,7 +188,8 @@ Future<String?> fetchNaverImage(String name, {String? party, String? district}) 
 
     // 2. 뉴스 썸네일 이미지
     // 네이버 뉴스 리스트의 썸네일 클래스는 변경될 수 있으나 일반적인 img 태그 탐색
-    final thumbs = doc.querySelectorAll('.news_wrap img, .thumb img, .photo img');
+    final thumbs =
+        doc.querySelectorAll('.news_wrap img, .thumb img, .photo img');
     for (final img in thumbs) {
       final src = img.attributes['src'] ?? img.attributes['data-source'];
       if (src != null && src.isNotEmpty && isValidImage(src)) {
@@ -188,7 +202,8 @@ Future<String?> fetchNaverImage(String name, {String? party, String? district}) 
   }
 }
 
-Future<String?> fetchDaumImage(String name, {String? party, String? district}) async {
+Future<String?> fetchDaumImage(String name,
+    {String? party, String? district}) async {
   try {
     // 다음 뉴스 검색
     final parts = [name];
@@ -199,12 +214,13 @@ Future<String?> fetchDaumImage(String name, {String? party, String? district}) a
     final uri = Uri.parse('https://search.daum.net/search').replace(
       queryParameters: {'q': searchQuery, 'nil_search': 'art'},
     );
-    final resp = await http.get(uri, headers: _commonHeaders)
+    final resp = await http
+        .get(uri, headers: _commonHeaders)
         .timeout(const Duration(seconds: 8));
     if (resp.statusCode != 200) return null;
 
     final doc = parse(resp.body);
-    
+
     // og:image
     final ogImage = doc.querySelector('meta[property="og:image"]');
     final ogUrl = ogImage?.attributes['content'];
@@ -226,7 +242,8 @@ Future<String?> fetchDaumImage(String name, {String? party, String? district}) a
   }
 }
 
-Future<String?> resolveImage(String name, {String? party, String? district}) async {
+Future<String?> resolveImage(String name,
+    {String? party, String? district}) async {
   // 1. Wikipedia (가장 정확도 높음)
   var img = await fetchWikipediaThumb(name, party: party, district: district);
   if (img != null && isValidImage(img)) return img;
@@ -267,11 +284,12 @@ void main() async {
     String? imgUrl = c['imageUrl'] as String?;
 
     // 이미 이미지가 있거나, 유효하지 않은 이미지는 다시 탐색
-    final needsUpdate = (imgUrl == null || imgUrl.trim().isEmpty || !isValidImage(imgUrl));
+    final needsUpdate =
+        (imgUrl == null || imgUrl.trim().isEmpty || !isValidImage(imgUrl));
 
     if (needsUpdate) {
       print('[$i/${candidates.length}] Searching: $name ($district / $party)');
-      
+
       // 2초 딜레이 (서버 부하 방지)
       await Future.delayed(const Duration(seconds: 2));
 

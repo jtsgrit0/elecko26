@@ -23,7 +23,8 @@ class SettingsRepositoryImpl implements SettingsRepository {
   }
 
   @override
-  Future<SettingsUpdateResult> saveAppSettings(String userId, AppSettings settings) async {
+  Future<SettingsUpdateResult> saveAppSettings(
+      String userId, AppSettings settings) async {
     try {
       _settingsStore['${_settingsKeyPrefix}$userId'] = settings;
       return SettingsUpdateResult.success(settings);

@@ -72,8 +72,10 @@ class Poll {
       description: json['description'] as String,
       creatorId: json['creatorId'] as String,
       options: (json['options'] as List<dynamic>?)
-          ?.map((option) => PollOption.fromJson(option as Map<String, dynamic>))
-          .toList() ?? [],
+              ?.map((option) =>
+                  PollOption.fromJson(option as Map<String, dynamic>))
+              .toList() ??
+          [],
       settings: PollSettings.fromJson(json['settings'] as Map<String, dynamic>),
       status: PollStatus.values[json['status'] as int],
       createdAt: DateTime.fromMillisecondsSinceEpoch(json['createdAt'] as int),
@@ -239,10 +241,10 @@ class PollSettings {
 
 /// 투표 상태
 enum PollStatus {
-  draft,     // 초안
-  active,    // 활성
-  paused,    // 일시 정지
-  ended,     // 종료
+  draft, // 초안
+  active, // 활성
+  paused, // 일시 정지
+  ended, // 종료
   cancelled, // 취소
 }
 

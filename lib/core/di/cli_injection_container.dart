@@ -37,8 +37,10 @@ class CliMemberRepository implements MemberRepository {
     // GitHub Raw에서 후보자 데이터 로드
     String? jsonStr;
     try {
-      final url = 'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
-      final resp = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
+      final url =
+          'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
+      final resp =
+          await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
       if (resp.statusCode == 200) {
         jsonStr = utf8.decode(resp.bodyBytes);
       }
@@ -59,7 +61,8 @@ class CliMemberRepository implements MemberRepository {
         final list = jsonDecode(jsonStr!) as List;
         for (final item in list) {
           final member = MemberModel.fromJson(item as Map<String, dynamic>);
-          _members.add(member.copyWith(isFavorite: _favorites.contains(member.id)));
+          _members
+              .add(member.copyWith(isFavorite: _favorites.contains(member.id)));
         }
       } catch (_) {}
     }
@@ -91,13 +94,15 @@ class CliMemberRepository implements MemberRepository {
   Future<void> refreshMembers() async => await _ensureLoaded();
 
   @override
-  Stream<List<Member>> watchAllMembers({Duration interval = const Duration(hours: 1)}) async* {
+  Stream<List<Member>> watchAllMembers(
+      {Duration interval = const Duration(hours: 1)}) async* {
     await _ensureLoaded();
     yield List.unmodifiable(_members);
   }
 
   @override
-  Stream<Member> watchMemberById(String memberId, {Duration interval = const Duration(hours: 1)}) async* {
+  Stream<Member> watchMemberById(String memberId,
+      {Duration interval = const Duration(hours: 1)}) async* {
     await _ensureLoaded();
     try {
       yield _members.firstWhere((m) => m.id == memberId);
@@ -116,7 +121,8 @@ class CliMemberRepository implements MemberRepository {
     }
     final idx = _members.indexWhere((m) => m.id == memberId);
     if (idx != -1) {
-      _members[idx] = _members[idx].copyWith(isFavorite: _favorites.contains(memberId));
+      _members[idx] =
+          _members[idx].copyWith(isFavorite: _favorites.contains(memberId));
     }
     // 로컬 파일에 저장
     try {
@@ -135,15 +141,22 @@ class CliMemberRepository implements MemberRepository {
   @override
   Future<String> getSelectedRegion() async => _selectedRegion;
   @override
-  Future<void> saveSelectedRegion(String region) async => _selectedRegion = region;
+  Future<void> saveSelectedRegion(String region) async =>
+      _selectedRegion = region;
   @override
-  Stream<String> watchSelectedRegion() async* { yield _selectedRegion; }
+  Stream<String> watchSelectedRegion() async* {
+    yield _selectedRegion;
+  }
+
   @override
   Future<void> resetSettings() async {
     _favorites.clear();
     _selectedRegion = '전국';
-    try { await File('data/favorites.json').delete(); } catch (_) {}
+    try {
+      await File('data/favorites.json').delete();
+    } catch (_) {}
   }
+
   @override
   Future<void> syncUserSettings() async => await _ensureLoaded();
 
@@ -159,11 +172,12 @@ class CliMemberRepository implements MemberRepository {
   Future<List<Member>> searchMembers(String query) async {
     await _ensureLoaded();
     final q = query.toLowerCase();
-    return _members.where((m) =>
-      m.name.toLowerCase().contains(q) ||
-      m.party.toLowerCase().contains(q) ||
-      m.district.toLowerCase().contains(q)
-    ).toList();
+    return _members
+        .where((m) =>
+            m.name.toLowerCase().contains(q) ||
+            m.party.toLowerCase().contains(q) ||
+            m.district.toLowerCase().contains(q))
+        .toList();
   }
 }
 
@@ -202,7 +216,8 @@ Future<void> initCli() async {
   sl.registerSingleton<ExportElectionDataUseCase>(
     ExportElectionDataUseCase(
       memberRepository: sl<MemberRepository>(),
-      calculateElectionPossibilityUseCase: sl<CalculateElectionPossibilityUseCase>(),
+      calculateElectionPossibilityUseCase:
+          sl<CalculateElectionPossibilityUseCase>(),
     ),
   );
 }

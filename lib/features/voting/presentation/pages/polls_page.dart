@@ -43,7 +43,8 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
     _loadPolls();
 
     // 지역 설정 변경 감지 구독 (전역 지역 설정 동기화용)
-    _regionSubscription = sl<MemberRepository>().watchSelectedRegion().listen((region) {
+    _regionSubscription =
+        sl<MemberRepository>().watchSelectedRegion().listen((region) {
       if (mounted && _selectedRegion != region) {
         setState(() {
           _selectedRegion = region;
@@ -61,7 +62,8 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
 
   void _initVotedMembersStream() {
     final memberRepo = sl<MemberRepository>();
-    _votedMembersStream = Rx.combineLatest2<List<Member>, Map<String, String>, List<Member>>(
+    _votedMembersStream =
+        Rx.combineLatest2<List<Member>, Map<String, String>, List<Member>>(
       memberRepo.watchAllMembers(),
       memberRepo.watchAllVotes(),
       (members, votes) {
@@ -113,7 +115,8 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
           controller: _tabController,
           indicatorColor: AppColors.white,
           indicatorWeight: 3,
-          labelStyle: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+          labelStyle:
+              AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
           unselectedLabelStyle: AppTextStyles.bodyMedium,
           tabs: const [
             Tab(text: '진행중'),
@@ -147,7 +150,8 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadPolls,
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
               child: const Text('다시 시도'),
             ),
           ],
@@ -169,9 +173,10 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
     // 지지후보 등록만 처리하고 탭 전환은 하지 않음
     // 데이터는 스트림을 통해 자동 업데이트됨
     debugPrint('후보 지지 완료: ${member.name} (${member.district})');
-    
+
     // 실시간 스트림 강제 새로고침 - 즉시 반영
-    _votedMembersStream = Rx.combineLatest2<List<Member>, Map<String, String>, List<Member>>(
+    _votedMembersStream =
+        Rx.combineLatest2<List<Member>, Map<String, String>, List<Member>>(
       sl<MemberRepository>().watchAllMembers(),
       sl<MemberRepository>().watchAllVotes(),
       (members, votes) {
@@ -179,7 +184,7 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
         return members.where((m) => votedIds.contains(m.id)).toList();
       },
     ).shareValueSeeded([]);
-    
+
     // UI 강제 새로고침
     if (mounted) {
       setState(() {});
@@ -191,7 +196,7 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
       stream: _votedMembersStream,
       builder: (context, snapshot) {
         final votedMembers = snapshot.data ?? [];
-        
+
         return RefreshIndicator(
           onRefresh: () async {
             await sl<MemberRepository>().refreshMembers();
@@ -214,12 +219,14 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
           const SizedBox(height: 16),
           Text(
             '아직 지지한 후보가 없습니다',
-            style: AppTextStyles.bodyLarge.copyWith(color: AppColors.mediumGray),
+            style:
+                AppTextStyles.bodyLarge.copyWith(color: AppColors.mediumGray),
           ),
           const SizedBox(height: 8),
           Text(
             '진행중 탭에서 후보를 지지해보세요!',
-            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.mediumGray),
+            style:
+                AppTextStyles.bodyMedium.copyWith(color: AppColors.mediumGray),
           ),
         ],
       ),
@@ -254,67 +261,89 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
   }
 
   void _showRegionSelectionDialog() {
-    final regions = ['서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시', '세종특별자치시', '경기도', '강원도', '충청북도', '충청남도', '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도'];
+    final regions = [
+      '서울특별시',
+      '부산광역시',
+      '대구광역시',
+      '인천광역시',
+      '광주광역시',
+      '대전광역시',
+      '울산광역시',
+      '세종특별자치시',
+      '경기도',
+      '강원도',
+      '충청북도',
+      '충청남도',
+      '전북특별자치도',
+      '전라남도',
+      '경상북도',
+      '경상남도',
+      '제주특별자치도'
+    ];
 
     String tempSelected = _selectedRegion;
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) {
-          return AlertDialog(
-            title: const Text('지역 선택'),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: regions.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final region = entry.value;
-                    final isSelected = region == tempSelected;
-                    return Column(
-                      children: [
-                        ListTile(
-                          title: Text(
-                            region,
-                            style: TextStyle(
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              color: isSelected ? AppColors.primary : AppColors.darkGray,
-                            ),
+      builder: (dialogContext) =>
+          StatefulBuilder(builder: (dialogContext, setDialogState) {
+        return AlertDialog(
+          title: const Text('지역 선택'),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: regions.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final region = entry.value;
+                  final isSelected = region == tempSelected;
+                  return Column(
+                    children: [
+                      ListTile(
+                        title: Text(
+                          region,
+                          style: TextStyle(
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.darkGray,
                           ),
-                          trailing: isSelected
-                              ? const Icon(Icons.check, color: AppColors.primary)
-                              : const Icon(Icons.chevron_right, size: 18),
-                          onTap: () {
-                            // 1. 체크마크 즉시 표시 (UI 우선 업데이트)
-                            setDialogState(() {
-                              tempSelected = region;
-                            });
-
-                            // 2. 저장은 백그라운드로 수행하면서 다이얼로그는 잠시 유지
-                            // (사용자가 체크 표시를 인식할 수 있도록 200ms 지연)
-                            Future.delayed(const Duration(milliseconds: 200), () {
-                              if (dialogContext.mounted) {
-                                Navigator.of(dialogContext).pop();
-                                // 메인 화면 업데이트 및 저장
-                                sl<MemberRepository>().saveSelectedRegion(region);
-                              }
-                            });
-                          },
                         ),
-                        if (index < regions.length - 1) const Divider(),
-                      ],
-                    );
-                  }).toList(),
-                ),
+                        trailing: isSelected
+                            ? const Icon(Icons.check, color: AppColors.primary)
+                            : const Icon(Icons.chevron_right, size: 18),
+                        onTap: () {
+                          // 1. 체크마크 즉시 표시 (UI 우선 업데이트)
+                          setDialogState(() {
+                            tempSelected = region;
+                          });
+
+                          // 2. 저장은 백그라운드로 수행하면서 다이얼로그는 잠시 유지
+                          // (사용자가 체크 표시를 인식할 수 있도록 200ms 지연)
+                          Future.delayed(const Duration(milliseconds: 200), () {
+                            if (dialogContext.mounted) {
+                              Navigator.of(dialogContext).pop();
+                              // 메인 화면 업데이트 및 저장
+                              sl<MemberRepository>().saveSelectedRegion(region);
+                            }
+                          });
+                        },
+                      ),
+                      if (index < regions.length - 1) const Divider(),
+                    ],
+                  );
+                }).toList(),
               ),
             ),
-          );
-        }
-      ),
+          ),
+        );
+      }),
     );
   }
 }

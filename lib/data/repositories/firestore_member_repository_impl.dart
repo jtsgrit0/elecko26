@@ -50,7 +50,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       BehaviorSubject<String>();
 
   // Firestore 실시간 즐겨찾기 리스너
-  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _favoritesStreamSubscription;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
+      _favoritesStreamSubscription;
 
   bool _isInitialized = false;
   Future<void>? _initializationFuture;
@@ -101,15 +102,18 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   /// Firestore 즐겨찾기 실시간 리스너 시작
   void _startFavoritesStreamListener(String userId) {
     _stopFavoritesStreamListener();
-    debugPrint('[FirestoreMemberRepository] Starting favorites stream listener for user: $userId');
+    debugPrint(
+        '[FirestoreMemberRepository] Starting favorites stream listener for user: $userId');
     _favoritesStreamSubscription = _firestore
         .collection('users')
         .doc(userId)
         .snapshots()
         .listen((snapshot) {
       if (snapshot.exists && snapshot.data() != null) {
-        final cloudFavorites = List<String>.from(snapshot.data()!['favorites'] ?? []);
-        debugPrint('[FirestoreMemberRepository] Firestore favorites changed: $cloudFavorites');
+        final cloudFavorites =
+            List<String>.from(snapshot.data()!['favorites'] ?? []);
+        debugPrint(
+            '[FirestoreMemberRepository] Firestore favorites changed: $cloudFavorites');
         // LocalStorage 업데이트
         _updateLocalStorageFromCloudFavorites(cloudFavorites);
         // UI 업데이트
@@ -122,11 +126,13 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   void _stopFavoritesStreamListener() {
     _favoritesStreamSubscription?.cancel();
     _favoritesStreamSubscription = null;
-    debugPrint('[FirestoreMemberRepository] Favorites stream listener cancelled');
+    debugPrint(
+        '[FirestoreMemberRepository] Favorites stream listener cancelled');
   }
 
   /// Cloud Firestore 즐겨찾기로 LocalStorage 업데이트 (합집합)
-  Future<void> _updateLocalStorageFromCloudFavorites(List<String> cloudFavorites) async {
+  Future<void> _updateLocalStorageFromCloudFavorites(
+      List<String> cloudFavorites) async {
     final localService = sl<LocalStorageService>();
     final localFavorites = await localService.getFavorites();
     // 합집합으로 병합 (Cloud 기준)
@@ -296,7 +302,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
-      debugPrint('[FirestoreMemberRepository] Failed to sync support votes: $e');
+      debugPrint(
+          '[FirestoreMemberRepository] Failed to sync support votes: $e');
     }
   }
 
@@ -304,9 +311,11 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<void> _updateMembersFavoriteStatus() async {
     final localService = sl<LocalStorageService>();
     final favorites = await localService.getFavorites();
-    debugPrint('[FirestoreMemberRepository] _updateMembersFavoriteStatus: ${favorites.length} favorites found');
+    debugPrint(
+        '[FirestoreMemberRepository] _updateMembersFavoriteStatus: ${favorites.length} favorites found');
     final currentMembers = List<Member>.from(_membersController.value);
-    debugPrint('[FirestoreMemberRepository] _updateMembersFavoriteStatus: ${currentMembers.length} members in controller');
+    debugPrint(
+        '[FirestoreMemberRepository] _updateMembersFavoriteStatus: ${currentMembers.length} members in controller');
 
     final updatedMembers = currentMembers.map((m) {
       final newFavStatus = favorites.contains(m.id);
@@ -317,15 +326,17 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     }).toList();
 
     _membersController.add(updatedMembers);
-    debugPrint('[FirestoreMemberRepository] _updateMembersFavoriteStatus: ${updatedMembers.where((m) => m.isFavorite).length} members marked as favorite');
+    debugPrint(
+        '[FirestoreMemberRepository] _updateMembersFavoriteStatus: ${updatedMembers.where((m) => m.isFavorite).length} members marked as favorite');
   }
 
   // 김재식 님의 프로필 이미지 URL을 업데이트
   Future<void> updateKimJaesikImage() async {
     await _ensureInitialized();
     try {
-      const String kimJaesikImageUrl = 'https://img1.daumcdn.net/thumb/R658x0.q70/?fname=https://t1.daumcdn.net/news/202603/18/551730-ch1iKEu/20260318200506839ispp.jpg';
-      
+      const String kimJaesikImageUrl =
+          'https://img1.daumcdn.net/thumb/R658x0.q70/?fname=https://t1.daumcdn.net/news/202603/18/551730-ch1iKEu/20260318200506839ispp.jpg';
+
       // 이름이 '김재식'인 멤버 찾기
       final querySnapshot = await _firestore
           .collection('members')
@@ -337,7 +348,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         final doc = querySnapshot.docs.first;
         await doc.reference.update({'imageUrl': kimJaesikImageUrl});
         debugPrint('김재식 님의 프로필 이미지가 업데이트되었습니다.');
-        
+
         // 로컬 캐시도 업데이트
         await refreshMembers();
       } else {
@@ -666,12 +677,11 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
           continue;
         }
 
-        final resolved =
-            await _profileImageResolver.resolveImageUrlByName(
-              member.name,
-              party: member.party,
-              district: member.district,
-            );
+        final resolved = await _profileImageResolver.resolveImageUrlByName(
+          member.name,
+          party: member.party,
+          district: member.district,
+        );
         if (resolved == null || resolved.trim().isEmpty) {
           await _profileImageResolver.cacheNegative(member.id);
           continue;
@@ -928,7 +938,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     final sanitizedId = memberId.trim();
     final localService = sl<LocalStorageService>();
     final isFav = await localService.isFavorite(sanitizedId);
-    debugPrint('[FirestoreMemberRepository] toggleFavorite: $sanitizedId, wasFavorite: $isFav');
+    debugPrint(
+        '[FirestoreMemberRepository] toggleFavorite: $sanitizedId, wasFavorite: $isFav');
 
     // 1. LocalStorage 먼저 업데이트
     if (isFav) {
@@ -944,7 +955,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       // 대상 멤버만 토글 → 즉시 스트림 통지
       currentMembers[idx] = currentMembers[idx].copyWith(isFavorite: !isFav);
       _notifyListeners(currentMembers);
-      debugPrint('[FirestoreMemberRepository] toggleFavorite: UI updated immediately for member');
+      debugPrint(
+          '[FirestoreMemberRepository] toggleFavorite: UI updated immediately for member');
     } else {
       // 대상 멤버가 현재 리스트에 없으면 전체 상태 재적용
       await _updateMembersFavoriteStatus();
@@ -984,7 +996,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   }
 
   /// Cloud Firestore에 즐겨찾기 동기화 (백그라운드용)
-  Future<void> _syncFavoriteToCloud(String userId, LocalStorageService localService) async {
+  Future<void> _syncFavoriteToCloud(
+      String userId, LocalStorageService localService) async {
     try {
       final favorites = await localService.getFavorites();
       await _firestore.collection('users').doc(userId).set({
@@ -992,7 +1005,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
-      debugPrint('[FirestoreMemberRepository] Failed to sync favorite to cloud: $e');
+      debugPrint(
+          '[FirestoreMemberRepository] Failed to sync favorite to cloud: $e');
     }
   }
 
@@ -1060,7 +1074,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<void> syncUserSettings() async {
     debugPrint('[FirestoreMemberRepository] syncUserSettings() called');
     final user = _getCurrentUserSafe();
-    debugPrint('[FirestoreMemberRepository] Current user: ${user?.uid ?? 'null'}');
+    debugPrint(
+        '[FirestoreMemberRepository] Current user: ${user?.uid ?? 'null'}');
     if (user != null) {
       // 로그인 시 실시간 리스너 시작
       _startFavoritesStreamListener(user.uid);
@@ -1069,7 +1084,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       // 로그아웃 시 리스너 중지
       _stopFavoritesStreamListener();
     }
-    debugPrint('[FirestoreMemberRepository] syncUserSettings() updating favorite status');
+    debugPrint(
+        '[FirestoreMemberRepository] syncUserSettings() updating favorite status');
     await _updateMembersFavoriteStatus();
 
     // 즐겨찾기된 후보들의 뉴스를 백그라운드로 수집
@@ -1172,7 +1188,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   @override
   Future<void> apply2018RegionalPartyRates() async {
     await _ensureInitialized();
-    
+
     try {
       final historicalRepo = sl<HistoricalElectionRepository>();
       final members = await getAllMembers();
@@ -1180,14 +1196,17 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
       for (final member in members) {
         // 의원의 지역구로 2018년 득표율 조회
-        final regionalRates = await historicalRepo.get2018RegionalPartyRates(member.district);
-        
+        final regionalRates =
+            await historicalRepo.get2018RegionalPartyRates(member.district);
+
         if (regionalRates.isNotEmpty) {
           // 2018년 득표율이 있는 경우 업데이트
-          final updatedMember = member.copyWith(historical2018PartyRates: regionalRates);
+          final updatedMember =
+              member.copyWith(historical2018PartyRates: regionalRates);
           updatedMembers.add(updatedMember);
-          
-          debugPrint('${member.name} (${member.district})의 2018년 득표율 업데이트: $regionalRates');
+
+          debugPrint(
+              '${member.name} (${member.district})의 2018년 득표율 업데이트: $regionalRates');
         }
       }
 
@@ -1204,20 +1223,23 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   @override
   Future<void> updateMember2018Rates(String memberId) async {
     await _ensureInitialized();
-    
+
     try {
       final member = await getMemberById(memberId);
       final historicalRepo = sl<HistoricalElectionRepository>();
-      
+
       // 해당 의원의 지역구로 2018년 득표율 조회
-      final regionalRates = await historicalRepo.get2018RegionalPartyRates(member.district);
-      
+      final regionalRates =
+          await historicalRepo.get2018RegionalPartyRates(member.district);
+
       if (regionalRates.isNotEmpty) {
         // 2018년 득표율이 있는 경우 업데이트
-        final updatedMember = member.copyWith(historical2018PartyRates: regionalRates);
+        final updatedMember =
+            member.copyWith(historical2018PartyRates: regionalRates);
         await updateMember(updatedMember);
-        
-        debugPrint('${member.name} (${member.district})의 2018년 득표율 업데이트: $regionalRates');
+
+        debugPrint(
+            '${member.name} (${member.district})의 2018년 득표율 업데이트: $regionalRates');
       }
     } catch (e) {
       debugPrint('${memberId} 의원의 2018년 득표율 업데이트 중 오류: $e');
@@ -1240,8 +1262,9 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<void> updateParkSugiImage() async {
     await _ensureInitialized();
     try {
-      const String parkSugiImageUrl = 'https://cpmadang.org/sites/default/files/100142312.JPG';
-      
+      const String parkSugiImageUrl =
+          'https://cpmadang.org/sites/default/files/100142312.JPG';
+
       // member_sugi_gwangsan ID를 가진 박수기 후보 찾기
       final doc = await _firestore
           .collection('members')
@@ -1251,7 +1274,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       if (doc.exists) {
         await doc.reference.update({'imageUrl': parkSugiImageUrl});
         debugPrint('박수기 후보(광산구청장)의 프로필 이미지가 업데이트되었습니다.');
-        
+
         // 로컬 캐시도 업데이트
         await refreshMembers();
       } else {
@@ -1266,18 +1289,17 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<void> updateYoonDaegiImage() async {
     await _ensureInitialized();
     try {
-      const String yoonDaegiImageUrl = 'https://wimg.kyeongin.com/news/cms/2026/02/03/news-p.v1.20260203.184429b9bc80491b96a8a5114aa2e092_P3.jpg';
-      
+      const String yoonDaegiImageUrl =
+          'https://wimg.kyeongin.com/news/cms/2026/02/03/news-p.v1.20260203.184429b9bc80491b96a8a5114aa2e092_P3.jpg';
+
       // member_daegi ID를 가진 윤대기 후보 찾기
-      final doc = await _firestore
-          .collection('members')
-          .doc('member_daegi')
-          .get();
+      final doc =
+          await _firestore.collection('members').doc('member_daegi').get();
 
       if (doc.exists) {
         await doc.reference.update({'imageUrl': yoonDaegiImageUrl});
         debugPrint('윤대기 후보(인천 계양을)의 프로필 이미지가 업데이트되었습니다.');
-        
+
         // 로컬 캐시도 업데이트
         await refreshMembers();
       } else {
@@ -1292,18 +1314,17 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<void> updateSeoJaeyeolImage() async {
     await _ensureInitialized();
     try {
-      const String seoJaeyeolImageUrl = 'https://dimg.donga.com/wps/NEWS/IMAGE/2004/02/16/6913540.1.jpg';
-      
+      const String seoJaeyeolImageUrl =
+          'https://dimg.donga.com/wps/NEWS/IMAGE/2004/02/16/6913540.1.jpg';
+
       // member_jaeyeol ID를 가진 서재열 후보 찾기
-      final doc = await _firestore
-          .collection('members')
-          .doc('member_jaeyeol')
-          .get();
+      final doc =
+          await _firestore.collection('members').doc('member_jaeyeol').get();
 
       if (doc.exists) {
         await doc.reference.update({'imageUrl': seoJaeyeolImageUrl});
         debugPrint('서재열 후보(경기 평택을)의 프로필 이미지가 업데이트되었습니다.');
-        
+
         // 로컬 캐시도 업데이트
         await refreshMembers();
       } else {

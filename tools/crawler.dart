@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' show parse;
 
-/// 다중 소스(네이버, 다음, 구글, 위키백과 등)를 검색하여 
+/// 다중 소스(네이버, 다음, 구글, 위키백과 등)를 검색하여
 /// 2026 지방선거 출마 관련 데이터를 추출하고 저장하는 스크립트입니다.
 void main() async {
   print('🚀 다중 소스 크롤링을 시작합니다: 2026 지방선거 후보자 발굴');
@@ -75,20 +75,22 @@ void main() async {
   }
 
   final finalCandidates = uniqueCandidatesMap.values.toList();
-  
+
   // 5. 파일 저장 로직
   await _saveCandidatesToFile(finalCandidates);
 }
 
 /// 네이버 뉴스 크롤링
 Future<List<Map<String, dynamic>>> crawlNaver(String query) async {
-  final url = 'https://search.naver.com/search.naver?where=news&query=${Uri.encodeComponent(query)}';
+  final url =
+      'https://search.naver.com/search.naver?where=news&query=${Uri.encodeComponent(query)}';
   return _crawlPortalNews(url, sourceName: 'Naver');
 }
 
 /// 다음 뉴스 크롤링
 Future<List<Map<String, dynamic>>> crawlDaum(String query) async {
-  final url = 'https://search.daum.net/search?w=news&q=${Uri.encodeComponent(query)}';
+  final url =
+      'https://search.daum.net/search?w=news&q=${Uri.encodeComponent(query)}';
   return _crawlPortalNews(url, sourceName: 'Daum');
 }
 
@@ -97,13 +99,14 @@ Future<List<Map<String, dynamic>>> crawlGoogle(String query) async {
   final url = 'https://www.google.com/search?q=${Uri.encodeComponent(query)}';
   try {
     final response = await http.get(Uri.parse(url), headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     });
     if (response.statusCode != 200) return [];
 
     final document = parse(response.body);
     final results = <Map<String, dynamic>>[];
-    
+
     // 구글 검색 결과 제목 추출 (보통 h3 태그)
     final titles = document.querySelectorAll('h3');
     for (final titleElement in titles) {
@@ -123,7 +126,8 @@ Future<List<Map<String, dynamic>>> crawlGoogle(String query) async {
 /// 위키백과 API를 통한 데이터 보강
 Future<String?> fetchWikipediaBio(String name) async {
   try {
-    final url = 'https://ko.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&titles=${Uri.encodeComponent(name)}&format=json&origin=*';
+    final url =
+        'https://ko.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&titles=${Uri.encodeComponent(name)}&format=json&origin=*';
     final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -140,23 +144,26 @@ Future<String?> fetchWikipediaBio(String name) async {
 }
 
 /// 포털 뉴스 크롤링 공통 로직
-Future<List<Map<String, dynamic>>> _crawlPortalNews(String url, {required String sourceName}) async {
+Future<List<Map<String, dynamic>>> _crawlPortalNews(String url,
+    {required String sourceName}) async {
   try {
     final response = await http.get(Uri.parse(url), headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
     });
     if (response.statusCode != 200) return [];
 
     final document = parse(response.body);
     final results = <Map<String, dynamic>>[];
-    
+
     // 네이버/다음 공통 뉴스 제목 클래스/패턴 대응
-    final newsTitles = document.querySelectorAll('.news_tit, .tit_main, a[class*="tit"]');
-    
+    final newsTitles =
+        document.querySelectorAll('.news_tit, .tit_main, a[class*="tit"]');
+
     for (final titleElement in newsTitles) {
       final title = titleElement.text.trim();
       final link = titleElement.attributes['href'] ?? '';
-      
+
       if (_isCandidacyRelated(title)) {
         final name = _extractNameFromTitle(title);
         if (name != null) {
@@ -173,15 +180,32 @@ Future<List<Map<String, dynamic>>> _crawlPortalNews(String url, {required String
 
 bool _isCandidacyRelated(String title) {
   final keywords = [
-    '출마', '도전', '선언', '예비후보', '지방선거', '시장', '지사', '구청장', 
-    '차출', '물망', '공천', '경선', '전략공천', '단일화', '대항마', '유력', 
-    '등판', '출사표', '후보군', '인재영입'
+    '출마',
+    '도전',
+    '선언',
+    '예비후보',
+    '지방선거',
+    '시장',
+    '지사',
+    '구청장',
+    '차출',
+    '물망',
+    '공천',
+    '경선',
+    '전략공천',
+    '단일화',
+    '대항마',
+    '유력',
+    '등판',
+    '출사표',
+    '후보군',
+    '인재영입'
   ];
-  return keywords.any((k) => title.contains(k)) && 
-         !title.contains('불출마') && 
-         !title.contains('사퇴') &&
-         !title.contains('구속') &&
-         !title.contains('재판');
+  return keywords.any((k) => title.contains(k)) &&
+      !title.contains('불출마') &&
+      !title.contains('사퇴') &&
+      !title.contains('구속') &&
+      !title.contains('재판');
 }
 
 String? _extractNameFromTitle(String title) {
@@ -204,7 +228,8 @@ String? _extractNameFromTitle(String title) {
   return null;
 }
 
-Map<String, dynamic> _createCandidateTemplate(String name, String title, String source, String url) {
+Map<String, dynamic> _createCandidateTemplate(
+    String name, String title, String source, String url) {
   return {
     'id': 'candidate_${DateTime.now().millisecondsSinceEpoch}_${name.hashCode}',
     'name': name,
@@ -252,7 +277,8 @@ String _extractDistrict(String title) {
   return '미정';
 }
 
-void _mergeCandidateData(Map<String, dynamic> existing, Map<String, dynamic> newData) {
+void _mergeCandidateData(
+    Map<String, dynamic> existing, Map<String, dynamic> newData) {
   // 보도자료 추가
   final List reports = existing['pressReports'];
   final String newTitle = newData['pressReports'][0]['title'];
@@ -265,7 +291,8 @@ void _mergeCandidateData(Map<String, dynamic> existing, Map<String, dynamic> new
   }
 }
 
-Future<void> _saveCandidatesToFile(List<Map<String, dynamic>> candidates) async {
+Future<void> _saveCandidatesToFile(
+    List<Map<String, dynamic>> candidates) async {
   final file = File('data/election_candidates.json');
   // 기존 파일 읽기
   List<dynamic> existingCandidates = [];
@@ -276,7 +303,9 @@ Future<void> _saveCandidatesToFile(List<Map<String, dynamic>> candidates) async 
   }
 
   // 병합 로직 (간소화)
-  final Map<String, dynamic> pool = {for (var c in existingCandidates) c['name']: c};
+  final Map<String, dynamic> pool = {
+    for (var c in existingCandidates) c['name']: c
+  };
   for (var c in candidates) {
     final name = c['name'];
     if (pool.containsKey(name)) {
@@ -286,20 +315,24 @@ Future<void> _saveCandidatesToFile(List<Map<String, dynamic>> candidates) async 
     }
   }
 
-  await file.writeAsString(JsonEncoder.withIndent('  ').convert(pool.values.toList()));
+  await file.writeAsString(
+      JsonEncoder.withIndent('  ').convert(pool.values.toList()));
   print('✅ 업데이트 완료. 현재 총 후보 수: ${pool.length}');
 }
 
 Future<String> fetchProfileImageUrl(String name) async {
   try {
     final query = Uri.encodeComponent(name);
-    final url = 'https://search.naver.com/search.naver?where=nexearch&query=$query';
+    final url =
+        'https://search.naver.com/search.naver?where=nexearch&query=$query';
     final response = await http.get(Uri.parse(url), headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
     });
     if (response.statusCode == 200) {
       final document = parse(response.body);
-      final img = document.querySelector('.profile_wrap img, .detail_info img, .wrap_thumb img, .thumb img');
+      final img = document.querySelector(
+          '.profile_wrap img, .detail_info img, .wrap_thumb img, .thumb img');
       if (img != null) {
         final src = img.attributes['src'];
         if (src != null && src.startsWith('http')) {

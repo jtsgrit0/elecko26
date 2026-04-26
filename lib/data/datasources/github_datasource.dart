@@ -22,10 +22,10 @@ class GitHubDataSource {
     try {
       final jsonData = data.toJson();
       final jsonString = jsonEncode(jsonData);
-      
+
       // base64 인코딩
       final encodedContent = base64Encode(utf8.encode(jsonString));
-      
+
       // GitHub API 호출
       final url = Uri.parse(
         'https://api.github.com/repos/$owner/$repo/contents/data/election_data.json',
@@ -58,18 +58,21 @@ class GitHubDataSource {
         if (sha != null) 'sha': sha,
       };
 
-      final response = await http.put(
-        url,
-        headers: {
-          'Authorization': 'token $token',
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(body),
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .put(
+            url,
+            headers: {
+              'Authorization': 'token $token',
+              'Accept': 'application/vnd.github.v3+json',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode != 200 && response.statusCode != 201) {
-        throw Exception('Failed to save to GitHub: ${response.statusCode} - ${response.body}');
+        throw Exception(
+            'Failed to save to GitHub: ${response.statusCode} - ${response.body}');
       }
 
       print('✓ Election data saved to GitHub: data/election_data.json');

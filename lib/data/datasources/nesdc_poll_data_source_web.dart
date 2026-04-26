@@ -341,8 +341,8 @@ class NesdcPollDataSource {
     final cached = _localStorageService?.getString(cacheKey);
     if (cached != null) {
       try {
-        final detail = NesdcPollDetail.fromJson(jsonDecode(cached),
-            detailUrl: detailUrl);
+        final detail =
+            NesdcPollDetail.fromJson(jsonDecode(cached), detailUrl: detailUrl);
         _detailCache[detailUrl] = detail;
         return detail;
       } catch (e) {
@@ -414,7 +414,8 @@ class NesdcPollDataSource {
     );
 
     _detailCache[detailUrl] = detail;
-    await _localStorageService?.setString(cacheKey, jsonEncode(detail.toJson()));
+    await _localStorageService?.setString(
+        cacheKey, jsonEncode(detail.toJson()));
     return detail;
   }
 

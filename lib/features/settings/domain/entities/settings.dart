@@ -41,7 +41,8 @@ class AppSettings {
       darkModeEnabled: darkModeEnabled ?? this.darkModeEnabled,
       language: language ?? this.language,
       autoRefreshEnabled: autoRefreshEnabled ?? this.autoRefreshEnabled,
-      refreshIntervalMinutes: refreshIntervalMinutes ?? this.refreshIntervalMinutes,
+      refreshIntervalMinutes:
+          refreshIntervalMinutes ?? this.refreshIntervalMinutes,
       showImages: showImages ?? this.showImages,
       soundEnabled: soundEnabled ?? this.soundEnabled,
       customSettings: customSettings ?? this.customSettings,

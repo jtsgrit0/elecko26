@@ -18,7 +18,8 @@ class ProfileRepositoryImpl implements ProfileRepository {
     try {
       final doc = await _profilesCollection.doc(userId).get();
       if (doc.exists && doc.data() != null) {
-        return UserProfile.fromJson(doc.data()! as Map<String, dynamic>, userId);
+        return UserProfile.fromJson(
+            doc.data()! as Map<String, dynamic>, userId);
       }
       return null;
     } catch (e) {
@@ -27,16 +28,17 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
-  Future<ProfileUpdateResult> updateUserProfile(String userId, UserProfile profile) async {
+  Future<ProfileUpdateResult> updateUserProfile(
+      String userId, UserProfile profile) async {
     try {
       final updatedProfile = profile.copyWith(
         updatedAt: DateTime.now(),
       );
 
       await _profilesCollection.doc(userId).set(
-        updatedProfile.toJson(),
-        SetOptions(merge: true),
-      );
+            updatedProfile.toJson(),
+            SetOptions(merge: true),
+          );
 
       return ProfileUpdateResult.success(updatedProfile);
     } catch (e) {
@@ -58,7 +60,8 @@ class ProfileRepositoryImpl implements ProfileRepository {
   Stream<UserProfile?> watchUserProfile(String userId) {
     return _profilesCollection.doc(userId).snapshots().map((doc) {
       if (doc.exists && doc.data() != null) {
-        return UserProfile.fromJson(doc.data()! as Map<String, dynamic>, userId);
+        return UserProfile.fromJson(
+            doc.data()! as Map<String, dynamic>, userId);
       }
       return null;
     });

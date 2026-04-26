@@ -35,24 +35,24 @@ class MemberElectionData {
   final double electionPossibility;
   final double possibilityChange;
   final DateTime analyzedAt;
-  
+
   // 점수 상세 데이터
   final double achievementScore;
   final double activityScore;
   final double policyScore;
   final double publicImageScore;
   final double pollScore;
-  
+
   // 여론조사 데이터
   final List<PollDataExport> polls;
-  
+
   // SNS 분석 데이터
   final SnsAnalysisExport? snsAnalysis;
-  
+
   // 언론 보도 데이터
   final int pressReportsCount;
   final double sentimentAverage;
-  
+
   // 추이 데이터
   final List<DailyTrendExport> recentTrends;
 
@@ -86,7 +86,8 @@ class MemberElectionData {
       'timestamp': analyzedAt.millisecondsSinceEpoch,
       'analyzedAt': analyzedAt.toIso8601String(),
       'electionPossibility': (electionPossibility * 100).toStringAsFixed(2),
-      'electionPossibilityPercent': (electionPossibility * 100).toStringAsFixed(1),
+      'electionPossibilityPercent':
+          (electionPossibility * 100).toStringAsFixed(1),
       'possibilityChange': (possibilityChange * 100).toStringAsFixed(2),
       'possibilityChangePercent': (possibilityChange * 100).toStringAsFixed(1),
       'scores': {
@@ -134,7 +135,8 @@ class PollDataExport {
       'pollAgency': pollAgency,
       'surveyDate': surveyDate.toIso8601String(),
       'surveyTimestamp': surveyDate.millisecondsSinceEpoch,
-      'supportRate': supportRate != null ? (supportRate! * 100).toStringAsFixed(1) : null,
+      'supportRate':
+          supportRate != null ? (supportRate! * 100).toStringAsFixed(1) : null,
       'sampleSize': sampleSize,
       'marginOfError': marginOfError?.toStringAsFixed(1),
     };
@@ -173,9 +175,15 @@ class SnsAnalysisExport {
       'topMentions': topMentions,
       'engagementTrend': engagementTrend,
       'sentimentRatio': {
-        'positive': totalMentions > 0 ? ((positiveMentions / totalMentions) * 100).toStringAsFixed(1) : "0.0",
-        'neutral': totalMentions > 0 ? ((neutralMentions / totalMentions) * 100).toStringAsFixed(1) : "0.0",
-        'negative': totalMentions > 0 ? ((negativeMentions / totalMentions) * 100).toStringAsFixed(1) : "0.0",
+        'positive': totalMentions > 0
+            ? ((positiveMentions / totalMentions) * 100).toStringAsFixed(1)
+            : "0.0",
+        'neutral': totalMentions > 0
+            ? ((neutralMentions / totalMentions) * 100).toStringAsFixed(1)
+            : "0.0",
+        'negative': totalMentions > 0
+            ? ((negativeMentions / totalMentions) * 100).toStringAsFixed(1)
+            : "0.0",
       },
     };
   }
@@ -222,7 +230,8 @@ class ElectionMetadata {
     return {
       'totalMembers': totalMembers,
       'membersAnalyzed': membersAnalyzed,
-      'averageElectionPossibility': (averageElectionPossibility * 100).toStringAsFixed(1),
+      'averageElectionPossibility':
+          (averageElectionPossibility * 100).toStringAsFixed(1),
       'totalPolls': totalPolls,
       'dataSourcesCount': dataSourcesCount,
       'membersByParty': membersByParty,

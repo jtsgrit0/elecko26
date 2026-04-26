@@ -17,13 +17,15 @@ class MemberDetailPage extends StatefulWidget {
   final Member member;
   final VoidCallback? onBack;
 
-  const MemberDetailPage({Key? key, required this.member, this.onBack}) : super(key: key);
+  const MemberDetailPage({Key? key, required this.member, this.onBack})
+      : super(key: key);
 
   @override
   State<MemberDetailPage> createState() => _MemberDetailPageState();
 }
 
-class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBindingObserver {
+class _MemberDetailPageState extends State<MemberDetailPage>
+    with WidgetsBindingObserver {
   late Stream<Member> _memberStream;
   late Stream<AnalysisResult> _analysisStream;
   late AnalysisResult _initialAnalysis;
@@ -202,8 +204,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
     final activity = _estimateScore(member.actions, 30);
     final policy = _estimateScore(member.policies, 15);
     final publicImage = electionPossibility.clamp(0.2, 0.95);
-    final socialContribution =
-        _estimateSocialScore(member.socialContributions);
+    final socialContribution = _estimateSocialScore(member.socialContributions);
 
     final pollScore = (achievement + activity + policy + publicImage) / 4;
     final historicalScore = pollScore; // 기본값으로 pollScore 사용
@@ -297,7 +298,10 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primary.withOpacity(0.1), AppColors.secondary.withOpacity(0.1)],
+          colors: [
+            AppColors.primary.withOpacity(0.1),
+            AppColors.secondary.withOpacity(0.1)
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -309,18 +313,23 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
             borderRadius: BorderRadius.circular(12),
             child: member.imageUrl.isNotEmpty
                 ? CachedNetworkImage(
-                    imageUrl: ImageUtil.getProxyUrl(member.imageUrl, width: 200, height: 200),
+                    imageUrl: ImageUtil.getProxyUrl(member.imageUrl,
+                        width: 200, height: 200),
                     width: 100,
                     height: 100,
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(width: 100, height: 100, color: AppColors.lightGrey),
+                    placeholder: (context, url) => Container(
+                        width: 100, height: 100, color: AppColors.lightGrey),
                     errorWidget: (context, url, error) {
                       return Container(
                         width: 100,
                         height: 100,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [AppColors.primary.withOpacity(0.8), AppColors.secondary.withOpacity(0.6)],
+                            colors: [
+                              AppColors.primary.withOpacity(0.8),
+                              AppColors.secondary.withOpacity(0.6)
+                            ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -342,7 +351,10 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                     height: 100,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [AppColors.primary.withOpacity(0.8), AppColors.secondary.withOpacity(0.6)],
+                        colors: [
+                          AppColors.primary.withOpacity(0.8),
+                          AppColors.secondary.withOpacity(0.6)
+                        ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -577,7 +589,8 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
   }
 
   Widget _buildPollsSection(Member member) {
-    final nesdcCount = member.polls.where((poll) => poll.id.startsWith('nesdc_')).length;
+    final nesdcCount =
+        member.polls.where((poll) => poll.id.startsWith('nesdc_')).length;
     final lastUpdated = member.lastAnalysisDate;
 
     return Padding(
@@ -588,51 +601,52 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.lightGray),
         ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    '📊 여론조사',
-                    style: AppTextStyles.headline3.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.darkGray,
-                    ),
-                  ),
-                  if (nesdcCount > 0) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'NESDC ${nesdcCount}건',
-                        style: AppTextStyles.labelSmall.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              if (lastUpdated != null) ...[
-                const SizedBox(height: 6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
                 Text(
-                  '업데이트: ${_formatDateTime(lastUpdated)}',
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.mediumGray,
+                  '📊 여론조사',
+                  style: AppTextStyles.headline3.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.darkGray,
                   ),
                 ),
+                if (nesdcCount > 0) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'NESDC ${nesdcCount}건',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ],
-              const SizedBox(height: 16),
-              if (member.polls.isEmpty)
-                Text(
-                  '여론조사 데이터 없음',
-                  style: AppTextStyles.labelSmall.copyWith(
+            ),
+            if (lastUpdated != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                '업데이트: ${_formatDateTime(lastUpdated)}',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.mediumGray,
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            if (member.polls.isEmpty)
+              Text(
+                '여론조사 데이터 없음',
+                style: AppTextStyles.labelSmall.copyWith(
                   color: AppColors.mediumGray,
                 ),
               )
@@ -643,13 +657,13 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                        Expanded(
-                          child: _buildPollStatCard(
-                            '평균 지지율',
-                            _formatAverageSupport(member.polls),
-                            AppColors.primary,
-                          ),
+                      Expanded(
+                        child: _buildPollStatCard(
+                          '평균 지지율',
+                          _formatAverageSupport(member.polls),
+                          AppColors.primary,
                         ),
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: _buildPollStatCard(
@@ -680,11 +694,13 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
   }
 
   String _formatAverageSupport(List<Poll> polls) {
-    final validRates = polls.map((p) => p.supportRate).whereType<double>().toList();
+    final validRates =
+        polls.map((p) => p.supportRate).whereType<double>().toList();
     if (validRates.isEmpty) {
       return '미반영';
     }
-    final avgRate = validRates.fold<double>(0, (sum, r) => sum + r) / validRates.length;
+    final avgRate =
+        validRates.fold<double>(0, (sum, r) => sum + r) / validRates.length;
     return '${(avgRate * 100).toStringAsFixed(1)}%';
   }
 
@@ -970,7 +986,8 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: snsAnalysis.engagementTrend == '상승'
                                 ? AppColors.success.withOpacity(0.2)
@@ -980,7 +997,9 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                           child: Row(
                             children: [
                               Text(
-                                snsAnalysis.engagementTrend == '상승' ? '📈' : '📉',
+                                snsAnalysis.engagementTrend == '상승'
+                                    ? '📈'
+                                    : '📉',
                                 style: AppTextStyles.bodyMedium,
                               ),
                               const SizedBox(width: 6),
@@ -1037,15 +1056,18 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                                         vertical: 6,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: AppColors.secondary.withOpacity(0.2),
+                                        color: AppColors.secondary
+                                            .withOpacity(0.2),
                                         borderRadius: BorderRadius.circular(20),
                                         border: Border.all(
-                                          color: AppColors.secondary.withOpacity(0.5),
+                                          color: AppColors.secondary
+                                              .withOpacity(0.5),
                                         ),
                                       ),
                                       child: Text(
                                         keyword,
-                                        style: AppTextStyles.labelSmall.copyWith(
+                                        style:
+                                            AppTextStyles.labelSmall.copyWith(
                                           color: AppColors.secondary,
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -1173,7 +1195,8 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 10), // Adjust alignment since text is larger
+            padding: const EdgeInsets.only(
+                top: 10), // Adjust alignment since text is larger
             child: Container(
               width: 8,
               height: 8,
@@ -1229,17 +1252,22 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
     );
   }
 
-  Widget _buildPartySupportRateItem(String party, double rate, int rank, bool isCurrentParty) {
+  Widget _buildPartySupportRateItem(
+      String party, double rate, int rank, bool isCurrentParty) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isCurrentParty ? AppColors.primary.withOpacity(0.3) : AppColors.lightGray,
+          color: isCurrentParty
+              ? AppColors.primary.withOpacity(0.3)
+              : AppColors.lightGray,
           width: isCurrentParty ? 2 : 1,
         ),
-        color: isCurrentParty ? AppColors.primary.withOpacity(0.05) : AppColors.white,
+        color: isCurrentParty
+            ? AppColors.primary.withOpacity(0.05)
+            : AppColors.white,
       ),
       child: Row(
         children: [
@@ -1254,7 +1282,8 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
               child: Text(
                 '$rank',
                 style: AppTextStyles.labelSmall.copyWith(
-                  color: isCurrentParty ? AppColors.white : AppColors.mediumGray,
+                  color:
+                      isCurrentParty ? AppColors.white : AppColors.mediumGray,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1265,7 +1294,8 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
             child: Text(
               party,
               style: AppTextStyles.bodyMedium.copyWith(
-                fontWeight: isCurrentParty ? FontWeight.bold : FontWeight.normal,
+                fontWeight:
+                    isCurrentParty ? FontWeight.bold : FontWeight.normal,
                 color: isCurrentParty ? AppColors.primary : AppColors.darkGray,
               ),
             ),
@@ -1289,7 +1319,8 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
     final hasTrends = recentTrends.isNotEmpty;
     final latest = hasTrends ? recentTrends.last : null;
     final earliest = hasTrends ? recentTrends.first : null;
-    final delta = hasTrends ? (latest!.possibility - earliest!.possibility) : 0.0;
+    final delta =
+        hasTrends ? (latest!.possibility - earliest!.possibility) : 0.0;
     final deltaPercent = delta * 100;
     final deltaColor = delta >= 0 ? AppColors.success : AppColors.danger;
 
@@ -1316,7 +1347,8 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.lightGray.withOpacity(0.35),
                     borderRadius: BorderRadius.circular(20),
@@ -1345,7 +1377,8 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                   ),
                   const SizedBox(width: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: deltaColor.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(8),
@@ -1534,7 +1567,8 @@ class _MemberDetailPageState extends State<MemberDetailPage> with WidgetsBinding
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(4),
@@ -1637,7 +1671,8 @@ class _StockChartPainter extends CustomPainter {
 
     final maxValue = values.reduce((a, b) => a > b ? a : b);
     final minValue = values.reduce((a, b) => a < b ? a : b);
-    final range = (maxValue - minValue).abs() < 0.0001 ? 0.1 : (maxValue - minValue);
+    final range =
+        (maxValue - minValue).abs() < 0.0001 ? 0.1 : (maxValue - minValue);
 
     final gridPaint = Paint()
       ..color = gridColor
@@ -1645,7 +1680,8 @@ class _StockChartPainter extends CustomPainter {
     const gridLines = 4;
     for (var i = 0; i <= gridLines; i++) {
       final y = chartRect.top + (chartRect.height / gridLines) * i;
-      canvas.drawLine(Offset(chartRect.left, y), Offset(chartRect.right, y), gridPaint);
+      canvas.drawLine(
+          Offset(chartRect.left, y), Offset(chartRect.right, y), gridPaint);
     }
 
     final points = <Offset>[];
@@ -1699,10 +1735,14 @@ class _StockChartPainter extends CustomPainter {
         final color = close >= open ? upColor : downColor;
 
         final x = points[i].dx;
-        final yOpen = chartRect.bottom - ((open - minValue) / range) * chartRect.height;
-        final yClose = chartRect.bottom - ((close - minValue) / range) * chartRect.height;
-        final yHigh = chartRect.bottom - ((high - minValue) / range) * chartRect.height;
-        final yLow = chartRect.bottom - ((low - minValue) / range) * chartRect.height;
+        final yOpen =
+            chartRect.bottom - ((open - minValue) / range) * chartRect.height;
+        final yClose =
+            chartRect.bottom - ((close - minValue) / range) * chartRect.height;
+        final yHigh =
+            chartRect.bottom - ((high - minValue) / range) * chartRect.height;
+        final yLow =
+            chartRect.bottom - ((low - minValue) / range) * chartRect.height;
 
         final wickPaint = Paint()
           ..color = color

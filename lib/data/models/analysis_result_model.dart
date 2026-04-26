@@ -69,7 +69,8 @@ class AnalysisResultModel extends AnalysisResult {
       activityScore: (json['activityScore'] as num).toDouble(),
       policyScore: (json['policyScore'] as num).toDouble(),
       publicImageScore: (json['publicImageScore'] as num).toDouble(),
-      socialContributionScore: (json['socialContributionScore'] as num).toDouble(),
+      socialContributionScore:
+          (json['socialContributionScore'] as num).toDouble(),
       improvements: List<String>.from(json['improvements'] as List),
       strengths: List<String>.from(json['strengths'] as List),
       weaknesses: List<String>.from(json['weaknesses'] as List),
@@ -78,7 +79,8 @@ class AnalysisResultModel extends AnalysisResult {
           .map((e) => DailyPossibilityModel.fromJson(e as Map<String, dynamic>))
           .toList(),
       snsAnalysis: json['snsAnalysis'] != null
-          ? SnsAnalysisModel.fromJson(json['snsAnalysis'] as Map<String, dynamic>)
+          ? SnsAnalysisModel.fromJson(
+              json['snsAnalysis'] as Map<String, dynamic>)
           : null,
     );
   }
@@ -98,8 +100,12 @@ class AnalysisResultModel extends AnalysisResult {
       'strengths': strengths,
       'weaknesses': weaknesses,
       'analysisReport': analysisReport,
-      'dailyTrends': dailyTrends.map((e) => (e as DailyPossibilityModel).toJson()).toList(),
-      'snsAnalysis': snsAnalysis != null ? (snsAnalysis as SnsAnalysisModel).toJson() : null,
+      'dailyTrends': dailyTrends
+          .map((e) => (e as DailyPossibilityModel).toJson())
+          .toList(),
+      'snsAnalysis': snsAnalysis != null
+          ? (snsAnalysis as SnsAnalysisModel).toJson()
+          : null,
     };
   }
 }

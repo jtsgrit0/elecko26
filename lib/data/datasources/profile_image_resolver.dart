@@ -74,7 +74,8 @@ class ProfileImageResolver {
     final name = displayName.trim();
     if (name.isEmpty) return null;
 
-    final searchQuery = _buildSearchQuery(name, party: party, district: district);
+    final searchQuery =
+        _buildSearchQuery(name, party: party, district: district);
 
     debugPrint('[ProfileImageResolver] Searching for: $searchQuery');
 
@@ -328,8 +329,14 @@ class ProfileImageResolver {
   Future<String?> _resolveNewsSites(String query) async {
     // 주요 언론사 목록
     final newsSites = [
-      {'name': 'chosun', 'url': 'https://search.chosun.com/search/news.html?keyword=$query'},
-      {'name': 'joongang', 'url': 'https://search.joongang.co.kr/search?keyword=$query'},
+      {
+        'name': 'chosun',
+        'url': 'https://search.chosun.com/search/news.html?keyword=$query'
+      },
+      {
+        'name': 'joongang',
+        'url': 'https://search.joongang.co.kr/search?keyword=$query'
+      },
       {'name': 'donga', 'url': 'https://www.donga.com/search?query=$query'},
       {'name': 'hani', 'url': 'https://www.hani.co.kr/search/?q=$query'},
       {'name': 'yna', 'url': 'https://www.yna.co.kr/search?query=$query'},
