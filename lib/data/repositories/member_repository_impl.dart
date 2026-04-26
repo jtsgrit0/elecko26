@@ -10,6 +10,7 @@ import 'package:elecko26_new/domain/entities/poll.dart';
 import 'package:elecko26_new/domain/repositories/historical_election_repository.dart';
 import 'package:elecko26_new/domain/repositories/member_repository.dart';
 import 'package:elecko26_new/domain/usecases/possibility_calculator.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
@@ -132,24 +133,33 @@ class MemberRepositoryImpl implements MemberRepository {
       final localService = sl<LocalStorageService>();
       final favoriteIds = await localService.getFavorites();
 
-      String? candidatesJson = await _fetchCandidatesFromLocalAssets();
+      List<Member> membersFromSource = [];
+      if (kIsWeb) {
+        final snapshot =
+            await FirebaseFirestore.instance.collection('candidates').get();
+        membersFromSource = snapshot.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          final m = MemberModel.fromJson(data);
+          return m.copyWith(isFavorite: favoriteIds.contains(m.id));
+        }).toList();
+      } else {
+        String? candidatesJson = await _fetchCandidatesFromLocalAssets();
+        if (candidatesJson != null) {
+          membersFromSource = await Isolate.run(
+              () => _parseMembersInBackground(candidatesJson!, favoriteIds));
+        }
+      }
 
-      if (candidatesJson != null) {
-        final membersFromIsolate = kIsWeb
-            ? _parseMembersInBackground(candidatesJson, favoriteIds)
-            : await Isolate.run(
-                () => _parseMembersInBackground(candidatesJson!, favoriteIds));
-
-        for (var newMember in membersFromIsolate) {
-          final idx = _dummyMembers.indexWhere((m) => m.name == newMember.name);
-          if (idx != -1) {
-            _dummyMembers[idx] = newMember.copyWith(
-              polls: _dummyMembers[idx].polls,
-              isFavorite: newMember.isFavorite,
-            );
-          } else if (!_dummyMembers.any((m) => m.id == newMember.id)) {
-            _dummyMembers.add(newMember);
-          }
+      for (var newMember in membersFromSource) {
+        final idx = _dummyMembers.indexWhere((m) => m.name == newMember.name);
+        if (idx != -1) {
+          _dummyMembers[idx] = newMember.copyWith(
+            polls: _dummyMembers[idx].polls,
+            isFavorite: newMember.isFavorite,
+          );
+        } else if (!_dummyMembers.any((m) => m.id == newMember.id)) {
+          _dummyMembers.add(newMember);
         }
       }
 
