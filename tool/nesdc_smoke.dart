@@ -3,7 +3,7 @@ import 'package:elecko26_new/data/datasources/nesdc_poll_data_source.dart';
 Future<void> main(List<String> args) async {
   final dataSource = NesdcPollDataSource();
 
-  final entries = await dataSource.fetchLatest(pages: 1);
+  final entries = await dataSource.fetchLatest();
   print('[NESDC] list entries: ${entries.length}');
   if (entries.isEmpty) {
     print('[NESDC] no entries fetched');

@@ -2,7 +2,9 @@
 // It should not export any implementation.
 
 class NesdcPollDataSource {
-  // Unsupported.
+  Future<List<NesdcPollEntry>> fetchLatest() async => [];
+  Future<NesdcPollDetail?> fetchDetail(String url) async => null;
+  NesdcPollDetail? getCachedDetail(String url) => null;
 }
 
 class NesdcPollEntry {
@@ -51,4 +53,6 @@ class NesdcPollDetail {
     required this.resultText,
     required this.fields,
   });
+
+  double? findSupportRate(Iterable<String> names) => null;
 }

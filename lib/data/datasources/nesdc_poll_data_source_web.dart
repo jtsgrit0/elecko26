@@ -210,149 +210,132 @@ class NesdcPollDetail {
 class NesdcPollDataSource {
   NesdcPollDataSource({
     http.Client? client,
-    AssetLoader? assetLoader,
     LocalStorageService? localStorageService,
   })  : _client = client ?? http.Client(),
-        _assetLoader = assetLoader ?? AssetLoader(),
         _localStorageService = localStorageService;
 
   final http.Client _client;
-  final AssetLoader _assetLoader;
   final LocalStorageService? _localStorageService;
   final Map<String, NesdcPollDetail> _detailCache = {};
 
+  /// 캐시된 상세 정보를 가져옵니다 (refreshMembers 최적화용)
   NesdcPollDetail? getCachedDetail(String url) => _detailCache[url];
 
-  Future<List<NesdcPollEntry>> fetchLatest({int pages = 5}) async {
-    return fetchPolls('');
-  }
+  static const String _kPollsCacheKey = 'cached_nesdc_polls_json';
 
-  Future<NesdcPollDetail?> fetchDetail(String detailUrl) async {
-    return fetchPollDetail(detailUrl);
-  }
-
-  Future<List<NesdcPollEntry>> fetchPolls(String region) async {
-    final cacheKey = 'nesdc_polls_$region';
-    final cached = _localStorageService?.getString(cacheKey);
-    if (cached != null) {
-      try {
-        final data = jsonDecode(cached) as List;
-        return data.map((e) {
-          final map = e as Map<String, dynamic>;
-          return NesdcPollEntry(
-            registrationNo: map['registrationNo'] ?? '',
-            agency: map['agency'] ?? '',
-            client: map['client'] ?? '',
-            method: map['method'] ?? '',
-            sampleFrame: map['sampleFrame'] ?? '',
-            pollName: map['pollName'] ?? '',
-            registeredDate: DateTime.tryParse(map['registeredDate'] ?? '') ??
-                DateTime.now(),
-            region: map['region'] ?? '',
-            sourceUrl: map['sourceUrl'] ?? '',
-            status: map['status'] as String?,
-          );
-        }).toList();
-      } catch (e) {
-        print('Failed to parse cached polls: $e');
-      }
+  Future<List<NesdcPollEntry>> fetchLatest(
+      {int pages = kNesdcPagesToFetch}) async {
+    // 1단계: GitHub에서 최신 데이터 다운로드 시도
+    final remoteEntries = await _fetchFromRemoteGitHub();
+    if (remoteEntries != null && remoteEntries.isNotEmpty) {
+      return remoteEntries;
     }
 
-    final target = _toTargetUri('/popup/cal_result.do');
-    final response = await _client.post(
-      _wrapProxy(target),
-      headers: _defaultHeaders(),
-      body: {
-        'searchType': '1',
-        'searchKeyword': region,
-      },
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to fetch polls: ${response.statusCode}');
+    // 2단계: 로컬 캐시 확인
+    final cachedEntries = await _fetchFromLocalCache();
+    if (cachedEntries != null && cachedEntries.isNotEmpty) {
+      return cachedEntries;
     }
 
-    final body = _decodeBody(response);
-    final document = html_parser.parse(body);
-    final rows = document.querySelectorAll('tbody > tr');
-    final entries = <NesdcPollEntry>[];
-    for (final row in rows) {
-      final cells = row.querySelectorAll('td');
-      if (cells.length < 8) {
-        continue;
-      }
-      final registrationNo = cells[0].text.trim();
-      final agency = cells[1].text.trim();
-      final client = cells[2].text.trim();
-      final method = cells[3].text.trim();
-      final sampleFrame = cells[4].text.trim();
-      final pollName = cells[5].text.trim();
-      final registeredDate = DateTime.tryParse(cells[6].text.trim());
-      final region = cells[7].text.trim();
-      final sourceUrl = cells[5].querySelector('a')?.attributes['href'];
-      final status = cells.length > 8 ? cells[8].text.trim() : null;
+    // 3단계: 기본 번들 자산(assets) 사용
+    final bundledEntries = await _fetchFromBundledAssets();
+    if (bundledEntries.isNotEmpty) {
+      return bundledEntries;
+    }
 
-      if (registeredDate == null || sourceUrl == null) {
-        continue;
-      }
+    // 웹에서는 직접 크롤링을 지원하지 않으므로 빈 리스트 반환
+    return [];
+  }
 
-      entries.add(
-        NesdcPollEntry(
-          registrationNo: registrationNo,
-          agency: agency,
-          client: client,
-          method: method,
-          sampleFrame: sampleFrame,
-          pollName: pollName,
-          registeredDate: registeredDate,
-          region: region,
-          sourceUrl: sourceUrl,
-          status: status,
-        ),
+  /// GitHub Raw 상의 최신 JSON 데이터를 다운로드하고 캐싱합니다.
+  Future<List<NesdcPollEntry>?> _fetchFromRemoteGitHub() async {
+    try {
+      final response = await _client.get(Uri.parse(AppConfig.nesdcDataUrl));
+      if (response.statusCode == 200) {
+        final jsonString = response.body;
+        // 로컬 캐시에 저장
+        if (_localStorageService != null) {
+          await _localStorageService!.setString(_kPollsCacheKey, jsonString);
+        }
+        return _parsePollsJson(jsonString);
+      }
+    } catch (e) {
+      print('⚠️ NesdcPollDataSource: Failed to download from GitHub: $e');
+    }
+    return null;
+  }
+
+  /// 로컬 스토리지에 캐시된 데이터를 로드합니다.
+  Future<List<NesdcPollEntry>?> _fetchFromLocalCache() async {
+    if (_localStorageService == null) return null;
+    try {
+      final cachedJson = _localStorageService!.getString(_kPollsCacheKey);
+      if (cachedJson != null && cachedJson.isNotEmpty) {
+        return _parsePollsJson(cachedJson);
+      }
+    } catch (e) {
+      print('⚠️ NesdcPollDataSource: Failed to load from local cache: $e');
+    }
+    return null;
+  }
+
+  /// 앱에 번들링된 기본 에셋 데이터를 로드합니다.
+  Future<List<NesdcPollEntry>> _fetchFromBundledAssets() async {
+    try {
+      final jsonString = await AssetLoader.loadString('data/nesdc_polls.json');
+      return _parsePollsJson(jsonString);
+    } catch (e) {
+      print('⚠️ NesdcPollDataSource: Failed to load from bundled assets: $e');
+    }
+    return [];
+  }
+
+  /// JSON 문자열을 파싱하여 NesdcPollEntry 리스트로 변환합니다.
+  List<NesdcPollEntry> _parsePollsJson(String jsonString) {
+    final decoded = jsonDecode(jsonString);
+    final rawEntries = decoded is List
+        ? decoded
+        : (decoded is Map<String, dynamic> ? decoded['entries'] : null);
+    if (rawEntries is! List) return [];
+
+    final List<NesdcPollEntry> entries = [];
+    for (final raw in rawEntries) {
+      if (raw is! Map<String, dynamic>) continue;
+
+      final registeredDate =
+          DateTime.tryParse('${raw['registeredDate']}') ?? DateTime.now();
+      final entry = NesdcPollEntry(
+        registrationNo: '${raw['registrationNo'] ?? ''}',
+        agency: '${raw['agency'] ?? ''}',
+        client: '${raw['client'] ?? ''}',
+        method: '${raw['method'] ?? ''}',
+        sampleFrame: '${raw['sampleFrame'] ?? ''}',
+        pollName: '${raw['pollName'] ?? ''}',
+        registeredDate: registeredDate,
+        region: '${raw['region'] ?? ''}',
+        sourceUrl: '${raw['sourceUrl'] ?? ''}',
+        status: raw['status'] == null ? null : '${raw['status']}',
       );
+      entries.add(entry);
+
+      final detailJson = raw['detail'];
+      if (detailJson is Map<String, dynamic>) {
+        _detailCache[entry.sourceUrl] = NesdcPollDetail.fromJson(
+          detailJson,
+          detailUrl: entry.sourceUrl,
+        );
+      }
     }
-
-    final cacheData = jsonEncode(entries
-        .map((e) => {
-              'registrationNo': e.registrationNo,
-              'agency': e.agency,
-              'client': e.client,
-              'method': e.method,
-              'sampleFrame': e.sampleFrame,
-              'pollName': e.pollName,
-              'registeredDate': e.registeredDate.toIso8601String(),
-              'region': e.region,
-              'sourceUrl': e.sourceUrl,
-              'status': e.status,
-            })
-        .toList());
-    await _localStorageService?.setString(cacheKey, cacheData);
-
     return entries;
   }
 
-  Future<NesdcPollDetail?> fetchPollDetail(String detailUrl) async {
-    final cachedDetail = _detailCache[detailUrl];
-    if (cachedDetail != null) {
-      return cachedDetail;
-    }
-
-    final cacheKey = 'nesdc_poll_detail_${detailUrl.hashCode}';
-    final cached = _localStorageService?.getString(cacheKey);
-    if (cached != null) {
-      try {
-        final detail =
-            NesdcPollDetail.fromJson(jsonDecode(cached), detailUrl: detailUrl);
-        _detailCache[detailUrl] = detail;
-        return detail;
-      } catch (e) {
-        print('Failed to parse cached poll detail: $e');
-      }
+  Future<NesdcPollDetail?> fetchDetail(String detailUrl) async {
+    if (_detailCache.containsKey(detailUrl)) {
+      return _detailCache[detailUrl];
     }
 
     String? body;
-    // Web environment does not support HeadlessInAppWebView.
-    // Fallback to http proxy method.
+    // 웹 환경에서는 InAppWebView를 사용할 수 없으므로 http로 바로 요청합니다.
     final target = _toTargetUri(detailUrl);
     final response =
         await _client.get(_wrapProxy(target), headers: _defaultHeaders());
@@ -363,42 +346,23 @@ class NesdcPollDataSource {
     }
 
     final document = html_parser.parse(body);
-    final fields = <String, String>{};
-    final rows = document.querySelectorAll('tbody > tr');
-    for (final row in rows) {
-      final th = row.querySelector('th');
-      final td = row.querySelector('td');
-      if (th != null && td != null) {
-        fields[th.text.trim()] = td.text.trim();
-      }
-    }
 
-    final surveyDate = DateTime.tryParse(fields['조사기간'] ?? '');
-    final sampleSize = int.tryParse(
-        (fields['조사완료사례수'] ?? '').replaceAll(RegExp(r'[^0-9]'), ''));
-    final marginOfError = double.tryParse(
-        (fields['최대허용 표본오차'] ?? '').replaceAll(RegExp(r'[^0-9.]'), ''));
-    final resultFileUrl =
-        document.querySelector('a[href*=".pdf"]')?.attributes['href'];
+    final fields = _extractFields(document);
+    final tableText = _extractTableText(document);
+    final detailText = _mergeDetailText(document.outerHtml, tableText);
 
-    String? detailText;
-    try {
-      detailText = document.body?.text.trim();
-    } catch (e) {
-      print('Failed to extract detail text: $e');
-    }
+    final surveyDate = _parseSurveyDate(fields, detailText);
+    var sampleSize = _parseSampleSize(fields, detailText);
+    var marginOfError = _parseMarginOfError(fields, detailText);
 
+    final resultFileUrl = _findResultFileUrl(document);
     String? resultText;
     if (resultFileUrl != null) {
-      try {
-        final url = _toTargetUri(resultFileUrl);
-        final response = await _client.get(_wrapProxy(url));
-        if (response.statusCode == 200) {
-          final bytes = response.bodyBytes;
-          resultText = extractPdfText(bytes);
-        }
-      } catch (e) {
-        print('Failed to fetch or parse PDF: $e');
+      final fileTarget = _toTargetUri(resultFileUrl);
+      final fileResponse =
+          await _client.get(_wrapProxy(fileTarget), headers: _defaultHeaders());
+      if (fileResponse.statusCode == 200) {
+        resultText = _tryExtractPdfText(fileResponse.bodyBytes);
       }
     }
 
@@ -414,37 +378,141 @@ class NesdcPollDataSource {
     );
 
     _detailCache[detailUrl] = detail;
-    await _localStorageService?.setString(
-        cacheKey, jsonEncode(detail.toJson()));
     return detail;
   }
 
-  Uri _toTargetUri(String path) {
-    if (path.startsWith('http')) {
-      return Uri.parse(path);
-    }
-    return _nesdcOrigin.replace(path: path);
+  Uri _buildListUri(int page) {
+    final target = _nesdcOrigin.replace(
+      path: '/portal/bbs/B0000005/list.do',
+      queryParameters: {
+        'menuNo': '200467',
+        'pageIndex': '$page',
+      },
+    );
+    return _wrapProxy(target);
   }
 
   Uri _wrapProxy(Uri target) {
-    if (kIsNesdcProxyEnabled) {
-      return Uri.parse(AppConfig.kNesdcBaseUrl)
-          .replace(queryParameters: {'url': target.toString()});
+    final base = Uri.parse(AppConfig.kNesdcBaseUrl);
+    if (base.host.contains('nesdc.go.kr')) {
+      return target;
     }
-    return target;
+    return base.replace(queryParameters: {'url': target.toString()});
+  }
+
+  Uri _toTargetUri(String urlOrPath) {
+    final uri = Uri.parse(urlOrPath);
+    if (uri.hasScheme) {
+      return uri;
+    }
+    return _nesdcOrigin.resolve(urlOrPath);
   }
 
   Map<String, String> _defaultHeaders() {
-    return {
-      'User-Agent': AppConfig.kDefaultUserAgent,
+    return const {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      'Accept':
+          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     };
   }
 
   String _decodeBody(http.Response response) {
     try {
       return utf8.decode(response.bodyBytes);
-    } catch (e) {
+    } catch (_) {
       return response.body;
+    }
+  }
+
+  Map<String, String> _extractFields(html_dom.Document document) {
+    final fields = <String, String>{};
+    final ths = document.querySelectorAll('th');
+    for (final th in ths) {
+      final key = th.text.trim();
+      final value = th.nextElementSibling?.text.trim();
+      if (key.isNotEmpty && value != null && value.isNotEmpty) {
+        fields[key] = value;
+      }
+    }
+    return fields;
+  }
+
+  String _extractTableText(html_dom.Document document) {
+    final buffer = StringBuffer();
+    final tables = document.querySelectorAll('table');
+    for (final table in tables) {
+      buffer.writeln(table.text.replaceAll(RegExp(r'\s+'), ' ').trim());
+    }
+    return buffer.toString();
+  }
+
+  String _mergeDetailText(String html, String tableText) {
+    final text = html_parser
+        .parse(html)
+        .body
+        ?.text
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    return '${text ?? ''}\n\n$tableText';
+  }
+
+  DateTime? _parseSurveyDate(Map<String, String> fields, String detailText) {
+    final fromField = fields.entries
+        .firstWhere((e) => e.key.contains('조사기간'),
+            orElse: () => const MapEntry('', ''))
+        .value;
+    if (fromField.isNotEmpty) {
+      final parts =
+          fromField.split(RegExp(r'~|~')).map((e) => e.trim()).toList();
+      if (parts.isNotEmpty) {
+        return DateTime.tryParse(parts.first.replaceAll('.', '-'));
+      }
+    }
+    return null;
+  }
+
+  int? _parseSampleSize(Map<String, String> fields, String detailText) {
+    final fromField = fields.entries
+        .firstWhere((e) => e.key.contains('사례수'),
+            orElse: () => const MapEntry('', ''))
+        .value;
+    if (fromField.isNotEmpty) {
+      return int.tryParse(fromField.replaceAll(RegExp(r'[^0-9]'), ''));
+    }
+    return null;
+  }
+
+  double? _parseMarginOfError(Map<String, String> fields, String detailText) {
+    final fromField = fields.entries
+        .firstWhere((e) => e.key.contains('표본오차'),
+            orElse: () => const MapEntry('', ''))
+        .value;
+    if (fromField.isNotEmpty) {
+      final match = RegExp(r'([0-9.]+)%').firstMatch(fromField);
+      if (match != null) {
+        return double.tryParse(match.group(1) ?? '');
+      }
+    }
+    return null;
+  }
+
+  String? _findResultFileUrl(html_dom.Document document) {
+    final links = document.querySelectorAll('a');
+    for (final link in links) {
+      final href = link.attributes['href'];
+      if (href != null && (href.endsWith('.pdf') || href.endsWith('.hwp'))) {
+        return href;
+      }
+    }
+    return null;
+  }
+
+  String? _tryExtractPdfText(Uint8List bytes) {
+    try {
+      return extractPdfText(bytes);
+    } catch (e) {
+      print('⚠️ NesdcPollDataSource: Failed to extract PDF text: $e');
+      return null;
     }
   }
 }
