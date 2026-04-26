@@ -21,9 +21,8 @@ final sl = GetIt.instance;
 /// 멤버 저장소 구현체 (데이터 레이어)
 class MemberRepositoryImpl implements MemberRepository {
   final LocalStorageService _localStorage = sl<LocalStorageService>();
-  final NesdcPollDataSource _nesdcPollDataSource = NesdcPollDataSource(
-    localStorageService: sl<LocalStorageService>(),
-  );
+  final NesdcPollDataSource _nesdcPollDataSource = NesdcPollDataSource();
+
   late final ProfileImageResolver _profileImageResolver = ProfileImageResolver(
     localStorageService: sl<LocalStorageService>(),
   );
@@ -105,16 +104,16 @@ class MemberRepositoryImpl implements MemberRepository {
 
   Future<String?> _fetchCandidatesFromLocalAssets() async {
     try {
-      final List<Map<String, dynamic>> allCandidates = [];
+      final List<Future<String>> futures = [];
       for (int i = 0; i <= 8; i++) {
         final String assetPath = 'data/candidates_split/candidates_$i.json';
-        try {
-          final String jsonString = await rootBundle.loadString(assetPath);
-          final List<dynamic> candidates = json.decode(jsonString);
-          allCandidates.addAll(candidates.cast<Map<String, dynamic>>());
-        } catch (e) {
-          debugPrint('Error loading asset $assetPath: $e');
-        }
+        futures.add(rootBundle.loadString(assetPath));
+      }
+      final List<String> jsonStrings = await Future.wait(futures);
+      final List<Map<String, dynamic>> allCandidates = [];
+      for (final jsonString in jsonStrings) {
+        final List<dynamic> candidates = json.decode(jsonString);
+        allCandidates.addAll(candidates.cast<Map<String, dynamic>>());
       }
       return json.encode(allCandidates);
     } catch (e) {
