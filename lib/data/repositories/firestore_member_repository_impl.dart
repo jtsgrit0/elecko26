@@ -450,46 +450,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     _performPollMatchingInBackground(finalMembers, now);
   }
 
-  Future<List<Member>> _loadFallbackMembers() async {
-    final localService = sl<LocalStorageService>();
-    final favoriteIds = await localService.getFavorites();
 
-    final splitMembers = await _loadFallbackMembersFromSplitFiles(favoriteIds);
-    if (splitMembers.isNotEmpty) {
-      return splitMembers;
-    }
-
-    final fallbackMembers = <Member>[];
-    try {
-      String? jsonString;
-      try {
-        final rawUrl =
-            'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
-        final response = await http
-            .get(Uri.parse(rawUrl))
-            .timeout(const Duration(seconds: 3));
-        if (response.statusCode == 200) {
-          jsonString = utf8.decode(response.bodyBytes);
-        }
-      } catch (_) {}
-
-      jsonString ??=
-          await rootBundle.loadString('data/election_candidates.json');
-
-      final List<dynamic> jsonList = json.decode(jsonString);
-      for (final item in jsonList) {
-        try {
-          final member = MemberModel.fromJson(item as Map<String, dynamic>);
-          fallbackMembers.add(
-            member.copyWith(isFavorite: favoriteIds.contains(member.id)),
-          );
-        } catch (_) {}
-      }
-    } catch (e) {
-      debugPrint('[FirestoreMemberRepository] Local Fallback Error: $e');
-    }
-    return fallbackMembers;
-  }
 
   Future<List<Member>> _loadFallbackMembersFromSplitFiles(
     List<String> favoriteIds,

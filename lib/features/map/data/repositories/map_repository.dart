@@ -7,10 +7,19 @@ import 'package:elecko26_new/core/utils/utility_functions.dart';
 class MapRepositoryImpl implements MapRepository {
   @override
   Future<ElectionMapData> getElectionMapData() async {
-    // 현재 후보자 데이터 로드
-    final candidatesJsonString =
-        await rootBundle.loadString('data/election_candidates.json');
-    final candidatesList = json.decode(candidatesJsonString) as List<dynamic>;
+    // 160MB 단일 파일 대신 split된 에셋 파일을 순차적으로 로드
+    final candidatesList = <dynamic>[];
+    for (var i = 0; i < 20; i++) {
+      try {
+        final String candidatesJsonString = await rootBundle.loadString(
+          'data/candidates_split/candidates_$i.json',
+        );
+        final chunkList = json.decode(candidatesJsonString) as List<dynamic>;
+        candidatesList.addAll(chunkList);
+      } catch (_) {
+        break; // 파일이 더 없으면 종료
+      }
+    }
 
     // 지역별 정당과 후보자 수 계산
     Map<String, Map<String, int>> regionPartyCounts = {};

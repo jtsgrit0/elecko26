@@ -80,8 +80,8 @@ flutter:
   assets:
     - assets/images/
     - assets/images/party/
-    - data/
     - data/candidates_split/
+    - data/nesdc_polls.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
