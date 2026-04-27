@@ -428,16 +428,16 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         final chunk = await _parseMembersFromJsonChunk(content, favoriteIds);
         allLocalMembers.addAll(chunk);
 
-        // 너무 자주 갱신하지 않고 5개 단위 혹은 마지막에만 갱신하여 프리징 방지
-        if (i % 5 == 4 || i == 19) {
-          final merged =
-              _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers);
-          _notifyListeners(merged);
-          debugPrint(
-              '[FirestoreMemberRepository] 에셋 chunk $i 로드: 누적 ${merged.length}명 UI 반영');
-        }
-      } catch (_) {
-        break; // 파일 없으면 종료
+        // 덩어리별로 즉시 UI에 반영하여 진행률 표시 (프리징 방지를 위해 Duration.zero 사용)
+        final merged = _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers);
+        _notifyListeners(merged);
+        
+        debugPrint('[FirestoreMemberRepository] 에셋 chunk $i 로드: 누적 ${merged.length}명 UI 반영');
+        await Future.delayed(Duration.zero);
+      } catch (e) {
+        // 특정 인덱스 파일이 없으면 로드 중단
+        debugPrint('[FirestoreMemberRepository] Asset chunk $i load failed/stopped: $e');
+        break; 
       }
     }
     
@@ -452,15 +452,17 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       if (remoteMembers.isNotEmpty) {
         final merged = _mergeMembersByIdPreferCloud(cloudMembers, remoteMembers);
         _notifyListeners(merged);
-        _performPollMatchingInBackground(merged, now);
-        return;
+        finalMembers = merged;
       }
+    } else {
+      finalMembers = _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers);
     }
 
-    final finalMembers = allLocalMembers.isNotEmpty
-        ? _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers)
-        : cloudMembers;
-
+    // 최종 데이터 반영
+    _notifyListeners(finalMembers);
+    
+    // 무거운 작업은 UI 스레드를 방해하지 않도록 아주 짧은 지연 후 비동기 실행
+    await Future.delayed(const Duration(milliseconds: 100));
     _resolveMissingProfileImagesInBackground(finalMembers);
     _performPollMatchingInBackground(finalMembers, now);
   }
@@ -489,23 +491,25 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     final members = <Member>[];
 
     try {
-      // 병렬로 모든 chunk 파일 시도 (최대 20개)
-      final futures = <Future<List<Member>>>[];
+      // 병렬 대신 순차 로드 (네트워크 혼잡 및 타임아웃 방지)
       for (var i = 0; i < 20; i++) {
-        final idx = i;
-        futures.add(() async {
-          final content = await _loadRemoteSplitChunk(idx);
-          if (content == null) return <Member>[];
-          return await _parseMembersFromJsonChunk(content, favoriteIds);
-        }());
-      }
-      final results = await Future.wait(futures);
-      for (final chunk in results) {
+        final content = await _loadRemoteSplitChunk(i);
+        if (content == null) break; // 파일 없으면 중단
+        
+        final chunk = await _parseMembersFromJsonChunk(content, favoriteIds);
         members.addAll(chunk);
+        
+        // 중간 결과를 즉시 반영하여 사용자에게 진행 상태 표시
+        if (members.isNotEmpty) {
+          final merged = _mergeMembersByIdPreferCloud(cloudMembers, members);
+          _notifyListeners(merged);
+        }
+        
+        // 브라우저에 숨쉴 틈 주기
+        await Future.delayed(const Duration(milliseconds: 10));
       }
     } catch (e) {
       debugPrint('[FirestoreMemberRepository] Split remote load failed: $e');
-      return <Member>[];
     }
 
     return members;
@@ -641,15 +645,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
           .whereType<NesdcPollDetail>()
           .toList();
 
-      final updatedMembers = kIsWeb
-          ? _matchPollsInBackground(
-              List.from(initialMembers), entries, collectedDetails, now)
-          : await Isolate.run(() => _matchPollsInBackground(
-                List.from(initialMembers),
-                entries,
-                collectedDetails,
-                now,
-              ));
+      final updatedMembers = await _matchPollsInBackground(
+                List.from(initialMembers), entries, collectedDetails, now);
 
       // 2-2. 즐겨찾기 재적용 및 최종 통지
       final localService = sl<LocalStorageService>();
@@ -723,12 +720,12 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
   // --- 여론조사 매칭 헬퍼 메서드들 ---
 
-  static List<Member> _matchPollsInBackground(
+  static Future<List<Member>> _matchPollsInBackground(
     List<Member> members,
     List<NesdcPollEntry> entries,
     List<NesdcPollDetail> details,
     DateTime now,
-  ) {
+  ) async {
     final detailMap = {for (var d in details) d.detailUrl: d};
     final updatedMembers = <Member>[];
 
@@ -747,7 +744,12 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     }
 
     // 성능 최적화 2: 각 멤버에 대해 사전 분류된 리스트에서 추출 및 변경된 멤버만 재계산
+    int count = 0;
     for (var member in members) {
+      count++;
+      if (count % 100 == 0) {
+        await Future.delayed(Duration.zero);
+      }
       final regionKey = _staticMapDistrictToRegion(member.district);
       final matchedEntries = entriesByRegion[regionKey] ?? [];
 
