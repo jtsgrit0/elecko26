@@ -370,6 +370,7 @@ class _HomePageState extends State<HomePage>
     );
 
     // 필수 이미지 미리 로딩 (캐싱)
+    // 필수 이미지 미리 로딩 (캐싱)
     _precacheImages();
 
     // 지역 설정 변경 감지 구독
@@ -525,6 +526,14 @@ class _HomePageState extends State<HomePage>
     } catch (e) {
       debugPrint('[ElectionData] Export failed: $e');
     }
+  }
+
+  void _precacheImages() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // 주요 자산 미리 캐싱
+      precacheImage(const AssetImage('assets/images/election_icon.png'), context);
+    });
   }
 
   @override
