@@ -110,7 +110,16 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
   int _nesdcCount = 0;
   String _updateValue = '';
 
+  // 캐시 변수
+  List<Member>? _lastSourceMembers;
+  String? _lastSourceRegion;
+
   void _updateCalculatedData() {
+    // 최적화: 소스 데이터와 지역이 변경되지 않았다면 계산 스킵
+    if (_lastSourceMembers == widget.cachedMembers && _lastSourceRegion == widget.userRegion && _filteredSortedMembers.isNotEmpty) {
+      return;
+    }
+
     // 지역 필터링
     final filtered = widget.userRegion == '전국'
         ? _displayMembers
@@ -134,6 +143,10 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
         .where((member) => _getMemberPossibility(member) >= 0.05)
         .take(10)
         .toList();
+
+    // 소스 캐시 업데이트
+    _lastSourceMembers = widget.cachedMembers;
+    _lastSourceRegion = widget.userRegion;
 
     // 통계 계산
     _nesdcCount = filtered.fold<int>(

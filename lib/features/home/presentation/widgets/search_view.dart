@@ -254,21 +254,20 @@ class _SearchViewState extends State<SearchView>
           if (!_matchesSearchCategory(m)) return false;
           if (!_matchesSearchOffice(m)) return false;
 
-          final query = _searchQuery.toLowerCase();
-          if (query.isEmpty) return true;
-          
-          return m.name.toLowerCase().contains(query) ||
-              m.party.toLowerCase().contains(query) ||
-              m.district.toLowerCase().contains(query) ||
-              m.bio.toLowerCase().contains(query) ||
-              m.policies.any((p) => p.toLowerCase().contains(query)) ||
-              m.achievementsList.any((a) => a.toLowerCase().contains(query));
+          if (_searchQuery.isEmpty) return true;
+          return m.name.contains(_searchQuery) ||
+              m.party.contains(_searchQuery) ||
+              m.district.contains(_searchQuery);
         }).toList();
+
+        // 상위 50명 이미지 선행 로딩 (이미지 늦게 뜨는 현상 방지)
+        _precacheMemberImages(context, filteredMembers.take(50).toList());
 
         // 당선 가능성 높은 순으로 정렬
         filteredMembers.sort(
             (a, b) => b.electionPossibility.compareTo(a.electionPossibility));
 
+        // 캐시 업데이트
         _cachedFilteredResults = filteredMembers;
         _lastAllMembers = allMembers;
         _lastQuery = _searchQuery;
@@ -368,6 +367,19 @@ class _SearchViewState extends State<SearchView>
             !district.contains('특별시장');
       default:
         return district.endsWith(_searchOffice);
+    }
+  }
+
+  void _precacheMemberImages(BuildContext context, List<Member> members) {
+    for (final member in members) {
+      if (member.imageUrl.isNotEmpty) {
+        precacheImage(
+          CachedNetworkImageProvider(
+            ImageUtil.getProxyUrl(member.imageUrl, width: 120, height: 120),
+          ),
+          context,
+        );
+      }
     }
   }
 }

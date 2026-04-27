@@ -49,6 +49,8 @@ class MemberCard extends StatelessWidget {
                               width: 120, height: 120),
                           width: 60,
                           height: 60,
+                          memCacheWidth: 120, // 메모리 캐시 크기 최적화 (해상도에 맞춤)
+                          memCacheHeight: 120,
                           fit: BoxFit.cover,
                           placeholder: (context, url) => Container(
                               width: 60,

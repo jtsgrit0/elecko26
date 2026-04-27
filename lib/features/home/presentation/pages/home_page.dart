@@ -4,6 +4,7 @@ import 'package:elecko26_new/features/home/presentation/widgets/integrated_news_
 import 'package:elecko26_new/features/home/presentation/widgets/home_dashboard_view.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:elecko26_new/core/widgets/lazy_indexed_stack.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/repositories/member_repository.dart';
@@ -437,7 +438,7 @@ class _HomePageState extends State<HomePage>
         if (mounted) {
           setState(() {
             _cachedMembers = members;
-            _cachedTabWidgets = null; // 데이터 변경 시 탭 위젯 갱신
+            // 위젯을 재생성하지 않습니다. 내부 StreamBuilder가 처리를 담당합니다.
           });
         }
       });
@@ -605,8 +606,66 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  // 탭 위젯 캐싱하여 불필요한 재빌드 방지
+  // 탭 위젯 캐싱하여 불필요한 재빌드 방지 (상태 보존 및 스크롤 유지)
   List<Widget>? _cachedTabWidgets;
+
+  void _initializeTabWidgets() {
+    _cachedTabWidgets = [
+      // 0: 대시보드
+      HomeDashboardView(
+        isLoading: _isLoading,
+        membersStream: _membersStream,
+        cachedMembers: _cachedMembers,
+        userRegion: _userRegion,
+        onRefresh: () => _triggerNesdcRefresh(isSilent: false),
+        onMemberSelected: (m) => setState(() => _selectedMember = m),
+        onNavigateToSearch: () => setState(() => _selectedIndex = 1),
+        onRegionChanged: (region) async {
+          setState(() {
+            _userRegion = region;
+            _cachedTabWidgets = null; // 지역 변경 시에만 제한적으로 갱신
+          });
+          await sl<MemberRepository>().saveSelectedRegion(region);
+        },
+      ),
+      // 1: 검색
+      SearchView(
+        membersStream: _membersStream,
+        cachedMembers: _cachedMembers,
+        userRegion: _userRegion,
+        onMemberSelected: (m) => setState(() => _selectedMember = m),
+      ),
+      // 2: 비교
+      ComparisonView(
+        membersStream: _membersStream,
+        cachedMembers: _cachedMembers,
+        onMemberSelected: (m) => setState(() => _selectedMember = m),
+      ),
+      // 3: 뉴스
+      IntegratedNewsView(
+        membersStream: _membersStream,
+        cachedMembers: _cachedMembers,
+      ),
+      // 4: 투표
+      PollsPage(
+        currentUser: _currentUser ??
+            auth.User(
+              id: 'guest',
+              provider: auth.AuthProvider.anonymous,
+              createdAt: DateTime.now(),
+              lastLoginAt: DateTime.now(),
+            ),
+      ),
+      // 5: 즐겨찾기
+      FavoritesView(
+        membersStream: _membersStream,
+        cachedMembers: _cachedMembers,
+        onMemberSelected: (m) => setState(() => _selectedMember = m),
+      ),
+      // 6: 지도
+      const MapScreen(),
+    ];
+  }
 
   Widget _buildBody() {
     if (_selectedMember != null) {
@@ -616,66 +675,12 @@ class _HomePageState extends State<HomePage>
       );
     }
 
-    // 탭 위젯들이 아직 생성되지 않았거나 데이터가 변경된 경우에만 갱신
+    // 탭 위젯들이 아직 생성되지 않았거나 지역이 변경된 경우에만 생성
     if (_cachedTabWidgets == null) {
-      _cachedTabWidgets = [
-        // 0: 대시보드
-        HomeDashboardView(
-          isLoading: _isLoading,
-          membersStream: _membersStream,
-          cachedMembers: _cachedMembers,
-          userRegion: _userRegion,
-          onRefresh: () => _triggerNesdcRefresh(isSilent: false),
-          onMemberSelected: (m) => setState(() => _selectedMember = m),
-          onNavigateToSearch: () => setState(() => _selectedIndex = 1),
-          onRegionChanged: (region) async {
-            setState(() {
-              _userRegion = region;
-              _cachedTabWidgets = null; // 지역 변경 시 캐시 무효화
-            });
-            await sl<MemberRepository>().saveSelectedRegion(region);
-          },
-        ),
-        // 1: 검색
-        SearchView(
-          membersStream: _membersStream,
-          cachedMembers: _cachedMembers,
-          userRegion: _userRegion,
-          onMemberSelected: (m) => setState(() => _selectedMember = m),
-        ),
-        // 2: 비교
-        ComparisonView(
-          membersStream: _membersStream,
-          cachedMembers: _cachedMembers,
-          onMemberSelected: (m) => setState(() => _selectedMember = m),
-        ),
-        // 3: 뉴스
-        IntegratedNewsView(
-          membersStream: _membersStream,
-          cachedMembers: _cachedMembers,
-        ),
-        // 4: 투표
-        PollsPage(
-          currentUser: _currentUser ??
-              auth.User(
-                id: 'guest',
-                provider: auth.AuthProvider.anonymous,
-                createdAt: DateTime.now(),
-                lastLoginAt: DateTime.now(),
-              ),
-        ),
-        // 5: 즐겨찾기
-        FavoritesView(
-          membersStream: _membersStream,
-          cachedMembers: _cachedMembers,
-          onMemberSelected: (m) => setState(() => _selectedMember = m),
-        ),
-        // 6: 지도
-        const MapScreen(),
-      ];
+      _initializeTabWidgets();
     }
 
-    return IndexedStack(
+    return LazyIndexedStack(
       index: _selectedIndex,
       children: _cachedTabWidgets!,
     );
