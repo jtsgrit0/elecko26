@@ -92,8 +92,8 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
     // 선거구명(district)을 사용자 요청 순서(도지사 > 시장 > 구의원 > 군수 > 군의원)에 따라 정렬
     final sortedKeys = grouped.keys.toList()
       ..sort((a, b) {
-        final orderA = getElectionOrderScore(a);
-        final orderB = getElectionOrderScore(b);
+        final orderA = getDistrictSortPriority(a);
+        final orderB = getDistrictSortPriority(b);
         if (orderA != orderB) return orderA.compareTo(orderB);
         return a.compareTo(b);
       });
@@ -130,15 +130,6 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
       final votes = await localStorage.getAllVotes();
       final timestamps = await localStorage.getAllVoteTimestamps();
       
-      // 실제 데이터 로드 및 초기 그룹화 수행
-      _startMemberSubscription();
-    } catch (e) {
-      debugPrint('Error loading regional members: $e');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
       // 1단계: 캐시된 데이터를 먼저 즉시 표시 (블로킹 없음)
       final cached = await sl<MemberRepository>().getCachedMembers();
       if (cached.isNotEmpty) {
@@ -151,9 +142,10 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
             _votes = votes;
             _voteTimestamps = timestamps;
             _isLoading = false;
+            _updateGroupedMembers();
           });
         }
-        return; // 캐시 데이터로 즉시 표시 완료
+        return;
       }
 
       // 2단계: 캐시 비어있을 때만 전체 로드 (최초 1회)
@@ -168,6 +160,7 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
           _votes = votes;
           _voteTimestamps = timestamps;
           _isLoading = false;
+          _updateGroupedMembers();
         });
       }
     } catch (e) {
@@ -277,27 +270,6 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
     }
   }
 
-  Map<String, List<Member>> get _groupedMembers {
-    final Map<String, List<Member>> grouped = {};
-    for (final member in _members) {
-      if (!grouped.containsKey(member.district)) {
-        grouped[member.district] = [];
-      }
-      grouped[member.district]!.add(member);
-    }
-    // 선거구명(district)을 사용자 요청 순서(도지사 > 시장 > 구의원 > 군수 > 군의원)에 따라 정렬
-    final sortedKeys = grouped.keys.toList()
-      ..sort((a, b) {
-        final priorityA = getDistrictSortPriority(a);
-        final priorityB = getDistrictSortPriority(b);
-        if (priorityA != priorityB) {
-          return priorityA.compareTo(priorityB);
-        }
-        return a.compareTo(b); // 우선순위가 같으면 가나다순
-      });
-    return {for (var key in sortedKeys) key: grouped[key]!};
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -326,7 +298,6 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
       );
     }
 
-    final groupedMembers = _groupedMembers;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
