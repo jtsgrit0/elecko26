@@ -21,6 +21,7 @@ import 'package:elecko26_new/features/voting/presentation/pages/polls_page.dart'
 import 'package:elecko26_new/features/home/presentation/widgets/favorites_view.dart';
 import 'package:elecko26_new/features/auth/domain/repositories/auth_repository.dart';
 import 'dart:async';
+import 'package:rxdart/rxdart.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -31,7 +32,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage>
     with WidgetsBindingObserver {
-  late Stream<List<Member>> _membersStream;
+  late final BehaviorSubject<List<Member>> _membersSubject =
+      BehaviorSubject<List<Member>>();
+  Stream<List<Member>> get _membersStream => _membersSubject.stream;
   Timer? _dataExportTimer;
   Timer? _uiRefreshTimer;
   bool _isLoading = false;
@@ -422,25 +425,26 @@ class _HomePageState extends State<HomePage>
 
   void _startMemberStream() {
     try {
-      final stream = sl<WatchMembersUseCase>().call();
-      _membersStream = stream;
       _membersSubscription?.cancel();
-      _membersSubscription = _membersStream.listen((members) {
-        if (mounted) {
-          setState(() {
-            _cachedMembers = members;
-            // 위젯을 재생성하지 않습니다. 내부 StreamBuilder가 처리를 담당합니다.
-          });
+      final stream = sl<WatchMembersUseCase>().call();
+      _membersSubscription = stream.listen((members) {
+        if (!_membersSubject.isClosed) {
+          _membersSubject.add(members);
+          if (mounted) {
+            setState(() {
+              _cachedMembers = members;
+            });
+          }
         }
       });
     } catch (e) {
       debugPrint('[HomePage] Failed to start member stream: $e');
-      _membersStream = const Stream<List<Member>>.empty();
     }
   }
 
   void _stopMemberStream() {
-    _membersStream = Stream<List<Member>>.empty();
+    _membersSubscription?.cancel();
+    _membersSubscription = null;
   }
 
   Future<void> _handleBottomNavTap(int index) async {
@@ -521,15 +525,14 @@ class _HomePageState extends State<HomePage>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!mounted) {
-      return;
-    }
+    if (!mounted || kIsWeb) return;
+
     if (state == AppLifecycleState.resumed) {
-      setState(_startMemberStream);
+      _startMemberStream();
     } else if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
-      setState(_stopMemberStream);
+      _stopMemberStream();
     }
   }
 
@@ -544,6 +547,7 @@ class _HomePageState extends State<HomePage>
     _searchController.dispose();
     _userRegionNotifier.dispose();
     _selectedIndexNotifier.dispose();
+    _membersSubject.close();
     super.dispose();
   }
 
