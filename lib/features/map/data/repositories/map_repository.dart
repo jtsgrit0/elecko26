@@ -5,8 +5,14 @@ import 'package:elecko26_new/features/map/domain/repositories/map_repository.dar
 import 'package:elecko26_new/core/utils/utility_functions.dart';
 
 class MapRepositoryImpl implements MapRepository {
+  ElectionMapData? _cachedData;
+
   @override
   Future<ElectionMapData> getElectionMapData() async {
+    if (_cachedData != null) {
+      return _cachedData!;
+    }
+
     // 160MB 단일 파일 대신 split된 에셋 파일을 순차적으로 로드
     final candidatesList = <dynamic>[];
     for (var i = 0; i < 20; i++) {
@@ -16,6 +22,9 @@ class MapRepositoryImpl implements MapRepository {
         );
         final chunkList = json.decode(candidatesJsonString) as List<dynamic>;
         candidatesList.addAll(chunkList);
+        
+        // 부하 방지를 위해 중간에 짧은 지연 (웹 성능 고려)
+        if (i % 5 == 0) await Future.delayed(Duration.zero);
       } catch (_) {
         break; // 파일이 더 없으면 종료
       }
@@ -54,7 +63,7 @@ class MapRepositoryImpl implements MapRepository {
     });
 
     // ElectionMapData 생성
-    final mapData = ElectionMapData(
+    _cachedData = ElectionMapData(
       regions: regionalAverages.entries.map((entry) {
         return RegionalPartyData.fromJson(
             entry.key, entry.value as Map<String, dynamic>);
@@ -63,6 +72,6 @@ class MapRepositoryImpl implements MapRepository {
       electionDate: DateTime.now().toIso8601String(),
     );
 
-    return mapData;
+    return _cachedData!;
   }
 }

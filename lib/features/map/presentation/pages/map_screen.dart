@@ -127,145 +127,164 @@ class _MapScreenState extends State<MapScreen> {
       return const Center(child: Text('데이터가 없습니다'));
     }
 
-    return FlutterMap(
-      options: const MapOptions(
-        initialCenter: LatLng(36.5, 127.5), // 대한민국 중심
-        initialZoom: 7.0,
+    return RepaintBoundary(
+      child: FlutterMap(
+        options: MapOptions(
+          initialCenter: const LatLng(36.2, 127.8),
+          initialZoom: 7.2,
+          minZoom: 6.8,
+          maxZoom: 11.0,
+          interactionOptions: const InteractionOptions(
+            flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+          ),
+          cameraConstraint: CameraConstraint.contain(
+            bounds: LatLngBounds(
+              const LatLng(32.5, 123.5),
+              const LatLng(39.0, 132.5),
+            ),
+          ),
+        ),
+        children: [
+          TileLayer(
+            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            userAgentPackageName: 'com.elecko26.app',
+            tileDisplay: const TileDisplay.fadeIn(),
+          ),
+          MarkerLayer(
+            rotate: false,
+            markers: [
+              // 다른 지역 마커들 (서울 제외)
+              ..._mapData!.regions
+                  .where((region) => region.region != '서울특별시')
+                  .map((region) {
+                final center = _getRegionCenter(region.region);
+                return Marker(
+                  point: center,
+                  width: 100,
+                  height: 60,
+                  child: RepaintBoundary(
+                    child: GestureDetector(
+                      onTap: () => _showRegionInfo(region),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _getPartyColor(region.dominantParty)
+                                  .withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(6),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 4,
+                                  offset: Offset(0, 2),
+                                )
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  region.region,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                ),
+                                Text(
+                                  '${region.dominantPercentage.toStringAsFixed(1)}%',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.location_on,
+                            color: Colors.red,
+                            size: 16,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+              // 서울특별시 마커 (제일 앞으로 표시)
+              ..._mapData!.regions
+                  .where((region) => region.region == '서울특별시')
+                  .map((region) {
+                final center = _getRegionCenter(region.region);
+                return Marker(
+                  point: center,
+                  width: 110,
+                  height: 70,
+                  child: RepaintBoundary(
+                    child: GestureDetector(
+                      onTap: () => _showRegionInfo(region),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: _getPartyColor(region.dominantParty)
+                                  .withOpacity(0.95),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: Colors.yellowAccent, width: 2),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black38,
+                                  blurRadius: 6,
+                                  offset: Offset(0, 3),
+                                )
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  region.region,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                ),
+                                Text(
+                                  '${region.dominantPercentage.toStringAsFixed(1)}%',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.location_on,
+                            color: Colors.red,
+                            size: 18,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        ],
       ),
-      children: [
-        TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.example.app',
-        ),
-        MarkerLayer(
-          markers: [
-            // 다른 지역 마커들 (서울 제외)
-            ..._mapData!.regions
-                .where((region) => region.region != '서울특별시')
-                .map((region) {
-              final center = _getRegionCenter(region.region);
-              return Marker(
-                point: center,
-                width: 120,
-                height: 80,
-                child: GestureDetector(
-                  onTap: () => _showRegionInfo(region),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _getPartyColor(region.dominantParty)
-                              .withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 4,
-                            )
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              region.region,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
-                            ),
-                            Text(
-                              region.dominantParty,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                              ),
-                              maxLines: 1,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(
-                        Icons.location_on,
-                        color: Colors.red,
-                        size: 20,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-            // 서울특별시 마커 (제일 앞으로 표시)
-            ..._mapData!.regions
-                .where((region) => region.region == '서울특별시')
-                .map((region) {
-              final center = _getRegionCenter(region.region);
-              return Marker(
-                point: center,
-                width: 120,
-                height: 80,
-                child: GestureDetector(
-                  onTap: () => _showRegionInfo(region),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _getPartyColor(region.dominantParty)
-                              .withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                              color: Colors.yellow, width: 2), // 서울 강조
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 4,
-                            )
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              region.region,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
-                            ),
-                            Text(
-                              region.dominantParty,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                              ),
-                              maxLines: 1,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(
-                        Icons.location_on,
-                        color: Colors.red,
-                        size: 20,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ],
-        ),
-      ],
     );
   }
 

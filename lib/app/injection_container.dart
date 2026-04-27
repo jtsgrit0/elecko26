@@ -77,6 +77,10 @@ Future<void> initMinimal() async {
   }
 
   _registerAll();
+  
+  // 백그라운드에서 지도 데이터 미리 로드 (캐시 활성화)
+  unawaited(sl<MapRepository>().getElectionMapData());
+  
   debugPrint('[DI] Minimal DI Initialization Complete');
 }
 
