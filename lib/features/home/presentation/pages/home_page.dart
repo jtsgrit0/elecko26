@@ -70,7 +70,7 @@ class _HomePageState extends State<HomePage>
 
     try {
       // 현재 스트림을 새로고침
-      _membersStream = sl<WatchMembersUseCase>().call();
+      _startMemberStream();
 
       // 잠시 대기 후 로딩 상태 해제
       await Future.delayed(const Duration(milliseconds: 500));
