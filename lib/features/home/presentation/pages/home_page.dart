@@ -692,7 +692,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
               const SizedBox(width: 8),
               Padding(
-                padding: const EdgeInsets.bottom(2.0),
+                padding: const EdgeInsets.only(bottom: 2.0),
                 child: Text(
                   '누가 적토마에 올라탈 것인가!',
                   style: AppTextStyles.bodySmall.copyWith(
