@@ -139,7 +139,7 @@ class _MapScreenState extends State<MapScreen> {
           TileLayer(
             urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
             userAgentPackageName: 'com.elecko26.app',
-            tileDisplay: const TileDisplay.fadeIn(),
+            tileDisplay: const TileDisplay.instant(),
           ),
           MarkerLayer(
             rotate: false,
@@ -282,7 +282,7 @@ class _MapScreenState extends State<MapScreen> {
       context: context,
       barrierDismissible: true,
       barrierLabel: '',
-      transitionDuration: const Duration(milliseconds: 150),
+      transitionDuration: const Duration(milliseconds: 50),
       pageBuilder: (context, anim1, anim2) {
         return Center(
           child: Material(
@@ -292,12 +292,12 @@ class _MapScreenState extends State<MapScreen> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: const [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
+                    color: Colors.black26,
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
                   )
                 ],
               ),
@@ -311,43 +311,44 @@ class _MapScreenState extends State<MapScreen> {
                       Text(
                         region.region,
                         style: const TextStyle(
-                          fontSize: 20,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.close),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                         onPressed: () => Navigator.pop(context),
                       ),
                     ],
                   ),
-                  const Divider(),
-                  const SizedBox(height: 12),
+                  const Divider(height: 24),
                   _buildInfoRow('우세 정당', region.dominantParty,
                       _getPartyColor(region.dominantParty)),
                   _buildInfoRow('예상 득표율',
                       '${region.dominantPercentage.toStringAsFixed(1)}%',
                       Colors.black87),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
                   const Text(
                     '정당별 예상 데이터',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      fontSize: 13,
                       color: Colors.grey,
                     ),
                   ),
                   const SizedBox(height: 8),
                   ...region.partyPercentages.entries.take(5).map((entry) {
                     return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      padding: const EdgeInsets.symmetric(vertical: 3),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(entry.key, style: const TextStyle(fontSize: 14)),
+                          Text(entry.key, style: const TextStyle(fontSize: 13)),
                           Text('${entry.value.toStringAsFixed(1)}%',
                               style: const TextStyle(
-                                  fontSize: 14, fontWeight: FontWeight.w500)),
+                                  fontSize: 13, fontWeight: FontWeight.w500)),
                         ],
                       ),
                     );
@@ -361,10 +362,7 @@ class _MapScreenState extends State<MapScreen> {
       transitionBuilder: (context, anim1, anim2, child) {
         return FadeTransition(
           opacity: anim1,
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.95, end: 1.0).animate(anim1),
-            child: child,
-          ),
+          child: child,
         );
       },
     );
