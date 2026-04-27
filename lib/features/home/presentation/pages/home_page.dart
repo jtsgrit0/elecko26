@@ -28,7 +28,8 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
+class _HomePageState extends State<HomePage>
+    with WidgetsBindingObserver {
   int _selectedIndex = 0;
   late Stream<List<Member>> _membersStream;
   Timer? _dataExportTimer;
@@ -590,7 +591,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  // 바디 위젯 필터링 (메모리 절약을 위해 활성 탭만 빌드)
+  // 바디 위젯 - IndexedStack으로 모든 탭을 생존시켜 탭 전환 시 재빌드 방지
   Widget _buildBody() {
     if (_selectedMember != null) {
       return MemberDetailPage(
@@ -599,10 +600,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       );
     }
 
-    // IndexedStack 대신 현재 선택된 페이지만 직접 렌더링하여 성능 최적화
-    switch (_selectedIndex) {
-      case 0:
-        return HomeDashboardView(
+    return IndexedStack(
+      index: _selectedIndex,
+      children: [
+        // 0: 대시보드
+        HomeDashboardView(
           isLoading: _isLoading,
           membersStream: _membersStream,
           cachedMembers: _cachedMembers,
@@ -616,27 +618,27 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             });
             await sl<MemberRepository>().saveSelectedRegion(region);
           },
-        );
-      case 1:
-        return SearchView(
+        ),
+        // 1: 검색
+        SearchView(
           membersStream: _membersStream,
           cachedMembers: _cachedMembers,
           userRegion: _userRegion,
           onMemberSelected: (m) => setState(() => _selectedMember = m),
-        );
-      case 2:
-        return ComparisonView(
+        ),
+        // 2: 비교
+        ComparisonView(
           membersStream: _membersStream,
           cachedMembers: _cachedMembers,
           onMemberSelected: (m) => setState(() => _selectedMember = m),
-        );
-      case 3:
-        return IntegratedNewsView(
+        ),
+        // 3: 뉴스
+        IntegratedNewsView(
           membersStream: _membersStream,
           cachedMembers: _cachedMembers,
-        );
-      case 4:
-        return PollsPage(
+        ),
+        // 4: 투표
+        PollsPage(
           currentUser: _currentUser ??
               auth.User(
                 id: 'guest',
@@ -644,18 +646,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 createdAt: DateTime.now(),
                 lastLoginAt: DateTime.now(),
               ),
-        );
-      case 5:
-        return FavoritesView(
+        ),
+        // 5: 즐겨찾기
+        FavoritesView(
           membersStream: _membersStream,
           cachedMembers: _cachedMembers,
           onMemberSelected: (m) => setState(() => _selectedMember = m),
-        );
-      case 6:
-        return const MapScreen();
-      default:
-        return const SizedBox.shrink();
-    }
+        ),
+        // 6: 지도
+        const MapScreen(),
+      ],
+    );
   }
 
   PreferredSizeWidget _buildAppBar() {

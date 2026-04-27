@@ -18,9 +18,10 @@ class MemberCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final possibility = member.electionPossibility;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.white,
@@ -197,8 +198,9 @@ class MemberCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   String _formatRelativeTime(DateTime date) {
     final local = date.toLocal();

@@ -22,11 +22,15 @@ class SearchView extends StatefulWidget {
   State<SearchView> createState() => _SearchViewState();
 }
 
-class _SearchViewState extends State<SearchView> {
+class _SearchViewState extends State<SearchView>
+    with AutomaticKeepAliveClientMixin {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _searchCategory = '전체';
   String _searchOffice = '전체';
+
+  @override
+  bool get wantKeepAlive => true;
 
   static const List<String> _searchCategories = ['전체', '광역', '기초', '의회'];
   static const Map<String, List<String>> _officeOptionsByCategory = {
@@ -311,6 +315,7 @@ class _SearchViewState extends State<SearchView> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // AutomaticKeepAliveClientMixin 필수 호출
     return _buildSearchPage();
   }
 

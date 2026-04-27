@@ -26,8 +26,12 @@ class ComparisonView extends StatefulWidget {
   State<ComparisonView> createState() => _ComparisonViewState();
 }
 
-class _ComparisonViewState extends State<ComparisonView> {
+class _ComparisonViewState extends State<ComparisonView>
+    with AutomaticKeepAliveClientMixin {
   final Set<String> _selectedCompareIds = {};
+
+  @override
+  bool get wantKeepAlive => true;
 
   Widget _buildComparisonPage() {
     return StreamBuilder<List<Member>>(
@@ -420,6 +424,7 @@ class _ComparisonViewState extends State<ComparisonView> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // AutomaticKeepAliveClientMixin 필수 호출
     return _buildComparisonPage();
   }
 }
