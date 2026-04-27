@@ -49,6 +49,9 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   static final BehaviorSubject<String> _regionController =
       BehaviorSubject<String>();
 
+  // ID 기반 고속 검색을 위한 Map 캐시
+  static final Map<String, Member> _memberMap = {};
+
   // Firestore 실시간 즐겨찾기 리스너
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
       _favoritesStreamSubscription;
@@ -57,6 +60,11 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<void>? _initializationFuture;
 
   void _notifyListeners(List<Member> members) {
+    // 고속 검색용 Map 업데이트
+    _memberMap.clear();
+    for (var m in members) {
+      _memberMap[m.id] = m;
+    }
     _membersController.add(List.from(members));
   }
 
@@ -711,18 +719,76 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     final detailMap = {for (var d in details) d.detailUrl: d};
     final updatedMembers = <Member>[];
 
-    for (var member in members) {
-      final regionKey = _staticMapDistrictToRegion(member.district);
-      final matchedEntries = entries
-          .where((e) => _staticMatchesRegion(e.region, regionKey))
+    // 성능 최적화 1: 지역별 그룹화 (O(E * R))
+    final regions = [
+      '서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시', '세종특별자치시',
+      '경기도', '강원도', '충청북도', '충청남도', '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도', '전국'
+    ];
+    
+    final Map<String, List<NesdcPollEntry>> entriesByRegion = {};
+    for (var region in regions) {
+      entriesByRegion[region] = entries
+          .where((e) => _staticMatchesRegion(e.region, region))
           .toList()
         ..sort((a, b) => b.registeredDate.compareTo(a.registeredDate));
+    }
+
+    // 성능 최적화 2: 각 멤버에 대해 사전 분류된 리스트에서 추출 및 변경된 멤버만 재계산
+    for (var member in members) {
+      final regionKey = _staticMapDistrictToRegion(member.district);
+      final matchedEntries = entriesByRegion[regionKey] ?? [];
 
       final limitedEntries = matchedEntries.take(5).toList();
       final newPolls = <Poll>[];
 
+      final candidateNames = _staticCandidateNameVariants(member);
+      final partyAliases = _staticPartyAliases(member.party);
+
       for (var entry in limitedEntries) {
         final detail = detailMap[entry.sourceUrl];
+        if (detail == null) continue;
+
+        double? supportRate = detail.findSupportRate(candidateNames);
+        supportRate ??= detail.findSupportRate(partyAliases);
+
+        newPolls.add(Poll(
+          id: 'nesdc_${entry.registrationNo}',
+          pollAgency: entry.agency,
+          surveyDate: detail.surveyDate ?? entry.registeredDate,
+          supportRate: supportRate,
+          partyName: member.party,
+          sampleSize: detail.sampleSize,
+          marginOfError: detail.marginOfError,
+          source: entry.sourceUrl,
+          notes: '${entry.client} | ${entry.method} | 지지율: ${supportRate ?? '미공개'}',
+        ));
+      }
+
+      final mergedPolls = _staticMergePolls(member.polls, newPolls);
+      
+      // 여론조사가 추가되었거나 변경된 경우에만 재계산 진행
+      if (mergedPolls.length != member.polls.length) {
+        final updatedMember = member.copyWith(
+          polls: mergedPolls,
+          lastAnalysisDate: now,
+        );
+
+        final scores = PossibilityCalculator.calculateMultiFactorScores(
+          member: updatedMember,
+          historicalBaseSupport: 0.5,
+        );
+
+        updatedMembers.add(updatedMember.copyWith(
+          electionPossibility: scores['overall']!,
+        ));
+      } else {
+        // 변경 사항이 없으면 그대로 유지 (성능 절약)
+        updatedMembers.add(member);
+      }
+    }
+
+    return updatedMembers;
+  }ailMap[entry.sourceUrl];
         if (detail == null) continue;
 
         final candidateNames = _staticCandidateNameVariants(member);
@@ -888,16 +954,29 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<Member> getMemberById(String memberId) async {
+    // 1단계: 고속 Map 캐시 확인
+    if (_memberMap.containsKey(memberId)) {
+      _ensureInitializedInBackground();
+      return _memberMap[memberId]!;
+    }
+
+    // 2단계: 리스트 검색 (폴백)
     final cachedMembers = _membersController.value;
     final cachedIndex = cachedMembers.indexWhere((m) => m.id == memberId);
     if (cachedIndex != -1) {
       _ensureInitializedInBackground();
       return cachedMembers[cachedIndex];
     }
+
+    // 3단계: 초기화 후 재검색
     await _ensureInitialized();
+    if (_memberMap.containsKey(memberId)) {
+      return _memberMap[memberId]!;
+    }
+
     final members = _membersController.value;
     return members.firstWhere((m) => m.id == memberId,
-        orElse: () => throw Exception('Not found'));
+        orElse: () => throw Exception('Not found: $memberId'));
   }
 
   @override

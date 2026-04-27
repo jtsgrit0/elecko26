@@ -94,18 +94,32 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
   }
 
   Future<void> _calculateMemberPossibilities(List<Member> members) async {
+    if (members.isEmpty) return;
     setState(() => _isCalculatingPossibilities = true);
 
     final Map<String, double> possibilities = {};
     final useCase = GetIt.instance<CalculateElectionPossibilityUseCase>();
 
-    for (final member in members) {
+    // 성능 최적화: 8000명을 모두 실시간 계산하면 앱이 멈춤.
+    // 1단계: 기본 점수로 정렬하여 상위 200명만 추출
+    final topCandidates = List<Member>.from(members)
+      ..sort((a, b) => b.electionPossibility.compareTo(a.electionPossibility));
+    
+    final limitedMembers = topCandidates.take(200).toList();
+
+    // 2단계: 상위 후보들만 실시간 추세 및 가중치 재계산 (0.5초 간격으로 양보하여 UI 프리징 방지)
+    int count = 0;
+    for (final member in limitedMembers) {
       try {
-        final result =
-            await useCase.call(member.id).timeout(const Duration(seconds: 2));
+        final result = await useCase.call(member.id);
         possibilities[member.id] = result.electionPossibility;
+        
+        count++;
+        // 50개마다 이벤트 루프에 양보하여 UI 응답성 유지
+        if (count % 50 == 0) {
+          await Future.delayed(Duration.zero);
+        }
       } catch (e) {
-        // 계산 실패 시 기존 값 사용
         possibilities[member.id] = member.electionPossibility;
       }
     }
