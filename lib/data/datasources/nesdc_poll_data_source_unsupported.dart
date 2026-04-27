@@ -2,6 +2,11 @@
 // It should not export any implementation.
 
 class NesdcPollDataSource {
+  NesdcPollDataSource({
+    dynamic client,
+    dynamic localStorageService,
+  });
+
   Future<List<NesdcPollEntry>> fetchLatest() async => [];
   Future<NesdcPollDetail?> fetchDetail(String url) async => null;
   NesdcPollDetail? getCachedDetail(String url) => null;

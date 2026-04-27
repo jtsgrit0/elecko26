@@ -788,45 +788,6 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     }
 
     return updatedMembers;
-  }ailMap[entry.sourceUrl];
-        if (detail == null) continue;
-
-        final candidateNames = _staticCandidateNameVariants(member);
-        final partyAliases = _staticPartyAliases(member.party);
-
-        double? supportRate = detail.findSupportRate(candidateNames);
-        supportRate ??= detail.findSupportRate(partyAliases);
-
-        newPolls.add(Poll(
-          id: 'nesdc_${entry.registrationNo}',
-          pollAgency: entry.agency,
-          surveyDate: detail.surveyDate ?? entry.registeredDate,
-          supportRate: supportRate,
-          partyName: member.party,
-          sampleSize: detail.sampleSize,
-          marginOfError: detail.marginOfError,
-          source: entry.sourceUrl,
-          notes:
-              '${entry.client} | ${entry.method} | 지지율: ${supportRate ?? '미공개'}',
-        ));
-      }
-
-      final updatedMember = member.copyWith(
-        polls: _staticMergePolls(member.polls, newPolls),
-        lastAnalysisDate: now,
-      );
-
-      // 최신 데이터를 바탕으로 당선 가능성 재계산 (상세보기와 동일한 로직 적용)
-      final scores = PossibilityCalculator.calculateMultiFactorScores(
-        member: updatedMember,
-        historicalBaseSupport: 0.5, // 이펙트 가중치 기본값
-      );
-
-      updatedMembers.add(updatedMember.copyWith(
-        electionPossibility: scores['overall']!,
-      ));
-    }
-    return updatedMembers;
   }
 
   static String _staticMapDistrictToRegion(String district) {
@@ -866,7 +827,9 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     final t = targetRegion.replaceAll(' ', '');
 
     // Handle mutual containment (e.g., '부산' and '부산광역시')
-    if (p.contains(t) || t.contains(p)) return true;
+    if (p.contains(t) || t.contains(p)) {
+      return true;
+    }
 
     // Special cases for provinces with common abbreviations
     if ((p.contains('경북') && t.contains('경상북도')) ||
@@ -1346,6 +1309,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     await batch.commit();
   }
 
+  @override
   // 박수기 후보의 프로필 이미지 URL을 업데이트
   Future<void> updateParkSugiImage() async {
     await _ensureInitialized();
@@ -1373,6 +1337,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     }
   }
 
+  @override
   // 윤대기 후보의 프로필 이미지 URL을 업데이트
   Future<void> updateYoonDaegiImage() async {
     await _ensureInitialized();
@@ -1398,6 +1363,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     }
   }
 
+  @override
   // 서재열 후보의 프로필 이미지 URL을 업데이트
   Future<void> updateSeoJaeyeolImage() async {
     await _ensureInitialized();
