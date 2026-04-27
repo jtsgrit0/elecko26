@@ -108,6 +108,23 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     }
   }
 
+  /// 번들로 포함된 초경량 데이터 로드 (앱 최초 실행 시 즉시 화면 표시용)
+  Future<List<Member>> _loadLightweightMembers() async {
+    try {
+      final jsonString = await rootBundle.loadString('data/candidates_lightweight.json');
+      final jsonList = json.decode(jsonString) as List<dynamic>;
+      final members = <Member>[];
+      for (final item in jsonList) {
+        members.add(MemberModel.fromJson(item as Map<String, dynamic>));
+      }
+      debugPrint('[Cache] 초경량 데이터 ${members.length}명 초고속 로드 완료');
+      return members;
+    } catch (e) {
+      debugPrint('[Cache] 초경량 데이터 로드 실패: $e');
+      return [];
+    }
+  }
+
   /// 전체 로드 완료 후 캐시 저장 (경량 필드만)
   Future<void> _saveToCache(List<Member> members) async {
     try {
@@ -156,7 +173,13 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     } catch (_) {}
     try {
       // 1) 캐시에서 즉시 표시 (초고속)
-      final cachedMembers = await _loadFromCache();
+      var cachedMembers = await _loadFromCache();
+      
+      // 캐시가 없으면 경량 번들 JSON에서 즉시 8000명 로드
+      if (cachedMembers.isEmpty) {
+        cachedMembers = await _loadLightweightMembers();
+      }
+      
       if (cachedMembers.isNotEmpty) {
         final localService = sl<LocalStorageService>();
         final favoriteIds = await localService.getFavorites();
@@ -165,11 +188,11 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
             .toList();
         _notifyListeners(withFavorites);
         _isInitialized = true;
-        debugPrint('[Cache] 캐시로 즉시 표시 완료, 백그라운드 업데이트 시작...');
-        // 2) 백그라운드에서 최신 데이터로 업데이트
+        debugPrint('[Cache] 즉시 표시 완료, 백그라운드 업데이트 시작...');
+        // 2) 백그라운드에서 최신 데이터(상세)로 업데이트
         unawaited(refreshMembers());
       } else {
-        // 캐시 없으면 풀 로드
+        // 둘 다 실패 시 풀 로드 (거의 발생하지 않음)
         await refreshMembers();
         _isInitialized = true;
       }
