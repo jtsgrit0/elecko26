@@ -210,7 +210,7 @@ class _HomePageState extends State<HomePage>
             onPressed: () async {
               await sl<MemberRepository>().resetSettings();
               setState(() {
-                _userRegion = '전국';
+                _userRegionNotifier.value = '전국';
               });
               if (context.mounted) {
                 Navigator.pop(context); // 팝업 닫기
@@ -370,9 +370,7 @@ class _HomePageState extends State<HomePage>
     _regionSubscription =
         sl<MemberRepository>().watchSelectedRegion().listen((region) {
       if (mounted) {
-        setState(() {
-          _userRegion = region;
-        });
+        _userRegionNotifier.value = region;
       }
     });
 
