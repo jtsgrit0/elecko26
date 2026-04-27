@@ -28,13 +28,31 @@ class _MyAppState extends State<MyApp> {
   late final Future<void> _bootstrapFuture = _bootstrap();
 
   Future<void> _bootstrap() async {
+    // 전체 초기화에 최대 10초 제한 (모바일 웹 무한 로딩 방지)
+    try {
+      await Future.any([
+        _performInitialization(),
+        Future.delayed(const Duration(seconds: 10), () {
+          debugPrint('[Bootstrap] 초기화 타임아웃 - 강제 진행');
+          throw 'Timeout';
+        }),
+      ]);
+    } catch (e) {
+      debugPrint('[Bootstrap] 초기화 중 예외 또는 타임아웃 발생 (폴백 모드): $e');
+      // 타임아웃이나 오류 시에도 최소한의 DI는 시도
+      try { await di.initMinimal(); } catch (_) {}
+    }
+  }
+
+  Future<void> _performInitialization() async {
     if (AppConfig.enableFirebase) {
       try {
+        // Firebase 초기화에 5초 타임아웃 적용
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
-        );
+        ).timeout(const Duration(seconds: 5));
       } catch (e) {
-        debugPrint('[Bootstrap] Firebase initialization skipped/duplicate: $e');
+        debugPrint('[Bootstrap] Firebase 초기화 실패/타임아웃: $e');
       }
     }
 
