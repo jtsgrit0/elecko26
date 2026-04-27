@@ -74,23 +74,82 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
       _calculateMemberPossibilities(widget.cachedMembers);
     }
 
-    // 스트림 데이터가 도착하면 업데이트
+    // 스트림 데이터가 도착하면 업데이트 (디바운싱 적용)
     _subscription = widget.membersStream.listen((members) {
       if (mounted && members.isNotEmpty) {
-        setState(() => _displayMembers = members);
-        _calculateMemberPossibilities(members);
+        _debounceTimer?.cancel();
+        _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            setState(() {
+              _displayMembers = members;
+              _updateCalculatedData();
+            });
+            _calculateMemberPossibilities(members);
+          }
+        });
       }
     });
+
+    // 초기 데이터 계산
+    if (_displayMembers.isNotEmpty) {
+      _updateCalculatedData();
+    }
 
     // 실시간 시간 업데이트를 위한 타이머 시작 (3분마다 업데이트)
     _timer = Timer.periodic(const Duration(minutes: 3), (timer) {
       if (mounted) {
-        // 시간 표시만 업데이트하도록 최적화
-        setState(() {
-          // 시간 관련 위젯만 rebuild되도록 빈 setState 호출
-        });
+        setState(() {});
       }
     });
+  }
+
+  Timer? _debounceTimer;
+  List<Member> _filteredSortedMembers = [];
+  List<Member> _top3 = [];
+  List<Member> _memberList = [];
+  int _nesdcCount = 0;
+  String _updateValue = '';
+
+  void _updateCalculatedData() {
+    // 지역 필터링
+    final filtered = widget.userRegion == '전국'
+        ? _displayMembers
+        : _displayMembers
+            .where((member) =>
+                districtMatchesRegion(member.district, widget.userRegion))
+            .toList();
+
+    // 정렬
+    _filteredSortedMembers = List<Member>.from(filtered)
+      ..sort((a, b) {
+        final aPossibility = _getMemberPossibility(a);
+        final bPossibility = _getMemberPossibility(b);
+        return bPossibility.compareTo(aPossibility);
+      });
+
+    // TOP 3 및 목록 추출
+    _top3 = _filteredSortedMembers.take(3).toList();
+    _memberList = _filteredSortedMembers
+        .skip(3)
+        .where((member) => _getMemberPossibility(member) >= 0.05)
+        .take(10)
+        .toList();
+
+    // 통계 계산
+    _nesdcCount = filtered.fold<int>(
+        0,
+        (sum, member) =>
+            sum + member.polls.where((p) => p.id.startsWith('nesdc_')).length);
+
+    final latestAnalysis = filtered.isNotEmpty
+        ? filtered
+            .map((m) => m.lastAnalysisDate)
+            .reduce((a, b) => a.isAfter(b) ? a : b)
+        : null;
+
+    final now = latestAnalysis ?? DateTime.now();
+    _updateValue =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
   }
 
   bool _isCalculating = false;
@@ -158,21 +217,17 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
   @override
   void didUpdateWidget(HomeDashboardView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 캐시된 멤버가 있고 이전과 다른 경우에만 업데이트
-    if (widget.cachedMembers.isNotEmpty &&
+    if (widget.userRegion != oldWidget.userRegion ||
         widget.cachedMembers != oldWidget.cachedMembers) {
-      setState(() => _displayMembers = widget.cachedMembers);
-    }
-    // 현재 표시된 멤버가 없고 캐시된 데이터가 있으면 표시
-    else if (_displayMembers.isEmpty && widget.cachedMembers.isNotEmpty) {
-      setState(() => _displayMembers = widget.cachedMembers);
+      _updateCalculatedData();
     }
   }
 
   @override
   void dispose() {
     _subscription?.cancel();
-    _timer?.cancel(); // 타이머 정리
+    _timer?.cancel();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 
@@ -504,55 +559,12 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
       return const Center(child: CircularProgressIndicator());
     }
 
-    // 지역 필터링
-    final filteredMembers = widget.userRegion == '전국'
-        ? _displayMembers
-        : _displayMembers
-            .where((member) =>
-                districtMatchesRegion(member.district, widget.userRegion))
-            .toList();
-
-    // 실제 계산된 당선 가능성을 사용하여 정렬
-    final sortedMembers = List<Member>.from(filteredMembers)
-      ..sort((a, b) {
-        final aPossibility = _getMemberPossibility(a);
-        final bPossibility = _getMemberPossibility(b);
-        return bPossibility.compareTo(aPossibility);
-      });
-
-    // TOP 3 추출
-    final top3 = sortedMembers.take(3).toList();
-
-    // 당선 가능성이 높은 후보들만 표시 (TOP3 제외, 최소 5% 이상)
-    final memberList = sortedMembers
-        .skip(3)
-        .where((member) => _getMemberPossibility(member) >= 0.05) // 5% 이상
-        .take(10) // 최대 10명
-        .toList();
-
-    // 통계 계산 - 실제 업데이트 시간 표시
-    final latestAnalysis = filteredMembers.isNotEmpty
-        ? filteredMembers
-            .map((m) => m.lastAnalysisDate)
-            .reduce((a, b) => a.isAfter(b) ? a : b)
-        : null;
-
-    // 실시간 업데이트 시간 표시 (형식: YYYY-MM-DD HH:MM)
-    final updateValue = latestAnalysis != null
-        ? '${latestAnalysis.year}-${latestAnalysis.month.toString().padLeft(2, '0')}-${latestAnalysis.day.toString().padLeft(2, '0')} ${latestAnalysis.hour.toString().padLeft(2, '0')}:${latestAnalysis.minute.toString().padLeft(2, '0')}'
-        : DateTime.now().year.toString() +
-            '-' +
-            DateTime.now().month.toString().padLeft(2, '0') +
-            '-' +
-            DateTime.now().day.toString().padLeft(2, '0') +
-            ' ' +
-            DateTime.now().hour.toString().padLeft(2, '0') +
-            ':' +
-            DateTime.now().minute.toString().padLeft(2, '0');
-    final nesdcCount = filteredMembers.fold<int>(
-        0,
-        (sum, member) =>
-            sum + member.polls.where((p) => p.id.startsWith('nesdc_')).length);
+    // 이미 _updateCalculatedData()에서 계산됨
+    final filteredMembers = _filteredSortedMembers;
+    final top3 = _top3;
+    final memberList = _memberList;
+    final updateValue = _updateValue;
+    final nesdcCount = _nesdcCount;
 
     return RefreshIndicator(
       onRefresh: widget.onRefresh,

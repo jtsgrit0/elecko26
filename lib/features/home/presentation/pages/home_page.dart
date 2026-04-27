@@ -427,15 +427,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     try {
       final stream = sl<WatchMembersUseCase>().call().asBroadcastStream();
       _membersStream = stream;
-
-      // 스트림을 구독하여 로컬 캐시를 최신으로 유지 (UI 반응성 강화)
-      stream.listen((members) {
-        if (mounted) {
-          setState(() {
-            _cachedMembers = members;
-          });
-        }
-      });
     } catch (e) {
       debugPrint('[HomePage] Failed to start member stream: $e');
       _membersStream = const Stream<List<Member>>.empty();
@@ -599,7 +590,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  // 바디 위젯 필터링
+  // 바디 위젯 필터링 (메모리 절약을 위해 활성 탭만 빌드)
   Widget _buildBody() {
     if (_selectedMember != null) {
       return MemberDetailPage(
@@ -608,10 +599,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       );
     }
 
-    return IndexedStack(
-      index: _selectedIndex,
-      children: [
-        HomeDashboardView(
+    // IndexedStack 대신 현재 선택된 페이지만 직접 렌더링하여 성능 최적화
+    switch (_selectedIndex) {
+      case 0:
+        return HomeDashboardView(
           isLoading: _isLoading,
           membersStream: _membersStream,
           cachedMembers: _cachedMembers,
@@ -624,33 +615,28 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               _userRegion = region;
             });
             await sl<MemberRepository>().saveSelectedRegion(region);
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('$region으로 지역이 설정되었습니다.'),
-                  backgroundColor: AppColors.primary,
-                  duration: const Duration(seconds: 1),
-                ),
-              );
-            }
           },
-        ),
-        SearchView(
+        );
+      case 1:
+        return SearchView(
           membersStream: _membersStream,
           cachedMembers: _cachedMembers,
           userRegion: _userRegion,
           onMemberSelected: (m) => setState(() => _selectedMember = m),
-        ),
-        ComparisonView(
+        );
+      case 2:
+        return ComparisonView(
           membersStream: _membersStream,
           cachedMembers: _cachedMembers,
           onMemberSelected: (m) => setState(() => _selectedMember = m),
-        ),
-        IntegratedNewsView(
+        );
+      case 3:
+        return IntegratedNewsView(
           membersStream: _membersStream,
           cachedMembers: _cachedMembers,
-        ),
-        PollsPage(
+        );
+      case 4:
+        return PollsPage(
           currentUser: _currentUser ??
               auth.User(
                 id: 'guest',
@@ -658,15 +644,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 createdAt: DateTime.now(),
                 lastLoginAt: DateTime.now(),
               ),
-        ),
-        FavoritesView(
+        );
+      case 5:
+        return FavoritesView(
           membersStream: _membersStream,
           cachedMembers: _cachedMembers,
           onMemberSelected: (m) => setState(() => _selectedMember = m),
-        ),
-        const MapScreen(),
-      ],
-    );
+        );
+      case 6:
+        return const MapScreen();
+      default:
+        return const SizedBox.shrink();
+    }
   }
 
   PreferredSizeWidget _buildAppBar() {
