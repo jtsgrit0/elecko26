@@ -59,6 +59,12 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   bool _isInitialized = false;
   Future<void>? _initializationFuture;
 
+  // 캐시 키
+  static const String _cacheKey = 'member_cache_v2';
+  static const String _cacheTimestampKey = 'member_cache_timestamp_v2';
+  // 캐시 유효 시간: 1시간
+  static const Duration _cacheTtl = Duration(hours: 1);
+
   void _notifyListeners(List<Member> members) {
     // 고속 검색용 Map 업데이트
     _memberMap.clear();
@@ -66,6 +72,70 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       _memberMap[m.id] = m;
     }
     _membersController.add(List.from(members));
+  }
+
+  /// 브라우저 캐시에서 즉시 멤버 로드 (초고속)
+  Future<List<Member>> _loadFromCache() async {
+    try {
+      final localService = sl<LocalStorageService>();
+      final timestampStr = localService.getString(_cacheTimestampKey);
+      if (timestampStr == null) return [];
+
+      final timestamp = DateTime.fromMillisecondsSinceEpoch(int.parse(timestampStr));
+      if (DateTime.now().difference(timestamp) > _cacheTtl) {
+        debugPrint('[Cache] 캐시 만료됨, 새로 로드 필요');
+        return [];
+      }
+
+      final cachedJson = localService.getString(_cacheKey);
+      if (cachedJson == null || cachedJson.isEmpty) return [];
+
+      final List<dynamic> jsonList = json.decode(cachedJson);
+      final members = <Member>[];
+      int count = 0;
+      for (final item in jsonList) {
+        try {
+          members.add(MemberModel.fromJson(item as Map<String, dynamic>));
+          count++;
+          if (count % 500 == 0) await Future.delayed(Duration.zero);
+        } catch (_) {}
+      }
+      debugPrint('[Cache] 캐시에서 ${members.length}명 즉시 로드 완료');
+      return members;
+    } catch (e) {
+      debugPrint('[Cache] 캐시 로드 실패: $e');
+      return [];
+    }
+  }
+
+  /// 전체 로드 완료 후 캐시 저장 (경량 필드만)
+  Future<void> _saveToCache(List<Member> members) async {
+    try {
+      final localService = sl<LocalStorageService>();
+      // 핵심 필드만 저장하여 용량 최소화 (이름, 정당, 지역, 당선가능성, 이미지)
+      final lightweight = members.map((m) => {
+        'id': m.id,
+        'name': m.name,
+        'party': m.party,
+        'district': m.district,
+        'electionPossibility': m.electionPossibility,
+        'imageUrl': m.imageUrl,
+        'lastAnalysisDate': m.lastAnalysisDate.toIso8601String(),
+      }).toList();
+
+      final jsonStr = json.encode(lightweight);
+      // SharedPreferences는 약 10MB 제한이 있어 분할 저장
+      if (jsonStr.length < 8 * 1024 * 1024) {
+        await localService.setString(_cacheKey, jsonStr);
+        await localService.setString(
+          _cacheTimestampKey,
+          DateTime.now().millisecondsSinceEpoch.toString(),
+        );
+        debugPrint('[Cache] ${members.length}명 캐시 저장 완료 (${(jsonStr.length / 1024).toStringAsFixed(1)}KB)');
+      }
+    } catch (e) {
+      debugPrint('[Cache] 캐시 저장 실패: $e');
+    }
   }
 
   Future<void> _ensureInitialized() async {
@@ -85,9 +155,24 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       }
     } catch (_) {}
     try {
-      // refreshMembers는 내부에서 비동기로 돌거나 즉시 첫 결과를 줄 수 있음
-      await refreshMembers();
-      _isInitialized = true;
+      // 1) 캐시에서 즉시 표시 (초고속)
+      final cachedMembers = await _loadFromCache();
+      if (cachedMembers.isNotEmpty) {
+        final localService = sl<LocalStorageService>();
+        final favoriteIds = await localService.getFavorites();
+        final withFavorites = cachedMembers
+            .map((m) => m.copyWith(isFavorite: favoriteIds.contains(m.id)))
+            .toList();
+        _notifyListeners(withFavorites);
+        _isInitialized = true;
+        debugPrint('[Cache] 캐시로 즉시 표시 완료, 백그라운드 업데이트 시작...');
+        // 2) 백그라운드에서 최신 데이터로 업데이트
+        unawaited(refreshMembers());
+      } else {
+        // 캐시 없으면 풀 로드
+        await refreshMembers();
+        _isInitialized = true;
+      }
     } finally {
       _initializationFuture = null;
     }
@@ -462,7 +547,10 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
     // 최종 데이터 반영
     _notifyListeners(finalMembers);
-    
+
+    // 다음 방문 시 즉시 표시를 위해 캐시에 저장 (백그라운드)
+    unawaited(_saveToCache(finalMembers));
+
     // 무거운 작업은 UI 스레드를 방해하지 않도록 아주 짧은 지연 후 비동기 실행
     await Future.delayed(const Duration(milliseconds: 100));
     _resolveMissingProfileImagesInBackground(finalMembers);
