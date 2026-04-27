@@ -139,7 +139,7 @@ class _MapScreenState extends State<MapScreen> {
           TileLayer(
             urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
             userAgentPackageName: 'com.elecko26.app',
-            tileDisplay: const TileDisplay.instant(),
+            tileDisplay: const TileDisplay.fadeIn(duration: Duration.zero),
           ),
           MarkerLayer(
             rotate: false,
