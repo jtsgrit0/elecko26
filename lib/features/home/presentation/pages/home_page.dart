@@ -400,6 +400,7 @@ class _HomePageState extends State<HomePage>
       if (mounted) {
         setState(() {
           _userRegion = selectedRegion;
+          _cachedTabWidgets = null; // 지역 변경 시 탭 갱신
         });
       }
     } catch (e) {
@@ -413,6 +414,7 @@ class _HomePageState extends State<HomePage>
       if (mounted) {
         setState(() {
           _currentUser = user;
+          _cachedTabWidgets = null; // 사용자 변경 시 탭 갱신
         });
       }
       if (user != null) {
@@ -435,6 +437,7 @@ class _HomePageState extends State<HomePage>
         if (mounted) {
           setState(() {
             _cachedMembers = members;
+            _cachedTabWidgets = null; // 데이터 변경 시 탭 위젯 갱신
           });
         }
       });
@@ -602,7 +605,9 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  // 바디 위젯 - IndexedStack으로 모든 탭을 생존시켜 탭 전환 시 재빌드 방지
+  // 탭 위젯 캐싱하여 불필요한 재빌드 방지
+  List<Widget>? _cachedTabWidgets;
+
   Widget _buildBody() {
     if (_selectedMember != null) {
       return MemberDetailPage(
@@ -611,9 +616,9 @@ class _HomePageState extends State<HomePage>
       );
     }
 
-    return IndexedStack(
-      index: _selectedIndex,
-      children: [
+    // 탭 위젯들이 아직 생성되지 않았거나 데이터가 변경된 경우에만 갱신
+    if (_cachedTabWidgets == null) {
+      _cachedTabWidgets = [
         // 0: 대시보드
         HomeDashboardView(
           isLoading: _isLoading,
@@ -626,6 +631,7 @@ class _HomePageState extends State<HomePage>
           onRegionChanged: (region) async {
             setState(() {
               _userRegion = region;
+              _cachedTabWidgets = null; // 지역 변경 시 캐시 무효화
             });
             await sl<MemberRepository>().saveSelectedRegion(region);
           },
@@ -666,7 +672,12 @@ class _HomePageState extends State<HomePage>
         ),
         // 6: 지도
         const MapScreen(),
-      ],
+      ];
+    }
+
+    return IndexedStack(
+      index: _selectedIndex,
+      children: _cachedTabWidgets!,
     );
   }
 

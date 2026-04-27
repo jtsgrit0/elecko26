@@ -171,38 +171,40 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
     if (mounted) setState(() => _isCalculatingPossibilities = true);
 
     try {
-      final Map<String, double> possibilities = {};
       final useCase = GetIt.instance<CalculateElectionPossibilityUseCase>();
 
       // 상위 후보 정렬 (기본 점수 기준)
       final topCandidates = List<Member>.from(members)
         ..sort((a, b) => b.electionPossibility.compareTo(a.electionPossibility));
       
-      // 8,000명 전체 계산은 프리징의 원인이 되므로 상위 50명만 우선적으로 계산
+      // 상위 50명만 우선적으로 계산
       final limitedMembers = topCandidates.take(50).toList();
 
-      int count = 0;
-      for (final member in limitedMembers) {
+      for (var i = 0; i < limitedMembers.length; i++) {
         if (!mounted) break;
         
+        final member = limitedMembers[i];
         try {
           final result = await useCase.call(member.id);
+          _memberPossibilities[member.id] = result.electionPossibility;
+        } catch (e) {
+          _memberPossibilities[member.id] = member.electionPossibility;
+        }
+
+        // 10명마다 한 번씩만 UI 업데이트하여 부하 감소
+        if (i > 0 && i % 10 == 0) {
           if (mounted) {
             setState(() {
-              _memberPossibilities[member.id] = result.electionPossibility;
               _updateCalculatedData();
             });
           }
-        } catch (e) {
-          possibilities[member.id] = member.electionPossibility;
+          await Future.delayed(const Duration(milliseconds: 10));
         }
-        // UI 응답성 확보를 위해 매 루프마다 양보
-        await Future.delayed(const Duration(milliseconds: 1));
       }
 
       if (mounted) {
         setState(() {
-          _memberPossibilities = Map.from(possibilities);
+          _updateCalculatedData();
           _isCalculatingPossibilities = false;
           _lastCalculatedMembers = members;
         });
