@@ -59,6 +59,7 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
         }).toList();
         setState(() {
           _members = filtered;
+          _updateGroupedMembers(); // 데이터 변경 시 그룹화 캐시 업데이트
         });
       }
     });
@@ -70,9 +71,39 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
       if (mounted) {
         setState(() {
           _votes = votes;
+          _updateGroupedMembers(); // 데이터 변경 시 그룹화 캐시 업데이트
         });
       }
     });
+  }
+
+  // 선거구 그룹화 결과 캐싱 (매 빌드 시마다 연산 방지)
+  Map<String, List<Member>> _cachedGroupedMembers = {};
+
+  void _updateGroupedMembers() {
+    final Map<String, List<Member>> grouped = {};
+    for (final member in _members) {
+      if (!grouped.containsKey(member.district)) {
+        grouped[member.district] = [];
+      }
+      grouped[member.district]!.add(member);
+    }
+    
+    // 선거구명(district)을 사용자 요청 순서(도지사 > 시장 > 구의원 > 군수 > 군의원)에 따라 정렬
+    final sortedKeys = grouped.keys.toList()
+      ..sort((a, b) {
+        final orderA = getElectionOrderScore(a);
+        final orderB = getElectionOrderScore(b);
+        if (orderA != orderB) return orderA.compareTo(orderB);
+        return a.compareTo(b);
+      });
+
+    final Map<String, List<Member>> sortedGrouped = {};
+    for (final key in sortedKeys) {
+      sortedGrouped[key] = grouped[key]!;
+    }
+    
+    _cachedGroupedMembers = sortedGrouped;
   }
 
   @override
@@ -98,6 +129,15 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
       final localStorage = sl<LocalStorageService>();
       final votes = await localStorage.getAllVotes();
       final timestamps = await localStorage.getAllVoteTimestamps();
+      
+      // 실제 데이터 로드 및 초기 그룹화 수행
+      _startMemberSubscription();
+    } catch (e) {
+      debugPrint('Error loading regional members: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
       // 1단계: 캐시된 데이터를 먼저 즉시 표시 (블로킹 없음)
       final cached = await sl<MemberRepository>().getCachedMembers();
@@ -319,14 +359,16 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            itemCount: groupedMembers.length,
-            itemBuilder: (context, index) {
-              final district = groupedMembers.keys.elementAt(index);
-              final membersInDistrict = groupedMembers[district]!;
-              return _buildDistrictSection(district, membersInDistrict);
-            },
+          child: RepaintBoundary(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              itemCount: _cachedGroupedMembers.length,
+              itemBuilder: (context, index) {
+                final district = _cachedGroupedMembers.keys.elementAt(index);
+                final membersInDistrict = _cachedGroupedMembers[district]!;
+                return _buildDistrictSection(district, membersInDistrict);
+              },
+            ),
           ),
         ),
       ],

@@ -150,17 +150,19 @@ class _HomePageState extends State<HomePage>
                   ],
                 ),
                 Expanded(
-                  child: TabBarView(
-                    children: [
-                      _buildRegionSettingTab(
-                        setModalState,
-                        () => tempSelectedRegion,
-                        (region) {
-                          tempSelectedRegion = region;
-                        },
-                      ),
-                      _buildFavoritesTab(),
-                    ],
+                  child: RepaintBoundary(
+                    child: TabBarView(
+                      children: [
+                        _buildRegionSettingTab(
+                          setModalState,
+                          () => tempSelectedRegion,
+                          (region) {
+                            tempSelectedRegion = region;
+                          },
+                        ),
+                        _buildFavoritesTab(),
+                      ],
+                    ),
                   ),
                 ),
                 const Divider(height: 1),
@@ -238,70 +240,66 @@ class _HomePageState extends State<HomePage>
     String Function() getTempSelectedRegion,
     ValueChanged<String> onRegionSelected,
   ) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _regions.length,
-      itemBuilder: (context, index) {
-        final region = _regions[index];
-        final isSelected = getTempSelectedRegion() == region;
+    return RepaintBoundary(
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemExtent: 72, // 높이 고정으로 레이아웃 계산 최적화
+        itemCount: _regions.length,
+        itemBuilder: (context, index) {
+          final region = _regions[index];
+          final isSelected = getTempSelectedRegion() == region;
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppColors.primary.withOpacity(0.05)
-                : AppColors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
               color: isSelected
-                  ? AppColors.primary
-                  : AppColors.lightGrey.withOpacity(0.5),
-              width: isSelected ? 2 : 1,
-            ),
-          ),
-          child: ListTile(
-            title: Text(
-              region,
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: isSelected ? AppColors.primary : AppColors.dark,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ? AppColors.primary.withOpacity(0.05)
+                  : AppColors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected
+                    ? AppColors.primary
+                    : AppColors.lightGrey.withOpacity(0.5),
+                width: isSelected ? 2 : 1,
               ),
             ),
-            trailing: isSelected
-                ? const Icon(Icons.check_circle, color: AppColors.primary)
-                : null,
-            onTap: () {
-              // 투표탭과 동일하게 모달 내부 선택 상태를 먼저 갱신해 즉시 체크 표시
-              setModalState(() {
-                onRegionSelected(region);
-              });
-
-              // 메인 화면도 즉시 반영
-              if (mounted) {
-                setState(() {
-                  _userRegion = region;
+            child: ListTile(
+              title: Text(
+                region,
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: isSelected ? AppColors.primary : AppColors.dark,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+              trailing: isSelected
+                  ? const Icon(Icons.check_circle, color: AppColors.primary)
+                  : null,
+              onTap: () {
+                // 투표탭과 동일하게 모달 내부 선택 상태를 먼저 갱신해 즉시 체크 표시
+                setModalState(() {
+                  onRegionSelected(region);
                 });
-              }
 
-              // 체크 표시를 인식할 수 있도록 잠시 유지 후 저장/닫기 처리
-              Future.delayed(const Duration(milliseconds: 200), () async {
-                await sl<MemberRepository>().saveSelectedRegion(region);
-
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('$region으로 지역이 설정되었습니다.'),
-                      backgroundColor: AppColors.primary,
-                      duration: const Duration(seconds: 1),
-                    ),
-                  );
+                // 메인 화면도 즉시 반영
+                if (mounted) {
+                  setState(() {
+                    _userRegion = region;
+                  });
                 }
-              });
-            },
-          ),
-        );
-      },
+
+                // 체크 표시를 인식할 수 있도록 아주 짧게 유지 후 저장/닫기 처리 (100ms로 단축)
+                Future.delayed(const Duration(milliseconds: 100), () async {
+                  await sl<MemberRepository>().saveSelectedRegion(region);
+
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+                });
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -669,26 +667,34 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildBody() {
-    if (_selectedMember != null) {
-      return MemberDetailPage(
-        member: _selectedMember!,
-        onBack: () => setState(() => _selectedMember = null),
-      );
-    }
-
-    // 탭 위젯들이 아직 생성되지 않았거나 지역이 변경된 경우에만 생성
     if (_cachedTabWidgets == null) {
       _initializeTabWidgets();
     }
 
-    return ValueListenableBuilder<int>(
-      valueListenable: _selectedIndexNotifier,
-      builder: (context, index, _) {
-        return LazyIndexedStack(
-          index: index,
-          children: _cachedTabWidgets!,
-        );
-      },
+    return Stack(
+      children: [
+        // 메인 탭 화면 (항상 하단에 유지하여 상태 및 스크롤 보존)
+        ValueListenableBuilder<int>(
+          valueListenable: _selectedIndexNotifier,
+          builder: (context, index, _) {
+            return LazyIndexedStack(
+              index: index,
+              children: _cachedTabWidgets!,
+            );
+          },
+        ),
+        // 상세 페이지 (오버레이 형식으로 표시하여 돌아가기 시 탭 화면이 즉시 나타남)
+        if (_selectedMember != null)
+          Positioned.fill(
+            child: Container(
+              color: AppColors.white,
+              child: MemberDetailPage(
+                member: _selectedMember!,
+                onBack: () => setState(() => _selectedMember = null),
+              ),
+            ),
+          ),
+      ],
     );
   }
 

@@ -276,70 +276,68 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
                 ),
               ),
               const SizedBox(height: 20),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _regions.length,
-                  itemBuilder: (context, index) {
-                    final region = _regions[index];
-                    final isSelected = region == widget.userRegion;
-                    return Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: 8, left: 16, right: 16),
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.pop(context);
-                          widget.onRegionChanged(region);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppColors.primary.withOpacity(0.1)
-                                : AppColors.surface,
-                            border: Border.all(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.lightGray,
-                              width: isSelected ? 2 : 1,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.location_on,
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : AppColors.mediumGray,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  region,
-                                  style: AppTextStyles.bodyLarge.copyWith(
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                    color: isSelected
-                                        ? AppColors.primary
-                                        : AppColors.darkGray,
-                                  ),
-                                ),
-                              ),
-                              if (isSelected)
-                                Icon(
-                                  Icons.check_circle,
-                                  size: 20,
-                                  color: AppColors.primary,
-                                ),
-                            ],
-                          ),
+    return RepaintBoundary(
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemExtent: 72, // 높이 고정으로 레이아웃 계산 최적화
+        itemCount: _regions.length,
+        itemBuilder: (context, index) {
+          final region = _regions[index];
+          final isSelected = region == widget.userRegion;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: InkWell(
+              onTap: () {
+                Navigator.pop(context);
+                widget.onRegionChanged(region);
+              },
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.primary.withOpacity(0.1)
+                      : AppColors.surface,
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : AppColors.lightGray,
+                    width: isSelected ? 2 : 1,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      color:
+                          isSelected ? AppColors.primary : AppColors.mediumGray,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        region,
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.darkGray,
                         ),
                       ),
-                    );
-                  },
+                    ),
+                    if (isSelected)
+                      const Icon(
+                        Icons.check_circle,
+                        size: 20,
+                        color: AppColors.primary,
+                      ),
+                  ],
                 ),
               ),
+            ),
+          );
+        },
+      ),
+    );
+  }
             ],
           ),
         );

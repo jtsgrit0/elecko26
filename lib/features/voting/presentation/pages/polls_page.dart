@@ -124,14 +124,16 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          // 진행중 탭
-          _buildVotingTab(),
-          // 지지후보 탭
-          _buildSupportedCandidatesTab(),
-        ],
+      body: RepaintBoundary(
+        child: TabBarView(
+          controller: _tabController,
+          children: [
+            // 진행중 탭
+            _buildVotingTab(),
+            // 지지후보 탭
+            _buildSupportedCandidatesTab(),
+          ],
+        ),
       ),
     );
   }
