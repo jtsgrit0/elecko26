@@ -425,7 +425,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   void _startMemberStream() {
     try {
-      final stream = sl<WatchMembersUseCase>().call().asBroadcastStream();
+      final stream = sl<WatchMembersUseCase>().call();
       _membersStream = stream;
     } catch (e) {
       debugPrint('[HomePage] Failed to start member stream: $e');
