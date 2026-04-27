@@ -4,7 +4,7 @@ import 'package:elecko26_new/features/home/presentation/widgets/integrated_news_
 import 'package:elecko26_new/features/home/presentation/widgets/home_dashboard_view.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:elecko26_new/core/widgets/lazy_indexed_stack.dart';
+import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/repositories/member_repository.dart';
@@ -363,11 +363,14 @@ class _HomePageState extends State<HomePage>
     _triggerNesdcRefresh(isSilent: true);
     _startDataExportTimer();
 
-    // 5분마다 UI 데이터 새로고침 (백그라운드에서 조용히, Isolate 최적화 적용됨)
+    // 5분마다 UI 데이터 새로고침
     _uiRefreshTimer = Timer.periodic(
       const Duration(minutes: 5),
       (_) => _triggerNesdcRefresh(isSilent: true),
     );
+
+    // 필수 이미지 미리 로딩 (캐싱)
+    _precacheImages();
 
     // 지역 설정 변경 감지 구독
     _regionSubscription =
@@ -673,7 +676,7 @@ class _HomePageState extends State<HomePage>
         ValueListenableBuilder<int>(
           valueListenable: _selectedIndexNotifier,
           builder: (context, index, _) {
-            return LazyIndexedStack(
+            return IndexedStack(
               index: index,
               children: _cachedTabWidgets!,
             );

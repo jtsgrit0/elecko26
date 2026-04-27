@@ -278,44 +278,112 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _showRegionInfo(RegionalPartyData region) {
-    showDialog(
+    showGeneralDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(region.region),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              Text(
-                '우세 정당: ${region.dominantParty}',
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+      barrierDismissible: true,
+      barrierLabel: '',
+      transitionDuration: const Duration(milliseconds: 150),
+      pageBuilder: (context, anim1, anim2) {
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              margin: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  )
+                ],
               ),
-              Text(
-                '예상 득표율: ${region.dominantPercentage.toStringAsFixed(2)}%',
-                style: const TextStyle(fontSize: 14),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        region.region,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  const SizedBox(height: 12),
+                  _buildInfoRow('우세 정당', region.dominantParty,
+                      _getPartyColor(region.dominantParty)),
+                  _buildInfoRow('예상 득표율',
+                      '${region.dominantPercentage.toStringAsFixed(1)}%',
+                      Colors.black87),
+                  const SizedBox(height: 20),
+                  const Text(
+                    '정당별 예상 데이터',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...region.partyPercentages.entries.take(5).map((entry) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(entry.key, style: const TextStyle(fontSize: 14)),
+                          Text('${entry.value.toStringAsFixed(1)}%',
+                              style: const TextStyle(
+                                  fontSize: 14, fontWeight: FontWeight.w500)),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ],
               ),
-              const SizedBox(height: 16),
-              const Text(
-                '정당별 예상 득표율:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              ...region.partyPercentages.entries.map((entry) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child:
-                      Text('${entry.key}: ${entry.value.toStringAsFixed(2)}%'),
-                );
-              }).toList(),
-            ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('닫기'),
+        );
+      },
+      transitionBuilder: (context, anim1, anim2, child) {
+        return FadeTransition(
+          opacity: anim1,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.95, end: 1.0).animate(anim1),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value, Color valueColor) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 14)),
+          Text(
+            value,
+            style: TextStyle(
+              color: valueColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
           ),
         ],
       ),
