@@ -445,14 +445,16 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     final finalMerged = _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers);
     _notifyListeners(finalMerged);
 
-    // 로컬 에셋 로드 실패 시 GitHub Raw URL 시도
+    List<Member> finalMembers;
     if (allLocalMembers.isEmpty) {
       debugPrint('[FirestoreMemberRepository] 에셋 로드 실패, GitHub Raw 시도...');
-      final remoteMembers = await _loadSplitMembersFromRemote(favoriteIds);
+      final remoteMembers = await _loadSplitMembersFromRemote(favoriteIds, cloudMembers);
       if (remoteMembers.isNotEmpty) {
         final merged = _mergeMembersByIdPreferCloud(cloudMembers, remoteMembers);
         _notifyListeners(merged);
         finalMembers = merged;
+      } else {
+        finalMembers = cloudMembers;
       }
     } else {
       finalMembers = _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers);
@@ -481,12 +483,13 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
     // 에셋 로드 실패 시 GitHub Raw URL로 fallback
     debugPrint('[FirestoreMemberRepository] Asset load failed, trying remote...');
-    final remoteMembers = await _loadSplitMembersFromRemote(favoriteIds);
+    final remoteMembers = await _loadSplitMembersFromRemote(favoriteIds, []);
     return remoteMembers;
   }
 
   Future<List<Member>> _loadSplitMembersFromRemote(
     List<String> favoriteIds,
+    List<Member> cloudMembers,
   ) async {
     final members = <Member>[];
 
