@@ -47,14 +47,14 @@ class _HomePageState extends State<HomePage>
   // 비교 관련 상태
 
   // 유저 상단 설정 상태
-  String _userRegion = '전국';
+  late final ValueNotifier<String> _userRegionNotifier =
+      ValueNotifier<String>('전국');
+
+  String get _userRegion => _userRegionNotifier.value;
 
   /// 지역 변경 처리
   void _onRegionChanged(String region) {
-    setState(() {
-      _userRegion = region;
-    });
-
+    _userRegionNotifier.value = region;
     // 지역 변경 시 멤버 목록 새로고침
     _refreshMembers();
   }
@@ -281,11 +281,7 @@ class _HomePageState extends State<HomePage>
                 });
 
                 // 메인 화면도 즉시 반영
-                if (mounted) {
-                  setState(() {
-                    _userRegion = region;
-                  });
-                }
+                _userRegionNotifier.value = region;
 
                 // 체크 표시를 인식할 수 있도록 아주 짧게 유지 후 저장/닫기 처리 (100ms로 단축)
                 Future.delayed(const Duration(milliseconds: 100), () async {
@@ -400,10 +396,7 @@ class _HomePageState extends State<HomePage>
     try {
       final selectedRegion = await sl<MemberRepository>().getSelectedRegion();
       if (mounted) {
-        setState(() {
-          _userRegion = selectedRegion;
-          _cachedTabWidgets = null; // 지역 변경 시 탭 갱신
-        });
+        _userRegionNotifier.value = selectedRegion;
       }
     } catch (e) {
       debugPrint('[HomePage] Failed to load user settings: $e');
@@ -416,7 +409,6 @@ class _HomePageState extends State<HomePage>
       if (mounted) {
         setState(() {
           _currentUser = user;
-          _cachedTabWidgets = null; // 사용자 변경 시 탭 갱신
         });
       }
       if (user != null) {
@@ -461,24 +453,17 @@ class _HomePageState extends State<HomePage>
         );
         // 로그인 후 사용자 정보를 명시적으로 로드 (스트림 비동기 대기 방지)
         await _loadCurrentUser();
-        debugPrint(
-            '[HomePage] After login, _currentUser: ${_currentUser?.email ?? 'null'}');
-        if (_currentUser != null) {
-          debugPrint('[HomePage] User settings restored after login');
-        }
-        if (!mounted) {
-          return;
-        }
-        if (_currentUser == null) {
-          return;
-        }
+        if (!mounted) return;
+        if (_currentUser == null) return;
       }
     }
 
-    setState(() {
-
-      _selectedMember = null;
-    });
+    _selectedIndexNotifier.value = index;
+    if (_selectedMember != null) {
+      setState(() {
+        _selectedMember = null;
+      });
+    }
   }
 
   Future<void> _triggerNesdcRefresh({bool isSilent = false}) async {
@@ -559,6 +544,8 @@ class _HomePageState extends State<HomePage>
     _authSubscription?.cancel();
     _membersSubscription?.cancel();
     _searchController.dispose();
+    _userRegionNotifier.dispose();
+    _selectedIndexNotifier.dispose();
     super.dispose();
   }
 
@@ -611,28 +598,31 @@ class _HomePageState extends State<HomePage>
   void _initializeTabWidgets() {
     _cachedTabWidgets = [
       // 0: 대시보드
-      HomeDashboardView(
-        isLoading: _isLoading,
-        membersStream: _membersStream,
-        cachedMembers: _cachedMembers,
-        userRegion: _userRegion,
-        onRefresh: () => _triggerNesdcRefresh(isSilent: false),
-        onMemberSelected: (m) => setState(() => _selectedMember = m),
-        onNavigateToSearch: () => _selectedIndexNotifier.value = 1,
-        onRegionChanged: (region) async {
-          setState(() {
-            _userRegion = region;
-            _cachedTabWidgets = null; // 지역 변경 시에만 제한적으로 갱신
-          });
-          await sl<MemberRepository>().saveSelectedRegion(region);
-        },
+      ValueListenableBuilder<String>(
+        valueListenable: _userRegionNotifier,
+        builder: (context, region, _) => HomeDashboardView(
+          isLoading: _isLoading,
+          membersStream: _membersStream,
+          cachedMembers: _cachedMembers,
+          userRegion: region,
+          onRefresh: () => _triggerNesdcRefresh(isSilent: false),
+          onMemberSelected: (m) => setState(() => _selectedMember = m),
+          onNavigateToSearch: () => _selectedIndexNotifier.value = 1,
+          onRegionChanged: (newRegion) async {
+            _userRegionNotifier.value = newRegion;
+            await sl<MemberRepository>().saveSelectedRegion(newRegion);
+          },
+        ),
       ),
       // 1: 검색
-      SearchView(
-        membersStream: _membersStream,
-        cachedMembers: _cachedMembers,
-        userRegion: _userRegion,
-        onMemberSelected: (m) => setState(() => _selectedMember = m),
+      ValueListenableBuilder<String>(
+        valueListenable: _userRegionNotifier,
+        builder: (context, region, _) => SearchView(
+          membersStream: _membersStream,
+          cachedMembers: _cachedMembers,
+          userRegion: region,
+          onMemberSelected: (m) => setState(() => _selectedMember = m),
+        ),
       ),
       // 2: 비교
       ComparisonView(
@@ -662,7 +652,10 @@ class _HomePageState extends State<HomePage>
         onMemberSelected: (m) => setState(() => _selectedMember = m),
       ),
       // 6: 지도
-      const MapScreen(),
+      MapScreen(
+        selectedIndexNotifier: _selectedIndexNotifier,
+        tabIndex: 6,
+      ),
     ];
   }
 
@@ -760,10 +753,13 @@ class _HomePageState extends State<HomePage>
                       const Icon(Icons.location_on_outlined,
                           color: AppColors.grey, size: 18),
                       const SizedBox(width: 8),
-                      Text(
-                        _userRegion,
-                        style: AppTextStyles.bodyMedium
-                            .copyWith(color: AppColors.dark),
+                      ValueListenableBuilder<String>(
+                        valueListenable: _userRegionNotifier,
+                        builder: (context, region, _) => Text(
+                          region,
+                          style: AppTextStyles.bodyMedium
+                              .copyWith(color: AppColors.dark),
+                        ),
                       ),
                     ],
                   ),
@@ -850,7 +846,7 @@ class _HomePageState extends State<HomePage>
           currentIndex: index,
           selectedItemColor: AppColors.primary,
           unselectedItemColor: AppColors.grey,
-          onTap: (newIndex) => _selectedIndexNotifier.value = newIndex,
+          onTap: _handleBottomNavTap,
           type: BottomNavigationBarType.fixed,
           backgroundColor: AppColors.white,
           selectedLabelStyle: AppTextStyles.labelSmall,

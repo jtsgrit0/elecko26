@@ -5,8 +5,17 @@ import 'package:elecko26_new/features/map/domain/entities/election_map.dart';
 import 'package:elecko26_new/features/map/domain/usecases/get_election_map_data_usecase.dart';
 import 'package:elecko26_new/app/injection_container.dart';
 
+import 'package:flutter/foundation.dart';
+
 class MapScreen extends StatefulWidget {
-  const MapScreen({Key? key}) : super(key: key);
+  final ValueListenable<int> selectedIndexNotifier;
+  final int tabIndex;
+
+  const MapScreen({
+    Key? key,
+    required this.selectedIndexNotifier,
+    required this.tabIndex,
+  }) : super(key: key);
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -32,12 +41,9 @@ class _MapScreenState extends State<MapScreen> {
         setState(() {
           _mapData = data;
           _isLoading = false;
-          print('✅ 지도 데이터 로드 성공: ${data.regions.length}개 지역');
         });
       }
-    } catch (e, stackTrace) {
-      print('❌ 에러 발생: $e');
-      print('스택트레이스: $stackTrace');
+    } catch (e) {
       if (mounted) {
         setState(() {
           _errorMessage = '데이터 로드 실패: $e';
@@ -49,54 +55,39 @@ class _MapScreenState extends State<MapScreen> {
 
   Color _getPartyColor(String party) {
     switch (party) {
-      case '더불어민주당':
-        return Colors.blue;
-      case '국민의힘':
-        return Colors.red;
-      case '정의당':
-        return Colors.orange;
-      case '기본소득당':
-        return Colors.green;
-      case '진보당':
-        return Colors.purple;
-      case '무소속':
-        return Colors.grey;
-      case '민주당':
-        return Colors.blue;
-      case '한나라당':
-        return Colors.red;
-      case '자유선진당':
-        return Colors.orange;
-      case '국민참여당':
-        return Colors.green;
-      default:
-        return Colors.grey;
+      case '더불어민주당': return Colors.blue;
+      case '국민의힘': return Colors.red;
+      case '정의당': return Colors.orange;
+      case '기본소득당': return Colors.green;
+      case '진보당': return Colors.purple;
+      case '무소속': return Colors.grey;
+      case '민주당': return Colors.blue;
+      case '한나라당': return Colors.red;
+      case '자유선진당': return Colors.orange;
+      case '국민참여당': return Colors.green;
+      default: return Colors.grey;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('예상 득표율 지도'),
-        backgroundColor: Theme.of(context).primaryColor,
-      ),
-      body: _buildBody(),
+    return ValueListenableBuilder<int>(
+      valueListenable: widget.selectedIndexNotifier,
+      builder: (context, currentIndex, _) {
+        final bool isActive = currentIndex == widget.tabIndex;
+        
+        return Visibility(
+          visible: isActive,
+          maintainState: true,
+          child: _buildBody(),
+        );
+      },
     );
   }
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('지도 데이터 로드 중...'),
-          ],
-        ),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_errorMessage != null) {
@@ -153,7 +144,6 @@ class _MapScreenState extends State<MapScreen> {
           MarkerLayer(
             rotate: false,
             markers: [
-              // 다른 지역 마커들 (서울 제외)
               ..._mapData!.regions
                   .where((region) => region.region != '서울특별시')
                   .map((region) {
@@ -216,7 +206,6 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                 );
               }).toList(),
-              // 서울특별시 마커 (제일 앞으로 표시)
               ..._mapData!.regions
                   .where((region) => region.region == '서울특별시')
                   .map((region) {
