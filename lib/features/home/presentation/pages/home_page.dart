@@ -31,7 +31,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage>
     with WidgetsBindingObserver {
-  int _selectedIndex = 0;
   late Stream<List<Member>> _membersStream;
   Timer? _dataExportTimer;
   Timer? _uiRefreshTimer;
@@ -353,6 +352,10 @@ class _HomePageState extends State<HomePage>
     );
   }
 
+  // 탭 인덱스 제어 (ValueNotifier 사용으로 리빌드 범위 최소화)
+  late final ValueNotifier<int> _selectedIndexNotifier =
+      ValueNotifier<int>(0);
+
   @override
   void initState() {
     super.initState();
@@ -475,7 +478,7 @@ class _HomePageState extends State<HomePage>
     }
 
     setState(() {
-      _selectedIndex = index;
+
       _selectedMember = null;
     });
   }
@@ -571,7 +574,7 @@ class _HomePageState extends State<HomePage>
             )
           : null, // 상세 페이지는 자체 AppBar 사용
       body: PopScope(
-        canPop: !kIsWeb && _selectedMember == null && _selectedIndex == 0,
+        canPop: !kIsWeb && _selectedMember == null && _selectedIndexNotifier.value == 0,
         onPopInvoked: (bool didPop) {
           if (didPop) return;
 
@@ -582,10 +585,8 @@ class _HomePageState extends State<HomePage>
             return;
           }
 
-          if (_selectedIndex != 0) {
-            setState(() {
-              _selectedIndex = 0;
-            });
+          if (_selectedIndexNotifier.value != 0) {
+            _selectedIndexNotifier.value = 0;
             return;
           }
 
@@ -619,7 +620,7 @@ class _HomePageState extends State<HomePage>
         userRegion: _userRegion,
         onRefresh: () => _triggerNesdcRefresh(isSilent: false),
         onMemberSelected: (m) => setState(() => _selectedMember = m),
-        onNavigateToSearch: () => setState(() => _selectedIndex = 1),
+        onNavigateToSearch: () => _selectedIndexNotifier.value = 1,
         onRegionChanged: (region) async {
           setState(() {
             _userRegion = region;
@@ -680,9 +681,14 @@ class _HomePageState extends State<HomePage>
       _initializeTabWidgets();
     }
 
-    return LazyIndexedStack(
-      index: _selectedIndex,
-      children: _cachedTabWidgets!,
+    return ValueListenableBuilder<int>(
+      valueListenable: _selectedIndexNotifier,
+      builder: (context, index, _) {
+        return LazyIndexedStack(
+          index: index,
+          children: _cachedTabWidgets!,
+        );
+      },
     );
   }
 
@@ -794,52 +800,57 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildBottomNavBar() {
-    return BottomNavigationBar(
-      items: const <BottomNavigationBarItem>[
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home),
-          label: '홈',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.search_outlined),
-          activeIcon: Icon(Icons.search),
-          label: '검색',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.compare_arrows),
-          activeIcon: Icon(Icons.compare_arrows),
-          label: '비교',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.article_outlined),
-          activeIcon: Icon(Icons.article),
-          label: '뉴스',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.how_to_vote_outlined),
-          activeIcon: Icon(Icons.how_to_vote),
-          label: '투표',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.star_outline),
-          activeIcon: Icon(Icons.star),
-          label: '즐겨찾기',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.map_outlined),
-          activeIcon: Icon(Icons.map),
-          label: '지도',
-        ),
-      ],
-      currentIndex: _selectedIndex,
-      selectedItemColor: AppColors.primary,
-      unselectedItemColor: AppColors.grey,
-      onTap: _handleBottomNavTap,
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: AppColors.white,
-      selectedLabelStyle: AppTextStyles.labelSmall,
-      unselectedLabelStyle: AppTextStyles.labelSmall,
+    return ValueListenableBuilder<int>(
+      valueListenable: _selectedIndexNotifier,
+      builder: (context, index, _) {
+        return BottomNavigationBar(
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home),
+              label: '홈',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.search_outlined),
+              activeIcon: Icon(Icons.search),
+              label: '검색',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.compare_arrows),
+              activeIcon: Icon(Icons.compare_arrows),
+              label: '비교',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.article_outlined),
+              activeIcon: Icon(Icons.article),
+              label: '뉴스',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.how_to_vote_outlined),
+              activeIcon: Icon(Icons.how_to_vote),
+              label: '투표',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.star_outline),
+              activeIcon: Icon(Icons.star),
+              label: '즐겨찾기',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.map_outlined),
+              activeIcon: Icon(Icons.map),
+              label: '지도',
+            ),
+          ],
+          currentIndex: index,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.grey,
+          onTap: (newIndex) => _selectedIndexNotifier.value = newIndex,
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: AppColors.white,
+          selectedLabelStyle: AppTextStyles.labelSmall,
+          unselectedLabelStyle: AppTextStyles.labelSmall,
+        );
+      },
     );
   }
 }
