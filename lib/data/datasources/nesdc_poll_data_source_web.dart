@@ -157,36 +157,6 @@ class NesdcPollDetail {
           return value / 100;
         }
       }
-
-      final percentMatches = RegExp(r'([0-9]{1,2}(?:\.[0-9]+)?)%')
-          .allMatches(normalizedLine)
-          .toList();
-      if (percentMatches.isNotEmpty) {
-        final nameIndex = normalizedLine.indexOf(normalizedName);
-        final best = percentMatches.reduce((a, b) {
-          final aDist = (a.start - nameIndex).abs();
-          final bDist = (b.start - nameIndex).abs();
-          return aDist <= bDist ? a : b;
-        });
-        final value = double.tryParse(best.group(1) ?? '');
-        if (value != null) {
-          return value / 100;
-        }
-      }
-
-      final hasRateKeyword = normalizedLine.contains('지지') ||
-          normalizedLine.contains('득표') ||
-          normalizedLine.contains('선호');
-      if (hasRateKeyword) {
-        final numberMatches =
-            RegExp(r'([0-9]{1,2}(?:\.[0-9]+)?)').allMatches(normalizedLine);
-        for (final match in numberMatches) {
-          final value = double.tryParse(match.group(1) ?? '');
-          if (value != null && value >= 0 && value <= 100) {
-            return value / 100;
-          }
-        }
-      }
     }
 
     final flat = _normalizeRateText(text.replaceAll('\n', ' '));
