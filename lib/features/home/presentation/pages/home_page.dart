@@ -448,12 +448,13 @@ class _HomePageState extends State<HomePage>
   }
 
   Future<void> _handleBottomNavTap(int index) async {
-    if (index == 5 || index == 6) {
+    // 투표탭(4)은 로그인 필수
+    if (index == 4) {
       if (_currentUser == null) {
         await Navigator.of(context).push<bool>(
           MaterialPageRoute(builder: (_) => const AuthGate()),
         );
-        // 로그인 후 사용자 정보를 명시적으로 로드 (스트림 비동기 대기 방지)
+        // 로그인 후 사용자 정보를 명시적으로 로드
         await _loadCurrentUser();
         if (!mounted) return;
         if (_currentUser == null) return;
