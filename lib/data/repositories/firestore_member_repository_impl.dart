@@ -535,12 +535,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         final content = await _loadAssetSplitChunk(i);
         final chunk = await _parseMembersFromJsonChunk(content, favoriteIds);
         allLocalMembers.addAll(chunk);
-
-        // 덩어리별로 즉시 UI에 반영하여 진행률 표시 (프리징 방지를 위해 Duration.zero 사용)
-        final merged = _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers);
-        _notifyListeners(merged);
         
-        debugPrint('[FirestoreMemberRepository] 에셋 chunk $i 로드: 누적 ${merged.length}명 UI 반영');
+        debugPrint('[FirestoreMemberRepository] 에셋 chunk $i 로드 완료 (백그라운드 누적 ${allLocalMembers.length}명)');
         await Future.delayed(Duration.zero);
       } catch (e) {
         // 특정 인덱스 파일이 없으면 로드 중단
@@ -549,18 +545,13 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       }
     }
     
-    // 최종 확인 (루프가 중간에 끊겼을 경우 대비)
-    final finalMerged = _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers);
-    _notifyListeners(finalMerged);
-
+    // 20개 분할 파일을 전부 모은 후 단 한 번만 병합 및 UI 반영 (프리징 방지)
     List<Member> finalMembers;
     if (allLocalMembers.isEmpty) {
       debugPrint('[FirestoreMemberRepository] 에셋 로드 실패, GitHub Raw 시도...');
       final remoteMembers = await _loadSplitMembersFromRemote(favoriteIds, cloudMembers);
       if (remoteMembers.isNotEmpty) {
-        final merged = _mergeMembersByIdPreferCloud(cloudMembers, remoteMembers);
-        _notifyListeners(merged);
-        finalMembers = merged;
+        finalMembers = _mergeMembersByIdPreferCloud(cloudMembers, remoteMembers);
       } else {
         finalMembers = cloudMembers;
       }
@@ -568,8 +559,9 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       finalMembers = _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers);
     }
 
-    // 최종 데이터 반영
+    // 최종 데이터 반영 (단 1번만)
     _notifyListeners(finalMembers);
+    debugPrint('[FirestoreMemberRepository] 20개 파일 병합 및 최종 UI 업데이트 완료 (${finalMembers.length}명)');
 
     // 다음 방문 시 즉시 표시를 위해 캐시에 저장 (백그라운드)
     unawaited(_saveToCache(finalMembers));

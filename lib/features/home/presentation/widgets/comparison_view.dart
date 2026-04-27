@@ -189,9 +189,23 @@ class _ComparisonViewState extends State<ComparisonView>
     );
   }
 
+  Set<String>? _lastComparedIds;
+  Future<List<AnalysisResult>>? _analysisFuture;
+
   Widget _buildComparisonResults(Member m1, Member m2) {
     final color1 = PartyUtil.getPartyColor(m1.party);
     final color2 = PartyUtil.getPartyColor(m2.party);
+
+    // 미래 캐싱: 비교 대상이 바뀌었을 때만 Future를 새로 생성
+    if (_lastComparedIds == null ||
+        !_lastComparedIds!.contains(m1.id) ||
+        !_lastComparedIds!.contains(m2.id)) {
+      _lastComparedIds = {m1.id, m2.id};
+      _analysisFuture = Future.wait([
+        sl<CalculateElectionPossibilityUseCase>().call(m1.id),
+        sl<CalculateElectionPossibilityUseCase>().call(m2.id),
+      ]);
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -202,7 +216,13 @@ class _ComparisonViewState extends State<ComparisonView>
             children: [
               Text('후보자 비교', style: AppTextStyles.headline3),
               TextButton(
-                onPressed: () => setState(() => _selectedCompareIds.clear()),
+                onPressed: () {
+                  setState(() {
+                    _selectedCompareIds.clear();
+                    _lastComparedIds = null;
+                    _analysisFuture = null;
+                  });
+                },
                 child: const Text('다시 선택'),
               ),
             ],
@@ -232,10 +252,7 @@ class _ComparisonViewState extends State<ComparisonView>
               isPercent: true),
           const SizedBox(height: 16),
           FutureBuilder<List<AnalysisResult>>(
-            future: Future.wait([
-              sl<CalculateElectionPossibilityUseCase>().call(m1.id),
-              sl<CalculateElectionPossibilityUseCase>().call(m2.id),
-            ]),
+            future: _analysisFuture,
             builder: (context, snapshot) {
               if (!snapshot.hasData)
                 return const Center(child: CircularProgressIndicator());

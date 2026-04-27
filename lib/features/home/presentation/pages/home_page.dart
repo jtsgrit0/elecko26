@@ -424,10 +424,20 @@ class _HomePageState extends State<HomePage>
     }
   }
 
+  StreamSubscription<List<Member>>? _membersSubscription;
+
   void _startMemberStream() {
     try {
       final stream = sl<WatchMembersUseCase>().call();
       _membersStream = stream;
+      _membersSubscription?.cancel();
+      _membersSubscription = _membersStream.listen((members) {
+        if (mounted) {
+          setState(() {
+            _cachedMembers = members;
+          });
+        }
+      });
     } catch (e) {
       debugPrint('[HomePage] Failed to start member stream: $e');
       _membersStream = const Stream<List<Member>>.empty();
@@ -542,6 +552,7 @@ class _HomePageState extends State<HomePage>
     _uiRefreshTimer?.cancel();
     _regionSubscription?.cancel();
     _authSubscription?.cancel();
+    _membersSubscription?.cancel();
     _searchController.dispose();
     super.dispose();
   }
