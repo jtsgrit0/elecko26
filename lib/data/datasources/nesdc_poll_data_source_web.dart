@@ -247,17 +247,15 @@ class NesdcPollDataSource {
     return [];
   }
 
-  /// GitHub Raw 상의 최신 JSON 데이터를 다운로드하고 캐싱합니다.
   Future<List<NesdcPollEntry>?> _fetchFromRemoteGitHub() async {
     try {
       final response = await _client.get(Uri.parse(AppConfig.nesdcDataUrl));
       if (response.statusCode == 200) {
         final jsonString = response.body;
-        // 로컬 캐시에 저장
         if (_localStorageService != null) {
           await _localStorageService!.setString(_kPollsCacheKey, jsonString);
         }
-        return _parsePollsJson(jsonString);
+        return await _parsePollsJson(jsonString);
       }
     } catch (e) {
       print('⚠️ NesdcPollDataSource: Failed to download from GitHub: $e');
@@ -271,7 +269,7 @@ class NesdcPollDataSource {
     try {
       final cachedJson = _localStorageService!.getString(_kPollsCacheKey);
       if (cachedJson != null && cachedJson.isNotEmpty) {
-        return _parsePollsJson(cachedJson);
+        return await _parsePollsJson(cachedJson);
       }
     } catch (e) {
       print('⚠️ NesdcPollDataSource: Failed to load from local cache: $e');
@@ -283,7 +281,7 @@ class NesdcPollDataSource {
   Future<List<NesdcPollEntry>> _fetchFromBundledAssets() async {
     try {
       final jsonString = await AssetLoader.loadString('data/nesdc_polls.json');
-      return _parsePollsJson(jsonString);
+      return await _parsePollsJson(jsonString);
     } catch (e) {
       print('⚠️ NesdcPollDataSource: Failed to load from bundled assets: $e');
     }
@@ -291,7 +289,7 @@ class NesdcPollDataSource {
   }
 
   /// JSON 문자열을 파싱하여 NesdcPollEntry 리스트로 변환합니다.
-  List<NesdcPollEntry> _parsePollsJson(String jsonString) {
+  Future<List<NesdcPollEntry>> _parsePollsJson(String jsonString) async {
     final decoded = jsonDecode(jsonString);
     final rawEntries = decoded is List
         ? decoded
@@ -299,6 +297,7 @@ class NesdcPollDataSource {
     if (rawEntries is! List) return [];
 
     final List<NesdcPollEntry> entries = [];
+    int count = 0;
     for (final raw in rawEntries) {
       if (raw is! Map<String, dynamic>) continue;
 
@@ -324,6 +323,12 @@ class NesdcPollDataSource {
           detailJson,
           detailUrl: entry.sourceUrl,
         );
+      }
+      
+      // 대량 데이터 파싱 시 메인 스레드 프리징 방지
+      count++;
+      if (count % 200 == 0) {
+        await Future.delayed(Duration.zero);
       }
     }
     return entries;

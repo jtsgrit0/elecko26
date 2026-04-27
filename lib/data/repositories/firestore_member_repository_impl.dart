@@ -425,18 +425,25 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     for (var i = 0; i < 20; i++) {
       try {
         final content = await _loadAssetSplitChunk(i);
-        final chunk = _parseMembersFromJsonChunk(content, favoriteIds);
+        final chunk = await _parseMembersFromJsonChunk(content, favoriteIds);
         allLocalMembers.addAll(chunk);
 
-        // 파일 하나 로드될 때마다 즉시 병합 후 UI 업데이트
-        final merged = _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers);
-        _notifyListeners(merged);
-        debugPrint(
-            '[FirestoreMemberRepository] 에셋 chunk $i 로드: 누적 ${merged.length}명');
+        // 너무 자주 갱신하지 않고 5개 단위 혹은 마지막에만 갱신하여 프리징 방지
+        if (i % 5 == 4 || i == 19) {
+          final merged =
+              _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers);
+          _notifyListeners(merged);
+          debugPrint(
+              '[FirestoreMemberRepository] 에셋 chunk $i 로드: 누적 ${merged.length}명 UI 반영');
+        }
       } catch (_) {
         break; // 파일 없으면 종료
       }
     }
+    
+    // 최종 확인 (루프가 중간에 끊겼을 경우 대비)
+    final finalMerged = _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers);
+    _notifyListeners(finalMerged);
 
     // 로컬 에셋 로드 실패 시 GitHub Raw URL 시도
     if (allLocalMembers.isEmpty) {
@@ -489,7 +496,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         futures.add(() async {
           final content = await _loadRemoteSplitChunk(idx);
           if (content == null) return <Member>[];
-          return _parseMembersFromJsonChunk(content, favoriteIds);
+          return await _parseMembersFromJsonChunk(content, favoriteIds);
         }());
       }
       final results = await Future.wait(futures);
@@ -512,7 +519,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     for (var i = 0; i < 20; i++) {
       try {
         final content = await _loadAssetSplitChunk(i);
-        final chunk = _parseMembersFromJsonChunk(content, favoriteIds);
+        final chunk = await _parseMembersFromJsonChunk(content, favoriteIds);
         members.addAll(chunk);
       } catch (_) {
         break; // 파일 없으면 종료
@@ -555,20 +562,26 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     throw FlutterError('Split candidate asset not found: index=$index');
   }
 
-  static List<Member> _parseMembersFromJsonChunk(
+  static Future<List<Member>> _parseMembersFromJsonChunk(
     String jsonString,
     List<String> favoriteIds,
-  ) {
+  ) async {
     final favoriteSet = favoriteIds.toSet();
     final members = <Member>[];
 
     final jsonList = json.decode(jsonString) as List<dynamic>;
+    int count = 0;
     for (final item in jsonList) {
       try {
         final member = MemberModel.fromJson(item as Map<String, dynamic>);
         members.add(
           member.copyWith(isFavorite: favoriteSet.contains(member.id)),
         );
+        
+        count++;
+        if (count % 100 == 0) {
+          await Future.delayed(Duration.zero);
+        }
       } catch (_) {}
     }
 

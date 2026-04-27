@@ -93,42 +93,61 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
     });
   }
 
+  bool _isCalculating = false;
+  List<Member>? _lastCalculatedMembers;
+
   Future<void> _calculateMemberPossibilities(List<Member> members) async {
     if (members.isEmpty) return;
-    setState(() => _isCalculatingPossibilities = true);
-
-    final Map<String, double> possibilities = {};
-    final useCase = GetIt.instance<CalculateElectionPossibilityUseCase>();
-
-    // 성능 최적화: 8000명을 모두 실시간 계산하면 앱이 멈춤.
-    // 1단계: 기본 점수로 정렬하여 상위 200명만 추출
-    final topCandidates = List<Member>.from(members)
-      ..sort((a, b) => b.electionPossibility.compareTo(a.electionPossibility));
+    if (_isCalculating) return;
     
-    final limitedMembers = topCandidates.take(200).toList();
-
-    // 2단계: 상위 후보들만 실시간 추세 및 가중치 재계산 (0.5초 간격으로 양보하여 UI 프리징 방지)
-    int count = 0;
-    for (final member in limitedMembers) {
-      try {
-        final result = await useCase.call(member.id);
-        possibilities[member.id] = result.electionPossibility;
-        
-        count++;
-        // 50개마다 이벤트 루프에 양보하여 UI 응답성 유지
-        if (count % 50 == 0) {
-          await Future.delayed(Duration.zero);
-        }
-      } catch (e) {
-        possibilities[member.id] = member.electionPossibility;
-      }
+    // 단순 개수 비교가 아닌 데이터 변경 확인 (얕은 비교)
+    if (_lastCalculatedMembers != null && 
+        _lastCalculatedMembers!.length == members.length &&
+        _lastCalculatedMembers!.first.id == members.first.id &&
+        _lastCalculatedMembers!.last.id == members.last.id) {
+      return;
     }
 
-    if (mounted) {
-      setState(() {
-        _memberPossibilities = possibilities;
-        _isCalculatingPossibilities = false;
-      });
+    _isCalculating = true;
+    setState(() => _isCalculatingPossibilities = true);
+
+    try {
+      final Map<String, double> possibilities = {};
+      final useCase = GetIt.instance<CalculateElectionPossibilityUseCase>();
+
+      // 상위 후보 정렬 (기본 점수 기준)
+      final topCandidates = List<Member>.from(members)
+        ..sort((a, b) => b.electionPossibility.compareTo(a.electionPossibility));
+      
+      final limitedMembers = topCandidates.take(150).toList();
+
+      int count = 0;
+      for (final member in limitedMembers) {
+        if (!mounted) break;
+        
+        try {
+          final result = await useCase.call(member.id);
+          possibilities[member.id] = result.electionPossibility;
+          
+          count++;
+          // 더 빈번하게 양보하여 UI 응답성 극대화
+          if (count % 30 == 0) {
+            await Future.delayed(const Duration(milliseconds: 1));
+          }
+        } catch (e) {
+          possibilities[member.id] = member.electionPossibility;
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _memberPossibilities = Map.from(possibilities);
+          _isCalculatingPossibilities = false;
+          _lastCalculatedMembers = members;
+        });
+      }
+    } finally {
+      _isCalculating = false;
     }
   }
 

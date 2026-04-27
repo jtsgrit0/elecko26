@@ -221,6 +221,12 @@ class _SearchViewState extends State<SearchView> {
     );
   }
 
+  List<Member>? _lastAllMembers;
+  String? _lastQuery;
+  String? _lastCategory;
+  String? _lastOffice;
+  List<Member>? _cachedFilteredResults;
+
   Widget _buildSearchResults() {
     return StreamBuilder<List<Member>>(
       stream: widget.membersStream,
@@ -230,15 +236,23 @@ class _SearchViewState extends State<SearchView> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final filteredMembers = allMembers.where((m) {
-          // 지역 필터링 먼저 적용
-          if (!districtMatchesRegion(m.district, widget.userRegion))
-            return false;
+        // 최적화: 데이터나 필터가 바뀌지 않았다면 이전 결과 재사용
+        if (_cachedFilteredResults != null &&
+            _lastAllMembers == allMembers &&
+            _lastQuery == _searchQuery &&
+            _lastCategory == _searchCategory &&
+            _lastOffice == _searchOffice) {
+          return _buildResultList(_cachedFilteredResults!);
+        }
 
+        final filteredMembers = allMembers.where((m) {
+          if (!districtMatchesRegion(m.district, widget.userRegion)) return false;
           if (!_matchesSearchCategory(m)) return false;
           if (!_matchesSearchOffice(m)) return false;
 
           final query = _searchQuery.toLowerCase();
+          if (query.isEmpty) return true;
+          
           return m.name.toLowerCase().contains(query) ||
               m.party.toLowerCase().contains(query) ||
               m.district.toLowerCase().contains(query) ||
@@ -251,36 +265,45 @@ class _SearchViewState extends State<SearchView> {
         filteredMembers.sort(
             (a, b) => b.electionPossibility.compareTo(a.electionPossibility));
 
-        if (filteredMembers.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.search_off, size: 64, color: AppColors.grey),
-                const SizedBox(height: 16),
-                Text(
-                  '검색 결과가 없습니다',
-                  style:
-                      AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
-                ),
-              ],
-            ),
-          );
-        }
+        _cachedFilteredResults = filteredMembers;
+        _lastAllMembers = allMembers;
+        _lastQuery = _searchQuery;
+        _lastCategory = _searchCategory;
+        _lastOffice = _searchOffice;
 
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: filteredMembers.length,
-          itemBuilder: (context, index) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: MemberCard(
-                key: ValueKey(filteredMembers[index].id),
-                member: filteredMembers[index],
-                onTap: () => widget.onMemberSelected(filteredMembers[index]),
-              ),
-            );
-          },
+        return _buildResultList(filteredMembers);
+      },
+    );
+  }
+
+  Widget _buildResultList(List<Member> results) {
+    if (results.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.search_off, size: 64, color: AppColors.grey),
+            const SizedBox(height: 16),
+            Text(
+              '검색 결과가 없습니다',
+              style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: results.length,
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: MemberCard(
+            key: ValueKey(results[index].id),
+            member: results[index],
+            onTap: () => widget.onMemberSelected(results[index]),
+          ),
         );
       },
     );
