@@ -43,18 +43,20 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _performInitialization() async {
+    // 1. 필수 DI (SharedPreferences 등) 우선 실행 - 가장 먼저 완료되어야 함
+    await di.initMinimal();
+
+    // 2. Firebase 초기화는 비동기로 시작하되, 최대 1.2초만 기다림
+    // 1.2초가 넘어가면 배경에서 계속 진행하게 두고 우선 앱 진입 (캐시 데이터 표시 위함)
     if (AppConfig.enableFirebase) {
       try {
-        // Firebase 초기화에 5초 타임아웃 적용
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
-        ).timeout(const Duration(seconds: 5));
+        ).timeout(const Duration(milliseconds: 1200));
       } catch (e) {
-        debugPrint('[Bootstrap] Firebase 초기화 실패/타임아웃: $e');
+        debugPrint('[Bootstrap] Firebase 지연 중 (배경에서 계속 진행): $e');
       }
     }
-
-    await di.initMinimal();
   }
 
   @override

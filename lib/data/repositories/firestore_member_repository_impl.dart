@@ -478,15 +478,39 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   @override
   Future<void> refreshMembers() async {
     final now = DateTime.now();
+    final localService = sl<LocalStorageService>();
+    final favoriteIds = await localService.getFavorites();
 
-    // --- [1단계] Firestore에서 즉시 로드 → 빠르게 UI 표시 ---
+    // --- [0단계] 로컬 캐시/에셋에서 즉시 로드 (사용자 체감 속도 0ms) ---
+    if (_membersController.value.isEmpty) {
+      var cachedMembers = await _loadFromCache();
+      if (cachedMembers.isEmpty) {
+        cachedMembers = await _loadLightweightMembers();
+      }
+      
+      if (cachedMembers.isNotEmpty) {
+        final withFavorites = cachedMembers
+            .map((m) => m.copyWith(isFavorite: favoriteIds.contains(m.id)))
+            .toList();
+        _notifyListeners(withFavorites);
+        debugPrint('[FirestoreMemberRepo] Phase 0 (Local Cache ${withFavorites.length}명) 즉시 표시 완료');
+      }
+    }
+
+    // --- [1단계] Firestore 및 로컬 에셋 업데이트 (백그라운드 진행) ---
+    // 아래 과정은 비동기로 진행하여 UI 스레드 점유를 최소화함
+    _performFullRefreshInBackground(favoriteIds, now);
+  }
+
+  Future<void> _performFullRefreshInBackground(List<String> favoriteIds, DateTime now) async {
     List<Member> cloudMembers = [];
     try {
       if (Firebase.apps.isNotEmpty) {
+        // 서버와 캐시를 동시에 보되, 2초 내에 응답 없으면 넘어가기
         final snapshot = await _firestore
             .collection('members')
             .get(const GetOptions(source: Source.serverAndCache))
-            .timeout(const Duration(seconds: 3));
+            .timeout(const Duration(seconds: 2));
 
         if (snapshot.docs.isNotEmpty) {
           for (var doc in snapshot.docs) {
@@ -495,31 +519,24 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
               _normalizeFirestoreTimestamps(data);
               data['id'] = doc.id;
               cloudMembers.add(MemberModel.fromJson(data));
-            } catch (e) {
-              debugPrint('[FirestoreMemberRepository] Parse error: $e');
-            }
+            } catch (_) {}
           }
         }
       }
     } catch (e) {
-      debugPrint('[FirestoreMemberRepository] Cloud Fetch Error: $e');
+      debugPrint('[FirestoreMemberRepository] Cloud Fetch Skip/Error: $e');
     }
-
-    // Firestore 데이터를 즉시 표시 (빠름)
-    final localService = sl<LocalStorageService>();
-    final favoriteIds = await localService.getFavorites();
 
     if (cloudMembers.isNotEmpty) {
       final preliminary = cloudMembers
           .map((m) => m.copyWith(isFavorite: favoriteIds.contains(m.id)))
           .toList();
       _notifyListeners(preliminary);
-      debugPrint(
-          '[FirestoreMemberRepository] Phase 1 (cloud ${preliminary.length}명) 즉시 표시');
+      debugPrint('[FirestoreMemberRepository] Phase 1 (Cloud Sync) 완료');
     }
 
-    // --- [2단계] 로컬 에셋 파일을 백그라운드에서 순차 로드 → 파일마다 UI 업데이트 ---
-    _loadAssetsAndMergeInBackground(cloudMembers, favoriteIds, now);
+    // --- [2단계] 로컬 에셋 파일을 백그라운드에서 순차 로드 ---
+    await _loadAssetsAndMergeInBackground(cloudMembers, favoriteIds, now);
   }
 
   /// 로컬 split JSON 파일을 순차적으로 로드하며 점진적으로 UI 업데이트
