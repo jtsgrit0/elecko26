@@ -1,25 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
-  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="description" content="2026 지방선거 당선 예측 플랫폼">
 
   <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -33,31 +19,88 @@
   <title>2026 당예기</title>
   <link rel="manifest" href="manifest.json">
 
+  <style>
+    body {
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    #splash {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      width: 100vw;
+      background-color: #ffffff;
+      transition: opacity 0.5s ease-out;
+    }
+    .logo {
+      width: 120px;
+      height: 120px;
+      margin-bottom: 24px;
+      animation: pulse 2s infinite ease-in-out;
+    }
+    .loading-text {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: #3D5AFE;
+      margin-top: 16px;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(61, 90, 254, 0.1);
+      border-left-color: #3D5AFE;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 1; }
+      100% { transform: scale(1); opacity: 0.8; }
+    }
+  </style>
+
   <script>
     // The value below is injected by flutter build, do not touch.
     const serviceWorkerVersion = null;
   </script>
-  <script
-    type="application/javascript"
-    src="assets/packages/flutter_inappwebview_web/assets/web/web_support.js"
-    defer
-  ></script>
-  <!-- This script adds the flutter initialization JS code -->
   <script src="flutter.js" defer></script>
 </head>
 <body>
+  <div id="splash">
+    <img src="assets/assets/images/election_icon.png" class="logo" alt="Logo">
+    <div class="spinner"></div>
+    <div class="loading-text">2026 당예기 불러오는 중...</div>
+  </div>
 
   <script>
     window.addEventListener('load', function(ev) {
-      // Download main.dart.js
-      _flutter.loader.loadEntrypoint({
+      _flutter.loader.load({
         serviceWorker: {
           serviceWorkerVersion: serviceWorkerVersion,
         },
-        onEntrypointLoaded: function(engineInitializer) {
-          engineInitializer.initializeEngine().then(function(appRunner) {
-            appRunner.runApp();
+        onEntrypointLoaded: async function(engineInitializer) {
+          const engine = await engineInitializer.initializeEngine({
+            // 모바일 웹 성능을 위해 가능하면 CanvasKit 대신 HTML 렌더러 우선 시도 (선택 사항)
+            // renderer: "auto", 
           });
+          const appRunner = await engine.runApp();
+          
+          // 엔진이 로드되고 앱이 실행될 준비가 되면 스플래시 화면 제거
+          const splash = document.getElementById('splash');
+          if (splash) {
+            splash.style.opacity = '0';
+            setTimeout(() => {
+              splash.remove();
+            }, 500);
+          }
         }
       });
     });
