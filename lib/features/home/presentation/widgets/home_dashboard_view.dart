@@ -147,10 +147,11 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
     _lastSourceMembers = _displayMembers;
     _lastSourceRegion = widget.userRegion;
 
-    _nesdcCount = filtered.fold<int>(
-        0,
-        (sum, member) =>
-            sum + member.polls.where((p) => p.id.startsWith('nesdc_')).length);
+    final allNesdcPollIds = filtered.expand((m) => m.polls)
+        .where((p) => p.id.startsWith('nesdc_'))
+        .map((p) => p.id)
+        .toSet();
+    _nesdcCount = allNesdcPollIds.length;
 
     final latestAnalysis = filtered.isNotEmpty
         ? filtered

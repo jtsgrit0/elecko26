@@ -175,29 +175,35 @@ class MemberRepositoryImpl implements MemberRepository {
       _resolveMissingProfileImagesInBackground();
 
       final entries = await _nesdcPollDataSource.fetchLatest();
+      
+      // 최적화: 유효한 지역들 추출 (중복 제거)
+      final uniqueRegions = _dummyMembers
+          .map((m) => _staticMapDistrictToRegion(m.district))
+          .toSet();
+          
+      // 최적화: 유효한 지역에 해당하는 최근 여론조사 100건만 상세 정보 가져오기
+      final relevantEntries = entries
+          .where((e) => uniqueRegions.any((r) => _staticMatchesRegion(e.region, r)))
+          .take(100)
+          .toList();
+          
       final List<Future<void>> detailTasks = [];
-      for (final member in _dummyMembers) {
-        final regionKey = _staticMapDistrictToRegion(member.district);
-        final matchedEntries = entries
-            .where((e) => _staticMatchesRegion(e.region, regionKey))
-            .toList();
-        for (final entry in matchedEntries.take(5)) {
-          detailTasks.add(_nesdcPollDataSource.fetchDetail(entry.sourceUrl));
-        }
+      for (final entry in relevantEntries) {
+        detailTasks.add(_nesdcPollDataSource.fetchDetail(entry.sourceUrl));
       }
       await Future.wait(detailTasks);
 
-      final List<NesdcPollDetail> collectedDetails = entries
+      final List<NesdcPollDetail> collectedDetails = relevantEntries
           .map((e) => _nesdcPollDataSource.getCachedDetail(e.sourceUrl))
           .whereType<NesdcPollDetail>()
           .toList();
 
       final updatedMembers = kIsWeb
           ? _matchPollsInBackground(
-              List.from(_dummyMembers), entries, collectedDetails, now)
+              List.from(_dummyMembers), relevantEntries, collectedDetails, now)
           : await Isolate.run(() => _matchPollsInBackground(
                 List.from(_dummyMembers),
-                entries,
+                relevantEntries,
                 collectedDetails,
                 now,
               ));
