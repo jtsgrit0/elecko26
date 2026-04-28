@@ -24,8 +24,7 @@ class MemberDetailPage extends StatefulWidget {
   State<MemberDetailPage> createState() => _MemberDetailPageState();
 }
 
-class _MemberDetailPageState extends State<MemberDetailPage>
-    with WidgetsBindingObserver {
+class _MemberDetailPageState extends State<MemberDetailPage> {
   late Stream<Member> _memberStream;
   late Stream<AnalysisResult> _analysisStream;
   late AnalysisResult _initialAnalysis;
@@ -33,7 +32,6 @@ class _MemberDetailPageState extends State<MemberDetailPage>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _initialAnalysis = _buildFallbackAnalysis(widget.member);
     _startMemberStream();
     _startAnalysisStream();
@@ -56,6 +54,8 @@ class _MemberDetailPageState extends State<MemberDetailPage>
   }
 
   Stream<AnalysisResult> _analysisTicker(String memberId) async* {
+    // 상세 페이지 렌더링 즉시 무거운 연산이 시작되지 않도록 500ms 지연
+    await Future.delayed(const Duration(milliseconds: 500));
     while (true) {
       try {
         yield await sl<CalculateElectionPossibilityUseCase>()
@@ -70,28 +70,7 @@ class _MemberDetailPageState extends State<MemberDetailPage>
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!mounted) {
-      return;
-    }
-    if (state == AppLifecycleState.resumed) {
-      setState(() {
-        _startMemberStream();
-        _startAnalysisStream();
-      });
-    } else if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
-      setState(() {
-        _stopMemberStream();
-        _stopAnalysisStream();
-      });
-    }
-  }
-
-  @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 

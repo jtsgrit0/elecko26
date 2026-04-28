@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:elecko26_new/app/injection_container.dart' as di;
 import 'package:elecko26_new/core/config/app_config.dart';
@@ -115,10 +116,42 @@ class _MyAppState extends State<MyApp> {
 
         return MaterialApp(
           title: '2026 당예기',
-          theme: AppTheme.lightTheme,
+          theme: AppTheme.lightTheme.copyWith(
+            // 페이지 전환 애니메이션 단축 (기본 ZoomPage보다 빠른 Fade)
+            pageTransitionsTheme: const PageTransitionsTheme(
+              builders: {
+                TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+                TargetPlatform.fuchsia: FadeUpwardsPageTransitionsBuilder(),
+                TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
+                TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+                TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+              },
+            ),
+          ),
+          scrollBehavior: const _FastScrollBehavior(),
           home: const HomePage(),
         );
       },
     );
   }
+}
+
+/// 스크롤 반응성 극대화: 마우스/터치/트랙패드 모두 드래그 허용
+class _FastScrollBehavior extends ScrollBehavior {
+  const _FastScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+        PointerDeviceKind.stylus,
+      };
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) =>
+      const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      );
 }

@@ -7,7 +7,6 @@ import 'package:elecko26_new/features/home/presentation/widgets/integrated_news_
 import 'package:elecko26_new/features/home/presentation/widgets/home_dashboard_view.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/repositories/member_repository.dart';
@@ -34,7 +33,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   late final BehaviorSubject<List<Member>> _membersSubject =
       BehaviorSubject<List<Member>>();
   Stream<List<Member>> get _membersStream => _membersSubject.stream;
@@ -118,10 +117,18 @@ class _HomePageState extends State<HomePage>
   void _showSettingsModal() {
     String tempSelectedRegion = _userRegion;
 
+    // 모달 애니메이션 단축: 기본 300ms → 180ms
+    final animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 180),
+      reverseDuration: const Duration(milliseconds: 130),
+    );
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      transitionAnimationController: animController,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Container(
           height: MediaQuery.of(context).size.height * 0.75,
@@ -198,7 +205,11 @@ class _HomePageState extends State<HomePage>
           ),
         ),
       ),
-    );
+    ).then((_) {
+      // 모달 닫힌 후 컨트롤러 해제
+      if (animController.isAnimating) animController.stop();
+      animController.dispose();
+    });
   }
 
   void _showResetConfirmation() {
@@ -438,13 +449,11 @@ class _HomePageState extends State<HomePage>
       _membersSubscription = stream.listen((members) {
         if (!_membersSubject.isClosed) {
           _membersSubject.add(members);
+          // 직접 필드 업데이트 - setState 제거로 전체 재빌드 방지
+          // StreamBuilder가 BehaviorSubject를 통해 자동으로 UI 갱신
+          _cachedMembers = members;
           final count = members.where((m) => m.isFavorite).length;
           _favoriteCountNotifier.value = count;
-          if (mounted) {
-            setState(() {
-              _cachedMembers = members;
-            });
-          }
         }
       });
     } catch (e) {
