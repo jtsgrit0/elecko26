@@ -19,6 +19,16 @@
   <title>2026 당예기</title>
   <link rel="manifest" href="manifest.json">
 
+  <!-- flutter_inappwebview web support -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flutter_inappwebview/6.0.0/flutter_inappwebview.js"></script>
+  <script>
+    if (window.flutter_inappwebview === undefined) {
+      window.flutter_inappwebview = {
+        nativeCommunication: {}
+      };
+    }
+  </script>
+
   <style>
     body {
       background-color: #f8f9fa;
