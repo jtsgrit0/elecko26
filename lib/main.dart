@@ -42,7 +42,7 @@ class _MyAppState extends State<MyApp> {
       // 1. 최소한의 DI 초기화 (SharedPreferences 등)
       await di.initMinimal().timeout(const Duration(milliseconds: 1500));
       
-      // 2. Firebase 초기화 (비동기로 백그라운드 진행 권장하나 여기서는 짧은 타임아웃 적용)
+      // 2. Firebase 초기화
       try {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
@@ -50,10 +50,6 @@ class _MyAppState extends State<MyApp> {
       } catch (e) {
         debugPrint('[Main] Firebase Init Delay/Error: $e');
       }
-
-      // 3. 앱 설정 로드
-      await AppConfig.instance.initialize().timeout(const Duration(milliseconds: 500));
-      
     } catch (e) {
       debugPrint('[Main] Initialization Error: $e');
     } finally {
