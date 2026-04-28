@@ -171,11 +171,10 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
     if (members.isEmpty) return;
     if (_isCalculating) return;
     
-    // 단순 개수 비교가 아닌 데이터 변경 확인 (얕은 비교)
+    // 데이터 변경 확인
     if (_lastCalculatedMembers != null && 
         _lastCalculatedMembers!.length == members.length &&
-        _lastCalculatedMembers!.first.id == members.first.id &&
-        _lastCalculatedMembers!.last.id == members.last.id) {
+        _lastCalculatedMembers!.first.id == members.first.id) {
       return;
     }
 
@@ -185,34 +184,40 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
     try {
       final useCase = GetIt.instance<CalculateElectionPossibilityUseCase>();
 
-      // 상위 후보 정렬 (기본 점수 기준)
+      // 상위 후보 정렬
       final topCandidates = List<Member>.from(members)
         ..sort((a, b) => b.electionPossibility.compareTo(a.electionPossibility));
       
-      // 상위 50명만 우선적으로 계산
-      final limitedMembers = topCandidates.take(50).toList();
+      // 상위 40명만 우선적으로 계산 (속도와 정확도의 균형)
+      final limitedMembers = topCandidates.take(40).toList();
 
-      for (var i = 0; i < limitedMembers.length; i++) {
+      // 5개씩 병렬로 배치 처리 (Sequential -> Parallel Batch)
+      const batchSize = 5;
+      for (var i = 0; i < limitedMembers.length; i += batchSize) {
         if (!mounted) break;
         
-        final member = limitedMembers[i];
-        try {
-          final result = await useCase.call(member.id);
-          _memberPossibilities[member.id] = result.electionPossibility;
-        } catch (e) {
-          _memberPossibilities[member.id] = member.electionPossibility;
-        }
+        final end = (i + batchSize < limitedMembers.length) 
+            ? i + batchSize 
+            : limitedMembers.length;
+        final batch = limitedMembers.sublist(i, end);
 
-        // 첫 10명 계산 후 한 번 업데이트, 이후에는 25명마다 업데이트하여 UI 차단 최소화
-        if (i == 10 || (i > 10 && i % 25 == 0)) {
-          if (mounted) {
-            setState(() {
-              _updateCalculatedData();
-            });
+        // 병렬 실행
+        await Future.wait(batch.map((member) async {
+          try {
+            final result = await useCase.call(member.id);
+            _memberPossibilities[member.id] = result.electionPossibility;
+          } catch (e) {
+            _memberPossibilities[member.id] = member.electionPossibility;
           }
-          // UI 스레드에 충분한 여유 공간 제공
-          await Future.delayed(const Duration(milliseconds: 50));
+        }));
+
+        if (mounted) {
+          setState(() {
+            _updateCalculatedData();
+          });
         }
+        // UI가 멈추지 않도록 최소한의 지연
+        await Future.delayed(const Duration(milliseconds: 10));
       }
 
       if (mounted) {
@@ -396,9 +401,12 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
                 padding: EdgeInsets.symmetric(vertical: 40),
                 child: Column(
                   children: [
-                    CircularProgressIndicator(),
+                    CircularProgressIndicator(color: Colors.red),
                     SizedBox(height: 16),
-                    Text('실시간 당선 가능성 계산 중...', style: AppTextStyles.bodyMedium),
+                    Text(
+                      '실시간 당선 가능성 계산 중...', 
+                      style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)
+                    ),
                   ],
                 ),
               ),
@@ -626,7 +634,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
               _buildMemberList(memberList),
             ] else if (widget.isLoading || _isCalculatingPossibilities) ...[
               // 데이터가 없고 로딩 중일 때만 로딩바 표시
-              const Center(child: CircularProgressIndicator()),
+              const Center(child: CircularProgressIndicator(color: Colors.red)),
             ] else ...[
               // 데이터가 없고 로딩도 안할 때는 빈 상태 표시
               Center(

@@ -282,7 +282,7 @@ class _SearchViewState extends State<SearchView>
 
   Widget _buildSearchResults() {
     if (_allMembers.isEmpty && _filteredMembers.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: Colors.red));
     }
     return _buildResultList(_filteredMembers);
   }

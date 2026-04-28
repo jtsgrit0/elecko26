@@ -255,7 +255,7 @@ class _ComparisonViewState extends State<ComparisonView>
             future: _analysisFuture,
             builder: (context, snapshot) {
               if (!snapshot.hasData)
-                return const Center(child: CircularProgressIndicator());
+                return const Center(child: CircularProgressIndicator(color: Colors.red));
               final a1 = snapshot.data![0];
               final a2 = snapshot.data![1];
 
