@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/core/utils/utility_functions.dart'
@@ -116,7 +117,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
 
   void _updateCalculatedData() {
     // 최적화: 소스 데이터와 지역이 변경되지 않았다면 계산 스킵
-    if (_lastSourceMembers == widget.cachedMembers && 
+    if (_lastSourceMembers == _displayMembers && 
         _lastSourceRegion == widget.userRegion && 
         _filteredSortedMembers.isNotEmpty) {
       return;
@@ -143,7 +144,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
         .take(10)
         .toList();
 
-    _lastSourceMembers = widget.cachedMembers;
+    _lastSourceMembers = _displayMembers;
     _lastSourceRegion = widget.userRegion;
 
     _nesdcCount = filtered.fold<int>(
