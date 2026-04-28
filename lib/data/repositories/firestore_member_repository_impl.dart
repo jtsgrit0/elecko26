@@ -519,11 +519,14 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         if (snapshot.docs.isNotEmpty) {
           for (var doc in snapshot.docs) {
             try {
-              final data = doc.data();
+              // 중요: Firestore 웹 등에서 반환된 Map이 수정 불가능(unmodifiable)일 수 있으므로 복사본 생성
+              final data = Map<String, dynamic>.from(doc.data());
               _normalizeFirestoreTimestamps(data);
               data['id'] = doc.id;
               cloudMembers.add(MemberModel.fromJson(data));
-            } catch (_) {}
+            } catch (e) {
+              debugPrint('[FirestoreMemberRepository] Error parsing doc ${doc.id}: $e');
+            }
           }
         }
       }
@@ -1030,12 +1033,26 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     };
 
     nestedFields.forEach((listField, dateField) {
-      if (data[listField] != null) {
-        for (var item in data[listField]) {
-          if (item[dateField] is Timestamp) {
-            item[dateField] =
-                (item[dateField] as Timestamp).toDate().toIso8601String();
+      if (data[listField] != null && data[listField] is List) {
+        final List<dynamic> originalList = data[listField];
+        final List<dynamic> mutableList = [];
+        bool modified = false;
+
+        for (var originalItem in originalList) {
+          if (originalItem is Map) {
+            final Map<String, dynamic> item = Map<String, dynamic>.from(originalItem);
+            if (item[dateField] is Timestamp) {
+              item[dateField] = (item[dateField] as Timestamp).toDate().toIso8601String();
+              modified = true;
+            }
+            mutableList.add(item);
+          } else {
+            mutableList.add(originalItem);
           }
+        }
+
+        if (modified) {
+          data[listField] = mutableList;
         }
       }
     });
