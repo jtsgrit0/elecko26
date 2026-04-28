@@ -202,14 +202,15 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
           _memberPossibilities[member.id] = member.electionPossibility;
         }
 
-        // 10명마다 한 번씩만 UI 업데이트하여 부하 감소
-        if (i > 0 && i % 10 == 0) {
+        // 첫 10명 계산 후 한 번 업데이트, 이후에는 25명마다 업데이트하여 UI 차단 최소화
+        if (i == 10 || (i > 10 && i % 25 == 0)) {
           if (mounted) {
             setState(() {
               _updateCalculatedData();
             });
           }
-          await Future.delayed(const Duration(milliseconds: 10));
+          // UI 스레드에 충분한 여유 공간 제공
+          await Future.delayed(const Duration(milliseconds: 50));
         }
       }
 
@@ -388,7 +389,21 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
             ],
           ),
           const SizedBox(height: 12),
-          Column(
+          if (_isCalculatingPossibilities && _memberPossibilities.length < 5)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('실시간 당선 가능성 계산 중...', style: AppTextStyles.bodyMedium),
+                  ],
+                ),
+              ),
+            )
+          else
+            Column(
             children: List.generate(top3.length, (index) {
               final member = top3[index];
               final rank = index + 1;
