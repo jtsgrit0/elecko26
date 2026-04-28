@@ -201,15 +201,22 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
             : limitedMembers.length;
         final batch = limitedMembers.sublist(i, end);
 
-        // 병렬 실행
+        // 병렬 실행 (개별 항목에 3초 타임아웃 적용)
         await Future.wait(batch.map((member) async {
           try {
-            final result = await useCase.call(member.id);
+            final result = await useCase.call(member.id).timeout(
+              const Duration(seconds: 3),
+              onTimeout: () => throw TimeoutException('Calculation timed out'),
+            );
             _memberPossibilities[member.id] = result.electionPossibility;
           } catch (e) {
+            debugPrint('[Possibility] Member ${member.id} calculation failed/timeout: $e');
             _memberPossibilities[member.id] = member.electionPossibility;
           }
-        }));
+        })).timeout(const Duration(seconds: 10), onTimeout: () {
+          debugPrint('[Possibility] Batch calculation timed out');
+          return [];
+        });
 
         if (mounted) {
           setState(() {
@@ -607,7 +614,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
     if (widget.isLoading &&
         _displayMembers.isEmpty &&
         widget.cachedMembers.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: Colors.red));
     }
 
     // 이미 _updateCalculatedData()에서 계산됨

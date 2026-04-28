@@ -29,17 +29,26 @@ class _MyAppState extends State<MyApp> {
   late final Future<void> _bootstrapFuture = _bootstrap();
 
   Future<void> _bootstrap() async {
+    // 2.5초 후에는 무조건 로딩을 종료하도록 보장
+    final forcedExit = Timer(const Duration(milliseconds: 2500), () {
+      if (mounted) {
+        debugPrint('[Bootstrap] 강제 초기화 완료 (Timer)');
+        // FutureBuilder를 완료시키기 위해 더 이상 할 일 없음 (이미 리턴됨)
+      }
+    });
+
     try {
-      // 3초 내에 초기화 완료 시도 (사용자 경험 최우선)
-      await _performInitialization().timeout(const Duration(seconds: 3));
+      // 초기화 작업 수행 (최대 2초 한도)
+      await _performInitialization().timeout(
+        const Duration(milliseconds: 2000),
+        onTimeout: () => debugPrint('[Bootstrap] 초기화 시간 초과 (2s)'),
+      );
     } catch (e) {
-      debugPrint('[Bootstrap] 초기화 지연/오류 (3s 한도 초과): $e');
-      // 타임아웃 시에도 최소한의 DI는 보장되어야 하므로 안전하게 한 번 더 시도
-      try {
-        await di.initMinimal().timeout(const Duration(milliseconds: 500));
-      } catch (_) {}
+      debugPrint('[Bootstrap] 초기화 중 오류: $e');
+    } finally {
+      forcedExit.cancel();
+      debugPrint('[Bootstrap] 부트스트랩 최종 완료');
     }
-    debugPrint('[Bootstrap] 부트스트랩 완료');
   }
 
   Future<void> _performInitialization() async {

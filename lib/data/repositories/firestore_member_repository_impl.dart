@@ -158,11 +158,15 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<void> _ensureInitialized() async {
     if (_isInitialized) return;
     if (_initializationFuture != null) {
-      await _initializationFuture;
+      await _initializationFuture!.timeout(const Duration(seconds: 5), onTimeout: () {
+        debugPrint('[FirestoreRepo] Initialization wait timeout');
+      });
       return;
     }
     _initializationFuture = _performInitialization();
-    await _initializationFuture;
+    await _initializationFuture!.timeout(const Duration(seconds: 5), onTimeout: () {
+      debugPrint('[FirestoreRepo] Initialization perform timeout');
+    });
   }
 
   Future<void> _performInitialization() async {
@@ -172,12 +176,12 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       }
     } catch (_) {}
     try {
-      // 1) 캐시에서 즉시 표시 (초고속)
-      var cachedMembers = await _loadFromCache();
+      // 1) 캐시에서 즉시 표시 (초고속) - 2초 내에 강제 완료
+      var cachedMembers = await _loadFromCache().timeout(const Duration(seconds: 2), onTimeout: () => []);
       
       // 캐시가 없으면 경량 번들 JSON에서 즉시 8000명 로드
       if (cachedMembers.isEmpty) {
-        cachedMembers = await _loadLightweightMembers();
+        cachedMembers = await _loadLightweightMembers().timeout(const Duration(seconds: 2), onTimeout: () => []);
       }
       
       if (cachedMembers.isNotEmpty) {
@@ -192,8 +196,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         // 2) 백그라운드에서 최신 데이터(상세)로 업데이트
         unawaited(refreshMembers());
       } else {
-        // 둘 다 실패 시 풀 로드 (거의 발생하지 않음)
-        await refreshMembers();
+        // 둘 다 실패 시 풀 로드 시도 (3초 제한)
+        await refreshMembers().timeout(const Duration(seconds: 3), onTimeout: () {});
         _isInitialized = true;
       }
     } finally {
