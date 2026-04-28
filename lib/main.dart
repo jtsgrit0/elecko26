@@ -29,20 +29,17 @@ class _MyAppState extends State<MyApp> {
   late final Future<void> _bootstrapFuture = _bootstrap();
 
   Future<void> _bootstrap() async {
-    // 전체 초기화에 최대 10초 제한 (모바일 웹 무한 로딩 방지)
+    // 앱 전체 초기화에 절대로 8초 이상 넘기지 않음
     try {
-      await Future.any([
-        _performInitialization(),
-        Future.delayed(const Duration(seconds: 10), () {
-          debugPrint('[Bootstrap] 초기화 타임아웃 - 강제 진행');
-          throw 'Timeout';
-        }),
-      ]);
+      await _performInitialization().timeout(const Duration(seconds: 8));
     } catch (e) {
-      debugPrint('[Bootstrap] 초기화 중 예외 또는 타임아웃 발생 (폴백 모드): $e');
-      // 타임아웃이나 오류 시에도 최소한의 DI는 시도
-      try { await di.initMinimal(); } catch (_) {}
+      debugPrint('[Bootstrap] 초기화 한도 초과(8s) 또는 오류: $e');
+      // 최악의 경우에도 최소한의 DI는 등록하고 진행 (0.5초 제한)
+      try {
+        await di.initMinimal().timeout(const Duration(milliseconds: 500));
+      } catch (_) {}
     }
+    debugPrint('[Bootstrap] 부트스트랩 완료');
   }
 
   Future<void> _performInitialization() async {
@@ -104,9 +101,15 @@ class _MyAppState extends State<MyApp> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(),
+                    CircularProgressIndicator(color: Colors.red),
                     SizedBox(height: 16),
-                    Text('후보 데이터를 준비하는 중입니다...'),
+                    Text(
+                      '2026 당예기 불러오는 중...',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ),

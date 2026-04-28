@@ -53,8 +53,13 @@ Future<void> init() async {
 
 Future<void> initMinimal() async {
   debugPrint('[DI] Initializing Minimal DI...');
-  if (sl.isRegistered<MemberRepository>()) {
-    await sl.reset();
+  try {
+    if (sl.isRegistered<MemberRepository>()) {
+      // reset()이 가끔 dispose 대기로 인해 오래 걸릴 수 있으므로 1초 타임아웃
+      await sl.reset().timeout(const Duration(seconds: 1));
+    }
+  } catch (e) {
+    debugPrint('[DI] GetIt Reset Timeout or Error (Proceeding anyway): $e');
   }
 
   //! External
