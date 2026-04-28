@@ -77,7 +77,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
 
     // 스트림 데이터가 도착하면 업데이트 (디바운싱 적용)
     _subscription = widget.membersStream.listen((members) {
-      if (mounted && members.isNotEmpty) {
+      if (mounted) {
         _debounceTimer?.cancel();
         _debounceTimer = Timer(const Duration(milliseconds: 300), () {
           if (mounted) {
@@ -85,7 +85,9 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
               _displayMembers = members;
               _updateCalculatedData();
             });
-            _calculateMemberPossibilities(members);
+            if (members.isNotEmpty) {
+              _calculateMemberPossibilities(members);
+            }
           }
         });
       }

@@ -80,7 +80,8 @@ class MemberModel extends Member {
     }
 
     Map<String, double> parseHistoricalRates(dynamic value) {
-      if (value is! Map) return const {};
+      if (value is! Map) return <String, double>{};
+
       return value.map((key, val) => MapEntry(key.toString(), parseDouble(val)));
     }
 

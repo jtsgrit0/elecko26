@@ -507,8 +507,10 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   }
 
   Future<void> _performFullRefreshInBackground(List<String> favoriteIds, DateTime now) async {
+    debugPrint('[Refresh] === Background Full Refresh Started ===');
     List<Member> cloudMembers = [];
     try {
+      debugPrint('[Refresh] Phase 1: Fetching cloud data...');
       if (Firebase.apps.isNotEmpty) {
         // 서버와 캐시를 동시에 보되, 2초 내에 응답 없으면 넘어가기
         final snapshot = await _firestore

@@ -41,7 +41,8 @@ class Member {
     required this.improvementPoints,
     required this.socialContributions,
     this.isFavorite = false,
-    this.historical2018PartyRates = const {},
+    this.historical2018PartyRates = const {}, // Placeholder for default, will be overridden by mutable in Model
+
   });
 
   Member copyWith({
