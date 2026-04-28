@@ -8,7 +8,7 @@
   <meta name="description" content="2026 지방선거 당선 예측 플랫폼">
 
   <!-- iOS meta tags & icons -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="2026 당예기">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
@@ -66,16 +66,6 @@
       100% { transform: scale(1); opacity: 0.8; }
     }
   </style>
-
-  <script>
-    // The value below is injected by flutter build, do not touch.
-    const serviceWorkerVersion = {{flutter_service_worker_version}};
-  </script>
-  <script>
-    {{flutter_build_config}}
-  </script>
-  <!-- This script adds the flutter initialization JS code -->
-  <script src="flutter.js" defer></script>
 </head>
 <body>
   <div id="splash">
@@ -85,37 +75,33 @@
   </div>
 
   <script>
-    window.addEventListener('load', function(ev) {
-      // 10초 후 무조건 스플래시 제거 (엔진 로드 실패 대비)
-      setTimeout(() => {
+    // 10초 후 무조건 스플래시 제거 (엔진 로드 실패 대비)
+    setTimeout(() => {
+      const splash = document.getElementById('splash');
+      if (splash) {
+        console.log('Splash force removed after 10s');
+        splash.style.opacity = '0';
+        setTimeout(() => splash.remove(), 500);
+      }
+    }, 10000);
+
+    {{flutter_js}}
+    {{flutter_build_config}}
+
+    _flutter.loader.load({
+      onEntrypointLoaded: async function(engineInitializer) {
+        const engine = await engineInitializer.initializeEngine();
+        await engine.runApp();
+        
+        // 엔진이 로드되고 앱이 실행될 준비가 되면 스플래시 화면 제거
         const splash = document.getElementById('splash');
         if (splash) {
-          console.log('Splash force removed after 10s');
           splash.style.opacity = '0';
-          setTimeout(() => splash.remove(), 500);
+          setTimeout(() => {
+            splash.remove();
+          }, 500);
         }
-      }, 10000);
-
-      // Download main.dart.js
-      _flutter.loader.load({
-        serviceWorker: {
-          serviceWorkerVersion: serviceWorkerVersion,
-        },
-        onEntrypointLoaded: function(engineInitializer) {
-          engineInitializer.initializeEngine().then(function(appRunner) {
-            appRunner.runApp();
-            
-            // 엔진이 로드되고 앱이 실행될 준비가 되면 스플래시 화면 제거
-            const splash = document.getElementById('splash');
-            if (splash) {
-              splash.style.opacity = '0';
-              setTimeout(() => {
-                splash.remove();
-              }, 500);
-            }
-          });
-        }
-      });
+      }
     });
   </script>
 </body>
