@@ -69,8 +69,12 @@
 
   <script>
     // The value below is injected by flutter build, do not touch.
-    const serviceWorkerVersion = null;
+    const serviceWorkerVersion = {{flutter_service_worker_version}};
   </script>
+  <script>
+    {{flutter_build_config}}
+  </script>
+  <!-- This script adds the flutter initialization JS code -->
   <script src="flutter.js" defer></script>
 </head>
 <body>
@@ -92,30 +96,24 @@
         }
       }, 10000);
 
-      // 모바일 기기 감지
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      
+      // Download main.dart.js
       _flutter.loader.load({
         serviceWorker: {
           serviceWorkerVersion: serviceWorkerVersion,
         },
-        onEntrypointLoaded: async function(engineInitializer) {
-          const config = {
-            // 모바일에서는 로딩 속도가 훨씬 빠른 html 렌더러를 강제하고, 데스크톱은 auto 사용
-            renderer: isMobile ? "html" : "auto",
-          };
-          
-          const engine = await engineInitializer.initializeEngine(config);
-          const appRunner = await engine.runApp();
-          
-          // 엔진이 로드되고 앱이 실행될 준비가 되면 스플래시 화면 제거
-          const splash = document.getElementById('splash');
-          if (splash) {
-            splash.style.opacity = '0';
-            setTimeout(() => {
-              splash.remove();
-            }, 500);
-          }
+        onEntrypointLoaded: function(engineInitializer) {
+          engineInitializer.initializeEngine().then(function(appRunner) {
+            appRunner.runApp();
+            
+            // 엔진이 로드되고 앱이 실행될 준비가 되면 스플래시 화면 제거
+            const splash = document.getElementById('splash');
+            if (splash) {
+              splash.style.opacity = '0';
+              setTimeout(() => {
+                splash.remove();
+              }, 500);
+            }
+          });
         }
       });
     });
