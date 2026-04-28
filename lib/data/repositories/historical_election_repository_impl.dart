@@ -105,7 +105,7 @@ class HistoricalElectionRepositoryImpl implements HistoricalElectionRepository {
     int count = 0;
 
     for (final fileData in pdfData.values) {
-      if (fileData is Map<String, dynamic>) {
+      if (fileData is Map) {
         // 지역명이 포함되어 있는지 확인 (예: "서울", "종로구" 등)
         for (final entry in fileData.entries) {
           if (region.contains(entry.key) || entry.key.contains(region)) {

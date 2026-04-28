@@ -263,13 +263,13 @@ class NesdcPollDataSource {
     final decoded = jsonDecode(jsonString);
     final rawEntries = decoded is List
         ? decoded
-        : (decoded is Map<String, dynamic> ? decoded['entries'] : null);
+        : (decoded is Map ? decoded['entries'] : null);
     if (rawEntries is! List) return [];
 
     final List<NesdcPollEntry> entries = [];
     int count = 0;
     for (final raw in rawEntries) {
-      if (raw is! Map<String, dynamic>) continue;
+      if (raw is! Map) continue;
 
       final registeredDate =
           DateTime.tryParse('${raw['registeredDate']}') ?? DateTime.now();
@@ -288,9 +288,9 @@ class NesdcPollDataSource {
       entries.add(entry);
 
       final detailJson = raw['detail'];
-      if (detailJson is Map<String, dynamic>) {
+      if (detailJson is Map) {
         _detailCache[entry.sourceUrl] = NesdcPollDetail.fromJson(
-          detailJson,
+          Map<String, dynamic>.from(detailJson),
           detailUrl: entry.sourceUrl,
         );
       }
