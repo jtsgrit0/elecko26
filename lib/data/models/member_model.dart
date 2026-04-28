@@ -22,6 +22,7 @@ class MemberModel extends Member {
     required super.improvementPoints,
     required super.socialContributions,
     super.isFavorite,
+    super.historical2018PartyRates,
   });
 
   factory MemberModel.fromJson(Map<String, dynamic> json) {
@@ -78,6 +79,11 @@ class MemberModel extends Member {
           .toList();
     }
 
+    Map<String, double> parseHistoricalRates(dynamic value) {
+      if (value is! Map) return const {};
+      return value.map((key, val) => MapEntry(key.toString(), parseDouble(val)));
+    }
+
     return MemberModel(
       id: (json['id'] ?? '') as String,
       name: (json['name'] ?? '알 수 없음') as String,
@@ -101,6 +107,7 @@ class MemberModel extends Member {
         json['socialContributions'],
       ),
       isFavorite: json['isFavorite'] as bool? ?? false,
+      historical2018PartyRates: parseHistoricalRates(json['historical2018PartyRates']),
     );
   }
 
@@ -145,7 +152,8 @@ class MemberModel extends Member {
       improvementPoints: improvementPoints ?? this.improvementPoints,
       socialContributions: socialContributions ?? this.socialContributions,
       isFavorite: isFavorite ?? this.isFavorite,
-    )..historical2018PartyRates.addAll(historical2018PartyRates ?? this.historical2018PartyRates);
+      historical2018PartyRates: historical2018PartyRates ?? this.historical2018PartyRates,
+    );
   }
 
   Map<String, dynamic> toJson() {
@@ -183,6 +191,7 @@ class MemberModel extends Member {
           .map((e) => (e as SocialContributionModel).toJson())
           .toList(),
       'isFavorite': isFavorite,
+      'historical2018PartyRates': historical2018PartyRates,
     };
   }
 }
