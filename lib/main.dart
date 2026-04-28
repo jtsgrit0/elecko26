@@ -29,12 +29,12 @@ class _MyAppState extends State<MyApp> {
   late final Future<void> _bootstrapFuture = _bootstrap();
 
   Future<void> _bootstrap() async {
-    // 앱 전체 초기화에 절대로 8초 이상 넘기지 않음
     try {
-      await _performInitialization().timeout(const Duration(seconds: 8));
+      // 3초 내에 초기화 완료 시도 (사용자 경험 최우선)
+      await _performInitialization().timeout(const Duration(seconds: 3));
     } catch (e) {
-      debugPrint('[Bootstrap] 초기화 한도 초과(8s) 또는 오류: $e');
-      // 최악의 경우에도 최소한의 DI는 등록하고 진행 (0.5초 제한)
+      debugPrint('[Bootstrap] 초기화 지연/오류 (3s 한도 초과): $e');
+      // 타임아웃 시에도 최소한의 DI는 보장되어야 하므로 안전하게 한 번 더 시도
       try {
         await di.initMinimal().timeout(const Duration(milliseconds: 500));
       } catch (_) {}
@@ -43,103 +43,121 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _performInitialization() async {
-    // 1. 필수 DI (SharedPreferences 등) 우선 실행 - 가장 먼저 완료되어야 함
-    await di.initMinimal();
+    // 1. 필수 DI (SharedPreferences 등) 우선 실행 (보통 500ms 이내)
+    await di.initMinimal().timeout(const Duration(seconds: 2));
 
-    // 2. Firebase 초기화는 비동기로 시작하되, 최대 1.2초만 기다림
-    // 1.2초가 넘어가면 배경에서 계속 진행하게 두고 우선 앱 진입 (캐시 데이터 표시 위함)
+    // 2. Firebase 초기화 (배경 실행 허용)
     if (AppConfig.enableFirebase) {
       try {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
-        ).timeout(const Duration(milliseconds: 1200));
+        ).timeout(const Duration(milliseconds: 1000));
       } catch (e) {
-        debugPrint('[Bootstrap] Firebase 지연 중 (배경에서 계속 진행): $e');
+        debugPrint('[Bootstrap] Firebase 지연 중 (배경 진행): $e');
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<void>(
-      future: _bootstrapFuture,
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return MaterialApp(
-            title: '2026 당예기',
-            theme: AppTheme.lightTheme,
-            home: Scaffold(
-              body: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.error_outline, size: 56),
-                      const SizedBox(height: 16),
-                      const Text(
-                        '앱 초기화 중 문제가 발생했습니다.',
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        '${snapshot.error}',
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
-
-        if (snapshot.connectionState != ConnectionState.done) {
-          return MaterialApp(
-            title: '2026 당예기',
-            theme: AppTheme.lightTheme,
-            home: const Scaffold(
-              body: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(color: Colors.red),
-                    SizedBox(height: 16),
-                    Text(
-                      '2026 당예기 불러오는 중...',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
-
-        return MaterialApp(
-          title: '2026 당예기',
-          theme: AppTheme.lightTheme.copyWith(
-            // 페이지 전환 애니메이션 단축 (기본 ZoomPage보다 빠른 Fade)
-            pageTransitionsTheme: const PageTransitionsTheme(
-              builders: {
-                TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
-                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-                TargetPlatform.fuchsia: FadeUpwardsPageTransitionsBuilder(),
-                TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
-                TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
-                TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
-              },
-            ),
-          ),
-          scrollBehavior: const _FastScrollBehavior(),
-          home: const HomePage(),
-        );
-      },
+    return MaterialApp(
+      title: '2026 당예기',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme.copyWith(
+        // 페이지 전환 애니메이션 단축
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.fuchsia: FadeUpwardsPageTransitionsBuilder(),
+            TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
+            TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+          },
+        ),
+      ),
+      scrollBehavior: const _FastScrollBehavior(),
+      home: FutureBuilder<void>(
+        future: _bootstrapFuture,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return _buildErrorScreen(snapshot.error.toString());
+          }
+          if (snapshot.connectionState != ConnectionState.done) {
+            return _buildLoadingScreen();
+          }
+          return const HomePage();
+        },
+      ),
     );
   }
+
+  Widget _buildLoadingScreen() {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 50,
+              height: 50,
+              child: CircularProgressIndicator(
+                color: Colors.red,
+                strokeWidth: 5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              '2026 당예기 불러오는 중...',
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorScreen(String error) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 56, color: Colors.red),
+              const SizedBox(height: 16),
+              const Text(
+                '앱 초기화 중 문제가 발생했습니다.',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                error,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[700]),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  // 재시도 로직 (필요 시)
+                },
+                child: const Text('재시도'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
 }
 
 /// 스크롤 반응성 극대화: 마우스/터치/트랙패드 모두 드래그 허용

@@ -66,7 +66,7 @@ Future<void> initMinimal() async {
   try {
     debugPrint('[DI] Loading SharedPreferences...');
     final sharedPreferences = await SharedPreferences.getInstance().timeout(
-      const Duration(seconds: 3),
+      const Duration(milliseconds: 1500),
       onTimeout: () {
         debugPrint('[DI] SharedPreferences timeout, using fallback');
         throw Exception('Timeout');
