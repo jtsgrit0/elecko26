@@ -27,15 +27,8 @@ class MemberCard extends StatelessWidget {
           color: AppColors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppColors.primary.withOpacity(0.2),
+            color: AppColors.primary.withOpacity(0.15),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Row(
           children: [
@@ -107,14 +100,13 @@ class MemberCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 SizedBox(
                   width: 50,
-                  child: AspectRatio(
-                    aspectRatio: 3 / 1,
-                    child: Image.asset(
-                      PartyUtil.getPartyLogoUrl(member.party),
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const SizedBox(),
-                    ),
+                  height: 18,
+                  child: Image.asset(
+                    PartyUtil.getPartyLogoUrl(member.party),
+                    fit: BoxFit.contain,
+                    cacheWidth: 100, // 원본 로딩 방지
+                    errorBuilder: (context, error, stackTrace) =>
+                        const SizedBox(),
                   ),
                 ),
               ],

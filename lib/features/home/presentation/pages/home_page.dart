@@ -35,6 +35,7 @@ class _HomePageState extends State<HomePage>
   late final BehaviorSubject<List<Member>> _membersSubject =
       BehaviorSubject<List<Member>>();
   Stream<List<Member>> get _membersStream => _membersSubject.stream;
+  final ValueNotifier<int> _favoriteCountNotifier = ValueNotifier<int>(0);
   Timer? _dataExportTimer;
   Timer? _uiRefreshTimer;
   bool _isLoading = false;
@@ -434,6 +435,8 @@ class _HomePageState extends State<HomePage>
       _membersSubscription = stream.listen((members) {
         if (!_membersSubject.isClosed) {
           _membersSubject.add(members);
+          final count = members.where((m) => m.isFavorite).length;
+          _favoriteCountNotifier.value = count;
           if (mounted) {
             setState(() {
               _cachedMembers = members;
@@ -533,6 +536,29 @@ class _HomePageState extends State<HomePage>
       if (!mounted) return;
       // 주요 자산 미리 캐싱
       precacheImage(const AssetImage('assets/images/election_icon.png'), context);
+
+      // 정당 로고 미리 캐싱
+      final parties = ['더불어민주당', '국민의힘', '정의당', '진보당', '조국혁신당', '개혁신당', '기본소득당'];
+      for (final party in parties) {
+        final logo = PartyUtil.getPartyLogoUrl(party);
+        if (logo.isNotEmpty) {
+          precacheImage(AssetImage(logo), context);
+        }
+      }
+
+      // 상위 후보자 이미지 일부 사전 캐싱
+      if (_cachedMembers.isNotEmpty) {
+        for (final member in _cachedMembers.take(20)) {
+          if (member.imageUrl.isNotEmpty) {
+            precacheImage(
+              CachedNetworkImageProvider(
+                ImageUtil.getProxyUrl(member.imageUrl, width: 120, height: 120),
+              ),
+              context,
+            );
+          }
+        }
+      }
     });
   }
 
@@ -793,18 +819,13 @@ class _HomePageState extends State<HomePage>
                     const Icon(Icons.person_outline,
                         color: AppColors.grey, size: 18),
                     const SizedBox(width: 8),
-                    StreamBuilder<List<Member>>(
-                      stream: _membersStream,
-                      builder: (context, snapshot) {
-                        final members = snapshot.data ?? _cachedMembers;
-                        final favoriteCount =
-                            members.where((m) => m.isFavorite).length;
-                        return Text(
-                          '즐겨찾기 $favoriteCount명',
-                          style: AppTextStyles.bodyMedium
-                              .copyWith(color: AppColors.dark),
-                        );
-                      },
+                    ValueListenableBuilder<int>(
+                      valueListenable: _favoriteCountNotifier,
+                      builder: (context, count, _) => Text(
+                        '즐겨찾기 $count명',
+                        style: AppTextStyles.bodyMedium
+                            .copyWith(color: AppColors.dark),
+                      ),
                     ),
                   ],
                 ),

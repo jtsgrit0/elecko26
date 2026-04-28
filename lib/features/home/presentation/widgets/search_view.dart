@@ -30,6 +30,10 @@ class _SearchViewState extends State<SearchView>
   String _searchQuery = '';
   String _searchCategory = '전체';
   String _searchOffice = '전체';
+  Timer? _debounceTimer;
+  List<Member> _allMembers = [];
+  List<Member> _filteredMembers = [];
+  StreamSubscription? _membersSubscription;
 
   @override
   bool get wantKeepAlive => true;
@@ -56,8 +60,25 @@ class _SearchViewState extends State<SearchView>
   };
 
   @override
+  void initState() {
+    super.initState();
+    _allMembers = widget.cachedMembers;
+    _applyFilters();
+    _membersSubscription = widget.membersStream.listen((members) {
+      if (mounted) {
+        setState(() {
+          _allMembers = members;
+          _applyFilters();
+        });
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
+    _debounceTimer?.cancel();
+    _membersSubscription?.cancel();
     super.dispose();
   }
 
@@ -85,8 +106,14 @@ class _SearchViewState extends State<SearchView>
       child: TextField(
         controller: _searchController,
         onChanged: (value) {
-          setState(() {
-            _searchQuery = value;
+          _debounceTimer?.cancel();
+          _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+            if (mounted) {
+              setState(() {
+                _searchQuery = value;
+                _applyFilters();
+              });
+            }
           });
         },
         decoration: InputDecoration(
@@ -149,6 +176,7 @@ class _SearchViewState extends State<SearchView>
                       setState(() {
                         _searchCategory = category;
                         _searchOffice = '전체';
+                        _applyFilters();
                       });
                     },
                   ),
@@ -177,6 +205,7 @@ class _SearchViewState extends State<SearchView>
                     onTap: () {
                       setState(() {
                         _searchOffice = office;
+                        _applyFilters();
                       });
                     },
                   ),
@@ -227,58 +256,34 @@ class _SearchViewState extends State<SearchView>
     );
   }
 
-  List<Member>? _lastAllMembers;
-  String? _lastQuery;
-  String? _lastCategory;
-  String? _lastOffice;
-  List<Member>? _cachedFilteredResults;
+  void _applyFilters() {
+    final filtered = _allMembers.where((m) {
+      if (!districtMatchesRegion(m.district, widget.userRegion)) return false;
+      if (!_matchesSearchCategory(m)) return false;
+      if (!_matchesSearchOffice(m)) return false;
+
+      if (_searchQuery.isEmpty) return true;
+      final query = _searchQuery.toLowerCase();
+      return m.name.toLowerCase().contains(query) ||
+          m.party.toLowerCase().contains(query) ||
+          m.district.toLowerCase().contains(query);
+    }).toList();
+
+    // 상위 50명 이미지 선행 로딩
+    _precacheMemberImages(context, filtered.take(50).toList());
+
+    // 당선 가능성 높은 순으로 정렬
+    filtered.sort(
+        (a, b) => b.electionPossibility.compareTo(a.electionPossibility));
+
+    _filteredMembers = filtered;
+  }
 
   Widget _buildSearchResults() {
-    return StreamBuilder<List<Member>>(
-      stream: widget.membersStream,
-      builder: (context, snapshot) {
-        final allMembers = snapshot.data ?? widget.cachedMembers;
-        if (allMembers.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        // 최적화: 데이터나 필터가 바뀌지 않았다면 이전 결과 재사용
-        if (_cachedFilteredResults != null &&
-            _lastAllMembers == allMembers &&
-            _lastQuery == _searchQuery &&
-            _lastCategory == _searchCategory &&
-            _lastOffice == _searchOffice) {
-          return _buildResultList(_cachedFilteredResults!);
-        }
-
-        final filteredMembers = allMembers.where((m) {
-          if (!districtMatchesRegion(m.district, widget.userRegion)) return false;
-          if (!_matchesSearchCategory(m)) return false;
-          if (!_matchesSearchOffice(m)) return false;
-
-          if (_searchQuery.isEmpty) return true;
-          return m.name.contains(_searchQuery) ||
-              m.party.contains(_searchQuery) ||
-              m.district.contains(_searchQuery);
-        }).toList();
-
-        // 상위 50명 이미지 선행 로딩 (이미지 늦게 뜨는 현상 방지)
-        _precacheMemberImages(context, filteredMembers.take(50).toList());
-
-        // 당선 가능성 높은 순으로 정렬
-        filteredMembers.sort(
-            (a, b) => b.electionPossibility.compareTo(a.electionPossibility));
-
-        // 캐시 업데이트
-        _cachedFilteredResults = filteredMembers;
-        _lastAllMembers = allMembers;
-        _lastQuery = _searchQuery;
-        _lastCategory = _searchCategory;
-        _lastOffice = _searchOffice;
-
-        return _buildResultList(filteredMembers);
-      },
-    );
+    if (_allMembers.isEmpty && _filteredMembers.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return _buildResultList(_filteredMembers);
   }
 
   Widget _buildResultList(List<Member> results) {

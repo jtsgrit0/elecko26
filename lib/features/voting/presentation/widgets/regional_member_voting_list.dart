@@ -414,15 +414,15 @@ class _RegionalMemberCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: isVoted ? 4 : 0,
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
           color: recentlyVoted
               ? AppColors.success
-              : (isVoted ? AppColors.primary : Colors.grey.withOpacity(0.2)),
-          width: recentlyVoted ? 3 : (isVoted ? 2 : 1),
+              : (isVoted ? AppColors.primary : AppColors.lightGray),
+          width: recentlyVoted ? 2 : (isVoted ? 2 : 1),
         ),
       ),
       child: Padding(
@@ -430,21 +430,12 @@ class _RegionalMemberCard extends StatelessWidget {
         child: Row(
           children: [
             // 프로필 이미지
-            Hero(
-              tag: 'member_vote_${member.id}',
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
               child: Container(
                 width: 70,
                 height: 70,
-                decoration: BoxDecoration(
-                  color: AppColors.lightGrey,
-                  borderRadius: BorderRadius.circular(12),
-                  image: member.imageUrl.trim().isEmpty
-                      ? null
-                      : DecorationImage(
-                          image: CachedNetworkImageProvider(member.imageUrl),
-                          fit: BoxFit.cover,
-                        ),
-                ),
+                color: AppColors.lightGrey,
                 child: member.imageUrl.trim().isEmpty
                     ? Center(
                         child: Text(
@@ -452,7 +443,19 @@ class _RegionalMemberCard extends StatelessWidget {
                           style: AppTextStyles.headline4,
                         ),
                       )
-                    : null,
+                    : CachedNetworkImage(
+                        imageUrl: member.imageUrl,
+                        fit: BoxFit.cover,
+                        memCacheWidth: 140,
+                        memCacheHeight: 140,
+                        placeholder: (context, url) => Container(color: AppColors.lightGrey),
+                        errorWidget: (context, url, error) => Center(
+                          child: Text(
+                            getProfileInitial(member.name),
+                            style: AppTextStyles.headline4,
+                          ),
+                        ),
+                      ),
               ),
             ),
             const SizedBox(width: 16),

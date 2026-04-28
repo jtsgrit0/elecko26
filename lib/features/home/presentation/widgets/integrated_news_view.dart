@@ -24,8 +24,47 @@ class _IntegratedNewsViewState extends State<IntegratedNewsView>
   @override
   bool get wantKeepAlive => true;
 
-  List<Member>? _lastMembers;
-  List<Map<String, dynamic>>? _cachedNews;
+  List<Member> _allMembers = [];
+  List<Map<String, dynamic>> _newsItems = [];
+  StreamSubscription? _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _allMembers = widget.cachedMembers;
+    _updateNewsItems();
+    _subscription = widget.membersStream.listen((members) {
+      if (mounted) {
+        setState(() {
+          _allMembers = members;
+          _updateNewsItems();
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  void _updateNewsItems() {
+    final favorites = _allMembers.where((m) => m.isFavorite).toList();
+    final allNews = <Map<String, dynamic>>[];
+    for (var m in favorites) {
+      for (var report in m.pressReports) {
+        allNews.add({
+          'member': m,
+          'report': report,
+        });
+      }
+    }
+    allNews.sort((a, b) => (b['report'].publishDate as DateTime)
+        .compareTo(a['report'].publishDate));
+
+    _newsItems = allNews;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,38 +73,11 @@ class _IntegratedNewsViewState extends State<IntegratedNewsView>
   }
 
   Widget _buildIntegratedNewsPage() {
-    return StreamBuilder<List<Member>>(
-      stream: widget.membersStream,
-      builder: (context, snapshot) {
-        final members = snapshot.data ?? widget.cachedMembers;
-
-        // 최적화: 멤버 리스트가 변경되지 않았다면 뉴스 추출 및 정렬 스킵
-        if (_cachedNews != null && _lastMembers == members) {
-          return _buildNewsList(members, _cachedNews!);
-        }
-
-        final favorites = members.where((m) => m.isFavorite).toList();
-        final allNews = <Map<String, dynamic>>[];
-        for (var m in favorites) {
-          for (var report in m.pressReports) {
-            allNews.add({
-              'member': m,
-              'report': report,
-            });
-          }
-        }
-        allNews.sort((a, b) => (b['report'].publishDate as DateTime)
-            .compareTo(a['report'].publishDate));
-
-        _lastMembers = members;
-        _cachedNews = allNews;
-
-        return _buildNewsList(members, allNews);
-      },
-    );
+    final favoritesCount = _allMembers.where((m) => m.isFavorite).length;
+    return _buildNewsList(favoritesCount, _newsItems);
   }
 
-  Widget _buildNewsList(List<Member> favorites, List<Map<String, dynamic>> allNews) {
+  Widget _buildNewsList(int favoritesCount, List<Map<String, dynamic>> allNews) {
     return Container(
       color: AppColors.white,
       child: Column(
@@ -88,7 +100,7 @@ class _IntegratedNewsViewState extends State<IntegratedNewsView>
               ),
             ),
           ),
-          if (favorites.where((m) => m.isFavorite).isEmpty)
+          if (favoritesCount == 0)
             const Expanded(child: Center(child: Text('즐겨찾기한 의원이 없습니다.')))
           else if (allNews.isEmpty)
             const Expanded(child: Center(child: Text('최신 보도 자료가 없습니다.')))
@@ -136,15 +148,14 @@ class _IntegratedNewsViewState extends State<IntegratedNewsView>
                               const SizedBox(height: 4),
                               SizedBox(
                                 width: 36,
-                                child: AspectRatio(
-                                  aspectRatio: 3 / 1,
-                                  child: Image.asset(
-                                    PartyUtil.getPartyLogoUrl(m.party),
-                                    fit: BoxFit.contain,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            const SizedBox(),
-                                  ),
+                                height: 12,
+                                child: Image.asset(
+                                  PartyUtil.getPartyLogoUrl(m.party),
+                                  fit: BoxFit.contain,
+                                  cacheWidth: 80,
+                                  errorBuilder:
+                                      (context, error, stackTrace) =>
+                                          const SizedBox(),
                                 ),
                               ),
                             ],

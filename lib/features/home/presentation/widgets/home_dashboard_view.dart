@@ -116,11 +116,12 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
 
   void _updateCalculatedData() {
     // 최적화: 소스 데이터와 지역이 변경되지 않았다면 계산 스킵
-    if (_lastSourceMembers == widget.cachedMembers && _lastSourceRegion == widget.userRegion && _filteredSortedMembers.isNotEmpty) {
+    if (_lastSourceMembers == widget.cachedMembers && 
+        _lastSourceRegion == widget.userRegion && 
+        _filteredSortedMembers.isNotEmpty) {
       return;
     }
 
-    // 지역 필터링
     final filtered = widget.userRegion == '전국'
         ? _displayMembers
         : _displayMembers
@@ -128,7 +129,6 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
                 districtMatchesRegion(member.district, widget.userRegion))
             .toList();
 
-    // 정렬
     _filteredSortedMembers = List<Member>.from(filtered)
       ..sort((a, b) {
         final aPossibility = _getMemberPossibility(a);
@@ -136,7 +136,6 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
         return bPossibility.compareTo(aPossibility);
       });
 
-    // TOP 3 및 목록 추출
     _top3 = _filteredSortedMembers.take(3).toList();
     _memberList = _filteredSortedMembers
         .skip(3)
@@ -144,11 +143,9 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
         .take(10)
         .toList();
 
-    // 소스 캐시 업데이트
     _lastSourceMembers = widget.cachedMembers;
     _lastSourceRegion = widget.userRegion;
 
-    // 통계 계산
     _nesdcCount = filtered.fold<int>(
         0,
         (sum, member) =>
@@ -416,29 +413,37 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
                           ),
                         ),
                         const SizedBox(width: 16),
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: Container(
+                            width: 48,
+                            height: 48,
                             color: AppColors.lightGray,
-                            image: member.imageUrl.isNotEmpty
-                                ? DecorationImage(
-                                    image: NetworkImage(member.imageUrl),
+                            child: member.imageUrl.isNotEmpty
+                                ? CachedNetworkImage(
+                                    imageUrl: member.imageUrl,
                                     fit: BoxFit.cover,
+                                    memCacheWidth: 100,
+                                    memCacheHeight: 100,
+                                    placeholder: (context, url) => Container(color: AppColors.lightGrey),
+                                    errorWidget: (context, url, error) => Center(
+                                      child: Text(
+                                        member.name.substring(0, 1),
+                                        style: AppTextStyles.headline4.copyWith(
+                                          color: AppColors.mediumGray,
+                                        ),
+                                      ),
+                                    ),
                                   )
-                                : null,
-                          ),
-                          child: member.imageUrl.isEmpty
-                              ? Center(
-                                  child: Text(
-                                    member.name.substring(0, 1),
-                                    style: AppTextStyles.headline4.copyWith(
-                                      color: AppColors.mediumGray,
+                                : Center(
+                                    child: Text(
+                                      member.name.substring(0, 1),
+                                      style: AppTextStyles.headline4.copyWith(
+                                        color: AppColors.mediumGray,
+                                      ),
                                     ),
                                   ),
-                                )
-                              : null,
+                          ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -670,14 +675,7 @@ class _StatisticCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: color.withOpacity(0.15)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
