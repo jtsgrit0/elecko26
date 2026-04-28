@@ -132,6 +132,24 @@ class MemberRepositoryImpl implements MemberRepository {
       final localService = sl<LocalStorageService>();
       final favoriteIds = await localService.getFavorites();
 
+      // 1. 로컬 스토리지에 캐시된 가공 데이터가 있는지 먼저 확인 (매우 빠름)
+      if (_dummyMembers.isEmpty) {
+        final cachedData = _localStorage.getString('cached_processed_members');
+        if (cachedData != null) {
+          try {
+            final List<dynamic> decoded = json.decode(cachedData);
+            final cachedMembers = decoded
+                .map((item) => MemberModel.fromJson(item as Map<String, dynamic>))
+                .toList();
+            _dummyMembers.addAll(cachedMembers);
+            _notifyListeners();
+            debugPrint('[MemberRepo] Loaded from persistent cache');
+          } catch (e) {
+            debugPrint('[MemberRepo] Persistent cache parse error: $e');
+          }
+        }
+      }
+
       String? candidatesJson = await _fetchCandidatesFromLocalAssets();
 
       if (candidatesJson != null) {
@@ -216,6 +234,16 @@ class MemberRepositoryImpl implements MemberRepository {
       _dummyMembers.clear();
       _dummyMembers.addAll(finalMembers);
       _notifyListeners();
+
+      // 가공된 최종 데이터를 로컬 스토리지에 캐시 (다음 기동 시 즉시 로딩용)
+      try {
+        final jsonToCache = json.encode(_dummyMembers
+            .map((m) => (m as MemberModel).toJson())
+            .toList());
+        await _localStorage.setString('cached_processed_members', jsonToCache);
+      } catch (e) {
+        debugPrint('[MemberRepo] Error saving persistent cache: $e');
+      }
     } catch (e, st) {
       debugPrint('[MemberRepo] Refresh Failed: $e\n$st');
     } finally {

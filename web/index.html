@@ -82,15 +82,20 @@
 
   <script>
     window.addEventListener('load', function(ev) {
+      // 모바일 기기 감지
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
       _flutter.loader.load({
         serviceWorker: {
           serviceWorkerVersion: serviceWorkerVersion,
         },
         onEntrypointLoaded: async function(engineInitializer) {
-          const engine = await engineInitializer.initializeEngine({
-            // 모바일 웹 성능을 위해 가능하면 CanvasKit 대신 HTML 렌더러 우선 시도 (선택 사항)
-            // renderer: "auto", 
-          });
+          const config = {
+            // 모바일에서는 로딩 속도가 훨씬 빠른 html 렌더러를 강제하고, 데스크톱은 auto 사용
+            renderer: isMobile ? "html" : "auto",
+          };
+          
+          const engine = await engineInitializer.initializeEngine(config);
           const appRunner = await engine.runApp();
           
           // 엔진이 로드되고 앱이 실행될 준비가 되면 스플래시 화면 제거

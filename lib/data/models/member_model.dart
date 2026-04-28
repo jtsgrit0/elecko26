@@ -104,6 +104,50 @@ class MemberModel extends Member {
     );
   }
 
+  @override
+  MemberModel copyWith({
+    String? id,
+    String? name,
+    String? party,
+    String? district,
+    String? imageUrl,
+    String? bio,
+    DateTime? electionDate,
+    int? term,
+    List<String>? achievementsList,
+    List<String>? actions,
+    List<String>? policies,
+    List<PressReport>? pressReports,
+    List<Poll>? polls,
+    double? electionPossibility,
+    DateTime? lastAnalysisDate,
+    List<String>? improvementPoints,
+    List<SocialContribution>? socialContributions,
+    bool? isFavorite,
+    Map<String, double>? historical2018PartyRates,
+  }) {
+    return MemberModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      party: party ?? this.party,
+      district: district ?? this.district,
+      imageUrl: imageUrl ?? this.imageUrl,
+      bio: bio ?? this.bio,
+      electionDate: electionDate ?? this.electionDate,
+      term: term ?? this.term,
+      achievementsList: achievementsList ?? this.achievementsList,
+      actions: actions ?? this.actions,
+      policies: policies ?? this.policies,
+      pressReports: pressReports ?? this.pressReports,
+      polls: polls ?? this.polls,
+      electionPossibility: electionPossibility ?? this.electionPossibility,
+      lastAnalysisDate: lastAnalysisDate ?? this.lastAnalysisDate,
+      improvementPoints: improvementPoints ?? this.improvementPoints,
+      socialContributions: socialContributions ?? this.socialContributions,
+      isFavorite: isFavorite ?? this.isFavorite,
+    )..historical2018PartyRates.addAll(historical2018PartyRates ?? this.historical2018PartyRates);
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
