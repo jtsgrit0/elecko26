@@ -111,13 +111,21 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   /// 번들로 포함된 초경량 데이터 로드 (앱 최초 실행 시 즉시 화면 표시용)
   Future<List<Member>> _loadLightweightMembers() async {
     try {
+      debugPrint('[Cache] Loading lightweight data from rootBundle...');
       final jsonString = await rootBundle.loadString('data/candidates_lightweight.json');
       final jsonList = json.decode(jsonString) as List<dynamic>;
       final members = <Member>[];
+      
+      int count = 0;
       for (final item in jsonList) {
-        members.add(MemberModel.fromJson(item as Map<String, dynamic>));
+        try {
+          members.add(MemberModel.fromJson(item as Map<String, dynamic>));
+          count++;
+          // 웹에서 메인 스레드 점유 방지 (1000명마다 한번씩 양보)
+          if (count % 1000 == 0) await Future.delayed(Duration.zero);
+        } catch (_) {}
       }
-      debugPrint('[Cache] 초경량 데이터 ${members.length}명 초고속 로드 완료');
+      debugPrint('[Cache] 초경량 데이터 ${members.length}명 로드 완료');
       return members;
     } catch (e) {
       debugPrint('[Cache] 초경량 데이터 로드 실패: $e');
@@ -176,12 +184,12 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       }
     } catch (_) {}
     try {
-      // 1) 캐시에서 즉시 표시 (초고속) - 2초 내에 강제 완료
-      var cachedMembers = await _loadFromCache().timeout(const Duration(seconds: 2), onTimeout: () => []);
+      // 1) 캐시에서 즉시 표시 (초고속) - 3초 내에 강제 완료
+      var cachedMembers = await _loadFromCache().timeout(const Duration(seconds: 3), onTimeout: () => []);
       
-      // 캐시가 없으면 경량 번들 JSON에서 즉시 8000명 로드
+      // 캐시가 없으면 경량 번들 JSON에서 즉시 8000명 로드 (웹 환경 고려 8초 타임아웃)
       if (cachedMembers.isEmpty) {
-        cachedMembers = await _loadLightweightMembers().timeout(const Duration(seconds: 2), onTimeout: () => []);
+        cachedMembers = await _loadLightweightMembers().timeout(const Duration(seconds: 8), onTimeout: () => []);
       }
       
       if (cachedMembers.isNotEmpty) {
@@ -196,8 +204,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         // 2) 백그라운드에서 최신 데이터(상세)로 업데이트
         unawaited(refreshMembers());
       } else {
-        // 둘 다 실패 시 풀 로드 시도 (3초 제한)
-        await refreshMembers().timeout(const Duration(seconds: 3), onTimeout: () {});
+        // 둘 다 실패 시 풀 로드 시도 (10초 제한)
+        await refreshMembers().timeout(const Duration(seconds: 10), onTimeout: () {});
         _isInitialized = true;
       }
     } finally {

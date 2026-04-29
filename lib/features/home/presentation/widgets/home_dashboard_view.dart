@@ -2,12 +2,8 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
-import 'package:elecko26_new/core/utils/utility_functions.dart'
-    show districtMatchesRegion;
 import 'package:elecko26_new/domain/entities/member.dart';
-import 'package:elecko26_new/features/home/presentation/widgets/member_card.dart';
-import 'package:elecko26_new/domain/usecases/calculate_election_possibility_usecase.dart';
-import 'package:get_it/get_it.dart';
+import 'member_card.dart';
 
 class HomeDashboardView extends StatefulWidget {
   final bool isLoading;
@@ -15,9 +11,9 @@ class HomeDashboardView extends StatefulWidget {
   final List<Member> cachedMembers;
   final String userRegion;
   final Future<void> Function() onRefresh;
-  final Function(Member) onMemberSelected;
+  final ValueChanged<Member> onMemberSelected;
   final VoidCallback onNavigateToSearch;
-  final Function(String) onRegionChanged;
+  final ValueChanged<String> onRegionChanged;
 
   const HomeDashboardView({
     Key? key,
@@ -37,14 +33,15 @@ class HomeDashboardView extends StatefulWidget {
 
 class _HomeDashboardViewState extends State<HomeDashboardView>
     with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   List<Member> _displayMembers = [];
-  StreamSubscription<List<Member>>? _subscription;
-  Map<String, double> _memberPossibilities = {}; // 멤버별 실제 당선 가능성 저장
+  Map<String, double> _memberPossibilities = {};
+  StreamSubscription? _subscription;
   bool _isCalculatingPossibilities = false;
-  Timer? _timer; // 실시간 시간 업데이트를 위한 타이머
 
   final List<String> _regions = [
-    '전국',
     '서울특별시',
     '부산광역시',
     '대구광역시',
@@ -61,217 +58,93 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
     '전라남도',
     '경상북도',
     '경상남도',
-    '제주특별자치도'
+    '제주특별자치도',
+    '전국',
   ];
 
   @override
   void initState() {
     super.initState();
+    _displayMembers = widget.cachedMembers;
+    _updateCalculatedData();
 
-    // 캐시된 데이터가 있으면 먼저 표시하고 계산 시작
-    if (widget.cachedMembers.isNotEmpty) {
-      _displayMembers = widget.cachedMembers;
-      // 비동기로 당선 가능성 계산 시작
-      _calculateMemberPossibilities(widget.cachedMembers);
-    }
-
-    // 스트림 데이터가 도착하면 업데이트 (디바운싱 적용)
     _subscription = widget.membersStream.listen((members) {
       if (mounted) {
-        _debounceTimer?.cancel();
-        _debounceTimer = Timer(const Duration(milliseconds: 300), () {
-          if (mounted) {
-            setState(() {
-              _displayMembers = members;
-              _updateCalculatedData();
-            });
-            if (members.isNotEmpty) {
-              _calculateMemberPossibilities(members);
-            }
-          }
-        });
-      }
-    });
-
-    // 초기 데이터 계산
-    if (_displayMembers.isNotEmpty) {
-      _updateCalculatedData();
-    }
-
-    // 실시간 시간 업데이트를 위한 타이머 시작 (3분마다 업데이트)
-    _timer = Timer.periodic(const Duration(minutes: 3), (timer) {
-      if (mounted) {
-        setState(() {});
-      }
-    });
-  }
-
-  Timer? _debounceTimer;
-  List<Member> _filteredSortedMembers = [];
-  List<Member> _top3 = [];
-  List<Member> _memberList = [];
-  int _nesdcCount = 0;
-  String _updateValue = '';
-
-  // 캐시 변수
-  List<Member>? _lastSourceMembers;
-  String? _lastSourceRegion;
-
-  void _updateCalculatedData() {
-    // 최적화: 소스 데이터와 지역이 변경되지 않았다면 계산 스킵
-    if (_lastSourceMembers == _displayMembers && 
-        _lastSourceRegion == widget.userRegion && 
-        _filteredSortedMembers.isNotEmpty) {
-      return;
-    }
-
-    final filtered = widget.userRegion == '전국'
-        ? _displayMembers
-        : _displayMembers
-            .where((member) =>
-                districtMatchesRegion(member.district, widget.userRegion))
-            .toList();
-
-    _filteredSortedMembers = List<Member>.from(filtered)
-      ..sort((a, b) {
-        final aPossibility = _getMemberPossibility(a);
-        final bPossibility = _getMemberPossibility(b);
-        return bPossibility.compareTo(aPossibility);
-      });
-
-    _top3 = _filteredSortedMembers.take(3).toList();
-    _memberList = _filteredSortedMembers
-        .skip(3)
-        .where((member) => _getMemberPossibility(member) >= 0.05)
-        .take(10)
-        .toList();
-
-    _lastSourceMembers = _displayMembers;
-    _lastSourceRegion = widget.userRegion;
-
-    final allNesdcPollIds = filtered.expand((m) => m.polls)
-        .where((p) => p.id.startsWith('nesdc_'))
-        .map((p) => p.id)
-        .toSet();
-    _nesdcCount = allNesdcPollIds.length;
-
-    final latestAnalysis = filtered.isNotEmpty
-        ? filtered
-            .map((m) => m.lastAnalysisDate)
-            .reduce((a, b) => a.isAfter(b) ? a : b)
-        : null;
-
-    final now = latestAnalysis ?? DateTime.now();
-    _updateValue =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-  }
-
-  bool _isCalculating = false;
-  List<Member>? _lastCalculatedMembers;
-
-  Future<void> _calculateMemberPossibilities(List<Member> members) async {
-    if (members.isEmpty) return;
-    if (_isCalculating) return;
-    
-    // 데이터 변경 확인
-    if (_lastCalculatedMembers != null && 
-        _lastCalculatedMembers!.length == members.length &&
-        _lastCalculatedMembers!.first.id == members.first.id) {
-      return;
-    }
-
-    _isCalculating = true;
-    if (mounted) setState(() => _isCalculatingPossibilities = true);
-
-    try {
-      final useCase = GetIt.instance<CalculateElectionPossibilityUseCase>();
-
-      // 상위 후보 정렬
-      final topCandidates = List<Member>.from(members)
-        ..sort((a, b) => b.electionPossibility.compareTo(a.electionPossibility));
-      
-      // 상위 40명만 우선적으로 계산 (속도와 정확도의 균형)
-      final limitedMembers = topCandidates.take(40).toList();
-
-      // 5개씩 병렬로 배치 처리 (Sequential -> Parallel Batch)
-      const batchSize = 5;
-      for (var i = 0; i < limitedMembers.length; i += batchSize) {
-        if (!mounted) break;
-        
-        final end = (i + batchSize < limitedMembers.length) 
-            ? i + batchSize 
-            : limitedMembers.length;
-        final batch = limitedMembers.sublist(i, end);
-
-        // 병렬 실행 (개별 항목에 3초 타임아웃 적용)
-        await Future.wait(batch.map((member) async {
-          try {
-            final result = await useCase.call(member.id).timeout(
-              const Duration(seconds: 3),
-              onTimeout: () => throw TimeoutException('Calculation timed out'),
-            );
-            _memberPossibilities[member.id] = result.electionPossibility;
-          } catch (e) {
-            debugPrint('[Possibility] Member ${member.id} calculation failed/timeout: $e');
-            _memberPossibilities[member.id] = member.electionPossibility;
-          }
-        })).timeout(const Duration(seconds: 10), onTimeout: () {
-          debugPrint('[Possibility] Batch calculation timed out');
-          return [];
-        });
-
-        if (mounted) {
-          setState(() {
-            _updateCalculatedData();
-          });
-        }
-        // UI가 멈추지 않도록 최소한의 지연
-        await Future.delayed(const Duration(milliseconds: 10));
-      }
-
-      if (mounted) {
         setState(() {
+          _displayMembers = members;
           _updateCalculatedData();
-          _isCalculatingPossibilities = false;
-          _lastCalculatedMembers = members;
         });
       }
-    } finally {
-      _isCalculating = false;
-      if (mounted) setState(() => _isCalculatingPossibilities = false);
-    }
-  }
-
-  double _getMemberPossibility(Member member) {
-    return _memberPossibilities[member.id] ?? member.electionPossibility;
-  }
-
-  @override
-  void didUpdateWidget(HomeDashboardView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.userRegion != oldWidget.userRegion ||
-        widget.cachedMembers != oldWidget.cachedMembers) {
-      _updateCalculatedData();
-    }
+    });
   }
 
   @override
   void dispose() {
     _subscription?.cancel();
-    _timer?.cancel();
-    _debounceTimer?.cancel();
     super.dispose();
   }
 
-  @override
-  bool get wantKeepAlive => true; // 상태 유지 활성화
+  void _updateCalculatedData() {
+    // 1. 당선 가능성 맵 업데이트 (Member 엔티티의 값을 사용)
+    for (var member in _displayMembers) {
+      _memberPossibilities[member.id] = member.electionPossibility;
+    }
+  }
+
+  double _getMemberPossibility(Member member) {
+    return _memberPossibilities[member.id] ?? 0.0;
+  }
+
+  List<Member> get _filteredSortedMembers {
+    List<Member> filtered;
+    if (widget.userRegion == '전국') {
+      filtered = List.from(_displayMembers);
+    } else {
+      filtered = _displayMembers
+          .where((m) => m.province == widget.userRegion)
+          .toList();
+    }
+
+    // 당선 가능성 내림차순 정렬
+    filtered.sort((a, b) =>
+        _getMemberPossibility(b).compareTo(_getMemberPossibility(a)));
+    return filtered;
+  }
+
+  List<Member> get _top3 {
+    final sorted = _filteredSortedMembers;
+    return sorted.take(3).toList();
+  }
+
+  List<Member> get _memberList {
+    final sorted = _filteredSortedMembers;
+    if (sorted.length <= 3) return [];
+    return sorted.sublist(3, sorted.length > 13 ? 13 : sorted.length);
+  }
+
+  String get _updateValue {
+    if (_displayMembers.isEmpty) return '-';
+    // 가장 최근 업데이트 날짜 찾기
+    final latest = _displayMembers.map((m) => m.lastAnalysisDate).reduce(
+        (a, b) => a.isAfter(b) ? a : b);
+    return '${latest.month}/${latest.day} ${latest.hour}:${latest.minute}';
+  }
+
+  int get _nesdcCount {
+    int total = 0;
+    for (var m in _displayMembers) {
+      total += m.pressReports.length;
+    }
+    return total;
+  }
 
   void _showRegionSelectionModal() {
     showModalBottomSheet(
       context: context,
-      builder: (BuildContext context) {
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
         return Container(
-          padding: const EdgeInsets.all(16),
           height: MediaQuery.of(context).size.height * 0.7,
           decoration: const BoxDecoration(
             color: Colors.white,
@@ -361,6 +234,86 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
           ),
         );
       },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context); // AutomaticKeepAliveClientMixin 필요
+
+    // 캐시된 데이터가 있으면 바로 표시, 로딩 중이어도 기존 데이터 유지
+    if (widget.isLoading &&
+        _displayMembers.isEmpty &&
+        widget.cachedMembers.isEmpty) {
+      return const Center(child: CircularProgressIndicator(color: Colors.red));
+    }
+
+    // 이미 _updateCalculatedData()에서 계산됨
+    final filteredMembers = _filteredSortedMembers;
+    final top3 = _top3;
+    final memberList = _memberList;
+    final updateValue = _updateValue;
+    final nesdcCount = _nesdcCount;
+
+    return RefreshIndicator(
+      onRefresh: widget.onRefresh,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 데이터가 있으면 항상 표시 (로딩 중이어도 기존 데이터 유지)
+            if (filteredMembers.isNotEmpty) ...[
+              // 통계 섹션 (분석의원, 여론조사심의회)
+              _buildStatisticsSection(
+                  filteredMembers.length, nesdcCount, updateValue),
+              const SizedBox(height: 24),
+              _buildTop3Section(top3),
+              _buildMemberList(memberList),
+            ] else if (widget.isLoading || _isCalculatingPossibilities) ...[
+              // 데이터가 없고 로딩 중일 때만 로딩바 표시
+              const Center(child: CircularProgressIndicator(color: Colors.red)),
+            ] else ...[
+              // 데이터가 없고 로딩도 안할 때는 빈 상태 표시
+              Center(
+                child: Text(
+                  '표시할 후보자가 없습니다.',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.mediumGray,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatisticsSection(
+      int memberCount, int nesdcCount, String updateValue) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: _StatisticCard(
+            title: '분석의원',
+            value: memberCount.toString(),
+            icon: Icons.people,
+            color: AppColors.primary,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          flex: 7,
+          child: _StatisticCard(
+            title: '여론조사심의회 · $updateValue',
+            value: '${nesdcCount}건',
+            icon: Icons.update,
+            color: AppColors.secondary,
+          ),
+        ),
+      ],
     );
   }
 
@@ -605,86 +558,6 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
           ),
         ],
       ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context); // AutomaticKeepAliveClientMixin 필요
-
-    // 캐시된 데이터가 있으면 바로 표시, 로딩 중이어도 기존 데이터 유지
-    if (widget.isLoading &&
-        _displayMembers.isEmpty &&
-        widget.cachedMembers.isEmpty) {
-      return const Center(child: CircularProgressIndicator(color: Colors.red));
-    }
-
-    // 이미 _updateCalculatedData()에서 계산됨
-    final filteredMembers = _filteredSortedMembers;
-    final top3 = _top3;
-    final memberList = _memberList;
-    final updateValue = _updateValue;
-    final nesdcCount = _nesdcCount;
-
-    return RefreshIndicator(
-      onRefresh: widget.onRefresh,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 데이터가 있으면 항상 표시 (로딩 중이어도 기존 데이터 유지)
-            if (filteredMembers.isNotEmpty) ...[
-              // 통계 섹션 (분석의원, 여론조사심의회)
-              _buildStatisticsSection(
-                  filteredMembers.length, nesdcCount, updateValue),
-              const SizedBox(height: 24),
-              _buildTop3Section(top3),
-              _buildMemberList(memberList),
-            ] else if (widget.isLoading || _isCalculatingPossibilities) ...[
-              // 데이터가 없고 로딩 중일 때만 로딩바 표시
-              const Center(child: CircularProgressIndicator(color: Colors.red)),
-            ] else ...[
-              // 데이터가 없고 로딩도 안할 때는 빈 상태 표시
-              Center(
-                child: Text(
-                  '표시할 후보자가 없습니다.',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.mediumGray,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatisticsSection(
-      int memberCount, int nesdcCount, String updateValue) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 3,
-          child: _StatisticCard(
-            title: '분석의원',
-            value: memberCount.toString(),
-            icon: Icons.people,
-            color: AppColors.primary,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          flex: 7,
-          child: _StatisticCard(
-            title: '여론조사심의회 · $updateValue',
-            value: '${nesdcCount}건',
-            icon: Icons.update,
-            color: AppColors.secondary,
-          ),
-        ),
-      ],
     );
   }
 }

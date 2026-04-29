@@ -25,7 +25,10 @@ class _MapScreenState extends State<MapScreen> {
   late final GetElectionMapDataUseCase _useCase;
   ElectionMapData? _mapData;
   bool _isLoading = true;
-  String? _errorMessage;
+  String? _errorMessage = null;
+  List<Marker> _cachedMarkers = [];
+  RegionalPartyData? _selectedRegionData;
+  final DraggableScrollableController _sheetController = DraggableScrollableController();
 
   @override
   void initState() {
@@ -38,8 +41,10 @@ class _MapScreenState extends State<MapScreen> {
     try {
       final data = await _useCase();
       if (mounted) {
+        final markers = _buildMarkers(data);
         setState(() {
           _mapData = data;
+          _cachedMarkers = markers;
           _isLoading = false;
         });
       }
@@ -51,6 +56,81 @@ class _MapScreenState extends State<MapScreen> {
         });
       }
     }
+  }
+
+  List<Marker> _buildMarkers(ElectionMapData data) {
+    return data.regions.map((region) {
+      final isSeoul = region.region == '서울특별시';
+      final center = _getRegionCenter(region.region);
+      
+      return Marker(
+        point: center,
+        width: isSeoul ? 110 : 100,
+        height: isSeoul ? 70 : 60,
+        child: RepaintBoundary(
+          child: GestureDetector(
+            onTap: () => _selectRegion(region),
+            child: Column(
+              children: [
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isSeoul ? 8 : 6,
+                    vertical: isSeoul ? 6 : 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _getPartyColor(region.dominantParty)
+                        .withOpacity(isSeoul ? 0.95 : 0.9),
+                    borderRadius: BorderRadius.circular(isSeoul ? 8 : 6),
+                    border: isSeoul 
+                        ? Border.all(color: Colors.yellowAccent, width: 2)
+                        : null,
+                    boxShadow: [
+                      BoxShadow(
+                        color: isSeoul ? Colors.black38 : Colors.black26,
+                        blurRadius: isSeoul ? 6 : 4,
+                        offset: Offset(0, isSeoul ? 3 : 2),
+                      )
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        region.region,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: isSeoul ? 11 : 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.location_on,
+                  color: Colors.red,
+                  size: isSeoul ? 18 : 16,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+
+  void _selectRegion(RegionalPartyData region) {
+    setState(() {
+      _selectedRegionData = region;
+    });
+    // 시트 위로 올리기
+    _sheetController.animateTo(
+      0.4,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   Color _getPartyColor(String party) {
@@ -118,253 +198,131 @@ class _MapScreenState extends State<MapScreen> {
       return const Center(child: Text('데이터가 없습니다'));
     }
 
-    return RepaintBoundary(
-      child: FlutterMap(
-        options: MapOptions(
-          initialCenter: const LatLng(36.2, 127.8),
-          initialZoom: 7.2,
-          minZoom: 6.8,
-          maxZoom: 11.0,
-          interactionOptions: const InteractionOptions(
-            flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-          ),
-          cameraConstraint: CameraConstraint.contain(
-            bounds: LatLngBounds(
-              const LatLng(32.5, 123.5),
-              const LatLng(39.0, 132.5),
+    return Stack(
+      children: [
+        RepaintBoundary(
+          child: FlutterMap(
+            options: MapOptions(
+              initialCenter: const LatLng(36.2, 127.8),
+              initialZoom: 7.2,
+              minZoom: 6.8,
+              maxZoom: 11.0,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+              ),
+              cameraConstraint: CameraConstraint.contain(
+                bounds: LatLngBounds(
+                  const LatLng(32.5, 123.5),
+                  const LatLng(39.0, 132.5),
+                ),
+              ),
             ),
-          ),
-        ),
-        children: [
-          TileLayer(
-            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            userAgentPackageName: 'com.elecko26.app',
-            tileDisplay: const TileDisplay.fadeIn(duration: Duration.zero),
-            panBuffer: 1,
-            keepBuffer: 2,
-          ),
-          MarkerLayer(
-            rotate: false,
-            markers: [
-              ..._mapData!.regions
-                  .where((region) => region.region != '서울특별시')
-                  .map((region) {
-                final center = _getRegionCenter(region.region);
-                return Marker(
-                  point: center,
-                  width: 100,
-                  height: 60,
-                  child: RepaintBoundary(
-                    child: GestureDetector(
-                      onTap: () => _showRegionInfo(region),
-                      child: Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: _getPartyColor(region.dominantParty)
-                                  .withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(6),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black26,
-                                  blurRadius: 4,
-                                  offset: Offset(0, 2),
-                                )
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  region.region,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                ),
-                                Text(
-                                  '${region.dominantPercentage.toStringAsFixed(1)}%',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 9,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(
-                            Icons.location_on,
-                            color: Colors.red,
-                            size: 16,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-              ..._mapData!.regions
-                  .where((region) => region.region == '서울특별시')
-                  .map((region) {
-                final center = _getRegionCenter(region.region);
-                return Marker(
-                  point: center,
-                  width: 110,
-                  height: 70,
-                  child: RepaintBoundary(
-                    child: GestureDetector(
-                      onTap: () => _showRegionInfo(region),
-                      child: Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: _getPartyColor(region.dominantParty)
-                                  .withOpacity(0.95),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                  color: Colors.yellowAccent, width: 2),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black38,
-                                  blurRadius: 6,
-                                  offset: Offset(0, 3),
-                                )
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  region.region,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                ),
-                                Text(
-                                  '${region.dominantPercentage.toStringAsFixed(1)}%',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(
-                            Icons.location_on,
-                            color: Colors.red,
-                            size: 18,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.elecko26.app',
+                tileDisplay: const TileDisplay.fadeIn(duration: Duration.zero),
+                panBuffer: 1,
+                keepBuffer: 2,
+              ),
+              MarkerLayer(
+                markers: _cachedMarkers,
+              ),
             ],
           ),
-        ],
-      ),
+        ),
+        if (_selectedRegionData != null) _buildDraggableSheet(),
+      ],
     );
   }
 
-  void _showRegionInfo(RegionalPartyData region) {
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: '',
-      transitionDuration: const Duration(milliseconds: 50),
-      pageBuilder: (context, anim1, anim2) {
-        return Center(
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              margin: const EdgeInsets.all(24),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
-                  )
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        region.region,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 24),
-                  _buildInfoRow('우세 정당', region.dominantParty,
-                      _getPartyColor(region.dominantParty)),
-                  _buildInfoRow('예상 득표율',
-                      '${region.dominantPercentage.toStringAsFixed(1)}%',
-                      Colors.black87),
-                  const SizedBox(height: 16),
-                  const Text(
-                    '정당별 예상 데이터',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: Colors.grey,
+  Widget _buildDraggableSheet() {
+    return DraggableScrollableSheet(
+      controller: _sheetController,
+      initialChildSize: 0.4,
+      minChildSize: 0.1,
+      maxChildSize: 0.8,
+      snap: true,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 15,
+                offset: Offset(0, -5),
+              )
+            ],
+          ),
+          child: CustomScrollView(
+            controller: scrollController,
+            slivers: [
+              SliverToBoxAdapter(
+                child: Center(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  ...region.partyPercentages.entries.take(5).map((entry) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 3),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(entry.key, style: const TextStyle(fontSize: 13)),
-                          Text('${entry.value.toStringAsFixed(1)}%',
-                              style: const TextStyle(
-                                  fontSize: 13, fontWeight: FontWeight.w500)),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ],
+                ),
               ),
-            ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _selectedRegionData!.region,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.close, size: 20),
+                          ),
+                          onPressed: () {
+                            _sheetController.animateTo(
+                              0,
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeIn,
+                            ).then((_) {
+                              setState(() {
+                                _selectedRegionData = null;
+                              });
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInfoRow('우세 정당', _selectedRegionData!.dominantParty,
+                        _getPartyColor(_selectedRegionData!.dominantParty)),
+                    const SizedBox(height: 24),
+                    SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
+                  ]),
+                ),
+              ),
+            ],
           ),
-        );
-      },
-      transitionBuilder: (context, anim1, anim2, child) {
-        return FadeTransition(
-          opacity: anim1,
-          child: child,
         );
       },
     );

@@ -22,6 +22,8 @@ class Member {
   final bool isFavorite;
   final Map<String, double> historical2018PartyRates; // 2018년 지방선거 지역별 정당 득표율
 
+  String get province => district.split(' ').first;
+
   Member({
     required this.id,
     required this.name,

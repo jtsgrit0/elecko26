@@ -9,6 +9,7 @@ import 'package:elecko26_new/features/home/presentation/pages/home_page.dart';
 import 'package:elecko26_new/firebase_options.dart';
 import 'package:elecko26_new/data/datasources/local_storage_service.dart' as elecko;
 import 'package:elecko26_new/features/home/presentation/pages/region_selection_screen.dart' as elecko_region;
+import 'package:elecko26_new/features/home/presentation/widgets/location_selection_modal.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -56,7 +57,7 @@ class _MyAppState extends State<MyApp> {
       try {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
-        ).timeout(const Duration(milliseconds: 1000));
+        ).timeout(const Duration(milliseconds: 5000));
       } catch (e) {
         debugPrint('[Main] Firebase Init Delay/Error: $e');
       }
@@ -92,59 +93,73 @@ class _MyAppState extends State<MyApp> {
           },
         ),
       ),
-      home: _showSplash 
-          ? _buildLoadingScreen() 
-          : (_initialRegion == null ? _buildRegionSelectionScreen() : const HomePage()),
+      home: _initialRegion == null ? _buildLoadingWithModal() : (_showSplash ? _buildLoadingScreen() : const HomePage()),
     );
   }
 
-  Widget _buildRegionSelectionScreen() {
-    return elecko_region.RegionSelectionScreen(
-      onRegionSelected: (region) async {
-        try {
-          final localService = di.sl<elecko.LocalStorageService>();
-          await localService.saveSelectedRegion(region);
-        } catch (_) {}
-        setState(() {
-          _initialRegion = region;
-        });
-      },
+  Widget _buildLoadingWithModal() {
+    return Scaffold(
+      backgroundColor: AppColors.primary,
+      body: Stack(
+        children: [
+          _buildLoadingScreenContent(),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: LocationSelectionModal(
+              onRegionSelected: (region) async {
+                try {
+                  final localService = di.sl<elecko.LocalStorageService>();
+                  await localService.saveSelectedRegion(region);
+                } catch (_) {}
+                setState(() {
+                  _initialRegion = region;
+                });
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildLoadingScreen() {
     return Scaffold(
       backgroundColor: AppColors.primary,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // 로딩 아이콘 (흰색)
-            const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              strokeWidth: 3,
+      body: _buildLoadingScreenContent(),
+    );
+  }
+
+  Widget _buildLoadingScreenContent() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // 로딩 아이콘 (흰색)
+          const CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            strokeWidth: 3,
+          ),
+          const SizedBox(height: 24),
+          // 로딩 텍스트 (흰색)
+          const Text(
+            '2026 당예기 불러오는 중...',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
             ),
-            const SizedBox(height: 24),
-            // 로딩 텍스트 (흰색)
-            const Text(
-              '2026 당예기 불러오는 중...',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-              ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '붉은말의 해, 당신의 선택을 분석합니다',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 13,
             ),
-            const SizedBox(height: 8),
-            Text(
-              '붉은말의 해, 당신의 선택을 분석합니다',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 120), // 아래 모달 공간 확보
+        ],
       ),
     );
   }
