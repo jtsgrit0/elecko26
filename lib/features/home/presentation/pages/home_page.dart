@@ -24,6 +24,7 @@ import 'package:elecko26_new/features/home/presentation/widgets/favorites_view.d
 import 'package:elecko26_new/features/auth/domain/repositories/auth_repository.dart';
 import 'dart:async';
 import 'package:rxdart/rxdart.dart';
+import 'package:elecko26_new/core/widgets/lazy_indexed_stack.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -40,7 +41,8 @@ class _HomePageState extends State<HomePage>
   final ValueNotifier<int> _favoriteCountNotifier = ValueNotifier<int>(0);
   Timer? _dataExportTimer;
   Timer? _uiRefreshTimer;
-  bool _isLoading = false;
+  final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier<bool>(false);
+  bool get _isLoading => _isLoadingNotifier.value;
   List<Member> _cachedMembers = [];
   Member? _selectedMember;
   auth.User? _currentUser;
@@ -67,9 +69,7 @@ class _HomePageState extends State<HomePage>
 
   /// 멤버 목록 새로고침
   Future<void> _refreshMembers() async {
-    setState(() {
-      _isLoading = true;
-    });
+    _isLoadingNotifier.value = true;
 
     try {
       // 현재 스트림을 새로고침
@@ -79,16 +79,12 @@ class _HomePageState extends State<HomePage>
       await Future.delayed(const Duration(milliseconds: 500));
 
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        _isLoadingNotifier.value = false;
       }
     } catch (e) {
       print('멤버 목록 새로고침 실패: $e');
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        _isLoadingNotifier.value = false;
       }
     }
   }
@@ -490,9 +486,7 @@ class _HomePageState extends State<HomePage>
 
   Future<void> _triggerNesdcRefresh({bool isSilent = false}) async {
     if (!isSilent) {
-      setState(() {
-        _isLoading = true;
-      });
+      _isLoadingNotifier.value = true;
     }
     // 강제 갱신 트리거: 최신 후보자 JSON 및 시스템 데이터 스크랩
     try {
@@ -502,9 +496,7 @@ class _HomePageState extends State<HomePage>
       debugPrint('[Refresh] Data sync failed: $e');
     } finally {
       if (mounted && !isSilent) {
-        setState(() {
-          _isLoading = false;
-        });
+        _isLoadingNotifier.value = false;
       }
     }
   }
@@ -597,6 +589,7 @@ class _HomePageState extends State<HomePage>
     _membersSubscription?.cancel();
     _searchController.dispose();
     _userRegionNotifier.dispose();
+    _isLoadingNotifier.dispose();
     _selectedIndexNotifier.dispose();
     _membersSubject.close();
     super.dispose();
@@ -645,16 +638,15 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  // 탭 위젯 캐싱하여 불필요한 재빌드 방지 (상태 보존 및 스크롤 유지)
-  List<Widget>? _cachedTabWidgets;
-
-  void _initializeTabWidgets() {
-    _cachedTabWidgets = [
+  List<Widget> _buildTabWidgets() {
+    return [
       // 0: 대시보드
       ValueListenableBuilder<String>(
         valueListenable: _userRegionNotifier,
-        builder: (context, region, _) => HomeDashboardView(
-          isLoading: _isLoading,
+        builder: (context, region, _) => ValueListenableBuilder<bool>(
+          valueListenable: _isLoadingNotifier,
+          builder: (context, isLoading, _) => HomeDashboardView(
+            isLoading: isLoading,
           membersStream: _membersStream,
           cachedMembers: _cachedMembers,
           userRegion: region,
@@ -667,7 +659,9 @@ class _HomePageState extends State<HomePage>
           },
         ),
       ),
-      // 1: 검색
+    ),
+  ),
+  // 1: 검색
       ValueListenableBuilder<String>(
         valueListenable: _userRegionNotifier,
         builder: (context, region, _) => SearchView(
@@ -713,9 +707,7 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildBody() {
-    if (_cachedTabWidgets == null) {
-      _initializeTabWidgets();
-    }
+    final tabWidgets = _buildTabWidgets();
 
     return Stack(
       children: [
@@ -723,9 +715,9 @@ class _HomePageState extends State<HomePage>
         ValueListenableBuilder<int>(
           valueListenable: _selectedIndexNotifier,
           builder: (context, index, _) {
-            return IndexedStack(
+            return LazyIndexedStack(
               index: index,
-              children: _cachedTabWidgets!,
+              children: tabWidgets,
             );
           },
         ),

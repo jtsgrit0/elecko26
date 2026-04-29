@@ -57,7 +57,7 @@ abstract class MemberRepository {
   Future<void> removeSupportVote(String district);
 
   /// 사용자 지역 설정을 읽고 저장하는 메서드입니다.
-  Future<String> getSelectedRegion();
+  Future<String?> getSelectedRegion();
   Future<void> saveSelectedRegion(String region);
 
   /// 지역 설정 변경을 실시간으로 감지하는 스트림을 제공합니다.

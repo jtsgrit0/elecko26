@@ -79,8 +79,8 @@ class SharedPreferencesService implements LocalStorageService {
   }
 
   @override
-  Future<String> getSelectedRegion() async {
-    return prefs.getString(_keyRegion) ?? '전국';
+  Future<String?> getSelectedRegion() async {
+    return prefs.getString(_keyRegion);
   }
 
   @override

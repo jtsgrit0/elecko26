@@ -369,13 +369,15 @@ class MemberRepositoryImpl implements MemberRepository {
   }
 
   @override
-  Future<String> getSelectedRegion() async {
+  Future<String?> getSelectedRegion() async {
     if (_regionController.hasValue) {
       return _regionController.value;
     }
     final localService = sl<LocalStorageService>();
     final region = await localService.getSelectedRegion();
-    _regionController.add(region);
+    if (region != null) {
+      _regionController.add(region);
+    }
     return region;
   }
 

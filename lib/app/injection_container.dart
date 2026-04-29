@@ -241,8 +241,7 @@ class InMemoryLocalStorageService implements LocalStorageService {
   Future<bool> isFavorite(String id) async =>
       (await getFavorites()).contains(id);
   @override
-  Future<String> getSelectedRegion() async =>
-      _data['selected_region'] as String? ?? 'ì „êµ­';
+  Future<String?> getSelectedRegion() async => _data['selected_region'] as String?;
   @override
   Future<void> saveSelectedRegion(String region) async =>
       await setString('selected_region', region);

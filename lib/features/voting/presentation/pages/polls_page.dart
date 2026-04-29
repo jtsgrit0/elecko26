@@ -172,25 +172,9 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
   }
 
   void _onMemberVoted(Member member) {
-    // 지지후보 등록만 처리하고 탭 전환은 하지 않음
-    // 데이터는 스트림을 통해 자동 업데이트됨
+    // 지지후보 등록만 처리
+    // 데이터는 스트림(_votedMembersStream)을 통해 자동으로 실시간 업데이트됨
     debugPrint('후보 지지 완료: ${member.name} (${member.district})');
-
-    // 실시간 스트림 강제 새로고침 - 즉시 반영
-    _votedMembersStream =
-        Rx.combineLatest2<List<Member>, Map<String, String>, List<Member>>(
-      sl<MemberRepository>().watchAllMembers(),
-      sl<MemberRepository>().watchAllVotes(),
-      (members, votes) {
-        final votedIds = votes.values.toSet();
-        return members.where((m) => votedIds.contains(m.id)).toList();
-      },
-    ).shareValueSeeded([]);
-
-    // UI 강제 새로고침
-    if (mounted) {
-      setState(() {});
-    }
   }
 
   Widget _buildSupportedCandidatesTab() {

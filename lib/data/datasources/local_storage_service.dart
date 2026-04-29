@@ -15,7 +15,7 @@ abstract class LocalStorageService {
   Future<void> addFavorite(String id);
   Future<void> removeFavorite(String id);
   Future<bool> isFavorite(String id);
-  Future<String> getSelectedRegion();
+  Future<String?> getSelectedRegion();
   Future<void> saveSelectedRegion(String region);
   Future<void> clearAll();
 

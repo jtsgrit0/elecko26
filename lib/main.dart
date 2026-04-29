@@ -7,6 +7,8 @@ import 'package:elecko26_new/core/config/app_config.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/features/home/presentation/pages/home_page.dart';
 import 'package:elecko26_new/firebase_options.dart';
+import 'package:elecko26_new/data/datasources/local_storage_service.dart' as elecko;
+import 'package:elecko26_new/features/home/presentation/pages/region_selection_screen.dart' as elecko_region;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +24,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool _showSplash = true;
+  String? _initialRegion;
 
   @override
   void initState() {
@@ -42,6 +45,13 @@ class _MyAppState extends State<MyApp> {
       // 1. 최소한의 DI 초기화 (SharedPreferences 등)
       await di.initMinimal().timeout(const Duration(milliseconds: 1500));
       
+      try {
+        final localService = di.sl<elecko.LocalStorageService>();
+        _initialRegion = await localService.getSelectedRegion();
+      } catch (e) {
+        debugPrint('[Main] Failed to get initial region: $e');
+      }
+
       // 2. Firebase 초기화
       try {
         await Firebase.initializeApp(
@@ -82,7 +92,23 @@ class _MyAppState extends State<MyApp> {
           },
         ),
       ),
-      home: _showSplash ? _buildLoadingScreen() : const HomePage(),
+      home: _showSplash 
+          ? _buildLoadingScreen() 
+          : (_initialRegion == null ? _buildRegionSelectionScreen() : const HomePage()),
+    );
+  }
+
+  Widget _buildRegionSelectionScreen() {
+    return elecko_region.RegionSelectionScreen(
+      onRegionSelected: (region) async {
+        try {
+          final localService = di.sl<elecko.LocalStorageService>();
+          await localService.saveSelectedRegion(region);
+        } catch (_) {}
+        setState(() {
+          _initialRegion = region;
+        });
+      },
     );
   }
 

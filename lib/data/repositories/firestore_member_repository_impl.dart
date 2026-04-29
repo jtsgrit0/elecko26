@@ -555,39 +555,49 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     DateTime now,
   ) async {
     final allLocalMembers = <Member>[];
+    final selectedRegion = await getSelectedRegion();
+    
+    final regions = [
+      '서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시', '세종특별자치시',
+      '경기도', '강원도', '충청북도', '충청남도', '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도', '기타'
+    ];
 
-    for (var i = 0; i < 20; i++) {
+    // 1) 우선순위: 사용자가 선택한 지역 먼저 로드
+    if (selectedRegion != null && selectedRegion != '전국') {
       try {
-        final content = await _loadAssetSplitChunk(i);
+        final content = await _loadAssetSplitChunk(selectedRegion);
         final chunk = await _parseMembersFromJsonChunk(content, favoriteIds);
         allLocalMembers.addAll(chunk);
         
-        debugPrint('[FirestoreMemberRepository] 에셋 chunk $i 로드 완료 (백그라운드 누적 ${allLocalMembers.length}명)');
-        await Future.delayed(Duration.zero);
+        // 지역 데이터 로드 즉시 반영 (가장 빠른 피드백)
+        final preliminary = _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers);
+        _notifyListeners(preliminary);
+        debugPrint('[FirestoreMemberRepository] 우선순위 지역 ($selectedRegion) 로드 및 UI 반영 완료');
       } catch (e) {
-        // 특정 인덱스 파일이 없으면 로드 중단
-        debugPrint('[FirestoreMemberRepository] Asset chunk $i load failed/stopped: $e');
-        break; 
+        debugPrint('[FirestoreMemberRepository] 우선순위 지역 로드 실패: $e');
+      }
+    }
+
+    // 2) 나머지 지역 백그라운드 순차 로드
+    for (var region in regions) {
+      if (region == selectedRegion) continue;
+      
+      try {
+        final content = await _loadAssetSplitChunk(region);
+        final chunk = await _parseMembersFromJsonChunk(content, favoriteIds);
+        allLocalMembers.addAll(chunk);
+        
+        // 브라우저 프레임 확보
+        await Future.delayed(const Duration(milliseconds: 50));
+      } catch (e) {
+        debugPrint('[FirestoreMemberRepository] 지역 ($region) 로드 실패: $e');
       }
     }
     
-    // 20개 분할 파일을 전부 모은 후 단 한 번만 병합 및 UI 반영 (프리징 방지)
-    List<Member> finalMembers;
-    if (allLocalMembers.isEmpty) {
-      debugPrint('[FirestoreMemberRepository] 에셋 로드 실패, GitHub Raw 시도...');
-      final remoteMembers = await _loadSplitMembersFromRemote(favoriteIds, cloudMembers);
-      if (remoteMembers.isNotEmpty) {
-        finalMembers = _mergeMembersByIdPreferCloud(cloudMembers, remoteMembers);
-      } else {
-        finalMembers = cloudMembers;
-      }
-    } else {
-      finalMembers = _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers);
-    }
-
-    // 최종 데이터 반영 (단 1번만)
+    // 최종 데이터 병합 및 반영
+    final finalMembers = _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers);
     _notifyListeners(finalMembers);
-    debugPrint('[FirestoreMemberRepository] 20개 파일 병합 및 최종 UI 업데이트 완료 (${finalMembers.length}명)');
+    debugPrint('[FirestoreMemberRepository] 전체 지역 (${finalMembers.length}명) 병합 완료');
 
     // 다음 방문 시 즉시 표시를 위해 캐시에 저장 (백그라운드)
     unawaited(_saveToCache(finalMembers));
@@ -598,46 +608,29 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     _performPollMatchingInBackground(finalMembers, now);
   }
 
-
-
-  Future<List<Member>> _loadFallbackMembersFromSplitFiles(
-    List<String> favoriteIds,
-  ) async {
-    // 에셋(번들 내 파일)을 우선으로 병렬 로드 → 빠르고 안정적
-    final assetMembers = await _loadSplitMembersFromAssets(favoriteIds);
-    if (assetMembers.isNotEmpty) {
-      debugPrint('[FirestoreMemberRepository] Asset split load: ${assetMembers.length} members');
-      return assetMembers;
-    }
-
-    // 에셋 로드 실패 시 GitHub Raw URL로 fallback
-    debugPrint('[FirestoreMemberRepository] Asset load failed, trying remote...');
-    final remoteMembers = await _loadSplitMembersFromRemote(favoriteIds, []);
-    return remoteMembers;
-  }
-
   Future<List<Member>> _loadSplitMembersFromRemote(
     List<String> favoriteIds,
     List<Member> cloudMembers,
   ) async {
     final members = <Member>[];
+    final regions = [
+      '서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시', '세종특별자치시',
+      '경기도', '강원도', '충청북도', '충청남도', '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도', '기타'
+    ];
 
     try {
-      // 병렬 대신 순차 로드 (네트워크 혼잡 및 타임아웃 방지)
-      for (var i = 0; i < 20; i++) {
-        final content = await _loadRemoteSplitChunk(i);
-        if (content == null) break; // 파일 없으면 중단
+      for (var region in regions) {
+        final content = await _loadRemoteSplitChunk(region);
+        if (content == null) continue;
         
         final chunk = await _parseMembersFromJsonChunk(content, favoriteIds);
         members.addAll(chunk);
         
-        // 중간 결과를 즉시 반영하여 사용자에게 진행 상태 표시
         if (members.isNotEmpty) {
           final merged = _mergeMembersByIdPreferCloud(cloudMembers, members);
           _notifyListeners(merged);
         }
         
-        // 브라우저에 숨쉴 틈 주기
         await Future.delayed(const Duration(milliseconds: 10));
       }
     } catch (e) {
@@ -650,52 +643,46 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<List<Member>> _loadSplitMembersFromAssets(
     List<String> favoriteIds,
   ) async {
-    // 순차 로드 (웹에서 메모리 압박 방지)
     final members = <Member>[];
-    for (var i = 0; i < 20; i++) {
+    final regions = [
+      '서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시', '세종특별자치시',
+      '경기도', '강원도', '충청북도', '충청남도', '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도', '기타'
+    ];
+
+    for (var region in regions) {
       try {
-        final content = await _loadAssetSplitChunk(i);
+        final content = await _loadAssetSplitChunk(region);
         final chunk = await _parseMembersFromJsonChunk(content, favoriteIds);
         members.addAll(chunk);
-      } catch (_) {
-        break; // 파일 없으면 종료
-      }
+      } catch (_) {}
     }
     return members;
   }
 
-  Future<String?> _loadRemoteSplitChunk(int index) async {
-    const prefixes = ['election_candidates_part_', 'candidates_'];
+  Future<String?> _loadRemoteSplitChunk(String identifier) async {
+    try {
+      final rawUrl =
+          'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/candidates_split/candidates_$identifier.json';
+      final response = await http
+          .get(Uri.parse(rawUrl))
+          .timeout(const Duration(seconds: 30));
 
-    for (final prefix in prefixes) {
-      try {
-        final rawUrl =
-            'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/candidates_split/${prefix}$index.json';
-        final response = await http
-            .get(Uri.parse(rawUrl))
-            .timeout(const Duration(seconds: 30));
-
-        if (response.statusCode == 200) {
-          return utf8.decode(response.bodyBytes);
-        }
-      } catch (_) {}
-    }
+      if (response.statusCode == 200) {
+        return utf8.decode(response.bodyBytes);
+      }
+    } catch (_) {}
 
     return null;
   }
 
-  Future<String> _loadAssetSplitChunk(int index) async {
-    const prefixes = ['election_candidates_part_', 'candidates_'];
+  Future<String> _loadAssetSplitChunk(String identifier) async {
+    try {
+      return await rootBundle.loadString(
+        'data/candidates_split/candidates_$identifier.json',
+      );
+    } catch (_) {}
 
-    for (final prefix in prefixes) {
-      try {
-        return await rootBundle.loadString(
-          'data/candidates_split/${prefix}$index.json',
-        );
-      } catch (_) {}
-    }
-
-    throw FlutterError('Split candidate asset not found: index=$index');
+    throw FlutterError('Split candidate asset not found: identifier=$identifier');
   }
 
   static Future<List<Member>> _parseMembersFromJsonChunk(
@@ -1223,13 +1210,15 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   }
 
   @override
-  Future<String> getSelectedRegion() async {
-    if (_regionController.hasValue) {
+  Future<String?> getSelectedRegion() async {
+    if (_regionController.hasValue && _regionController.value.isNotEmpty) {
       return _regionController.value;
     }
     final localService = sl<LocalStorageService>();
     final region = await localService.getSelectedRegion();
-    _regionController.add(region);
+    if (region != null) {
+      _regionController.add(region);
+    }
     return region;
   }
 

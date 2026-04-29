@@ -139,7 +139,7 @@ class CliMemberRepository implements MemberRepository {
   Future<void> removeSupportVote(String district) async {}
 
   @override
-  Future<String> getSelectedRegion() async => _selectedRegion;
+  Future<String?> getSelectedRegion() async => _selectedRegion;
   @override
   Future<void> saveSelectedRegion(String region) async =>
       _selectedRegion = region;
