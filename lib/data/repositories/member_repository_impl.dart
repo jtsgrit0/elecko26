@@ -98,9 +98,16 @@ class MemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<void> updateMembers(List<Member> members) async {
-    for (final member in members) {
-      await updateMember(member);
-    }
+    _dummyMembers.clear();
+    _dummyMembers.addAll(members);
+    _notifyListeners();
+  }
+
+  @override
+  Future<void> crawlNewsForAllMembers() async {
+    // 이 구현체에서는 아무 작업도 수행하지 않습니다.
+    // Firestore 구현체에서 실제 로직이 처리됩니다.
+    return;
   }
 
   Future<String?> _fetchCandidatesFromLocalAssets() async {

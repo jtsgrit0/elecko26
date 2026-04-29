@@ -43,8 +43,8 @@ class Member {
     required this.improvementPoints,
     required this.socialContributions,
     this.isFavorite = false,
-    this.historical2018PartyRates = const {}, // Placeholder for default, will be overridden by mutable in Model
-
+    this.historical2018PartyRates =
+        const {}, // Placeholder for default, will be overridden by mutable in Model
   });
 
   Member copyWith({
@@ -119,6 +119,18 @@ class PressReport {
     required this.summary,
     required this.sentiment,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'source': source,
+      'url': url,
+      'publishDate': publishDate.toIso8601String(),
+      'summary': summary,
+      'sentiment': sentiment,
+    };
+  }
 }
 
 class SocialContribution {
