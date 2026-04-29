@@ -35,6 +35,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '790419883700',
     projectId: 'elecko26-536e0',
     authDomain: 'elecko26-536e0.firebaseapp.com',
+    databaseURL: 'https://elecko26-536e0-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'elecko26-536e0.firebasestorage.app',
     measurementId: 'G-GVTF7NCQQM',
   );
@@ -44,6 +45,7 @@ class DefaultFirebaseOptions {
     appId: '1:790419883700:android:a74d49f37c68ea6fc039e1',
     messagingSenderId: '790419883700',
     projectId: 'elecko26-536e0',
+    databaseURL: 'https://elecko26-536e0-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'elecko26-536e0.firebasestorage.app',
   );
 
@@ -52,7 +54,10 @@ class DefaultFirebaseOptions {
     appId: '1:790419883700:ios:de3c8e5a2d00dd32c039e1',
     messagingSenderId: '790419883700',
     projectId: 'elecko26-536e0',
+    databaseURL: 'https://elecko26-536e0-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'elecko26-536e0.firebasestorage.app',
+    androidClientId: '790419883700-h41in708p3h0pa7j41o4nd4mf8o46on7.apps.googleusercontent.com',
+    iosClientId: '790419883700-s6idu8ub76bsm76jrcqbe2k4ai3fv73g.apps.googleusercontent.com',
     iosBundleId: 'com.elecko26.app',
   );
 
@@ -61,7 +66,10 @@ class DefaultFirebaseOptions {
     appId: '1:790419883700:ios:9cad0944b8e6542ec039e1',
     messagingSenderId: '790419883700',
     projectId: 'elecko26-536e0',
+    databaseURL: 'https://elecko26-536e0-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'elecko26-536e0.firebasestorage.app',
+    androidClientId: '790419883700-h41in708p3h0pa7j41o4nd4mf8o46on7.apps.googleusercontent.com',
+    iosClientId: '790419883700-03rnjkt5h69eomc77p9cketr23lhi3g6.apps.googleusercontent.com',
     iosBundleId: 'com.example.flutterApplication1',
   );
 
@@ -71,7 +79,9 @@ class DefaultFirebaseOptions {
     messagingSenderId: '790419883700',
     projectId: 'elecko26-536e0',
     authDomain: 'elecko26-536e0.firebaseapp.com',
+    databaseURL: 'https://elecko26-536e0-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'elecko26-536e0.firebasestorage.app',
     measurementId: 'G-45N8FZKZR2',
   );
+
 }

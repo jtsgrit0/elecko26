@@ -4,14 +4,10 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:elecko26_new/core/config/app_config.dart';
 import 'package:elecko26_new/core/platform/platform_info.dart' as platform;
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:html/dom.dart' as html_dom;
 import 'package:html/parser.dart' as html_parser;
 import 'package:http/http.dart' as http;
 import 'package:elecko26_new/core/utils/asset_loader.dart';
-
-import 'nesdc_pdf_text_extractor_stub.dart'
-    if (dart.library.ui) 'nesdc_pdf_text_extractor.dart';
 
 import 'package:elecko26_new/core/config/refresh_config.dart';
 import 'package:elecko26_new/data/datasources/local_storage_service.dart';
@@ -376,52 +372,23 @@ class NesdcPollDataSource {
       return _detailCache[detailUrl];
     }
 
-    String? body;
-    if (!kIsWeb) {
-      final completer = Completer<String?>();
-      final webView = HeadlessInAppWebView(
-        initialUrlRequest: URLRequest(url: WebUri(detailUrl)),
-        onLoadStop: (controller, url) async {
-          final html = await controller.getHtml();
-          if (!completer.isCompleted) {
-            completer.complete(html);
-          }
-        },
-        onLoadError: (InAppWebViewController controller, Uri? url, int code,
-            String message) {
-          final urlString = url?.toString() ?? detailUrl;
-          if (!completer.isCompleted) {
-            completer
-                .completeError('Failed to load $urlString: $code $message');
-          }
-        },
-      );
+    final target = _toTargetUri(detailUrl);
+    final response =
+        await _client.get(_wrapProxy(target), headers: _defaultHeaders());
 
-      try {
-        await webView.run();
-        body = await completer.future.timeout(const Duration(seconds: 15));
-      } catch (e) {
-        print(
-            '⚠️ NesdcPollDataSource: Failed to fetch detail with webview: $e');
-      } finally {
-        await webView.dispose();
-      }
+    String? body;
+    if (response.statusCode == 200) {
+      body = _decodeBody(response);
+    } else {
+      return null;
     }
 
-    // 웹뷰 실패 또는 웹 환경일 경우, 기존 http 프록시 방식으로 폴백
     if (body == null) {
-      final target = _toTargetUri(detailUrl);
-      final response =
-          await _client.get(_wrapProxy(target), headers: _defaultHeaders());
-      if (response.statusCode == 200) {
-        body = _decodeBody(response);
-      } else {
-        return null;
-      }
+      return null;
     }
 
     if (!platform.kReleaseMode) {
-      print('[NESDC] HTML body: $body'); // Log the HTML body
+      print('[NESDC] HTML body: $body');
     }
 
     final document = html_parser.parse(body);
@@ -441,7 +408,6 @@ class NesdcPollDataSource {
       final fileResponse =
           await _client.get(_wrapProxy(fileTarget), headers: _defaultHeaders());
       if (fileResponse.statusCode == 200) {
-        resultText = _tryExtractPdfText(fileResponse.bodyBytes);
         if (!platform.kReleaseMode) {
           print(
               '[NESDC] PDF extracted: url=$resultFileUrl bytes=${fileResponse.bodyBytes.length} textLen=${resultText?.length ?? 0}');
@@ -713,25 +679,17 @@ class NesdcPollDataSource {
       return null;
     }
 
-    final RegExp regex = RegExp(
-      r'최초 공표 · 보도 예정일시\s*\((?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})\s*(?<hour>\d{1,2})시\s*(?<minute>\d{1,2})분\)',
-    );
-
+    final RegExp regex =
+        RegExp(r'최초\s*공표\s*:\s*(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일');
     final match = regex.firstMatch(text);
 
     if (match != null) {
-      final year = int.tryParse(match.namedGroup('year')!);
-      final month = int.tryParse(match.namedGroup('month')!);
-      final day = int.tryParse(match.namedGroup('day')!);
-      final hour = int.tryParse(match.namedGroup('hour')!);
-      final minute = int.tryParse(match.namedGroup('minute')!);
+      final year = int.tryParse(match.group(1)!);
+      final month = int.tryParse(match.group(2)!);
+      final day = int.tryParse(match.group(3)!);
 
-      if (year != null &&
-          month != null &&
-          day != null &&
-          hour != null &&
-          minute != null) {
-        return DateTime(year, month, day, hour, minute);
+      if (year != null && month != null && day != null) {
+        return DateTime(year, month, day);
       }
     }
     return null;
@@ -742,307 +700,110 @@ class NesdcPollDataSource {
       return null;
     }
 
-    // 1. "YYYY년 MM월 DD일" 형식 찾기
-    final yearMonthDayMatch =
-        RegExp(r'(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일').firstMatch(text);
-    if (yearMonthDayMatch != null) {
-      final year = int.tryParse(yearMonthDayMatch.group(1) ?? '');
-      final month = int.tryParse(yearMonthDayMatch.group(2) ?? '');
-      final day = int.tryParse(yearMonthDayMatch.group(3) ?? '');
-      if (year != null && month != null && day != null) {
-        return DateTime(year, month, day);
-      }
+    final normalized = text
+        .replaceAll(' ', '')
+        .replaceAll('년', '-')
+        .replaceAll('월', '-')
+        .replaceAll('일', '')
+        .replaceAll('.', '-');
+
+    final rangeMatch =
+        RegExp(r'(\d{4}-\d{1,2}-\d{1,2})~(\d{4}-\d{1,2}-\d{1,2})')
+            .firstMatch(normalized);
+    if (rangeMatch != null) {
+      return DateTime.tryParse(rangeMatch.group(2)!);
     }
 
-    // 2. "YYYY.MM.DD" 형식 찾기
-    final directMatch = RegExp(r'(\d{4})\.(\d{2})\.(\d{2})').firstMatch(text);
-    if (directMatch != null) {
-      final year = int.tryParse(directMatch.group(1) ?? '');
-      final month = int.tryParse(directMatch.group(2) ?? '');
-      final day = int.tryParse(directMatch.group(3) ?? '');
-      if (year != null && month != null && day != null) {
-        return DateTime(year, month, day);
-      }
+    final singleDateMatch =
+        RegExp(r'(\d{4}-\d{1,2}-\d{1,2})').firstMatch(normalized);
+    if (singleDateMatch != null) {
+      return DateTime.tryParse(singleDateMatch.group(1)!);
     }
 
-    // 3. "~" 분리 및 시작일 사용
-    final parts = text.split('~').map((e) => e.trim()).toList();
-    final dateText = parts.first;
-
-    final normalized = dateText
-        .replaceAll('.', '-')
-        .replaceAll('/', '-')
-        .replaceAll(RegExp(r'\s.*'), '');
-
-    return DateTime.tryParse(normalized);
-  }
-
-  DateTime? _parseDateToken(String? token) {
-    if (token == null) {
-      return null;
-    }
-    final normalized = token.replaceAll('.', '-').replaceAll('/', '-');
-    return DateTime.tryParse(normalized);
+    return null;
   }
 
   int? _parseSampleSize(Map<String, String> fields, String? fallbackText) {
     final candidates = [
+      fields['조사대상'],
       fields['표본크기'],
-      fields['표본'],
-      fields['표본수'],
     ];
 
     for (final value in candidates) {
-      final parsed = _parseSampleSizeFromText(value);
-      if (parsed != null) {
-        return parsed;
+      final size = _extractNumber(value, unit: '명');
+      if (size != null) {
+        return size;
       }
     }
-
-    return _parseSampleSizeFromText(fallbackText);
-  }
-
-  int? _parseSampleSizeFromText(String? text) {
-    if (text == null || text.isEmpty) {
-      return null;
-    }
-    final match = RegExp(r'([0-9,]{3,})\s*명').firstMatch(text);
-    if (match == null) {
-      return null;
-    }
-    return int.tryParse(match.group(1)!.replaceAll(',', ''));
+    return _extractNumber(fallbackText, unit: '명');
   }
 
   double? _parseMarginOfError(
       Map<String, String> fields, String? fallbackText) {
     final candidates = [
       fields['표본오차'],
-      fields['오차범위'],
-      fields['오차한계'],
     ];
 
     for (final value in candidates) {
-      final parsed = _parseMarginFromText(value);
-      if (parsed != null) {
-        return parsed;
+      final error = _extractPercentage(value);
+      if (error != null) {
+        return error;
       }
     }
-
-    return _parseMarginFromText(fallbackText);
+    return _extractPercentage(fallbackText);
   }
 
-  double? _parseMarginFromText(String? text) {
+  int? _extractNumber(String? text, {required String unit}) {
     if (text == null || text.isEmpty) {
       return null;
     }
-    final strictMatch =
-        RegExp(r'±\s*([0-9]+(?:\.[0-9]+)?)\s*%p?').firstMatch(text) ??
-            RegExp(r'([0-9]+(?:\.[0-9]+)?)\s*%p').firstMatch(text);
-    if (strictMatch != null) {
-      final value = double.tryParse(strictMatch.group(1)!);
-      if (value != null && value <= 20) {
-        return value;
-      }
-      return null;
+    final match = RegExp('([0-9,]+)$unit').firstMatch(text);
+    if (match != null) {
+      final numberText = match.group(1)!.replaceAll(',', '');
+      return int.tryParse(numberText);
     }
+    return null;
+  }
 
-    final looseMatch = RegExp(r'([0-9]+(?:\.[0-9]+)?)\s*%').firstMatch(text);
-    if (looseMatch == null) {
+  double? _extractPercentage(String? text) {
+    if (text == null || text.isEmpty) {
       return null;
     }
-    final value = double.tryParse(looseMatch.group(1)!);
-    if (value == null || value > 20) {
-      return null;
+    final match = RegExp(r'([0-9.]+)%').firstMatch(text);
+    if (match != null) {
+      return double.tryParse(match.group(1)!);
     }
-    if (text.contains('신뢰') || text.contains('유의')) {
-      return null;
-    }
-    return value;
+    return null;
   }
 
   String? _findResultFileUrl(html_dom.Document document) {
-    String? pdfUrl;
-    String? otherUrl;
-
-    final candidates = <html_dom.Element>[
-      ...document.querySelectorAll('div[id^="realfile_"] a'),
-      ...document.querySelectorAll('.file a'),
-      ...document.querySelectorAll('a'),
-    ];
-
-    for (final link in candidates) {
-      final raw = _pickLinkRaw(link);
-      if (raw == null || raw.isEmpty) {
-        continue;
+    final links = document.querySelectorAll('a');
+    for (final link in links) {
+      final href = link.attributes['href'];
+      if (href != null && (href.endsWith('.pdf') || href.endsWith('.hwp'))) {
+        return href;
       }
-
-      final resolved = _resolveAttachmentUrl(raw);
-      if (resolved == null || _isRootUrl(resolved)) {
-        continue;
-      }
-
-      final lower = resolved.toLowerCase();
-      if (lower.endsWith('.pdf')) {
-        pdfUrl = resolved;
-        break;
-      }
-
-      final isAttachment = raw.contains('fileDown') ||
-          raw.contains('FileDown') ||
-          raw.contains('view(') ||
-          lower.contains('filedown');
-      if (otherUrl == null && isAttachment) {
-        otherUrl = resolved;
-      }
-    }
-
-    return pdfUrl ?? otherUrl;
-  }
-
-  String? _resolveAttachmentUrl(String raw) {
-    final trimmed = raw.trim();
-    if (trimmed.contains('view(')) {
-      final match = RegExp(r'view\(([^)]*)\)').firstMatch(trimmed);
-      if (match != null) {
-        final args = _extractQuotedArgs(match.group(1) ?? '');
-        if (args.length >= 4) {
-          final base =
-              _nesdcOrigin.resolve('/portal/cmm/fms/FileDown.do').toString();
-          final query =
-              'atchFileId=${args[0]}&fileSn=${args[1]}&bbsId=${args[2]}&bbsKey=${args[3]}';
-          return '$base?$query';
-        }
-      }
-    }
-
-    if (trimmed.contains('FileDown') || trimmed.contains('fileDown')) {
-      final match = RegExp("(https?://[^'\"\\s]+)").firstMatch(trimmed);
-      if (match != null) {
-        return match.group(1);
-      }
-      final functionMatch = RegExp(r"\(([^)]*)\)").firstMatch(trimmed);
-      if (functionMatch != null) {
-        final inside = functionMatch.group(1) ?? '';
-        final args = _extractQuotedArgs(inside);
-        if (args.isNotEmpty) {
-          final candidate = args.first;
-          if (candidate.startsWith('/')) {
-            return _nesdcOrigin.resolve(candidate).toString();
-          }
-          if (candidate.startsWith('http')) {
-            return candidate;
-          }
-        }
-      }
-      final hrefMatch =
-          RegExp(r'(/[^\\s]+fileDown[^\\s]+)').firstMatch(trimmed);
-      if (hrefMatch != null) {
-        return _nesdcOrigin.resolve(hrefMatch.group(1)!).toString();
-      }
-    }
-
-    if (trimmed.startsWith('javascript')) {
-      return null;
-    }
-
-    if (trimmed.startsWith('/')) {
-      return _nesdcOrigin.resolve(trimmed).toString();
-    }
-
-    if (trimmed.startsWith('http')) {
-      return trimmed;
     }
     return null;
   }
 
-  String? _pickLinkRaw(html_dom.Element link) {
-    final href = link.attributes['href']?.trim() ?? '';
-    final onclick = link.attributes['onclick']?.trim() ?? '';
-    final dataUrl = link.attributes['data-url'] ??
-        link.attributes['data-href'] ??
-        link.attributes['data-download'] ??
-        link.attributes['data-file'];
-
-    final dataValue = dataUrl?.trim();
-    if (dataValue != null && dataValue.isNotEmpty) {
-      return dataValue;
-    }
-    if (onclick.isNotEmpty && _isJunkHref(href)) {
-      return onclick;
-    }
-    if (href.isNotEmpty && !_isJunkHref(href)) {
-      return href;
-    }
-    if (onclick.isNotEmpty) {
-      return onclick;
-    }
-    return null;
+  String _mergeDetailText(String html, String tableText) {
+    final document = html_parser.parse(html);
+    final text = document.body?.text ?? '';
+    return '$text\n\n$tableText';
   }
 
-  bool _isJunkHref(String href) {
-    final lower = href.trim().toLowerCase();
-    return lower.isEmpty ||
-        lower == '#' ||
-        lower == 'javascript:void(0);' ||
-        lower == 'javascript:;' ||
-        lower.startsWith('javascript:') ||
-        lower == 'void(0)';
-  }
-
-  bool _isRootUrl(String url) {
-    final uri = Uri.tryParse(url);
-    if (uri == null) {
-      return false;
-    }
-    return uri.host == _nesdcOrigin.host &&
-        (uri.path.isEmpty || uri.path == '/');
-  }
-
-  List<String> _extractQuotedArgs(String text) {
-    final args = <String>[];
-    final matches = RegExp("'([^']*)'|\"([^\"]*)\"").allMatches(text);
-    for (final match in matches) {
-      final value = match.group(1) ?? match.group(2);
-      if (value != null) {
-        args.add(value);
+  String _extractTableText(html_dom.Document document) {
+    final buffer = StringBuffer();
+    final tables = document.querySelectorAll('table');
+    for (final table in tables) {
+      final rows = table.querySelectorAll('tr');
+      for (final row in rows) {
+        final cells = row.querySelectorAll('th, td');
+        buffer.writeln(cells.map((c) => c.text.trim()).join('\t'));
       }
+      buffer.writeln();
     }
-    return args;
-  }
-
-  String? _extractTableText(html_dom.Document document) {
-    final lines = <String>[];
-    for (final row in document.querySelectorAll('table tr')) {
-      final cells = row
-          .querySelectorAll('th, td')
-          .map((e) => e.text.trim())
-          .where((text) => text.isNotEmpty)
-          .toList();
-      if (cells.isNotEmpty) {
-        lines.add(cells.join(' '));
-      }
-    }
-    if (lines.isEmpty) {
-      return null;
-    }
-    return lines.join('\n');
-  }
-
-  String? _mergeDetailText(String? bodyText, String? tableText) {
-    final parts = <String>[];
-    if (bodyText != null && bodyText.trim().isNotEmpty) {
-      parts.add(bodyText.trim());
-    }
-    if (tableText != null && tableText.trim().isNotEmpty) {
-      parts.add(tableText.trim());
-    }
-    if (parts.isEmpty) {
-      return null;
-    }
-    return parts.join('\n');
-  }
-
-  String? _tryExtractPdfText(Uint8List bytes) {
-    return extractPdfText(bytes);
+    return buffer.toString();
   }
 }
