@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:elecko26_new/app/injection_container.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
-import 'package:elecko26_new/core/widgets/lazy_indexed_stack.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/features/auth/domain/entities/user.dart' as auth;
 import 'package:elecko26_new/domain/repositories/member_repository.dart';
@@ -19,7 +18,8 @@ import 'package:elecko26_new/features/voting/presentation/pages/polls_page.dart'
 import 'member_detail_page.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+  final List<Member> members;
+  const HomePage({Key? key, required this.members}) : super(key: key);
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -44,7 +44,10 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _initializeData();
+    _cachedMembers = widget.members;
+    _membersController.add(_cachedMembers);
+    _updateFavoriteCount(_cachedMembers);
+    _initializeListeners();
   }
 
   @override
@@ -59,32 +62,24 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  Future<void> _initializeData() async {
-    _isLoadingNotifier.value = true;
-
+  Future<void> _initializeListeners() async {
     // 1. 사용자 지역 로드
     final savedRegion = await sl<MemberRepository>().getSelectedRegion();
     if (savedRegion != null) {
       _userRegionNotifier.value = savedRegion;
     }
 
-    // 2. 초기 데이터 로드 (캐시)
-    final initialMembers = await sl<GetMembersUseCase>().call();
-    _cachedMembers = initialMembers;
-    _membersController.add(initialMembers);
-    _updateFavoriteCount(initialMembers);
+    // 2. 실시간 업데이트 구독 (선택적)
+    // _membersSubscription =
+    //     sl<MemberRepository>().watchMembers().listen((members) {
+    //   if (mounted) {
+    //     _cachedMembers = members;
+    //     _membersController.add(members);
+    //     _updateFavoriteCount(members);
+    //   }
+    // });
 
-    // 3. 실시간 업데이트 구독
-    _membersSubscription =
-        sl<MemberRepository>().watchMembers().listen((members) {
-      if (mounted) {
-        _cachedMembers = members;
-        _membersController.add(members);
-        _updateFavoriteCount(members);
-      }
-    });
-
-    // 4. 인증 상태 구독
+    // 3. 인증 상태 구독
     _authSubscription =
         sl<MemberRepository>().watchCurrentUser().listen((auth.User? user) {
       if (mounted) {
@@ -93,32 +88,11 @@ class _HomePageState extends State<HomePage> {
         });
       }
     });
-
-    _isLoadingNotifier.value = false;
-
-    // 5. NESDC 데이터 배경 동기화 (최초 1회)
-    _triggerNesdcRefresh(isSilent: true);
   }
 
   void _updateFavoriteCount(List<Member> members) {
     final count = members.where((m) => m.isFavorite).length;
     _favoriteCountNotifier.value = count;
-  }
-
-  Future<void> _triggerNesdcRefresh({bool isSilent = false}) async {
-    if (!isSilent) _isLoadingNotifier.value = true;
-
-    try {
-      // await sl<SyncNesdcPollsUseCase>().call();
-    } catch (e) {
-      if (!isSilent) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('데이터 동기화 실패: $e')),
-        );
-      }
-    } finally {
-      if (!isSilent) _isLoadingNotifier.value = false;
-    }
   }
 
   void _showSettingsModal() {
@@ -142,15 +116,6 @@ class _HomePageState extends State<HomePage> {
               style: AppTextStyles.headline4,
             ),
             const SizedBox(height: 24),
-            ListTile(
-              leading: const Icon(Icons.refresh),
-              title: const Text('전체 데이터 동기화'),
-              subtitle: const Text('중앙선거여론조사심의회 최신 데이터를 가져옵니다.'),
-              onTap: () {
-                Navigator.pop(context);
-                _triggerNesdcRefresh();
-              },
-            ),
             ListTile(
               leading: const Icon(Icons.location_on_outlined),
               title: const Text('관심 지역 변경'),
@@ -249,7 +214,6 @@ class _HomePageState extends State<HomePage> {
             membersStream: _membersStream,
             cachedMembers: _cachedMembers,
             userRegion: region,
-            onRefresh: () => _triggerNesdcRefresh(isSilent: false),
             onMemberSelected: (m) => setState(() => _selectedMember = m),
             onNavigateToSearch: () => _selectedIndexNotifier.value = 1,
             onRegionChanged: (newRegion) async {
@@ -313,7 +277,7 @@ class _HomePageState extends State<HomePage> {
         ValueListenableBuilder<int>(
           valueListenable: _selectedIndexNotifier,
           builder: (context, index, _) {
-            return LazyIndexedStack(
+            return IndexedStack(
               index: index,
               children: tabWidgets,
             );
