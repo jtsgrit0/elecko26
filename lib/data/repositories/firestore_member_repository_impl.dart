@@ -150,7 +150,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
                 'district': m.district,
                 'electionPossibility': m.electionPossibility,
                 'imageUrl': m.imageUrl,
-                'lastAnalysisDate': m.lastAnalysisDate.toIso8601String(),
+                'lastAnalysisDate': m.lastAnalysisDate?.toIso8601String() ?? '',
               })
           .toList();
 
@@ -1197,8 +1197,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         .where((m) =>
             m.name.toLowerCase().contains(lowerQuery) ||
             m.party.toLowerCase().contains(lowerQuery) ||
-            m.district.toLowerCase().contains(lowerQuery) ||
-            m.bio.toLowerCase().contains(lowerQuery))
+            m.district.toLowerCase().contains(lowerQuery))
         .toList();
   }
 

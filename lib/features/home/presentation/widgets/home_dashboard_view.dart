@@ -84,7 +84,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
       filtered = List.from(_displayMembers);
     } else {
       filtered = _displayMembers
-          .where((m) => m.province == widget.userRegion)
+          .where((m) => m.district.startsWith(widget.userRegion))
           .toList();
     }
 
@@ -107,10 +107,15 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
 
   String get _updateValue {
     if (_displayMembers.isEmpty) return '-';
-    // 가장 최근 업데이트 날짜 찾기
-    final latest = _displayMembers
-        .map((m) => m.lastAnalysisDate)
-        .reduce((a, b) => a.isAfter(b) ? a : b);
+    DateTime? latest;
+    for (final member in _displayMembers) {
+      if (member.lastAnalysisDate != null) {
+        if (latest == null || member.lastAnalysisDate!.isAfter(latest)) {
+          latest = member.lastAnalysisDate;
+        }
+      }
+    }
+    if (latest == null) return '-';
     return '${latest.month}/${latest.day} ${latest.hour}:${latest.minute}';
   }
 

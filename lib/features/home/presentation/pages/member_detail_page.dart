@@ -180,7 +180,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
     final electionPossibility = member.electionPossibility;
 
     final achievement = _estimateScore(member.achievementsList, 20);
-    final activity = _estimateScore(member.actions, 30);
+    final activity = _estimateScore(member.achievementsList, 30);
     final policy = _estimateScore(member.policies, 15);
     final publicImage = electionPossibility.clamp(0.2, 0.95);
     final socialContribution = _estimateSocialScore(member.socialContributions);
@@ -200,7 +200,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
 
     return AnalysisResult(
       memberId: member.id,
-      analysisDate: member.lastAnalysisDate,
+      analysisDate: member.lastAnalysisDate ?? DateTime.now(),
       electionPossibility: electionPossibility,
       previousPossibility: (electionPossibility - 0.01).clamp(0.01, 0.99),
       possibilityChange: 0.01,
@@ -221,11 +221,9 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
       ],
       weaknesses: [
         if (member.polls.isEmpty) '공개 여론조사 데이터가 제한적입니다.',
-        if (member.actions.isEmpty) '활동 이력 데이터가 부족합니다.',
+        if (member.achievementsList.isEmpty) '활동 이력 데이터가 부족합니다.',
       ],
-      analysisReport: member.bio.isNotEmpty
-          ? member.bio
-          : '${member.name} 후보의 기본 정보를 기반으로 빠른 분석 결과를 표시하고 있습니다.',
+      analysisReport: '${member.name} 후보의 기본 정보를 기반으로 빠른 분석 결과를 표시하고 있습니다.',
       dailyTrends: trends,
       snsAnalysis: SnsAnalysis(
         totalMentions: 0,
@@ -257,7 +255,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
     final quantityScore = (items.length / 10).clamp(0.0, 1.0) * 0.7;
     final totalLength = items.fold<int>(
       0,
-      (sum, item) => sum + item.title.length + item.summary.length,
+      (sum, item) => sum + item.description.length,
     );
     final avgLength = totalLength / items.length;
     final qualityScore = (avgLength / 60).clamp(0.0, 1.0) * 0.3;
@@ -376,13 +374,13 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                     color: AppColors.mediumGray,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  member.term > 0 ? '임기: ${member.term}대' : '임기: 비현직',
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.mediumGray,
-                  ),
-                ),
+                // const SizedBox(height: 8),
+                // Text(
+                //   member.term > 0 ? '임기: ${member.term}대' : '임기: 비현직',
+                //   style: AppTextStyles.labelSmall.copyWith(
+                //     color: AppColors.mediumGray,
+                //   ),
+                // ),
               ],
             ),
           ),
@@ -1561,7 +1559,9 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                           ),
                         ),
                         Text(
-                          contrib.date.toString().split(' ')[0],
+                          (contrib.date ?? DateTime.now())
+                              .toString()
+                              .split(' ')[0],
                           style: AppTextStyles.labelSmall.copyWith(
                             color: AppColors.mediumGray,
                           ),
@@ -1570,27 +1570,10 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      contrib.title,
+                      contrib.description,
                       style: AppTextStyles.bodyLarge.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.darkGray,
-                      ),
-                    ),
-                    if (contrib.amount != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        '규모: ${contrib.amount}',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.secondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    Text(
-                      contrib.summary,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.mediumGray,
                       ),
                     ),
                   ],

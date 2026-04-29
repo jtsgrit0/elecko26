@@ -34,7 +34,7 @@ class _MemberListPageState extends State<MemberListPage> {
     final region = await sl<MemberRepository>().getSelectedRegion();
     if (mounted) {
       setState(() {
-        _userRegion = region;
+        _userRegion = region ?? '전국';
       });
     }
   }
@@ -86,7 +86,6 @@ class _MemberListPageState extends State<MemberListPage> {
                           m.name.toLowerCase().contains(query) ||
                           m.party.toLowerCase().contains(query) ||
                           m.district.toLowerCase().contains(query) ||
-                          m.bio.toLowerCase().contains(query) ||
                           m.policies
                               .any((p) => p.toLowerCase().contains(query)) ||
                           m.achievementsList

@@ -14,6 +14,10 @@ class Member extends Equatable {
   final List<PressReport> pressReports;
   final Map<String, double> historical2018PartyRates;
   final DateTime? lastAnalysisDate;
+  final List<String> achievementsList;
+  final List<String> policies;
+  final List<String> improvementPoints;
+  final List<SocialContribution> socialContributions;
 
   const Member({
     required this.id,
@@ -28,6 +32,10 @@ class Member extends Equatable {
     this.pressReports = const [],
     this.historical2018PartyRates = const {},
     this.lastAnalysisDate,
+    this.achievementsList = const [],
+    this.policies = const [],
+    this.improvementPoints = const [],
+    this.socialContributions = const [],
   });
 
   @override
@@ -44,6 +52,10 @@ class Member extends Equatable {
         pressReports,
         historical2018PartyRates,
         lastAnalysisDate,
+        achievementsList,
+        policies,
+        improvementPoints,
+        socialContributions,
       ];
 
   Member copyWith({
@@ -59,6 +71,10 @@ class Member extends Equatable {
     List<PressReport>? pressReports,
     Map<String, double>? historical2018PartyRates,
     DateTime? lastAnalysisDate,
+    List<String>? achievementsList,
+    List<String>? policies,
+    List<String>? improvementPoints,
+    List<SocialContribution>? socialContributions,
   }) {
     return Member(
       id: id ?? this.id,
@@ -74,6 +90,10 @@ class Member extends Equatable {
       historical2018PartyRates:
           historical2018PartyRates ?? this.historical2018PartyRates,
       lastAnalysisDate: lastAnalysisDate ?? this.lastAnalysisDate,
+      achievementsList: achievementsList ?? this.achievementsList,
+      policies: policies ?? this.policies,
+      improvementPoints: improvementPoints ?? this.improvementPoints,
+      socialContributions: socialContributions ?? this.socialContributions,
     );
   }
 }
@@ -112,4 +132,23 @@ class PressReport extends Equatable {
       'sentiment': sentiment,
     };
   }
+}
+
+class SocialContribution extends Equatable {
+  final String id;
+  final String type;
+  final String description;
+  final DateTime date;
+  final String source;
+
+  const SocialContribution({
+    required this.id,
+    required this.type,
+    required this.description,
+    required this.date,
+    required this.source,
+  });
+
+  @override
+  List<Object?> get props => [id, type, description, date, source];
 }

@@ -358,10 +358,7 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
     final latest = member.socialContributions.first;
     final buffer = StringBuffer();
     buffer.writeln('• 사회적 책임: ${member.socialContributions.length}건의 공헌 내역 확인');
-    buffer.writeln('  - 최근 활동: ${latest.title} (${latest.type})');
-    if (latest.amount != null) {
-      buffer.writeln('  - 규모/성과: ${latest.amount}');
-    }
+    buffer.writeln('  - 최근 활동: ${latest.description} (${latest.type})');
     return buffer.toString();
   }
 
@@ -381,7 +378,7 @@ ${improvements.isEmpty ? '• 현황 유지' : improvements.map((i) => '• $i')
     // 언론 보도의 감정 분석 데이터를 SNS 데이터로 활용
     final sentimentTexts = <String>[];
     for (var report in member.pressReports) {
-      sentimentTexts.add(report.summary.toLowerCase());
+      sentimentTexts.add(report.title.toLowerCase());
       if (report.sentiment == 'positive') {
         positiveMentions++;
       } else if (report.sentiment == 'neutral') {

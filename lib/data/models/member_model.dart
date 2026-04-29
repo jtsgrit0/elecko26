@@ -3,43 +3,33 @@ import 'package:elecko26_new/domain/entities/poll.dart';
 
 /// Member 모델 (API 응답용)
 class MemberModel extends Member {
-  MemberModel({
+  const MemberModel({
     required super.id,
     required super.name,
     required super.party,
     required super.district,
-    required super.imageUrl,
-    required super.bio,
-    required super.electionDate,
-    required super.term,
-    required super.achievementsList,
-    required super.actions,
-    required super.policies,
-    required super.pressReports,
-    required super.polls,
-    required super.electionPossibility,
-    required super.lastAnalysisDate,
-    required super.improvementPoints,
-    required super.socialContributions,
+    super.description,
+    super.imageUrl,
+    super.polls,
+    super.electionPossibility,
     super.isFavorite,
+    super.pressReports,
     super.historical2018PartyRates,
+    super.lastAnalysisDate,
+    super.achievementsList,
+    super.policies,
+    super.improvementPoints,
+    super.socialContributions,
   });
 
   factory MemberModel.fromJson(Map<String, dynamic> json) {
     // 날짜 파싱 안전 장치
-    DateTime parseDate(dynamic dateValue) {
-      if (dateValue == null) return DateTime.now();
+    DateTime? parseDate(dynamic dateValue) {
+      if (dateValue == null) return null;
       if (dateValue is String) {
-        return DateTime.tryParse(dateValue) ?? DateTime.now();
+        return DateTime.tryParse(dateValue);
       }
-      return DateTime.now();
-    }
-
-    int parseInt(dynamic value) {
-      if (value is int) return value;
-      if (value is num) return value.toInt();
-      if (value is String) return int.tryParse(value) ?? 0;
-      return 0;
+      return null;
     }
 
     double parseDouble(dynamic value) {
@@ -82,7 +72,8 @@ class MemberModel extends Member {
     Map<String, double> parseHistoricalRates(dynamic value) {
       if (value is! Map) return <String, double>{};
 
-      return value.map((key, val) => MapEntry(key.toString(), parseDouble(val)));
+      return value
+          .map((key, val) => MapEntry(key.toString(), parseDouble(val)));
     }
 
     return MemberModel(
@@ -90,12 +81,9 @@ class MemberModel extends Member {
       name: (json['name'] ?? '알 수 없음') as String,
       party: (json['party'] ?? '무소속') as String,
       district: (json['district'] ?? '전국') as String,
+      description: (json['description'] ?? '') as String,
       imageUrl: (json['imageUrl'] ?? '') as String,
-      bio: (json['bio'] ?? '') as String,
-      electionDate: parseDate(json['electionDate']),
-      term: parseInt(json['term']),
       achievementsList: parseStringList(json['achievementsList']),
-      actions: parseStringList(json['actions']),
       policies: parseStringList(json['policies']),
       pressReports: parsePressReports(json['pressReports']),
       polls: (json['polls'] as List? ?? [])
@@ -108,7 +96,8 @@ class MemberModel extends Member {
         json['socialContributions'],
       ),
       isFavorite: json['isFavorite'] as bool? ?? false,
-      historical2018PartyRates: parseHistoricalRates(json['historical2018PartyRates']),
+      historical2018PartyRates:
+          parseHistoricalRates(json['historical2018PartyRates']),
     );
   }
 
@@ -118,42 +107,37 @@ class MemberModel extends Member {
     String? name,
     String? party,
     String? district,
+    String? description,
     String? imageUrl,
-    String? bio,
-    DateTime? electionDate,
-    int? term,
-    List<String>? achievementsList,
-    List<String>? actions,
-    List<String>? policies,
-    List<PressReport>? pressReports,
     List<Poll>? polls,
     double? electionPossibility,
+    bool? isFavorite,
+    List<PressReport>? pressReports,
+    Map<String, double>? historical2018PartyRates,
     DateTime? lastAnalysisDate,
+    List<String>? achievementsList,
+    List<String>? policies,
     List<String>? improvementPoints,
     List<SocialContribution>? socialContributions,
-    bool? isFavorite,
-    Map<String, double>? historical2018PartyRates,
   }) {
     return MemberModel(
       id: id ?? this.id,
       name: name ?? this.name,
       party: party ?? this.party,
       district: district ?? this.district,
+      description: description ?? this.description,
       imageUrl: imageUrl ?? this.imageUrl,
-      bio: bio ?? this.bio,
-      electionDate: electionDate ?? this.electionDate,
-      term: term ?? this.term,
-      achievementsList: achievementsList ?? this.achievementsList,
-      actions: actions ?? this.actions,
-      policies: policies ?? this.policies,
-      pressReports: pressReports ?? this.pressReports,
       polls: polls ?? this.polls,
       electionPossibility: electionPossibility ?? this.electionPossibility,
+      isFavorite: isFavorite ?? this.isFavorite,
+      pressReports: pressReports ?? this.pressReports,
+      historical2018PartyRates:
+          historical2018PartyRates ?? this.historical2018PartyRates,
       lastAnalysisDate: lastAnalysisDate ?? this.lastAnalysisDate,
+      achievementsList: achievementsList ?? this.achievementsList,
+      policies: policies ?? this.policies,
       improvementPoints: improvementPoints ?? this.improvementPoints,
       socialContributions: socialContributions ?? this.socialContributions,
-      isFavorite: isFavorite ?? this.isFavorite,
-      historical2018PartyRates: historical2018PartyRates ?? this.historical2018PartyRates,
     );
   }
 
@@ -163,12 +147,9 @@ class MemberModel extends Member {
       'name': name,
       'party': party,
       'district': district,
+      'description': description,
       'imageUrl': imageUrl,
-      'bio': bio,
-      'electionDate': electionDate.toIso8601String(),
-      'term': term,
       'achievementsList': achievementsList,
-      'actions': actions,
       'policies': policies,
       'pressReports':
           pressReports.map((e) => (e as PressReportModel).toJson()).toList(),
@@ -186,7 +167,7 @@ class MemberModel extends Member {
               ).toJson())
           .toList(),
       'electionPossibility': electionPossibility,
-      'lastAnalysisDate': lastAnalysisDate.toIso8601String(),
+      'lastAnalysisDate': lastAnalysisDate?.toIso8601String(),
       'improvementPoints': improvementPoints,
       'socialContributions': socialContributions
           .map((e) => (e as SocialContributionModel).toJson())
@@ -272,6 +253,8 @@ class PressReportModel extends PressReport {
     );
   }
 
+  @override
+  @override
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -286,31 +269,32 @@ class PressReportModel extends PressReport {
 }
 
 class SocialContributionModel extends SocialContribution {
-  SocialContributionModel({
-    required super.title,
-    required super.date,
+  const SocialContributionModel({
+    required super.id,
     required super.type,
-    super.amount,
-    required super.summary,
+    required super.description,
+    required super.date,
+    required super.source,
   });
 
   factory SocialContributionModel.fromJson(Map<String, dynamic> json) {
     return SocialContributionModel(
-      title: (json['title'] ?? '') as String,
-      date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
+      id: (json['id'] ?? '') as String,
       type: (json['type'] ?? '') as String,
-      amount: json['amount'] as String?,
-      summary: (json['summary'] ?? '') as String,
+      description: (json['description'] ?? '') as String,
+      date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
+      source: (json['source'] ?? '') as String,
     );
   }
 
+  @override
   Map<String, dynamic> toJson() {
     return {
-      'title': title,
-      'date': date.toIso8601String(),
+      'id': id,
       'type': type,
-      'amount': amount,
-      'summary': summary,
+      'description': description,
+      'date': date.toIso8601String(),
+      'source': source,
     };
   }
 }

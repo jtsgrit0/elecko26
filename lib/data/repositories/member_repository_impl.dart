@@ -156,4 +156,19 @@ class MemberRepositoryImpl implements MemberRepository {
   Stream<List<Member>> watchMembers() {
     return Stream.fromFuture(getAllMembers());
   }
+
+  @override
+  Future<void> updateParkSugiImage() async {
+    // Local implementation does nothing.
+  }
+
+  @override
+  Future<void> updateSeoJaeyeolImage() async {
+    // Local implementation does nothing.
+  }
+
+  @override
+  Future<void> updateYoonDaegiImage() async {
+    // Local implementation does nothing.
+  }
 }

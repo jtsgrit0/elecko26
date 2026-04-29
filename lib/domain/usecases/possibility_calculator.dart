@@ -20,7 +20,7 @@ class PossibilityCalculator {
 
     // 2. 활동도 (0~1)
     final activityScore = _calculateDetailScore(
-      member.actions,
+      member.achievementsList,
       maxValue: 30,
       memberId: member.id,
       seed: 2,
