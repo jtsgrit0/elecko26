@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 /// - 전체 동의 기능
 /// - 모바일 웹 스타일 UX 벤치마킹
 class TermsAgreementModal extends StatefulWidget {
-  const TermsAgreementModal({Key? key}) : super(key: key);
+  const TermsAgreementModal({super.key});
 
   /// 모달을 표시하고, 유저가 모두 동의하면 true를 반환
   static Future<bool> show(BuildContext context) async {
@@ -62,8 +62,7 @@ class _TermsAgreementModalState extends State<TermsAgreementModal>
         SnackBar(
           content: const Text('각 약관 내용을 끝까지 읽어주세요.'),
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           backgroundColor: const Color(0xFF9A3412),
           duration: const Duration(seconds: 2),
         ),
@@ -118,7 +117,8 @@ class _TermsAgreementModalState extends State<TermsAgreementModal>
                       isAgreed: _termsAgreed,
                       hasScrolledToEnd: _termsScrolledToEnd,
                       content: _termsOfServiceText,
-                      onAgreedChanged: (v) => setState(() => _termsAgreed = v),
+                      onAgreedChanged: (v) =>
+                          setState(() => _termsAgreed = v),
                       onScrolledToEnd: () =>
                           setState(() => _termsScrolledToEnd = true),
                     ),
@@ -330,7 +330,8 @@ class _TermsAgreementModalState extends State<TermsAgreementModal>
                         setState(() => _expandedIndex = index);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: const Text('약관 내용을 끝까지 스크롤해주세요.'),
+                            content:
+                                const Text('약관 내용을 끝까지 스크롤해주세요.'),
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12)),
@@ -347,8 +348,9 @@ class _TermsAgreementModalState extends State<TermsAgreementModal>
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
-                        color:
-                            isAgreed ? const Color(0xFF9A3412) : Colors.white,
+                        color: isAgreed
+                            ? const Color(0xFF9A3412)
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(7),
                         border: Border.all(
                           color: isAgreed
@@ -489,7 +491,8 @@ class _TermsAgreementModalState extends State<TermsAgreementModal>
                   if (!hasScrolledToEnd &&
                       notification is ScrollUpdateNotification) {
                     final metrics = notification.metrics;
-                    if (metrics.pixels >= metrics.maxScrollExtent - 20) {
+                    if (metrics.pixels >=
+                        metrics.maxScrollExtent - 20) {
                       onScrolledToEnd();
                     }
                   }
@@ -623,7 +626,9 @@ class _TermsAgreementModalState extends State<TermsAgreementModal>
                   : null,
             ),
             child: ElevatedButton(
-              onPressed: _allAgreed ? () => Navigator.pop(context, true) : null,
+              onPressed: _allAgreed
+                  ? () => Navigator.pop(context, true)
+                  : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
                 disabledBackgroundColor: Colors.transparent,

@@ -1,107 +1,84 @@
+import 'package:equatable/equatable.dart';
 import 'package:elecko26_new/domain/entities/poll.dart';
 
-/// 국회의원 엔티티
-class Member {
+class Member extends Equatable {
   final String id;
   final String name;
   final String party;
   final String district;
+  final String description;
   final String imageUrl;
-  final String bio;
-  final DateTime electionDate;
-  final int term;
-  final List<String> achievementsList;
-  final List<String> actions;
-  final List<String> policies;
-  final List<PressReport> pressReports;
   final List<Poll> polls;
   final double electionPossibility;
-  final DateTime lastAnalysisDate;
-  final List<String> improvementPoints;
-  final List<SocialContribution> socialContributions;
   final bool isFavorite;
-  final Map<String, double> historical2018PartyRates; // 2018년 지방선거 지역별 정당 득표율
+  final List<PressReport> pressReports;
+  final Map<String, double> historical2018PartyRates;
+  final DateTime? lastAnalysisDate;
 
-  String get province => district.split(' ').first;
-
-  Member({
+  const Member({
     required this.id,
     required this.name,
     required this.party,
     required this.district,
-    required this.imageUrl,
-    required this.bio,
-    required this.electionDate,
-    required this.term,
-    required this.achievementsList,
-    required this.actions,
-    required this.policies,
-    required this.pressReports,
-    required this.polls,
-    required this.electionPossibility,
-    required this.lastAnalysisDate,
-    required this.improvementPoints,
-    required this.socialContributions,
+    this.description = '',
+    this.imageUrl = '',
+    this.polls = const [],
+    this.electionPossibility = 0.0,
     this.isFavorite = false,
-    this.historical2018PartyRates =
-        const {}, // Placeholder for default, will be overridden by mutable in Model
+    this.pressReports = const [],
+    this.historical2018PartyRates = const {},
+    this.lastAnalysisDate,
   });
+
+  @override
+  List<Object?> get props => [
+        id,
+        name,
+        party,
+        district,
+        description,
+        imageUrl,
+        polls,
+        electionPossibility,
+        isFavorite,
+        pressReports,
+        historical2018PartyRates,
+        lastAnalysisDate,
+      ];
 
   Member copyWith({
     String? id,
     String? name,
     String? party,
     String? district,
+    String? description,
     String? imageUrl,
-    String? bio,
-    DateTime? electionDate,
-    int? term,
-    List<String>? achievementsList,
-    List<String>? actions,
-    List<String>? policies,
-    List<PressReport>? pressReports,
     List<Poll>? polls,
     double? electionPossibility,
-    DateTime? lastAnalysisDate,
-    List<String>? improvementPoints,
-    List<SocialContribution>? socialContributions,
     bool? isFavorite,
+    List<PressReport>? pressReports,
     Map<String, double>? historical2018PartyRates,
+    DateTime? lastAnalysisDate,
   }) {
     return Member(
       id: id ?? this.id,
       name: name ?? this.name,
       party: party ?? this.party,
       district: district ?? this.district,
+      description: description ?? this.description,
       imageUrl: imageUrl ?? this.imageUrl,
-      bio: bio ?? this.bio,
-      electionDate: electionDate ?? this.electionDate,
-      term: term ?? this.term,
-      achievementsList: achievementsList ?? this.achievementsList,
-      actions: actions ?? this.actions,
-      policies: policies ?? this.policies,
-      pressReports: pressReports ?? this.pressReports,
       polls: polls ?? this.polls,
       electionPossibility: electionPossibility ?? this.electionPossibility,
-      lastAnalysisDate: lastAnalysisDate ?? this.lastAnalysisDate,
-      improvementPoints: improvementPoints ?? this.improvementPoints,
-      socialContributions: socialContributions ?? this.socialContributions,
       isFavorite: isFavorite ?? this.isFavorite,
+      pressReports: pressReports ?? this.pressReports,
       historical2018PartyRates:
           historical2018PartyRates ?? this.historical2018PartyRates,
+      lastAnalysisDate: lastAnalysisDate ?? this.lastAnalysisDate,
     );
   }
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is Member && runtimeType == other.runtimeType && id == other.id;
-
-  @override
-  int get hashCode => id.hashCode;
 }
 
-class PressReport {
+class PressReport extends Equatable {
   final String id;
   final String title;
   final String source;
@@ -110,7 +87,7 @@ class PressReport {
   final String summary;
   final String sentiment; // positive, neutral, negative
 
-  PressReport({
+  const PressReport({
     required this.id,
     required this.title,
     required this.source,
@@ -119,6 +96,10 @@ class PressReport {
     required this.summary,
     required this.sentiment,
   });
+
+  @override
+  List<Object?> get props =>
+      [id, title, source, url, publishDate, summary, sentiment];
 
   Map<String, dynamic> toJson() {
     return {
@@ -131,20 +112,4 @@ class PressReport {
       'sentiment': sentiment,
     };
   }
-}
-
-class SocialContribution {
-  final String title;
-  final DateTime date;
-  final String type; // 기부, 봉사, 노블레스, 기타
-  final String? amount; // "1억원", "500시간" 등
-  final String summary;
-
-  SocialContribution({
-    required this.title,
-    required this.date,
-    required this.type,
-    this.amount,
-    required this.summary,
-  });
 }

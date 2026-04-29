@@ -1,4 +1,5 @@
 /// 커스텀 예외 클래스들
+library;
 
 abstract class AppException implements Exception {
   final String message;
@@ -6,25 +7,25 @@ abstract class AppException implements Exception {
 }
 
 class NetworkException extends AppException {
-  NetworkException(String message) : super(message);
+  NetworkException(super.message);
 }
 
 class CacheException extends AppException {
-  CacheException(String message) : super(message);
+  CacheException(super.message);
 }
 
 class DatabaseException extends AppException {
-  DatabaseException(String message) : super(message);
+  DatabaseException(super.message);
 }
 
 class CrawlingException extends AppException {
-  CrawlingException(String message) : super(message);
+  CrawlingException(super.message);
 }
 
 class AIAnalysisException extends AppException {
-  AIAnalysisException(String message) : super(message);
+  AIAnalysisException(super.message);
 }
 
 class ValidationException extends AppException {
-  ValidationException(String message) : super(message);
+  ValidationException(super.message);
 }
