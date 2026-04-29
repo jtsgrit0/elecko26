@@ -40,7 +40,6 @@
   </script>
   <!-- This script adds the flutter initialization JS code -->
   <script src="flutter.js" defer></script>
-  <script type="application/javascript" src="assets/packages/flutter_inappwebview/assets/web/web_support.js" defer></script>
   <style>
     #loading-indicator {
       display: flex;
@@ -95,13 +94,13 @@
           serviceWorkerVersion: serviceWorkerVersion,
         },
         onEntrypointLoaded: function(engineInitializer) {
-          var loadingIndicator = document.getElementById('loading-indicator');
-          loadingIndicator.style.display = 'none';
-
           engineInitializer.initializeEngine({
             renderer: "html"
           }).then(function(appRunner) {
-            appRunner.runApp();
+            appRunner.runApp().then(function(app) {
+              var loadingIndicator = document.getElementById('loading-indicator');
+              loadingIndicator.style.display = 'none';
+            });
           });
         }
       });
