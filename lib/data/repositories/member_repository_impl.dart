@@ -139,7 +139,8 @@ class MemberRepositoryImpl implements MemberRepository {
           try {
             final List<dynamic> decoded = json.decode(cachedData);
             final cachedMembers = decoded
-                .map((item) => MemberModel.fromJson(item as Map<String, dynamic>))
+                .map((item) =>
+                    MemberModel.fromJson(item as Map<String, dynamic>))
                 .toList();
             _dummyMembers.addAll(cachedMembers);
             _notifyListeners();
@@ -175,18 +176,19 @@ class MemberRepositoryImpl implements MemberRepository {
       _resolveMissingProfileImagesInBackground();
 
       final entries = await _nesdcPollDataSource.fetchLatest();
-      
+
       // 최적화: 유효한 지역들 추출 (중복 제거)
       final uniqueRegions = _dummyMembers
           .map((m) => _staticMapDistrictToRegion(m.district))
           .toSet();
-          
+
       // 최적화: 유효한 지역에 해당하는 최근 여론조사 100건만 상세 정보 가져오기
       final relevantEntries = entries
-          .where((e) => uniqueRegions.any((r) => _staticMatchesRegion(e.region, r)))
+          .where((e) =>
+              uniqueRegions.any((r) => _staticMatchesRegion(e.region, r)))
           .take(100)
           .toList();
-          
+
       final List<Future<void>> detailTasks = [];
       for (final entry in relevantEntries) {
         detailTasks.add(_nesdcPollDataSource.fetchDetail(entry.sourceUrl));
@@ -243,9 +245,8 @@ class MemberRepositoryImpl implements MemberRepository {
 
       // 가공된 최종 데이터를 로컬 스토리지에 캐시 (다음 기동 시 즉시 로딩용)
       try {
-        final jsonToCache = json.encode(_dummyMembers
-            .map((m) => (m as MemberModel).toJson())
-            .toList());
+        final jsonToCache = json.encode(
+            _dummyMembers.map((m) => (m as MemberModel).toJson()).toList());
         await _localStorage.setString('cached_processed_members', jsonToCache);
       } catch (e) {
         debugPrint('[MemberRepo] Error saving persistent cache: $e');
@@ -576,5 +577,20 @@ class MemberRepositoryImpl implements MemberRepository {
   Future<void> updateYoonDaegiImage() async {
     await _updateMemberImage('윤대기',
         'https://i.namu.wiki/i/m-1p_3G9aX9bB3M_u_uC2j5pUPe9b29nNu2adYJ3Iq9223f2i1_fsK2j2-g_1gOqf_u2-3UfOa-z-g.webp');
+  }
+
+  @override
+  Stream<List<Member>> watchMembers() {
+    return _membersController.stream;
+  }
+
+  @override
+  Stream<User?> watchCurrentUser() {
+    return Stream.value(null);
+  }
+
+  @override
+  Future<void> logout() async {
+    // No-op in this implementation
   }
 }

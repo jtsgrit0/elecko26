@@ -75,7 +75,8 @@ class _HomePageState extends State<HomePage> {
     _updateFavoriteCount(initialMembers);
 
     // 3. 실시간 업데이트 구독
-    _membersSubscription = sl<MemberRepository>().watchMembers().listen((members) {
+    _membersSubscription =
+        sl<MemberRepository>().watchMembers().listen((members) {
       if (mounted) {
         _cachedMembers = members;
         _membersController.add(members);
@@ -84,7 +85,8 @@ class _HomePageState extends State<HomePage> {
     });
 
     // 4. 인증 상태 구독
-    _authSubscription = sl<MemberRepository>().watchCurrentUser().listen((user) {
+    _authSubscription =
+        sl<MemberRepository>().watchCurrentUser().listen((auth.User? user) {
       if (mounted) {
         setState(() {
           _currentUser = user;
@@ -107,7 +109,7 @@ class _HomePageState extends State<HomePage> {
     if (!isSilent) _isLoadingNotifier.value = true;
 
     try {
-      await sl<SyncNesdcPollsUseCase>().call();
+      // await sl<SyncNesdcPollsUseCase>().call();
     } catch (e) {
       if (!isSilent) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -165,7 +167,8 @@ class _HomePageState extends State<HomePage> {
             if (_currentUser != null)
               ListTile(
                 leading: const Icon(Icons.logout, color: AppColors.error),
-                title: const Text('로그아웃', style: TextStyle(color: AppColors.error)),
+                title: const Text('로그아웃',
+                    style: TextStyle(color: AppColors.error)),
                 onTap: () async {
                   Navigator.pop(context);
                   await sl<MemberRepository>().logout();
@@ -216,7 +219,9 @@ class _HomePageState extends State<HomePage> {
             )
           : null, // 상세 페이지는 자체 AppBar 사용
       body: PopScope(
-        canPop: !kIsWeb && _selectedMember == null && _selectedIndexNotifier.value == 0,
+        canPop: !kIsWeb &&
+            _selectedMember == null &&
+            _selectedIndexNotifier.value == 0,
         onPopInvoked: (bool didPop) {
           if (didPop) return;
           if (_selectedMember != null) {
@@ -227,7 +232,8 @@ class _HomePageState extends State<HomePage> {
         },
         child: _buildBody(),
       ),
-      bottomNavigationBar: _selectedMember == null ? _buildBottomNavBar() : null,
+      bottomNavigationBar:
+          _selectedMember == null ? _buildBottomNavBar() : null,
     );
   }
 
@@ -278,10 +284,7 @@ class _HomePageState extends State<HomePage> {
       PollsPage(
         currentUser: _currentUser ??
             auth.User(
-              id: 'guest',
-              provider: auth.AuthProvider.anonymous,
-              createdAt: DateTime.now(),
-              lastLoginAt: DateTime.now(),
+              uid: 'guest',
             ),
       ),
       // 5: 즐겨찾기

@@ -11,6 +11,7 @@ import 'package:elecko26_new/data/datasources/nesdc_poll_data_source.dart';
 import 'package:elecko26_new/data/datasources/news_crawler.dart';
 import 'package:elecko26_new/data/datasources/profile_image_resolver.dart';
 import 'package:elecko26_new/data/models/member_model.dart';
+import 'package:elecko26_new/domain/entities/auth_user.dart' as domain_user;
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/entities/poll.dart';
 import 'package:elecko26_new/domain/usecases/possibility_calculator.dart';
@@ -81,7 +82,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       final timestampStr = localService.getString(_cacheTimestampKey);
       if (timestampStr == null) return [];
 
-      final timestamp = DateTime.fromMillisecondsSinceEpoch(int.parse(timestampStr));
+      final timestamp =
+          DateTime.fromMillisecondsSinceEpoch(int.parse(timestampStr));
       if (DateTime.now().difference(timestamp) > _cacheTtl) {
         debugPrint('[Cache] 캐시 만료됨, 새로 로드 필요');
         return [];
@@ -112,10 +114,11 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<List<Member>> _loadLightweightMembers() async {
     try {
       debugPrint('[Cache] Loading lightweight data from rootBundle...');
-      final jsonString = await rootBundle.loadString('data/candidates_lightweight.json');
+      final jsonString =
+          await rootBundle.loadString('data/candidates_lightweight.json');
       final jsonList = json.decode(jsonString) as List<dynamic>;
       final members = <Member>[];
-      
+
       int count = 0;
       for (final item in jsonList) {
         try {
@@ -138,15 +141,17 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     try {
       final localService = sl<LocalStorageService>();
       // 핵심 필드만 저장하여 용량 최소화 (이름, 정당, 지역, 당선가능성, 이미지)
-      final lightweight = members.map((m) => {
-        'id': m.id,
-        'name': m.name,
-        'party': m.party,
-        'district': m.district,
-        'electionPossibility': m.electionPossibility,
-        'imageUrl': m.imageUrl,
-        'lastAnalysisDate': m.lastAnalysisDate.toIso8601String(),
-      }).toList();
+      final lightweight = members
+          .map((m) => {
+                'id': m.id,
+                'name': m.name,
+                'party': m.party,
+                'district': m.district,
+                'electionPossibility': m.electionPossibility,
+                'imageUrl': m.imageUrl,
+                'lastAnalysisDate': m.lastAnalysisDate.toIso8601String(),
+              })
+          .toList();
 
       final jsonStr = json.encode(lightweight);
       // SharedPreferences는 약 10MB 제한이 있어 분할 저장
@@ -156,7 +161,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
           _cacheTimestampKey,
           DateTime.now().millisecondsSinceEpoch.toString(),
         );
-        debugPrint('[Cache] ${members.length}명 캐시 저장 완료 (${(jsonStr.length / 1024).toStringAsFixed(1)}KB)');
+        debugPrint(
+            '[Cache] ${members.length}명 캐시 저장 완료 (${(jsonStr.length / 1024).toStringAsFixed(1)}KB)');
       }
     } catch (e) {
       debugPrint('[Cache] 캐시 저장 실패: $e');
@@ -166,13 +172,15 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   Future<void> _ensureInitialized() async {
     if (_isInitialized) return;
     if (_initializationFuture != null) {
-      await _initializationFuture!.timeout(const Duration(seconds: 5), onTimeout: () {
+      await _initializationFuture!.timeout(const Duration(seconds: 5),
+          onTimeout: () {
         debugPrint('[FirestoreRepo] Initialization wait timeout');
       });
       return;
     }
     _initializationFuture = _performInitialization();
-    await _initializationFuture!.timeout(const Duration(seconds: 5), onTimeout: () {
+    await _initializationFuture!.timeout(const Duration(seconds: 5),
+        onTimeout: () {
       debugPrint('[FirestoreRepo] Initialization perform timeout');
     });
   }
@@ -185,13 +193,15 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     } catch (_) {}
     try {
       // 1) 캐시에서 즉시 표시 (초고속) - 3초 내에 강제 완료
-      var cachedMembers = await _loadFromCache().timeout(const Duration(seconds: 3), onTimeout: () => []);
-      
+      var cachedMembers = await _loadFromCache()
+          .timeout(const Duration(seconds: 3), onTimeout: () => []);
+
       // 캐시가 없으면 경량 번들 JSON에서 즉시 8000명 로드 (웹 환경 고려 8초 타임아웃)
       if (cachedMembers.isEmpty) {
-        cachedMembers = await _loadLightweightMembers().timeout(const Duration(seconds: 8), onTimeout: () => []);
+        cachedMembers = await _loadLightweightMembers()
+            .timeout(const Duration(seconds: 8), onTimeout: () => []);
       }
-      
+
       if (cachedMembers.isNotEmpty) {
         final localService = sl<LocalStorageService>();
         final favoriteIds = await localService.getFavorites();
@@ -205,7 +215,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         unawaited(refreshMembers());
       } else {
         // 둘 다 실패 시 풀 로드 시도 (10초 제한)
-        await refreshMembers().timeout(const Duration(seconds: 10), onTimeout: () {});
+        await refreshMembers()
+            .timeout(const Duration(seconds: 10), onTimeout: () {});
         _isInitialized = true;
       }
     } finally {
@@ -499,13 +510,14 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       if (cachedMembers.isEmpty) {
         cachedMembers = await _loadLightweightMembers();
       }
-      
+
       if (cachedMembers.isNotEmpty) {
         final withFavorites = cachedMembers
             .map((m) => m.copyWith(isFavorite: favoriteIds.contains(m.id)))
             .toList();
         _notifyListeners(withFavorites);
-        debugPrint('[FirestoreMemberRepo] Phase 0 (Local Cache ${withFavorites.length}명) 즉시 표시 완료');
+        debugPrint(
+            '[FirestoreMemberRepo] Phase 0 (Local Cache ${withFavorites.length}명) 즉시 표시 완료');
       }
     }
 
@@ -514,7 +526,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     _performFullRefreshInBackground(favoriteIds, now);
   }
 
-  Future<void> _performFullRefreshInBackground(List<String> favoriteIds, DateTime now) async {
+  Future<void> _performFullRefreshInBackground(
+      List<String> favoriteIds, DateTime now) async {
     debugPrint('[Refresh] === Background Full Refresh Started ===');
     List<Member> cloudMembers = [];
     try {
@@ -535,7 +548,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
               data['id'] = doc.id;
               cloudMembers.add(MemberModel.fromJson(data));
             } catch (e) {
-              debugPrint('[FirestoreMemberRepository] Error parsing doc ${doc.id}: $e');
+              debugPrint(
+                  '[FirestoreMemberRepository] Error parsing doc ${doc.id}: $e');
             }
           }
         }
@@ -564,10 +578,26 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   ) async {
     final allLocalMembers = <Member>[];
     final selectedRegion = await getSelectedRegion();
-    
+
     final regions = [
-      '서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시', '세종특별자치시',
-      '경기도', '강원도', '충청북도', '충청남도', '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도', '기타'
+      '서울특별시',
+      '부산광역시',
+      '대구광역시',
+      '인천광역시',
+      '광주광역시',
+      '대전광역시',
+      '울산광역시',
+      '세종특별자치시',
+      '경기도',
+      '강원도',
+      '충청북도',
+      '충청남도',
+      '전북특별자치도',
+      '전라남도',
+      '경상북도',
+      '경상남도',
+      '제주특별자치도',
+      '기타'
     ];
 
     // 1) 우선순위: 사용자가 선택한 지역 먼저 로드
@@ -576,11 +606,13 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         final content = await _loadAssetSplitChunk(selectedRegion);
         final chunk = await _parseMembersFromJsonChunk(content, favoriteIds);
         allLocalMembers.addAll(chunk);
-        
+
         // 지역 데이터 로드 즉시 반영 (가장 빠른 피드백)
-        final preliminary = _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers);
+        final preliminary =
+            _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers);
         _notifyListeners(preliminary);
-        debugPrint('[FirestoreMemberRepository] 우선순위 지역 ($selectedRegion) 로드 및 UI 반영 완료');
+        debugPrint(
+            '[FirestoreMemberRepository] 우선순위 지역 ($selectedRegion) 로드 및 UI 반영 완료');
       } catch (e) {
         debugPrint('[FirestoreMemberRepository] 우선순위 지역 로드 실패: $e');
       }
@@ -589,23 +621,25 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     // 2) 나머지 지역 백그라운드 순차 로드
     for (var region in regions) {
       if (region == selectedRegion) continue;
-      
+
       try {
         final content = await _loadAssetSplitChunk(region);
         final chunk = await _parseMembersFromJsonChunk(content, favoriteIds);
         allLocalMembers.addAll(chunk);
-        
+
         // 브라우저 프레임 확보
         await Future.delayed(const Duration(milliseconds: 50));
       } catch (e) {
         debugPrint('[FirestoreMemberRepository] 지역 ($region) 로드 실패: $e');
       }
     }
-    
+
     // 최종 데이터 병합 및 반영
-    final finalMembers = _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers);
+    final finalMembers =
+        _mergeMembersByIdPreferCloud(cloudMembers, allLocalMembers);
     _notifyListeners(finalMembers);
-    debugPrint('[FirestoreMemberRepository] 전체 지역 (${finalMembers.length}명) 병합 완료');
+    debugPrint(
+        '[FirestoreMemberRepository] 전체 지역 (${finalMembers.length}명) 병합 완료');
 
     // 다음 방문 시 즉시 표시를 위해 캐시에 저장 (백그라운드)
     unawaited(_saveToCache(finalMembers));
@@ -622,23 +656,39 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   ) async {
     final members = <Member>[];
     final regions = [
-      '서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시', '세종특별자치시',
-      '경기도', '강원도', '충청북도', '충청남도', '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도', '기타'
+      '서울특별시',
+      '부산광역시',
+      '대구광역시',
+      '인천광역시',
+      '광주광역시',
+      '대전광역시',
+      '울산광역시',
+      '세종특별자치시',
+      '경기도',
+      '강원도',
+      '충청북도',
+      '충청남도',
+      '전북특별자치도',
+      '전라남도',
+      '경상북도',
+      '경상남도',
+      '제주특별자치도',
+      '기타'
     ];
 
     try {
       for (var region in regions) {
         final content = await _loadRemoteSplitChunk(region);
         if (content == null) continue;
-        
+
         final chunk = await _parseMembersFromJsonChunk(content, favoriteIds);
         members.addAll(chunk);
-        
+
         if (members.isNotEmpty) {
           final merged = _mergeMembersByIdPreferCloud(cloudMembers, members);
           _notifyListeners(merged);
         }
-        
+
         await Future.delayed(const Duration(milliseconds: 10));
       }
     } catch (e) {
@@ -653,8 +703,24 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   ) async {
     final members = <Member>[];
     final regions = [
-      '서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시', '세종특별자치시',
-      '경기도', '강원도', '충청북도', '충청남도', '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도', '기타'
+      '서울특별시',
+      '부산광역시',
+      '대구광역시',
+      '인천광역시',
+      '광주광역시',
+      '대전광역시',
+      '울산광역시',
+      '세종특별자치시',
+      '경기도',
+      '강원도',
+      '충청북도',
+      '충청남도',
+      '전북특별자치도',
+      '전라남도',
+      '경상북도',
+      '경상남도',
+      '제주특별자치도',
+      '기타'
     ];
 
     for (var region in regions) {
@@ -690,7 +756,8 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       );
     } catch (_) {}
 
-    throw FlutterError('Split candidate asset not found: identifier=$identifier');
+    throw FlutterError(
+        'Split candidate asset not found: identifier=$identifier');
   }
 
   static Future<List<Member>> _parseMembersFromJsonChunk(
@@ -708,7 +775,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         members.add(
           member.copyWith(isFavorite: favoriteSet.contains(member.id)),
         );
-        
+
         count++;
         if (count % 100 == 0) {
           await Future.delayed(Duration.zero);
@@ -773,7 +840,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
           .toList();
 
       final updatedMembers = await _matchPollsInBackground(
-                List.from(initialMembers), entries, collectedDetails, now);
+          List.from(initialMembers), entries, collectedDetails, now);
 
       // 2-2. 즐겨찾기 재적용 및 최종 통지
       final localService = sl<LocalStorageService>();
@@ -858,10 +925,26 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
     // 성능 최적화 1: 지역별 그룹화 (O(E * R))
     final regions = [
-      '서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시', '세종특별자치시',
-      '경기도', '강원도', '충청북도', '충청남도', '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도', '전국'
+      '서울특별시',
+      '부산광역시',
+      '대구광역시',
+      '인천광역시',
+      '광주광역시',
+      '대전광역시',
+      '울산광역시',
+      '세종특별자치시',
+      '경기도',
+      '강원도',
+      '충청북도',
+      '충청남도',
+      '전북특별자치도',
+      '전라남도',
+      '경상북도',
+      '경상남도',
+      '제주특별자치도',
+      '전국'
     ];
-    
+
     final Map<String, List<NesdcPollEntry>> entriesByRegion = {};
     for (var region in regions) {
       entriesByRegion[region] = entries
@@ -902,12 +985,13 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
           sampleSize: detail.sampleSize,
           marginOfError: detail.marginOfError,
           source: entry.sourceUrl,
-          notes: '${entry.client} | ${entry.method} | 지지율: ${supportRate ?? '미공개'}',
+          notes:
+              '${entry.client} | ${entry.method} | 지지율: ${supportRate ?? '미공개'}',
         ));
       }
 
       final mergedPolls = _staticMergePolls(member.polls, newPolls);
-      
+
       // 여론조사가 추가되었거나 변경된 경우에만 재계산 진행
       if (mergedPolls.length != member.polls.length) {
         final updatedMember = member.copyWith(
@@ -1037,9 +1121,11 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
         for (var originalItem in originalList) {
           if (originalItem is Map) {
-            final Map<String, dynamic> item = Map<String, dynamic>.from(originalItem);
+            final Map<String, dynamic> item =
+                Map<String, dynamic>.from(originalItem);
             if (item[dateField] is Timestamp) {
-              item[dateField] = (item[dateField] as Timestamp).toDate().toIso8601String();
+              item[dateField] =
+                  (item[dateField] as Timestamp).toDate().toIso8601String();
               modified = true;
             }
             mutableList.add(item);
@@ -1545,5 +1631,51 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     } catch (e) {
       debugPrint('서재열 후보 프로필 이미지 업데이트 중 오류: $e');
     }
+  }
+
+  @override
+  Stream<List<Member>> watchMembers() {
+    _ensureInitializedInBackground();
+    return _membersController.stream;
+  }
+
+  @override
+  Stream<domain_user.User?> watchCurrentUser() {
+    if (Firebase.apps.isEmpty) return Stream.value(null);
+    return auth.FirebaseAuth.instance.authStateChanges().map((firebaseUser) {
+      if (firebaseUser == null) {
+        _stopFavoritesStreamListener();
+        return null;
+      }
+      _startFavoritesStreamListener(firebaseUser.uid);
+
+      domain_user.AuthProvider provider;
+      if (firebaseUser.providerData.isEmpty) {
+        provider = domain_user.AuthProvider.anonymous;
+      } else {
+        final providerId = firebaseUser.providerData.first.providerId;
+        if (providerId.contains('google')) {
+          provider = domain_user.AuthProvider.google;
+        } else if (providerId.contains('apple')) {
+          provider = domain_user.AuthProvider.apple;
+        } else {
+          provider = domain_user.AuthProvider.anonymous;
+        }
+      }
+
+      return domain_user.User(
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        provider: provider,
+      );
+    });
+  }
+
+  @override
+  Future<void> logout() async {
+    if (Firebase.apps.isEmpty) return;
+    await auth.FirebaseAuth.instance.signOut();
+    _stopFavoritesStreamListener();
   }
 }

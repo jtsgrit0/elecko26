@@ -40,6 +40,10 @@ abstract class MemberRepository {
   Stream<Member> watchMemberById(String memberId,
       {Duration interval = const Duration(hours: 1)});
 
+  Stream<List<Member>> watchMembers();
+  Stream<User?> watchCurrentUser();
+  Future<void> logout();
+
   /// 투표 현황을 감시함 (district -> memberId map)
   Stream<Map<String, String>> watchAllVotes();
 
