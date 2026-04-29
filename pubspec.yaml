@@ -116,3 +116,6 @@ flutter_native_splash:
   image: assets/images/election_icon.png
   android: true
   ios: true
+
+flutter_inappwebview:
+  web: true
