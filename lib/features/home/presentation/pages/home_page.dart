@@ -381,7 +381,6 @@ class _HomePageState extends State<HomePage>
     );
 
     // 필수 이미지 미리 로딩 (캐싱)
-    // 필수 이미지 미리 로딩 (캐싱)
     _precacheImages();
 
     // 지역 설정 변경 감지 구독
@@ -412,7 +411,7 @@ class _HomePageState extends State<HomePage>
     try {
       final selectedRegion = await sl<MemberRepository>().getSelectedRegion();
       if (mounted) {
-        _userRegionNotifier.value = selectedRegion;
+        _userRegionNotifier.value = selectedRegion ?? '전국';
       }
     } catch (e) {
       debugPrint('[HomePage] Failed to load user settings: $e');
@@ -647,21 +646,20 @@ class _HomePageState extends State<HomePage>
           valueListenable: _isLoadingNotifier,
           builder: (context, isLoading, _) => HomeDashboardView(
             isLoading: isLoading,
-          membersStream: _membersStream,
-          cachedMembers: _cachedMembers,
-          userRegion: region,
-          onRefresh: () => _triggerNesdcRefresh(isSilent: false),
-          onMemberSelected: (m) => setState(() => _selectedMember = m),
-          onNavigateToSearch: () => _selectedIndexNotifier.value = 1,
-          onRegionChanged: (newRegion) async {
-            _userRegionNotifier.value = newRegion;
-            await sl<MemberRepository>().saveSelectedRegion(newRegion);
-          },
+            membersStream: _membersStream,
+            cachedMembers: _cachedMembers,
+            userRegion: region,
+            onRefresh: () => _triggerNesdcRefresh(isSilent: false),
+            onMemberSelected: (m) => setState(() => _selectedMember = m),
+            onNavigateToSearch: () => _selectedIndexNotifier.value = 1,
+            onRegionChanged: (newRegion) async {
+              _userRegionNotifier.value = newRegion;
+              await sl<MemberRepository>().saveSelectedRegion(newRegion);
+            },
+          ),
         ),
       ),
-    ),
-  ),
-  // 1: 검색
+      // 1: 검색
       ValueListenableBuilder<String>(
         valueListenable: _userRegionNotifier,
         builder: (context, region, _) => SearchView(
@@ -797,38 +795,41 @@ class _HomePageState extends State<HomePage>
                     children: [
                       const Icon(Icons.location_on_outlined,
                           color: AppColors.grey, size: 18),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 4),
                       ValueListenableBuilder<String>(
                         valueListenable: _userRegionNotifier,
                         builder: (context, region, _) => Text(
                           region,
-                          style: AppTextStyles.bodyMedium
-                              .copyWith(color: AppColors.dark),
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.dark,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.lightGrey.withOpacity(0.3),
+                  color: AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.person_outline,
-                        color: AppColors.grey, size: 18),
-                    const SizedBox(width: 8),
+                    const Icon(Icons.star, color: AppColors.primary, size: 18),
+                    const SizedBox(width: 4),
                     ValueListenableBuilder<int>(
                       valueListenable: _favoriteCountNotifier,
                       builder: (context, count, _) => Text(
-                        '즐겨찾기 $count명',
-                        style: AppTextStyles.bodyMedium
-                            .copyWith(color: AppColors.dark),
+                        '$count',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
@@ -844,27 +845,45 @@ class _HomePageState extends State<HomePage>
   Widget _buildBottomNavBar() {
     return ValueListenableBuilder<int>(
       valueListenable: _selectedIndexNotifier,
-      builder: (context, index, _) {
-        return BottomNavigationBar(
-          items: const <BottomNavigationBarItem>[
+      builder: (context, index, _) => Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: index,
+          onTap: _handleBottomNavTap,
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: AppColors.white,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.grey,
+          selectedLabelStyle:
+              const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          unselectedLabelStyle: const TextStyle(fontSize: 11),
+          items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
+              icon: Icon(Icons.dashboard_outlined),
+              activeIcon: Icon(Icons.dashboard),
               label: '홈',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.search_outlined),
-              activeIcon: Icon(Icons.search),
+              icon: Icon(Icons.search),
+              activeIcon: Icon(Icons.search, weight: 700),
               label: '검색',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.compare_arrows),
-              activeIcon: Icon(Icons.compare_arrows),
+              activeIcon: Icon(Icons.compare_arrows, weight: 700),
               label: '비교',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.article_outlined),
-              activeIcon: Icon(Icons.article),
+              icon: Icon(Icons.newspaper_outlined),
+              activeIcon: Icon(Icons.newspaper),
               label: '뉴스',
             ),
             BottomNavigationBarItem(
@@ -875,7 +894,7 @@ class _HomePageState extends State<HomePage>
             BottomNavigationBarItem(
               icon: Icon(Icons.star_outline),
               activeIcon: Icon(Icons.star),
-              label: '즐겨찾기',
+              label: '관심',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.map_outlined),
@@ -883,16 +902,8 @@ class _HomePageState extends State<HomePage>
               label: '지도',
             ),
           ],
-          currentIndex: index,
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: AppColors.grey,
-          onTap: _handleBottomNavTap,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: AppColors.white,
-          selectedLabelStyle: AppTextStyles.labelSmall,
-          unselectedLabelStyle: AppTextStyles.labelSmall,
-        );
-      },
+        ),
+      ),
     );
   }
 }

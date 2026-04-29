@@ -85,7 +85,7 @@ class _PollsPageState extends State<PollsPage> with TickerProviderStateMixin {
       final region = await sl<MemberRepository>().getSelectedRegion();
       if (mounted) {
         setState(() {
-          _selectedRegion = region;
+          _selectedRegion = region ?? '전국';
         });
       }
     } catch (e) {
