@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:elecko26_new/app/injection_container.dart';
+import 'package:elecko26_new/domain/usecases/calculate_election_possibility_usecase.dart';
 import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
@@ -40,6 +42,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
   Map<String, double> _memberPossibilities = {};
   StreamSubscription? _subscription;
   bool _isCalculatingPossibilities = false;
+  late final CalculateElectionPossibilityUseCase
+      _calculateElectionPossibilityUseCase;
 
   final List<String> _regions = [
     '서울특별시',
@@ -51,7 +55,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
     '울산광역시',
     '세종특별자치시',
     '경기도',
-    '강원도',
+    '강원특별자치도',
     '충청북도',
     '충청남도',
     '전북특별자치도',
@@ -65,6 +69,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
   @override
   void initState() {
     super.initState();
+    _calculateElectionPossibilityUseCase =
+        sl<CalculateElectionPossibilityUseCase>();
     _displayMembers = widget.cachedMembers;
     _updateCalculatedData();
 
@@ -84,10 +90,38 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
     super.dispose();
   }
 
-  void _updateCalculatedData() {
-    // 1. 당선 가능성 맵 업데이트 (Member 엔티티의 값을 사용)
-    for (var member in _displayMembers) {
-      _memberPossibilities[member.id] = member.electionPossibility;
+  Future<void> _updateCalculatedData() async {
+    if (_displayMembers.isEmpty) return;
+
+    if (!mounted) return;
+    setState(() {
+      _isCalculatingPossibilities = true;
+    });
+
+    final possibilityFutures = _displayMembers
+        .map((member) => _calculateElectionPossibilityUseCase.call(member.id))
+        .toList();
+
+    try {
+      final results = await Future.wait(possibilityFutures);
+
+      final newPossibilities = <String, double>{};
+      for (var result in results) {
+        newPossibilities[result.memberId] = result.electionPossibility;
+      }
+
+      if (mounted) {
+        setState(() {
+          _memberPossibilities = newPossibilities;
+          _isCalculatingPossibilities = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isCalculatingPossibilities = false;
+        });
+      }
     }
   }
 
@@ -106,8 +140,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
     }
 
     // 당선 가능성 내림차순 정렬
-    filtered.sort((a, b) =>
-        _getMemberPossibility(b).compareTo(_getMemberPossibility(a)));
+    filtered.sort(
+        (a, b) => _getMemberPossibility(b).compareTo(_getMemberPossibility(a)));
     return filtered;
   }
 
@@ -125,8 +159,9 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
   String get _updateValue {
     if (_displayMembers.isEmpty) return '-';
     // 가장 최근 업데이트 날짜 찾기
-    final latest = _displayMembers.map((m) => m.lastAnalysisDate).reduce(
-        (a, b) => a.isAfter(b) ? a : b);
+    final latest = _displayMembers
+        .map((m) => m.lastAnalysisDate)
+        .reduce((a, b) => a.isAfter(b) ? a : b);
     return '${latest.month}/${latest.day} ${latest.hour}:${latest.minute}';
   }
 
@@ -365,55 +400,66 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
                   children: [
                     CircularProgressIndicator(color: Colors.red),
                     SizedBox(height: 16),
-                    Text(
-                      '실시간 당선 가능성 계산 중...', 
-                      style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)
-                    ),
+                    Text('실시간 당선 가능성 계산 중...',
+                        style: TextStyle(
+                            color: Colors.red, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
             )
           else
             Column(
-            children: List.generate(top3.length, (index) {
-              final member = top3[index];
-              final rank = index + 1;
-              final possibility = _getMemberPossibility(member);
-              return Padding(
-                padding:
-                    EdgeInsets.only(bottom: index < top3.length - 1 ? 12 : 0),
-                child: GestureDetector(
-                  onTap: () => widget.onMemberSelected(member),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          '${rank}위',
-                          style: AppTextStyles.headline4.copyWith(
-                            color: AppColors.error,
-                            fontWeight: FontWeight.bold,
+              children: List.generate(top3.length, (index) {
+                final member = top3[index];
+                final rank = index + 1;
+                final possibility = _getMemberPossibility(member);
+                return Padding(
+                  padding:
+                      EdgeInsets.only(bottom: index < top3.length - 1 ? 12 : 0),
+                  child: GestureDetector(
+                    onTap: () => widget.onMemberSelected(member),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            '${rank}위',
+                            style: AppTextStyles.headline4.copyWith(
+                              color: AppColors.error,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
-                          child: Container(
-                            width: 48,
-                            height: 48,
-                            color: AppColors.lightGray,
-                            child: member.imageUrl.isNotEmpty
-                                ? CachedNetworkImage(
-                                    imageUrl: member.imageUrl,
-                                    fit: BoxFit.cover,
-                                    memCacheWidth: 100,
-                                    memCacheHeight: 100,
-                                    placeholder: (context, url) => Container(color: AppColors.lightGrey),
-                                    errorWidget: (context, url, error) => Center(
+                          const SizedBox(width: 16),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(24),
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              color: AppColors.lightGray,
+                              child: member.imageUrl.isNotEmpty
+                                  ? CachedNetworkImage(
+                                      imageUrl: member.imageUrl,
+                                      fit: BoxFit.cover,
+                                      memCacheWidth: 100,
+                                      memCacheHeight: 100,
+                                      placeholder: (context, url) =>
+                                          Container(color: AppColors.lightGrey),
+                                      errorWidget: (context, url, error) =>
+                                          Center(
+                                        child: Text(
+                                          member.name.substring(0, 1),
+                                          style:
+                                              AppTextStyles.headline4.copyWith(
+                                            color: AppColors.mediumGray,
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  : Center(
                                       child: Text(
                                         member.name.substring(0, 1),
                                         style: AppTextStyles.headline4.copyWith(
@@ -421,64 +467,55 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
                                         ),
                                       ),
                                     ),
-                                  )
-                                : Center(
-                                    child: Text(
-                                      member.name.substring(0, 1),
-                                      style: AppTextStyles.headline4.copyWith(
-                                        color: AppColors.mediumGray,
-                                      ),
-                                    ),
-                                  ),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  member.name,
+                                  style: AppTextStyles.bodyLarge.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${member.party} · ${member.district}',
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: AppColors.mediumGray,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(
-                                member.name,
-                                style: AppTextStyles.bodyLarge.copyWith(
+                                '${(possibility * 100).toStringAsFixed(1)}%',
+                                style: AppTextStyles.headline4.copyWith(
+                                  color: AppColors.primary,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 2),
                               Text(
-                                '${member.party} · ${member.district}',
+                                '당선가능성',
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   color: AppColors.mediumGray,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '${(possibility * 100).toStringAsFixed(1)}%',
-                              style: AppTextStyles.headline4.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '당선가능성',
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.mediumGray,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              );
-            }),
-          ),
+                );
+              }),
+            ),
         ],
       ),
     );
