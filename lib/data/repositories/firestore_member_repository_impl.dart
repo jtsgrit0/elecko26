@@ -1144,12 +1144,39 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<List<Member>> getAllMembers() async {
-    if (_membersController.value.isNotEmpty) {
-      _ensureInitializedInBackground();
-      return _membersController.value;
-    }
+    debugPrint(
+        '[FirestoreMemberRepository] Getting all members from Firestore');
     await _ensureInitialized();
-    return _membersController.value;
+
+    try {
+      final snapshot = await _firestore.collection('members').get();
+      final localService = sl<LocalStorageService>();
+      final favoriteIds = await localService.getFavorites();
+
+      if (snapshot.docs.isEmpty) {
+        debugPrint(
+            '[FirestoreMemberRepository] No members found in Firestore, attempting to load from lightweight bundle.');
+        return _loadLightweightMembers();
+      }
+
+      final members = snapshot.docs.map((doc) {
+        final data = Map<String, dynamic>.from(doc.data());
+        data['isFavorite'] = favoriteIds.contains(doc.id);
+        return MemberModel.fromJson(data);
+      }).toList();
+
+      debugPrint(
+          '[FirestoreMemberRepository] Successfully loaded ${members.length} members from Firestore.');
+      _notifyListeners(members);
+      unawaited(_saveToCache(members));
+      return members;
+    } catch (e, stackTrace) {
+      debugPrint('[FirestoreMemberRepository] Error getting all members: $e');
+      debugPrint('Stack trace: $stackTrace');
+      debugPrint(
+          '[FirestoreMemberRepository] Falling back to lightweight bundle.');
+      return _loadLightweightMembers();
+    }
   }
 
   @override

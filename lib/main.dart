@@ -96,12 +96,16 @@ class _InitialScreenState extends State<InitialScreen> {
   }
 
   Future<void> _loadData() async {
+    debugPrint('[InitialScreen] _loadData: 데이터 로딩 시작');
     try {
       // 데이터 로딩
       final getMembersUseCase = di.sl<GetMembersUseCase>();
       final calculateUseCase = di.sl<CalculateElectionPossibilityUseCase>();
 
+      debugPrint('[InitialScreen] _loadData: GetMembersUseCase 호출');
       List<Member> loadedMembers = await getMembersUseCase.call();
+      debugPrint(
+          '[InitialScreen] _loadData: GetMembersUseCase 완료, ${loadedMembers.length}명 로드됨');
       List<Member> updatedMembers = [];
 
       for (var member in loadedMembers) {
@@ -114,26 +118,38 @@ class _InitialScreenState extends State<InitialScreen> {
         }
       }
       _members = updatedMembers;
+      debugPrint(
+          '[InitialScreen] _loadData: 멤버 데이터 처리 완료. 최종 멤버 수: ${_members.length}');
 
       // 지역 정보 로딩
       final localService = di.sl<elecko.LocalStorageService>();
       _initialRegion = await localService.getSelectedRegion();
-    } catch (e) {
-      debugPrint('[InitialScreen] Failed to load data: $e');
+      debugPrint(
+          '[InitialScreen] _loadData: 지역 정보 로드 완료. 선택된 지역: $_initialRegion');
+    } catch (e, stackTrace) {
+      debugPrint('[InitialScreen] _loadData: 데이터 로딩 실패! 오류: $e');
+      debugPrint('Stack trace: $stackTrace');
       // 오류 발생 시, 빈 데이터로 앱을 계속 진행하거나 오류 화면을 표시할 수 있습니다.
+      _members = []; // 데이터 로딩 실패 시 멤버 리스트를 비웁니다.
     }
+    debugPrint('[InitialScreen] _loadData: 데이터 로딩 종료');
   }
 
   @override
   Widget build(BuildContext context) {
+    debugPrint(
+        '[InitialScreen] build: 화면 빌드 시작. _showSplash: $_showSplash, _initialRegion: $_initialRegion, _members.length: ${_members.length}');
     if (_showSplash) {
+      debugPrint('[InitialScreen] build: 로딩 화면 표시');
       return _buildLoadingScreen();
     }
 
     if (_initialRegion == null) {
+      debugPrint('[InitialScreen] build: 지역 선택 모달 표시');
       return _buildLoadingWithModal();
     }
 
+    debugPrint('[InitialScreen] build: HomePage 표시');
     return HomePage(members: _members);
   }
 
