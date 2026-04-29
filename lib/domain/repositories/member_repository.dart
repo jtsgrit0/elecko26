@@ -81,4 +81,7 @@ abstract class MemberRepository {
 
   /// 서재열 후보의 프로필 이미지를 업데이트합니다.
   Future<void> updateSeoJaeyeolImage();
+
+  /// 모든 후보자의 뉴스를 크롤링하여 업데이트합니다.
+  Future<void> crawlNewsForAllMembers();
 }

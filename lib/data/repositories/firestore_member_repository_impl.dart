@@ -1677,6 +1677,90 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
   }
 
   @override
+  Future<void> crawlNewsForAllMembers() async {
+    debugPrint('[NewsCrawler] 모든 후보자 뉴스 크롤링을 시작합니다...');
+    try {
+      // 1. 모든 후보자 정보 가져오기
+      final membersSnapshot = await _firestore.collection('members').get();
+      final allMembers = membersSnapshot.docs
+          .map((doc) => MemberModel.fromJson(doc.data()).copyWith(id: doc.id))
+          .toList();
+
+      if (allMembers.isEmpty) {
+        debugPrint('[NewsCrawler] 업데이트할 후보자가 없습니다.');
+        return;
+      }
+
+      debugPrint('[NewsCrawler] ${allMembers.length}명의 후보자를 대상으로 크롤링을 시작합니다.');
+
+      final newsCrawler = NewsCrawler();
+      final WriteBatch batch = _firestore.batch();
+      int updatedCount = 0;
+
+      // 2. 각 후보자에 대해 뉴스 크롤링 및 업데이트
+      for (int i = 0; i < allMembers.length; i++) {
+        final member = allMembers[i];
+        debugPrint(
+            '[NewsCrawler] (${i + 1}/${allMembers.length}) ${member.name} 후보의 뉴스를 크롤링합니다...');
+
+        try {
+          final newReports =
+              await newsCrawler.crawlNewsForCandidate(member.name);
+
+          if (newReports.isEmpty) {
+            debugPrint('[NewsCrawler] ${member.name} 후보의 새 뉴스가 없습니다.');
+            continue;
+          }
+
+          // 3. 기존 뉴스 리포트와 병합 (중복 제거 및 정렬)
+          final existingReports = member.pressReports;
+          final existingUrls = existingReports.map((r) => r.url).toSet();
+
+          final uniqueNewReports =
+              newReports.where((r) => !existingUrls.contains(r.url)).toList();
+
+          if (uniqueNewReports.isEmpty) {
+            debugPrint('[NewsCrawler] ${member.name} 후보의 중복되지 않은 새 뉴스가 없습니다.');
+            continue;
+          }
+
+          final mergedReports = [...uniqueNewReports, ...existingReports]
+            ..sort((a, b) => b.publishDate.compareTo(a.publishDate));
+
+          // 4. 최대 20개로 제한
+          final limitedReports = mergedReports.take(20).toList();
+
+          final memberRef = _firestore.collection('members').doc(member.id);
+          batch.update(memberRef, {
+            'pressReports': limitedReports.map((r) => r.toJson()).toList(),
+            'lastAnalysisDate': FieldValue.serverTimestamp(), // 뉴스 업데이트 시각 반영
+          });
+
+          updatedCount++;
+          debugPrint(
+              '[NewsCrawler] ${member.name} 후보의 뉴스 ${uniqueNewReports.length}건을 추가합니다.');
+        } catch (e) {
+          debugPrint('[NewsCrawler] ${member.name} 후보 뉴스 크롤링 중 오류: $e');
+        }
+
+        // 5. 요청 간 지연 (과도한 요청 방지)
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+
+      if (updatedCount > 0) {
+        // 6. 일괄 업데이트 실행
+        await batch.commit();
+        debugPrint('[NewsCrawler] 총 ${updatedCount}명의 후보자 뉴스를 성공적으로 업데이트했습니다.');
+      } else {
+        debugPrint('[NewsCrawler] 업데이트할 새로운 뉴스가 없습니다.');
+      }
+    } catch (e) {
+      debugPrint('[NewsCrawler] 전체 뉴스 크롤링 프로세스 중 심각한 오류 발생: $e');
+      rethrow;
+    }
+  }
+
+  @override
   Future<void> logout() async {
     if (Firebase.apps.isEmpty) return;
     await auth.FirebaseAuth.instance.signOut();
