@@ -285,6 +285,7 @@ class _HomePageState extends State<HomePage> {
         currentUser: _currentUser ??
             auth.User(
               uid: 'guest',
+              provider: auth.AuthProvider.anonymous,
             ),
       ),
       // 5: 즐겨찾기
