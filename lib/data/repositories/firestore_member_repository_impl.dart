@@ -11,7 +11,8 @@ import 'package:elecko26_new/data/datasources/nesdc_poll_data_source.dart';
 import 'package:elecko26_new/data/datasources/news_crawler.dart';
 import 'package:elecko26_new/data/datasources/profile_image_resolver.dart';
 import 'package:elecko26_new/data/models/member_model.dart';
-import 'package:elecko26_new/domain/entities/auth_user.dart' as domain_user;
+import 'package:elecko26_new/features/auth/domain/entities/user.dart'
+    as domain_user;
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/entities/poll.dart';
 import 'package:elecko26_new/domain/usecases/possibility_calculator.dart';
@@ -1664,10 +1665,13 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
       }
 
       return domain_user.User(
-        uid: firebaseUser.uid,
+        id: firebaseUser.uid,
         email: firebaseUser.email,
         displayName: firebaseUser.displayName,
+        photoUrl: firebaseUser.photoURL,
         provider: provider,
+        createdAt: firebaseUser.metadata.creationTime ?? DateTime.now(),
+        lastLoginAt: firebaseUser.metadata.lastSignInTime ?? DateTime.now(),
       );
     });
   }

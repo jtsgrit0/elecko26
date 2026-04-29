@@ -1,5 +1,5 @@
 import 'package:elecko26_new/domain/entities/member.dart';
-import 'package:elecko26_new/domain/entities/auth_user.dart';
+import 'package:elecko26_new/features/auth/domain/entities/user.dart';
 
 /// 회원 Repository 추상 클래스
 abstract class MemberRepository {

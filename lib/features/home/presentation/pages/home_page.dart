@@ -5,7 +5,7 @@ import 'package:elecko26_new/app/injection_container.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/core/widgets/lazy_indexed_stack.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
-import 'package:elecko26_new/domain/entities/auth_user.dart' as auth;
+import 'package:elecko26_new/features/auth/domain/entities/user.dart' as auth;
 import 'package:elecko26_new/domain/repositories/member_repository.dart';
 import 'package:elecko26_new/domain/usecases/member_usecases.dart';
 import 'package:elecko26_new/features/auth/presentation/pages/auth_gate.dart';
@@ -284,8 +284,10 @@ class _HomePageState extends State<HomePage> {
       PollsPage(
         currentUser: _currentUser ??
             auth.User(
-              uid: 'guest',
+              id: 'guest',
               provider: auth.AuthProvider.anonymous,
+              createdAt: DateTime.now(),
+              lastLoginAt: DateTime.now(),
             ),
       ),
       // 5: 즐겨찾기
