@@ -1,184 +1,65 @@
-<!DOCTYPE html><html><head>
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details, see:
+    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="2026 지방선거 당선 예측 플랫폼">
+  <meta name="description" content="2026 지방선거 당선 예측">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
 
   <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="2026 당예기">
+  <meta name="apple-mobile-web-app-title" content="2026 당선예측">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>2026 당예기</title>
+  <title>2026 당선예측</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- flutter_inappwebview web support -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/flutter_inappwebview/6.0.0/flutter_inappwebview.js"></script>
   <script>
-    if (window.flutter_inappwebview === undefined) {
-      window.flutter_inappwebview = {
-        nativeCommunication: {}
-      };
-    }
+    // The value below is injected by flutter build, do not touch.
+    var serviceWorkerVersion = null;
   </script>
-
-  <style>
-    body {
-      background-color: #f8f9fa;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-    }
-    #splash {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      width: 100vw;
-      background-color: #ffffff;
-      transition: opacity 0.5s ease-out;
-    }
-    .logo {
-      width: 120px;
-      height: 120px;
-      margin-bottom: 24px;
-      animation: pulse 2s infinite ease-in-out;
-    }
-    .loading-text {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      font-size: 18px;
-      font-weight: 600;
-      color: #D63031;
-      margin-top: 16px;
-    }
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid rgba(214, 48, 49, 0.1);
-      border-left-color: #D63031;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    @keyframes pulse {
-      0% { transform: scale(1); opacity: 0.8; }
-      50% { transform: scale(1.05); opacity: 1; }
-      100% { transform: scale(1); opacity: 0.8; }
-    }
-  </style>
-  <style id="splash-screen-style">
-    html {
-      height: 100%
-    }
-
-    body {
-      margin: 0;
-      min-height: 100%;
-      background-color: #FFFFFF;
-          background-size: 100% 100%;
-    }
-
-    .center {
-      margin: 0;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      -ms-transform: translate(-50%, -50%);
-      transform: translate(-50%, -50%);
-    }
-
-    .contain {
-      display:block;
-      width:100%; height:100%;
-      object-fit: contain;
-    }
-
-    .stretch {
-      display:block;
-      width:100%; height:100%;
-    }
-
-    .cover {
-      display:block;
-      width:100%; height:100%;
-      object-fit: cover;
-    }
-
-    .bottom {
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      -ms-transform: translate(-50%, 0);
-      transform: translate(-50%, 0);
-    }
-
-    .bottomLeft {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-    }
-
-    .bottomRight {
-      position: absolute;
-      bottom: 0;
-      right: 0;
-    }
-  </style>
-  <script id="splash-screen-script">
-    function removeSplashFromWeb() {
-      document.getElementById("splash")?.remove();
-      document.getElementById("splash-branding")?.remove();
-      document.body.style.background = "transparent";
-    }
-  </script>
-  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+  <!-- This script adds the flutter initialization JS code -->
+  <script src="flutter.js" defer></script>
+  <script type="application/javascript" src="/assets/packages/flutter_inappwebview/assets/web/web_support.js" defer></script>
 </head>
 <body>
-  <picture id="splash">
-      <source srcset="splash/img/light-1x.png 1x, splash/img/light-2x.png 2x, splash/img/light-3x.png 3x, splash/img/light-4x.png 4x" media="(prefers-color-scheme: light)">
-      <source srcset="splash/img/dark-1x.png 1x, splash/img/dark-2x.png 2x, splash/img/dark-3x.png 3x, splash/img/dark-4x.png 4x" media="(prefers-color-scheme: dark)">
-      <img class="center" aria-hidden="true" src="splash/img/light-1x.png" alt="">
-  </picture>
-  
-
   <script>
-    // 10초 후 무조건 스플래시 제거 (엔진 로드 실패 대비)
-    setTimeout(() => {
-      const splash = document.getElementById('splash');
-      if (splash) {
-        console.log('Splash force removed after 10s');
-        splash.style.opacity = '0';
-        setTimeout(() => splash.remove(), 500);
-      }
-    }, 10000);
-
-    {{flutter_js}}
-    {{flutter_build_config}}
-
-    _flutter.loader.load({
-      onEntrypointLoaded: async function(engineInitializer) {
-        const engine = await engineInitializer.initializeEngine();
-        await engine.runApp();
-        
-        // 엔진이 로드되고 앱이 실행될 준비가 되면 스플래시 화면 제거
-        const splash = document.getElementById('splash');
-        if (splash) {
-          splash.style.opacity = '0';
-          setTimeout(() => {
-            splash.remove();
-          }, 500);
+    window.addEventListener('load', function(ev) {
+      // Download main.dart.js
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: {
+          serviceWorkerVersion: serviceWorkerVersion,
+        },
+        onEntrypointLoaded: function(engineInitializer) {
+          engineInitializer.initializeEngine().then(function(appRunner) {
+            appRunner.runApp();
+          });
         }
-      }
+      });
     });
   </script>
-
-
-</body></html>
+  <script>
+  window.flutterWebRenderer = "html";
+  </script>
+</body>
+</html>

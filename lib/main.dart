@@ -29,28 +29,7 @@ Future<void> main() async {
     debugPrint('[Main] Firebase Init Delay/Error: $e');
   }
 
-  // 데이터 사전 로딩 및 계산
-  final getMembersUseCase = di.sl<GetMembersUseCase>();
-  final calculateUseCase = di.sl<CalculateElectionPossibilityUseCase>();
-
-  List<Member> updatedMembers = [];
-  try {
-    List<Member> members = await getMembersUseCase.call();
-    for (var member in members) {
-      try {
-        final result = await calculateUseCase.call(member.id);
-        updatedMembers.add(
-            member.copyWith(electionPossibility: result.electionPossibility));
-      } catch (e) {
-        // 계산 실패 시 기존 데이터 사용
-        updatedMembers.add(member);
-      }
-    }
-  } catch (e) {
-    debugPrint('[Main] Failed to load and process members: $e');
-  }
-
-  runApp(MyApp(members: updatedMembers));
+  runApp(const MyApp(members: []));
 }
 
 class MyApp extends StatelessWidget {
@@ -94,6 +73,7 @@ class InitialScreen extends StatefulWidget {
 class _InitialScreenState extends State<InitialScreen> {
   bool _showSplash = true;
   String? _initialRegion;
+  List<Member> _members = [];
 
   @override
   void initState() {
@@ -102,40 +82,59 @@ class _InitialScreenState extends State<InitialScreen> {
   }
 
   Future<void> _initializeApp() async {
-    // 2.2초 후에는 초기화 여부와 상관없이 무조건 메인 화면으로 진입 (사용자 경험 최우선)
-    final splashTimer = Timer(const Duration(milliseconds: 2200), () {
-      if (mounted && _showSplash) {
-        setState(() => _showSplash = false);
-        debugPrint('[Main] Splash Timeout - Forcing Home Entry');
-      }
-    });
+    // 최소 스플래시 시간과 데이터 로딩을 동시에 진행
+    final splashFuture = Future.delayed(const Duration(milliseconds: 2200));
+    final dataFuture = _loadData();
 
+    await Future.wait([splashFuture, dataFuture]);
+
+    if (mounted) {
+      setState(() {
+        _showSplash = false;
+      });
+    }
+  }
+
+  Future<void> _loadData() async {
     try {
-      // DI 및 Firebase는 main에서 초기화되었으므로 여기서는 지역 정보만 가져옴
+      // 데이터 로딩
+      final getMembersUseCase = di.sl<GetMembersUseCase>();
+      final calculateUseCase = di.sl<CalculateElectionPossibilityUseCase>();
+
+      List<Member> loadedMembers = await getMembersUseCase.call();
+      List<Member> updatedMembers = [];
+
+      for (var member in loadedMembers) {
+        try {
+          final result = await calculateUseCase.call(member.id);
+          updatedMembers.add(
+              member.copyWith(electionPossibility: result.electionPossibility));
+        } catch (e) {
+          updatedMembers.add(member);
+        }
+      }
+      _members = updatedMembers;
+
+      // 지역 정보 로딩
       final localService = di.sl<elecko.LocalStorageService>();
       _initialRegion = await localService.getSelectedRegion();
     } catch (e) {
-      debugPrint('[Main] Failed to get initial region: $e');
-    } finally {
-      splashTimer.cancel();
-      if (mounted) {
-        setState(() => _showSplash = false);
-      }
-      debugPrint('[Main] UI-related Initialization Finished');
+      debugPrint('[InitialScreen] Failed to load data: $e');
+      // 오류 발생 시, 빈 데이터로 앱을 계속 진행하거나 오류 화면을 표시할 수 있습니다.
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_initialRegion == null) {
-      return _buildLoadingWithModal();
-    }
-
     if (_showSplash) {
       return _buildLoadingScreen();
     }
 
-    return HomePage(members: widget.members);
+    if (_initialRegion == null) {
+      return _buildLoadingWithModal();
+    }
+
+    return HomePage(members: _members);
   }
 
   Widget _buildLoadingWithModal() {
@@ -165,7 +164,7 @@ class _InitialScreenState extends State<InitialScreen> {
 
   Widget _buildLoadingScreen() {
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.dark,
       body: _buildLoadingScreenContent(),
     );
   }
