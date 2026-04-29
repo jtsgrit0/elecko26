@@ -587,6 +587,7 @@ class MemberRepositoryImpl implements MemberRepository {
 
   @override
   Stream<User?> watchCurrentUser() {
+    // TODO: Implement watchCurrentUser
     return Stream.value(null);
   }
 
