@@ -5,7 +5,7 @@ import 'package:elecko26_new/data/datasources/local_storage_service.dart';
 import 'package:elecko26_new/data/datasources/nesdc_poll_data_source.dart';
 import 'package:elecko26_new/data/datasources/profile_image_resolver.dart';
 import 'package:elecko26_new/data/models/member_model.dart';
-import 'package:elecko26_new/domain/entities/auth_user.dart';
+import 'package:elecko26_new/features/auth/domain/entities/user.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/entities/poll.dart';
 import 'package:elecko26_new/domain/repositories/historical_election_repository.dart';
