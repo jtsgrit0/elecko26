@@ -6,9 +6,7 @@ import 'package:html/parser.dart' show parse;
 /// 다중 소스(네이버, 다음, 구글, 위키백과 등)를 검색하여
 /// 2026 지방선거 출마 관련 데이터를 추출하고 저장하는 스크립트입니다.
 void main() async {
-  print('🚀 다중 소스 크롤링을 시작합니다: 2026 지방선거 후보자 발굴');
-
-  final List<String> searchQueries = [
+  const List<String> searchQueries = [
     '2026 지방선거 출마',
     '2026 지방선거 예비후보',
     '2026 지방선거 공천',
@@ -25,7 +23,7 @@ void main() async {
   ];
 
   // SNS 검색용 쿼리 (특정 사이트 타겟팅)
-  final List<String> snsQueries = [
+  const List<String> snsQueries = [
     'site:twitter.com "지방선거" "출마" 2026',
     'site:facebook.com "지방선거" "공천" 2026',
     'site:instagram.com "지방선거" "예비후보" 2026',
@@ -37,20 +35,18 @@ void main() async {
 
   // 1. 일반 뉴스 및 포털 검색
   for (final query in searchQueries) {
-    print('🔍 포털 검색 중: $query');
     final naverResults = await crawlNaver(query);
     final daumResults = await crawlDaum(query);
     allCandidates.addAll(naverResults);
     allCandidates.addAll(daumResults);
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 500));
   }
 
   // 2. 구글 및 SNS 검색 (인덱싱된 게시물 위주)
   for (final query in snsQueries) {
-    print('🔍 구글/SNS 검색 중: $query');
     final googleResults = await crawlGoogle(query);
     allCandidates.addAll(googleResults);
-    await Future.delayed(Duration(milliseconds: 800));
+    await Future.delayed(const Duration(milliseconds: 800));
   }
 
   // 3. 중복 제거 및 데이터 통합 (이름 기준)
@@ -66,7 +62,6 @@ void main() async {
   }
 
   // 4. 발굴된 인물들에 대해 위키백과/나무위키 정밀 검색 및 데이터 보강
-  print('📚 위키 데이터 기반 후보자 정보 보강 중...');
   for (final name in uniqueCandidatesMap.keys) {
     final wikiBio = await fetchWikipediaBio(name);
     if (wikiBio != null && wikiBio.isNotEmpty) {
@@ -118,7 +113,7 @@ Future<List<Map<String, dynamic>>> crawlGoogle(String query) async {
     }
     return results;
   } catch (e) {
-    print('❌ 구글 검색 실패: $e');
+    // 크롤링 중 오류 발생 시 해당 소스는 건너뛰고 계속 진행
     return [];
   }
 }
@@ -138,7 +133,7 @@ Future<String?> fetchWikipediaBio(String name) async {
       }
     }
   } catch (e) {
-    print('⚠️ 위키백과 검색 실패 ($name): $e');
+    // 위키백과 API 오류 시 null 반환
   }
   return null;
 }
@@ -173,7 +168,7 @@ Future<List<Map<String, dynamic>>> _crawlPortalNews(String url,
     }
     return results;
   } catch (e) {
-    print('❌ $sourceName 검색 중 오류: $e');
+    // 포털 뉴스 크롤링 오류 시 빈 리스트 반환
     return [];
   }
 }
@@ -299,7 +294,9 @@ Future<void> _saveCandidatesToFile(
   if (await file.exists()) {
     try {
       existingCandidates = json.decode(await file.readAsString());
-    } catch (_) {}
+    } catch (_) {
+      // 파일이 비어있거나 JSON 형식이 아닐 경우, 새로운 파일로 시작
+    }
   }
 
   // 병합 로직 (간소화)
@@ -316,8 +313,8 @@ Future<void> _saveCandidatesToFile(
   }
 
   await file.writeAsString(
+      // ignore: prefer_const_constructors
       JsonEncoder.withIndent('  ').convert(pool.values.toList()));
-  print('✅ 업데이트 완료. 현재 총 후보 수: ${pool.length}');
 }
 
 Future<String> fetchProfileImageUrl(String name) async {
@@ -341,7 +338,7 @@ Future<String> fetchProfileImageUrl(String name) async {
       }
     }
   } catch (e) {
-    print('이미지 검색 실패 ($name): $e');
+    // 프로필 이미지 URL 가져오기 실패 시 기본 이미지 반환
   }
   return 'https://via.placeholder.com/150';
 }

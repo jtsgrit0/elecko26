@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/repositories/member_repository.dart';
 import 'package:elecko26_new/domain/usecases/nesdc_pdf_extractor.dart';
@@ -21,7 +22,7 @@ class Update2018PartySupportFromPdfUseCase {
       final pdfText = await file.readAsString();
       await executeFromText(pdfText);
     } catch (e) {
-      print('PDF 파일 처리 중 오류: $e');
+      debugPrint('PDF 파일 처리 중 오류: $e');
       rethrow;
     }
   }
@@ -33,17 +34,17 @@ class Update2018PartySupportFromPdfUseCase {
       final partySupportRates = NesdcPdfExtractor.extractByParty(pdfText);
 
       if (partySupportRates.isEmpty) {
-        print('PDF에서 정당별 지지율 데이터를 찾을 수 없습니다.');
+        debugPrint('PDF에서 정당별 지지율 데이터를 찾을 수 없습니다.');
         return;
       }
 
-      print('추출된 정당별 지지율: $partySupportRates');
+      debugPrint('추출된 정당별 지지율: $partySupportRates');
 
       // 2. 모든 회원 조회
       final members = await repository.getAllMembers();
 
       if (members.isEmpty) {
-        print('회원 데이터가 없습니다.');
+        debugPrint('회원 데이터가 없습니다.');
         return;
       }
 
@@ -81,7 +82,7 @@ class Update2018PartySupportFromPdfUseCase {
           );
           updatedMembers.add(updatedMember);
 
-          print(
+          debugPrint(
               '${member.name} (${member.district})의 2018년 정당 지지율 업데이트: $districtPartyRates');
         }
       }
@@ -89,10 +90,10 @@ class Update2018PartySupportFromPdfUseCase {
       // 4. 업데이트된 회원들 저장
       if (updatedMembers.isNotEmpty) {
         await repository.updateMembers(updatedMembers);
-        print('총 ${updatedMembers.length}명의 회원 2018년 정당 지지율 업데이트 완료');
+        debugPrint('총 ${updatedMembers.length}명의 회원 2018년 정당 지지율 업데이트 완료');
       }
     } catch (e) {
-      print('2018년도 PDF 데이터 처리 중 오류: $e');
+      debugPrint('2018년도 PDF 데이터 처리 중 오류: $e');
       rethrow;
     }
   }
@@ -117,7 +118,7 @@ class Update2018PartySupportFromPdfUseCase {
       // 1. 데이터 디렉토리에서 2018년도 PDF 파일 찾기
       final dataDir = Directory('data/pdfs/2018');
       if (!dataDir.existsSync()) {
-        print('2018년도 PDF 디렉토리가 없습니다: ${dataDir.path}');
+        debugPrint('2018년도 PDF 디렉토리가 없습니다: ${dataDir.path}');
         return;
       }
 
@@ -127,7 +128,7 @@ class Update2018PartySupportFromPdfUseCase {
           .toList();
 
       if (pdfFiles.isEmpty) {
-        print('2018년도 PDF 파일을 찾을 수 없습니다.');
+        debugPrint('2018년도 PDF 파일을 찾을 수 없습니다.');
         return;
       }
 
@@ -136,10 +137,10 @@ class Update2018PartySupportFromPdfUseCase {
           (a, b) => b.statSync().modified.compareTo(a.statSync().modified));
       final latestPdfFile = pdfFiles.first;
 
-      print('최신 2018년도 PDF 파일 사용: ${latestPdfFile.path}');
+      debugPrint('최신 2018년도 PDF 파일 사용: ${latestPdfFile.path}');
       await executeFromFile(latestPdfFile.path);
     } catch (e) {
-      print('자동 업데이트 중 오류: $e');
+      debugPrint('자동 업데이트 중 오류: $e');
       rethrow;
     }
   }

@@ -25,7 +25,7 @@ class MemberCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: AppColors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: const BorderRadius.circular(12),
             border: Border.all(
               color: AppColors.primary.withOpacity(0.15),
             ),
@@ -35,17 +35,17 @@ class MemberCard extends StatelessWidget {
               Column(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: const BorderRadius.circular(8),
                     child: member.imageUrl.isNotEmpty
                         ? CachedNetworkImage(
                             imageUrl: ImageUtil.getProxyUrl(member.imageUrl,
                                 width: 120, height: 120),
                             width: 60,
                             height: 60,
-                            memCacheWidth: 120, // 메모리 캐시 크기 최적화 (해상도에 맞춤)
+                            memCacheWidth: 120,
                             memCacheHeight: 120,
                             fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
+                            placeholder: (context, url) => const Container(
                                 width: 60,
                                 height: 60,
                                 color: AppColors.lightGrey),
@@ -104,7 +104,7 @@ class MemberCard extends StatelessWidget {
                     child: Image.asset(
                       PartyUtil.getPartyLogoUrl(member.party),
                       fit: BoxFit.contain,
-                      cacheWidth: 100, // 원본 로딩 방지
+                      cacheWidth: 100,
                       errorBuilder: (context, error, stackTrace) =>
                           const SizedBox(),
                     ),
@@ -150,7 +150,7 @@ class MemberCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.success.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: const BorderRadius.circular(4),
                       ),
                       child: Text(
                         '당선 가능성: ${(possibility * 100).toStringAsFixed(1)}%',
@@ -169,7 +169,7 @@ class MemberCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
+              const Icon(
                 Icons.arrow_forward_ios,
                 color: AppColors.grey,
                 size: 16,
@@ -182,7 +182,6 @@ class MemberCard extends StatelessWidget {
                 ),
                 onPressed: () async {
                   try {
-                    // 리포지토리에 토글 요청 (스트림을 통해 UI가 자동으로 갱신됨)
                     await sl<ToggleFavoriteUseCase>().call(member.id);
                   } catch (e) {
                     debugPrint('[MemberCard] toggleFavorite failed: $e');

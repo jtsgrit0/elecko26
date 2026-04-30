@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:elecko26_new/core/config/app_config.dart';
 import 'package:html/dom.dart' as html_dom;
 import 'package:html/parser.dart' as html_parser;
@@ -228,7 +229,7 @@ class NesdcPollDataSource {
         return await _parsePollsJson(jsonString);
       }
     } catch (e) {
-      print('⚠️ NesdcPollDataSource: Failed to download from GitHub: $e');
+      debugPrint('⚠️ NesdcPollDataSource: Failed to download from GitHub: $e');
     }
     return null;
   }
@@ -242,7 +243,7 @@ class NesdcPollDataSource {
         return await _parsePollsJson(cachedJson);
       }
     } catch (e) {
-      print('⚠️ NesdcPollDataSource: Failed to load from local cache: $e');
+      debugPrint('⚠️ NesdcPollDataSource: Failed to load from local cache: $e');
     }
     return null;
   }
@@ -253,7 +254,8 @@ class NesdcPollDataSource {
       final jsonString = await AssetLoader.loadString('data/nesdc_polls.json');
       return await _parsePollsJson(jsonString);
     } catch (e) {
-      print('⚠️ NesdcPollDataSource: Failed to load from bundled assets: $e');
+      debugPrint(
+          '⚠️ NesdcPollDataSource: Failed to load from bundled assets: $e');
     }
     return [];
   }
@@ -294,7 +296,7 @@ class NesdcPollDataSource {
           detailUrl: entry.sourceUrl,
         );
       }
-      
+
       // 대량 데이터 파싱 시 메인 스레드 프리징 방지
       count++;
       if (count % 200 == 0) {
@@ -486,7 +488,7 @@ class NesdcPollDataSource {
     try {
       return extractPdfText(bytes);
     } catch (e) {
-      print('⚠️ NesdcPollDataSource: Failed to extract PDF text: $e');
+      debugPrint('⚠️ NesdcPollDataSource: Failed to extract PDF text: $e');
       return null;
     }
   }

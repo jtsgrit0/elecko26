@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:elecko26_new/domain/usecases/nesdc_pdf_extractor.dart';
 
@@ -13,22 +14,22 @@ void main() {
       final file = File(filePath);
       if (!file.existsSync()) continue;
 
-      print('Analyzing $filePath...');
+      debugPrint('Analyzing $filePath...');
       final text = await file.readAsString();
 
       final rates = NesdcPdfExtractor.extractSupportRates(text);
-      print('  Found ${rates.length} support rate entries');
+      debugPrint('  Found ${rates.length} support rate entries');
       if (rates.isNotEmpty) {
         rates.forEach((name, rate) {
-          print('    $name: ${(rate * 100).toStringAsFixed(1)}%');
+          debugPrint('    $name: ${(rate * 100).toStringAsFixed(1)}%');
         });
       }
 
       final metadata = NesdcPdfExtractor.extractPollMetadata(text);
-      print('  Metadata: $metadata');
+      debugPrint('  Metadata: $metadata');
 
       final partyData = NesdcPdfExtractor.extractByParty(text);
-      print('  Found ${partyData.length} party sections');
+      debugPrint('  Found ${partyData.length} party sections');
     }
   });
 }

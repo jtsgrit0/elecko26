@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:elecko26_new/domain/entities/analysis_result.dart';
 import 'package:elecko26_new/domain/entities/election_data_export.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
@@ -40,7 +41,7 @@ class ExportElectionDataUseCase {
           totalPossibility += analysis.electionPossibility;
           partyCount[member.party] = (partyCount[member.party] ?? 0) + 1;
         } catch (e) {
-          print('Error analyzing member ${member.name}: $e');
+          debugPrint('Error analyzing member ${member.name}: $e');
           // 분석 실패한 멤버는 스킵
           continue;
         }

@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'package:elecko26_new/features/home/presentation/widgets/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -12,9 +12,7 @@ import 'package:elecko26_new/features/home/presentation/pages/home_page.dart';
 import 'package:elecko26_new/firebase_options.dart';
 import 'package:elecko26_new/data/datasources/local_storage_service.dart'
     as elecko;
-import 'package:elecko26_new/features/home/presentation/pages/region_selection_screen.dart'
-    as elecko_region;
-import 'package:elecko26_new/features/home/presentation/widgets/location_selection_modal.dart';
+import 'package:elecko26_new/features/home/presentation/pages/region_selection_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,7 +55,7 @@ class MyApp extends StatelessWidget {
           },
         ),
       ),
-      home: InitialScreen(members: members),
+      home: const InitialScreen(members: []),
     );
   }
 }
@@ -71,9 +69,7 @@ class InitialScreen extends StatefulWidget {
 }
 
 class _InitialScreenState extends State<InitialScreen> {
-  bool _showSplash = true;
-  String? _initialRegion;
-  List<Member> _members = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -88,135 +84,55 @@ class _InitialScreenState extends State<InitialScreen> {
 
     await Future.wait([splashFuture, dataFuture]);
 
+    final localService = di.sl<elecko.LocalStorageService>();
+    final initialRegion = await localService.getSelectedRegion();
+
     if (mounted) {
-      setState(() {
-        _showSplash = false;
-      });
+      if (initialRegion == null) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const RegionSelectionScreen()),
+        );
+      } else {
+        final members = await _getLoadedMembers();
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => HomePage(members: members)),
+        );
+      }
     }
+  }
+
+  Future<List<Member>> _getLoadedMembers() async {
+    final getMembersUseCase = di.sl<GetMembersUseCase>();
+    final calculateUseCase = di.sl<CalculateElectionPossibilityUseCase>();
+
+    List<Member> loadedMembers = await getMembersUseCase.call();
+    List<Member> updatedMembers = [];
+
+    for (var member in loadedMembers) {
+      try {
+        final result = await calculateUseCase.call(member.id);
+        updatedMembers.add(
+            member.copyWith(electionPossibility: result.electionPossibility));
+      } catch (e) {
+        updatedMembers.add(member);
+      }
+    }
+    return updatedMembers;
   }
 
   Future<void> _loadData() async {
     debugPrint('[InitialScreen] _loadData: 데이터 로딩 시작');
     try {
-      // 데이터 로딩
-      final getMembersUseCase = di.sl<GetMembersUseCase>();
-      final calculateUseCase = di.sl<CalculateElectionPossibilityUseCase>();
-
-      debugPrint('[InitialScreen] _loadData: GetMembersUseCase 호출');
-      List<Member> loadedMembers = await getMembersUseCase.call();
-      debugPrint(
-          '[InitialScreen] _loadData: GetMembersUseCase 완료, ${loadedMembers.length}명 로드됨');
-      List<Member> updatedMembers = [];
-
-      for (var member in loadedMembers) {
-        try {
-          final result = await calculateUseCase.call(member.id);
-          updatedMembers.add(
-              member.copyWith(electionPossibility: result.electionPossibility));
-        } catch (e) {
-          updatedMembers.add(member);
-        }
-      }
-      _members = updatedMembers;
-      debugPrint(
-          '[InitialScreen] _loadData: 멤버 데이터 처리 완료. 최종 멤버 수: ${_members.length}');
-
-      // 지역 정보 로딩
-      final localService = di.sl<elecko.LocalStorageService>();
-      _initialRegion = await localService.getSelectedRegion();
-      debugPrint(
-          '[InitialScreen] _loadData: 지역 정보 로드 완료. 선택된 지역: $_initialRegion');
+      await _getLoadedMembers();
+      debugPrint('[InitialScreen] _loadData: 데이터 로딩 완료');
     } catch (e, stackTrace) {
       debugPrint('[InitialScreen] _loadData: 데이터 로딩 실패! 오류: $e');
       debugPrint('Stack trace: $stackTrace');
-      // 오류 발생 시, 빈 데이터로 앱을 계속 진행하거나 오류 화면을 표시할 수 있습니다.
-      _members = []; // 데이터 로딩 실패 시 멤버 리스트를 비웁니다.
     }
-    debugPrint('[InitialScreen] _loadData: 데이터 로딩 종료');
   }
 
   @override
   Widget build(BuildContext context) {
-    debugPrint(
-        '[InitialScreen] build: 화면 빌드 시작. _showSplash: $_showSplash, _initialRegion: $_initialRegion, _members.length: ${_members.length}');
-    if (_showSplash) {
-      debugPrint('[InitialScreen] build: 로딩 화면 표시');
-      return _buildLoadingScreen();
-    }
-
-    if (_initialRegion == null) {
-      debugPrint('[InitialScreen] build: 지역 선택 모달 표시');
-      return _buildLoadingWithModal();
-    }
-
-    debugPrint('[InitialScreen] build: HomePage 표시');
-    return HomePage(members: _members);
-  }
-
-  Widget _buildLoadingWithModal() {
-    return Scaffold(
-      backgroundColor: AppColors.primary,
-      body: Stack(
-        children: [
-          _buildLoadingScreenContent(),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: LocationSelectionModal(
-              onRegionSelected: (region) async {
-                try {
-                  final localService = di.sl<elecko.LocalStorageService>();
-                  await localService.saveSelectedRegion(region);
-                } catch (_) {}
-                setState(() {
-                  _initialRegion = region;
-                });
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLoadingScreen() {
-    return Scaffold(
-      backgroundColor: AppColors.dark,
-      body: _buildLoadingScreenContent(),
-    );
-  }
-
-  Widget _buildLoadingScreenContent() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // 로딩 아이콘 (흰색)
-          const CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            strokeWidth: 3,
-          ),
-          const SizedBox(height: 24),
-          // 로딩 텍스트 (흰색)
-          const Text(
-            '2026 당예기 불러오는 중...',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '붉은말의 해, 당신의 선택을 분석합니다',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 120), // 아래 모달 공간 확보
-        ],
-      ),
-    );
+    return const SplashScreen();
   }
 }

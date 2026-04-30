@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// NESDC 여론조사 PDF에서 데이터 추출
 ///
 /// 한국 국회 NESDC (National Election Survey & Data Center)에서 제공하는
@@ -43,7 +45,7 @@ class NesdcPdfExtractor {
         }
       }
     } catch (e) {
-      print('Error extracting support rates: $e');
+      debugPrint('Error extracting support rates: $e');
     }
 
     return supportRates;
@@ -96,7 +98,7 @@ class NesdcPdfExtractor {
         }
       }
     } catch (e) {
-      print('Error extracting metadata: $e');
+      debugPrint('Error extracting metadata: $e');
     }
 
     return metadata;

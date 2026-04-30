@@ -20,10 +20,8 @@ void main() async {
   }
 
   for (final pdfPath in pdfFiles) {
-    print('Processing $pdfPath...');
     final file = File(pdfPath);
     if (!file.existsSync()) {
-      print('  File not found: $pdfPath');
       continue;
     }
 
@@ -37,15 +35,9 @@ void main() async {
         final fileName = pdfPath.split('/').last.replaceAll('.pdf', '.txt');
         final outputFile = File('data/pdf_texts/$fileName');
         await outputFile.writeAsString(text);
-        print(
-            '  Successfully extracted to ${outputFile.path} (${text.length} chars)');
-      } else {
-        print('  No text extracted from $pdfPath');
       }
     } catch (e) {
-      print('  Error processing $pdfPath: $e');
+      //
     }
   }
-
-  print('Done!');
 }

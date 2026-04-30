@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
@@ -21,10 +22,10 @@ void main() {
     }
 
     for (final pdfPath in pdfFiles) {
-      print('Processing $pdfPath...');
+      debugPrint('Processing $pdfPath...');
       final file = File(pdfPath);
       if (!file.existsSync()) {
-        print('  File not found: $pdfPath');
+        debugPrint('  File not found: $pdfPath');
         continue;
       }
 
@@ -38,13 +39,13 @@ void main() {
           final fileName = pdfPath.split('/').last.replaceAll('.pdf', '.txt');
           final outputFile = File('data/pdf_texts/$fileName');
           await outputFile.writeAsString(text);
-          print(
+          debugPrint(
               '  Successfully extracted to ${outputFile.path} (${text.length} chars)');
         } else {
-          print('  No text extracted from $pdfPath');
+          debugPrint('  No text extracted from $pdfPath');
         }
       } catch (e) {
-        print('  Error processing $pdfPath: $e');
+        debugPrint('  Error processing $pdfPath: $e');
       }
     }
 
