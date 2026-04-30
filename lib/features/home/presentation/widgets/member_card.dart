@@ -25,7 +25,7 @@ class MemberCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: AppColors.white,
-            borderRadius: const BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: AppColors.primary.withOpacity(0.15),
             ),
@@ -35,7 +35,7 @@ class MemberCard extends StatelessWidget {
               Column(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8),
                     child: member.imageUrl.isNotEmpty
                         ? CachedNetworkImage(
                             imageUrl: ImageUtil.getProxyUrl(member.imageUrl,
@@ -45,7 +45,7 @@ class MemberCard extends StatelessWidget {
                             memCacheWidth: 120,
                             memCacheHeight: 120,
                             fit: BoxFit.cover,
-                            placeholder: (context, url) => const Container(
+                            placeholder: (context, url) => Container(
                                 width: 60,
                                 height: 60,
                                 color: AppColors.lightGrey),
@@ -150,7 +150,7 @@ class MemberCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.success.withOpacity(0.1),
-                        borderRadius: const BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         '당선 가능성: ${(possibility * 100).toStringAsFixed(1)}%',

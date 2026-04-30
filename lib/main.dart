@@ -90,7 +90,21 @@ class _InitialScreenState extends State<InitialScreen> {
     if (mounted) {
       if (initialRegion == null) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const RegionSelectionScreen()),
+          MaterialPageRoute(
+            builder: (_) => RegionSelectionScreen(
+              onRegionSelected: (region) async {
+                final localService = di.sl<elecko.LocalStorageService>();
+                await localService.saveSelectedRegion(region);
+                final members = await _getLoadedMembers();
+                if (mounted) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                        builder: (_) => HomePage(members: members)),
+                  );
+                }
+              },
+            ),
+          ),
         );
       } else {
         final members = await _getLoadedMembers();
