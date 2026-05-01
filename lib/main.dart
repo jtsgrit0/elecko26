@@ -69,8 +69,6 @@ class InitialScreen extends StatefulWidget {
 }
 
 class _InitialScreenState extends State<InitialScreen> {
-  bool _isLoading = true;
-
   @override
   void initState() {
     super.initState();
@@ -78,28 +76,39 @@ class _InitialScreenState extends State<InitialScreen> {
   }
 
   Future<void> _initializeApp() async {
-    // 최소 스플래시 시간과 데이터 로딩을 동시에 진행
-    final splashFuture = Future.delayed(const Duration(milliseconds: 2200));
-    final dataFuture = _loadData();
+    // 데이터 로딩 시작
+    debugPrint('[InitialScreen] _initializeApp: 데이터 로딩 시작');
+    List<Member> members = [];
+    try {
+      members = await _getLoadedMembers();
+      debugPrint('[InitialScreen] _initializeApp: 데이터 로딩 완료');
+    } catch (e, stackTrace) {
+      debugPrint('[InitialScreen] _initializeApp: 데이터 로딩 실패! 오류: $e');
+      debugPrint('Stack trace: $stackTrace');
+      // 오류 발생 시 빈 멤버 리스트로 진행하거나, 오류 화면을 표시할 수 있습니다.
+      // 여기서는 빈 리스트로 진행하여 앱이 멈추지 않도록 합니다.
+    }
 
-    await Future.wait([splashFuture, dataFuture]);
+    if (!mounted) return; // 위젯이 마운트 해제되었으면 더 이상 진행하지 않습니다.
 
     final localService = di.sl<elecko.LocalStorageService>();
     final initialRegion = await localService.getSelectedRegion();
 
     if (mounted) {
-      if (initialRegion == null) {
+      if (initialRegion == null || initialRegion.isEmpty) {
+        // initialRegion이 null이거나 비어있으면 지역 선택 화면으로
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => RegionSelectionScreen(
               onRegionSelected: (region) async {
                 final localService = di.sl<elecko.LocalStorageService>();
                 await localService.saveSelectedRegion(region);
-                final members = await _getLoadedMembers();
+                // 지역 선택 후 다시 멤버 데이터를 로드할 필요 없이, 이미 로드된 members를 사용합니다.
                 if (mounted) {
                   Navigator.of(context).pushReplacement(
                     MaterialPageRoute(
-                        builder: (_) => HomePage(members: members)),
+                        builder: (_) =>
+                            HomePage(members: members)), // 로드된 members 전달
                   );
                 }
               },
@@ -107,9 +116,9 @@ class _InitialScreenState extends State<InitialScreen> {
           ),
         );
       } else {
-        final members = await _getLoadedMembers();
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => HomePage(members: members)),
+          MaterialPageRoute(
+              builder: (_) => HomePage(members: members)), // 로드된 members 전달
         );
       }
     }
@@ -131,19 +140,8 @@ class _InitialScreenState extends State<InitialScreen> {
       }
     }).toList();
 
-    updatedMembers = await Future.wait(updateFutures);
+    final updatedMembers = await Future.wait(updateFutures);
     return updatedMembers;
-  }
-
-  Future<void> _loadData() async {
-    debugPrint('[InitialScreen] _loadData: 데이터 로딩 시작');
-    try {
-      await _getLoadedMembers();
-      debugPrint('[InitialScreen] _loadData: 데이터 로딩 완료');
-    } catch (e, stackTrace) {
-      debugPrint('[InitialScreen] _loadData: 데이터 로딩 실패! 오류: $e');
-      debugPrint('Stack trace: $stackTrace');
-    }
   }
 
   @override

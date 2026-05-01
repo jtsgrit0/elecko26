@@ -20,9 +20,7 @@ import 'package:elecko26_new/domain/repositories/member_repository.dart';
 import 'package:elecko26_new/domain/repositories/historical_election_repository.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:get_it/get_it.dart';
-
-final sl = GetIt.instance;
+import 'package:elecko26_new/app/injection_container.dart';
 
 // Vercel Proxy URL 및 Firebase 프로젝트 ID
 const String _proxyBaseUrl = 'https://elecko26-proxy.vercel.app/api/proxy';
@@ -505,30 +503,23 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<void> refreshMembers() async {
-    final now = DateTime.now();
+    debugPrint(
+        '[Refresh] refreshMembers called, loading from lightweight JSON...');
     final localService = sl<LocalStorageService>();
     final favoriteIds = await localService.getFavorites();
 
-    // --- [0단계] 로컬 캐시/에셋에서 즉시 로드 (사용자 체감 속도 0ms) ---
-    if (_membersController.value.isEmpty) {
-      var cachedMembers = await _loadFromCache();
-      if (cachedMembers.isEmpty) {
-        cachedMembers = await _loadLightweightMembers();
-      }
+    List<Member> members = await _loadLightweightMembers();
 
-      if (cachedMembers.isNotEmpty) {
-        final withFavorites = cachedMembers
-            .map((m) => m.copyWith(isFavorite: favoriteIds.contains(m.id)))
-            .toList();
-        _notifyListeners(withFavorites);
-        debugPrint(
-            '[FirestoreMemberRepo] Phase 0 (Local Cache ${withFavorites.length}명) 즉시 표시 완료');
-      }
+    if (members.isNotEmpty) {
+      final withFavorites = members
+          .map((m) => m.copyWith(isFavorite: favoriteIds.contains(m.id)))
+          .toList();
+      _notifyListeners(withFavorites);
+      debugPrint(
+          '[Refresh] ${withFavorites.length} members loaded from lightweight JSON and notified.');
+    } else {
+      debugPrint('[Refresh] No members loaded from lightweight JSON.');
     }
-
-    // --- [1단계] Firestore 및 로컬 에셋 업데이트 (백그라운드 진행) ---
-    // 아래 과정은 비동기로 진행하여 UI 스레드 점유를 최소화함
-    _performFullRefreshInBackground(favoriteIds, now);
   }
 
   Future<void> _performFullRefreshInBackground(

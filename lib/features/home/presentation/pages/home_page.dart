@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:elecko26_new/data/repositories/firestore_member_repository_impl.dart'
+    as repo hide sl;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:elecko26_new/app/injection_container.dart';
@@ -63,11 +65,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _initializeListeners() async {
-    // 1. 사용자 지역 로드
-    final savedRegion = await sl<MemberRepository>().getSelectedRegion();
-    if (savedRegion != null) {
-      _userRegionNotifier.value = savedRegion;
-    }
+    // 1. 사용자 지역 로드 및 구독
+    final memberRepository = sl<MemberRepository>();
+    _membersSubscription =
+        memberRepository.watchSelectedRegion().listen((region) {
+      if (mounted) {
+        _userRegionNotifier.value = region;
+      }
+    });
 
     // 2. 실시간 업데이트 구독 (선택적)
     // _membersSubscription =
@@ -183,17 +188,16 @@ class _HomePageState extends State<HomePage> {
               child: _buildAppBar(),
             )
           : null, // 상세 페이지는 자체 AppBar 사용
-      body: PopScope(
-        canPop: !kIsWeb &&
-            _selectedMember == null &&
-            _selectedIndexNotifier.value == 0,
-        onPopInvoked: (bool didPop) {
-          if (didPop) return;
+      body: WillPopScope(
+        onWillPop: () async {
           if (_selectedMember != null) {
             setState(() => _selectedMember = null);
+            return false; // 뒤로가기 방지, 내부적으로 처리
           } else if (_selectedIndexNotifier.value != 0) {
             _selectedIndexNotifier.value = 0;
+            return false; // 뒤로가기 방지, 내부적으로 처리
           }
+          return !kIsWeb; // 웹이 아닌 경우에만 뒤로가기 허용
         },
         child: _buildBody(),
       ),

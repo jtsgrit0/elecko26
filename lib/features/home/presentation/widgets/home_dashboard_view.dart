@@ -253,7 +253,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
       return const Center(child: CircularProgressIndicator(color: Colors.red));
     }
 
-    final filteredMembers = _filteredSortedMembers;
+    final filteredMembers = _filteredAndSortedMembers;
     final top3 = _top3;
     final memberList = _memberList;
     final updateValue = _updateValue;
