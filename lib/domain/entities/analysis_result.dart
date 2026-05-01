@@ -17,6 +17,30 @@ class SnsAnalysis {
     required this.topMentions,
     required this.engagementTrend,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'totalMentions': totalMentions,
+      'positiveMentions': positiveMentions,
+      'neutralMentions': neutralMentions,
+      'negativeMentions': negativeMentions,
+      'sentimentScore': sentimentScore,
+      'topMentions': topMentions,
+      'engagementTrend': engagementTrend,
+    };
+  }
+
+  factory SnsAnalysis.fromJson(Map<String, dynamic> json) {
+    return SnsAnalysis(
+      totalMentions: json['totalMentions'],
+      positiveMentions: json['positiveMentions'],
+      neutralMentions: json['neutralMentions'],
+      negativeMentions: json['negativeMentions'],
+      sentimentScore: json['sentimentScore'],
+      topMentions: List<String>.from(json['topMentions']),
+      engagementTrend: json['engagementTrend'],
+    );
+  }
 }
 
 /// AI 분석 결과 엔티티
@@ -70,6 +94,56 @@ class AnalysisResult {
     required this.dailyTrends,
     this.snsAnalysis,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'memberId': memberId,
+      'analysisDate': analysisDate.toIso8601String(),
+      'electionPossibility': electionPossibility,
+      'previousPossibility': previousPossibility,
+      'possibilityChange': possibilityChange,
+      'achievementScore': achievementScore,
+      'activityScore': activityScore,
+      'policyScore': policyScore,
+      'publicImageScore': publicImageScore,
+      'socialContributionScore': socialContributionScore,
+      'pollScore': pollScore,
+      'historicalScore': historicalScore,
+      'improvements': improvements,
+      'strengths': strengths,
+      'weaknesses': weaknesses,
+      'analysisReport': analysisReport,
+      'dailyTrends': dailyTrends.map((e) => e.toJson()).toList(),
+      'snsAnalysis': snsAnalysis?.toJson(),
+    };
+  }
+
+  factory AnalysisResult.fromJson(Map<String, dynamic> json) {
+    return AnalysisResult(
+      memberId: json['memberId'],
+      analysisDate: DateTime.parse(json['analysisDate']),
+      electionPossibility: json['electionPossibility'],
+      previousPossibility: json['previousPossibility'],
+      possibilityChange: json['possibilityChange'],
+      achievementScore: json['achievementScore'],
+      activityScore: json['activityScore'],
+      policyScore: json['policyScore'],
+      publicImageScore: json['publicImageScore'],
+      socialContributionScore: json['socialContributionScore'],
+      pollScore: json['pollScore'],
+      historicalScore: json['historicalScore'],
+      improvements: List<String>.from(json['improvements']),
+      strengths: List<String>.from(json['strengths']),
+      weaknesses: List<String>.from(json['weaknesses']),
+      analysisReport: json['analysisReport'],
+      dailyTrends: (json['dailyTrends'] as List)
+          .map((e) => DailyPossibility.fromJson(e))
+          .toList(),
+      snsAnalysis: json['snsAnalysis'] != null
+          ? SnsAnalysis.fromJson(json['snsAnalysis'])
+          : null,
+    );
+  }
 }
 
 class DailyPossibility {
@@ -82,4 +156,20 @@ class DailyPossibility {
     required this.possibility,
     required this.reason,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'date': date.toIso8601String(),
+      'possibility': possibility,
+      'reason': reason,
+    };
+  }
+
+  factory DailyPossibility.fromJson(Map<String, dynamic> json) {
+    return DailyPossibility(
+      date: DateTime.parse(json['date']),
+      possibility: json['possibility'],
+      reason: json['reason'],
+    );
+  }
 }

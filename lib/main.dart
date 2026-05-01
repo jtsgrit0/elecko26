@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:isolate';
 import 'package:elecko26_new/features/home/presentation/widgets/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/gestures.dart';
@@ -5,9 +7,13 @@ import 'package:flutter/material.dart';
 import 'package:elecko26_new/app/injection_container.dart' as di;
 import 'package:elecko26_new/core/config/app_config.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
+import 'package:elecko26_new/core/utils/isolate_calculations.dart';
+import 'package:elecko26_new/core/utils/utility_functions.dart';
+import 'package:elecko26_new/domain/entities/analysis_result.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/usecases/calculate_election_possibility_usecase.dart';
 import 'package:elecko26_new/domain/usecases/member_usecases.dart';
+import 'package:elecko26_new/domain/repositories/historical_election_repository.dart';
 import 'package:elecko26_new/features/home/presentation/pages/home_page.dart';
 import 'package:elecko26_new/firebase_options.dart';
 import 'package:elecko26_new/data/datasources/local_storage_service.dart'
@@ -80,7 +86,7 @@ class _InitialScreenState extends State<InitialScreen> {
     debugPrint('[InitialScreen] _initializeApp: 데이터 로딩 시작');
     List<Member> members = [];
     try {
-      members = await _getLoadedMembers();
+      members = await _getLoadedMembers(); // 데이터를 먼저 로드합니다.
       debugPrint('[InitialScreen] _initializeApp: 데이터 로딩 완료');
     } catch (e, stackTrace) {
       debugPrint('[InitialScreen] _initializeApp: 데이터 로딩 실패! 오류: $e');
@@ -126,21 +132,77 @@ class _InitialScreenState extends State<InitialScreen> {
 
   Future<List<Member>> _getLoadedMembers() async {
     final getMembersUseCase = di.sl<GetMembersUseCase>();
-    final calculateUseCase = di.sl<CalculateElectionPossibilityUseCase>();
+    final historicalRepository = di.sl<HistoricalElectionRepository>();
 
     List<Member> loadedMembers = await getMembersUseCase.call();
-    List<Future<Member>> updateFutures = loadedMembers.map((member) async {
-      try {
-        final result = await calculateUseCase.call(member.id);
-        return member.copyWith(electionPossibility: result.electionPossibility);
-      } catch (e) {
-        debugPrint(
-            'Error calculating election possibility for member ${member.id}: $e');
-        return member;
+
+    // 모든 지역 정보를 미리 로드
+    final Set<String> allRegions = loadedMembers
+        .map((m) => getParentRegion(m.district) == ''
+            ? '전국'
+            : getParentRegion(m.district))
+        .toSet();
+
+    final Map<String, Map<String, double>> regionalPartyAverages = {};
+    final Map<String, double> voterInterests = {};
+    final Map<String, String?> dominantParties = {};
+
+    for (final region in allRegions) {
+      regionalPartyAverages[region] =
+          await historicalRepository.getRegionalPartyAverages(region);
+      voterInterests[region] =
+          await historicalRepository.getVoterInterest(region);
+      dominantParties[region] =
+          await historicalRepository.getDominantParty(region);
+    }
+
+    final ReceivePort receivePort = ReceivePort();
+    final List<Future<Map<String, dynamic>>> isolateResults = [];
+
+    for (final member in loadedMembers) {
+      isolateResults.add(
+        Isolate.spawn(
+          calculateElectionPossibilityInIsolate,
+          {
+            'sendPort': receivePort.sendPort,
+            'member': member,
+            'regionalPartyAverages': regionalPartyAverages,
+            'voterInterests': voterInterests,
+            'dominantParties': dominantParties,
+          },
+        ).then((_) {
+          // Isolate.spawn은 Future<Isolate>를 반환하므로, 실제 결과는 receivePort에서 받아야 합니다.
+          // 여기서는 단순히 Isolate가 성공적으로 스폰되었음을 나타냅니다.
+          return {}; // 임시 반환값
+        }),
+      );
+    }
+
+    // 모든 Isolate의 결과를 기다립니다.
+    final Map<String, AnalysisResult> analysisResults = {};
+    int completedCalculations = 0;
+
+    await for (var message in receivePort) {
+      final String memberId = message['memberId'];
+      final AnalysisResult result =
+          AnalysisResult.fromJson(message['analysisResult']);
+      analysisResults[memberId] = result;
+      completedCalculations++;
+
+      if (completedCalculations == loadedMembers.length) {
+        receivePort.close();
+        break;
       }
+    }
+
+    final updatedMembers = loadedMembers.map((member) {
+      final result = analysisResults[member.id];
+      if (result != null) {
+        return member.copyWith(electionPossibility: result.electionPossibility);
+      }
+      return member;
     }).toList();
 
-    final updatedMembers = await Future.wait(updateFutures);
     return updatedMembers;
   }
 
