@@ -24,6 +24,10 @@ import 'package:get_it/get_it.dart';
 
 final sl = GetIt.instance;
 
+// Vercel Proxy URL 및 Firebase 프로젝트 ID
+const String _proxyBaseUrl = 'https://elecko26-proxy.vercel.app/api/proxy';
+const String _firebaseProjectId = 'elecko26-536e0';
+
 class FirestoreMemberRepositoryImpl implements MemberRepository {
   // NESDC 여론조사 데이터 소스 엔진
   final NesdcPollDataSource _nesdcPollDataSource = NesdcPollDataSource(
@@ -534,19 +538,60 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     try {
       debugPrint('[Refresh] Phase 1: Fetching cloud data...');
       if (Firebase.apps.isNotEmpty) {
-        // 서버와 캐시를 동시에 보되, 2초 내에 응답 없으면 넘어가기
-        final snapshot = await _firestore
-            .collection('members')
-            .get(const GetOptions(source: Source.serverAndCache))
-            .timeout(const Duration(seconds: 2));
+        // Firebase ID 토큰 가져오기
+        String? idToken = await auth.FirebaseAuth.instance.currentUser?.getIdToken();
 
-        if (snapshot.docs.isNotEmpty) {
-          for (var doc in snapshot.docs) {
+        // Firestore REST API URL 구성
+        // (default) 데이터베이스는 Firestore의 기본 데이터베이스를 의미합니다.
+        final firestoreApiUrl =
+            'https://firestore.googleapis.com/v1/projects/$_firebaseProjectId/databases/(default)/documents/members';
+
+        // Vercel 프록시 URL 구성
+        final proxyUrl = Uri.parse('$_proxyBaseUrl?url=${Uri.encodeComponent(firestoreApiUrl)}&idToken=${idToken ?? ''}');
+
+        debugPrint('[Refresh] Fetching members via proxy: $proxyUrl');
+
+        final response = await http.get(proxyUrl).timeout(const Duration(seconds: 10)); // 프록시 호출 타임아웃 10초
+
+        if (response.statusCode == 200) {
+          final Map<String, dynamic> responseBody = json.decode(response.body);
+          final List<dynamic> documents = responseBody['documents'] ?? [];
+
+          for (var docData in documents) {
             try {
-              // 중요: Firestore 웹 등에서 반환된 Map이 수정 불가능(unmodifiable)일 수 있으므로 복사본 생성
-              final data = Map<String, dynamic>.from(doc.data());
-              _normalizeFirestoreTimestamps(data);
-              data['id'] = doc.id;
+              // Firestore REST API 응답은 필드 타입별로 래핑되어 있습니다.
+              // 예: "name": { "stringValue": "홍길동" }, "age": { "integerValue": 30 }
+              final Map<String, dynamic> fields = docData['fields'];
+              final Map<String, dynamic> memberData = {};
+              fields.forEach((key, value) {
+                if (value is Map && value.isNotEmpty) {
+                  // 첫 번째 키-값 쌍의 값을 실제 값으로 간주
+                  // 예: { "stringValue": "value" } -> "value"
+                  memberData[key] = value.values.first;
+                }
+              });
+
+              // MemberModel이 DateTime을 기대하는 경우 문자열을 DateTime으로 파싱
+              if (memberData.containsKey('lastAnalysisDate') && memberData['lastAnalysisDate'] is String) {
+                try {
+                  memberData['lastAnalysisDate'] = DateTime.parse(memberData['lastAnalysisDate']);
+                } catch (e) {
+                  debugPrint('[Refresh] Error parsing lastAnalysisDate: $e');
+                }
+              }
+              cloudMembers.add(MemberModel.fromJson(memberData));
+            } catch (e) {
+              debugPrint('[Refresh] Error parsing member data from proxy: $e');
+            }
+          }
+        } else {
+          debugPrint('[Refresh] Proxy returned status code: ${response.statusCode}, body: ${response.body}');
+          // 프록시 오류 시 기존 캐시된 멤버를 사용하거나 빈 리스트 반환
+          // 여기서는 오류 발생 시 빈 리스트로 처리하여 UI에 영향을 줍니다.
+          // 실제 앱에서는 오류 처리 전략에 따라 다르게 구현할 수 있습니다.
+        }
+      }
+              
               cloudMembers.add(MemberModel.fromJson(data));
             } catch (e) {
               debugPrint(

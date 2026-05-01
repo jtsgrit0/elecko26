@@ -120,17 +120,18 @@ class _InitialScreenState extends State<InitialScreen> {
     final calculateUseCase = di.sl<CalculateElectionPossibilityUseCase>();
 
     List<Member> loadedMembers = await getMembersUseCase.call();
-    List<Member> updatedMembers = [];
-
-    for (var member in loadedMembers) {
+    List<Future<Member>> updateFutures = loadedMembers.map((member) async {
       try {
         final result = await calculateUseCase.call(member.id);
-        updatedMembers.add(
-            member.copyWith(electionPossibility: result.electionPossibility));
+        return member.copyWith(electionPossibility: result.electionPossibility);
       } catch (e) {
-        updatedMembers.add(member);
+        debugPrint(
+            'Error calculating election possibility for member ${member.id}: $e');
+        return member;
       }
-    }
+    }).toList();
+
+    updatedMembers = await Future.wait(updateFutures);
     return updatedMembers;
   }
 

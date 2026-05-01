@@ -35,6 +35,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
   bool get wantKeepAlive => true;
 
   List<Member> _displayMembers = [];
+  List<Member> _filteredAndSortedMembers = [];
   StreamSubscription? _subscription;
 
   final List<String> _regions = [
@@ -62,14 +63,24 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
   void initState() {
     super.initState();
     _displayMembers = widget.cachedMembers;
+    _updateFilteredAndSortedMembers(); // 초기 필터링 및 정렬
 
     _subscription = widget.membersStream.listen((members) {
       if (mounted) {
         setState(() {
           _displayMembers = members;
+          _updateFilteredAndSortedMembers(); // 멤버 목록 변경 시 업데이트
         });
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant HomeDashboardView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.userRegion != oldWidget.userRegion) {
+      _updateFilteredAndSortedMembers(); // 지역 변경 시 업데이트
+    }
   }
 
   @override
@@ -78,7 +89,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
     super.dispose();
   }
 
-  List<Member> get _filteredSortedMembers {
+  void _updateFilteredAndSortedMembers() {
     List<Member> filtered;
     if (widget.userRegion == '전국') {
       filtered = List.from(_displayMembers);
@@ -91,18 +102,23 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
     // 당선 가능성 내림차순 정렬
     filtered
         .sort((a, b) => b.electionPossibility.compareTo(a.electionPossibility));
-    return filtered;
+
+    setState(() {
+      _filteredAndSortedMembers = filtered;
+    });
   }
 
   List<Member> get _top3 {
-    final sorted = _filteredSortedMembers;
-    return sorted.take(3).toList();
+    return _filteredAndSortedMembers.take(3).toList();
   }
 
   List<Member> get _memberList {
-    final sorted = _filteredSortedMembers;
-    if (sorted.length <= 3) return [];
-    return sorted.sublist(3, sorted.length > 13 ? 13 : sorted.length);
+    if (_filteredAndSortedMembers.length <= 3) return [];
+    return _filteredAndSortedMembers.sublist(
+        3,
+        _filteredAndSortedMembers.length > 13
+            ? 13
+            : _filteredAndSortedMembers.length);
   }
 
   String get _updateValue {
