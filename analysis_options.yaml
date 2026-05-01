@@ -1,0 +1,16 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - 'tools/migrate_to_firebase.dart'
+    - 'tools/parse_2018_election.dart'
+    - 'tools/migrate_data_format.dart'
+    - 'bin/cache/**' # Exclude cache folder
+    - '**/*.g.dart' # Exclude generated files
+    - '**/*.freezed.dart' # Exclude freezed generated files
+
+linter:
+  rules:
+    # Your custom lint rules can go here
+    # avoid_print: false
+    # prefer_single_quotes: true

@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "790419883700",
+    "firebase_url": "https://elecko26-536e0-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "elecko26-536e0",
+    "storage_bucket": "elecko26-536e0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:790419883700:android:a74d49f37c68ea6fc039e1",
+        "android_client_info": {
+          "package_name": "com.elecko26.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "790419883700-h41in708p3h0pa7j41o4nd4mf8o46on7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.elecko26.app",
+            "certificate_hash": "447a3e97ad71eedf37db39f80e0a3a9673dfea6d"
+          }
+        },
+        {
+          "client_id": "790419883700-gll4qfg88knqdv4detcml1agfce9n8f7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAujsJ_FiR2lDEBE4anf_P_13CAZnLsJKw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "790419883700-gll4qfg88knqdv4detcml1agfce9n8f7.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "790419883700-03rnjkt5h69eomc77p9cketr23lhi3g6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.flutterApplication1"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
