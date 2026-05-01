@@ -215,7 +215,7 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         _isInitialized = true;
         debugPrint('[Cache] 즉시 표시 완료, 백그라운드 업데이트 시작...');
         // 2) 백그라운드에서 최신 데이터(상세)로 업데이트
-        unawaited(refreshMembers());
+        // unawaited(refreshMembers());
       } else {
         // 둘 다 실패 시 풀 로드 시도 (10초 제한)
         await refreshMembers()
@@ -472,35 +472,6 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
         '[FirestoreMemberRepository] _updateMembersFavoriteStatus: ${updatedMembers.where((m) => m.isFavorite).length} members marked as favorite');
   }
 
-  // 김재식 님의 프로필 이미지 URL을 업데이트
-  Future<void> updateKimJaesikImage() async {
-    await _ensureInitialized();
-    try {
-      const String kimJaesikImageUrl =
-          'https://img1.daumcdn.net/thumb/R658x0.q70/?fname=https://t1.daumcdn.net/news/202603/18/551730-ch1iKEu/20260318200506839ispp.jpg';
-
-      // 이름이 '김재식'인 멤버 찾기
-      final querySnapshot = await _firestore
-          .collection('members')
-          .where('name', isEqualTo: '김재식')
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        // 첫 번째 김재식 문서 업데이트
-        final doc = querySnapshot.docs.first;
-        await doc.reference.update({'imageUrl': kimJaesikImageUrl});
-        debugPrint('김재식 님의 프로필 이미지가 업데이트되었습니다.');
-
-        // 로컬 캐시도 업데이트
-        await refreshMembers();
-      } else {
-        debugPrint('김재식 님을 찾을 수 없습니다.');
-      }
-    } catch (e) {
-      debugPrint('김재식 님 프로필 이미지 업데이트 중 오류: $e');
-    }
-  }
-
   @override
   Future<void> refreshMembers() async {
     debugPrint(
@@ -520,89 +491,6 @@ class FirestoreMemberRepositoryImpl implements MemberRepository {
     } else {
       debugPrint('[Refresh] No members loaded from lightweight JSON.');
     }
-  }
-
-  Future<void> _performFullRefreshInBackground(
-      List<String> favoriteIds, DateTime now) async {
-    debugPrint('[Refresh] === Background Full Refresh Started ===');
-    List<Member> cloudMembers = [];
-    try {
-      debugPrint('[Refresh] Phase 1: Fetching cloud data...');
-      if (Firebase.apps.isNotEmpty) {
-        // Firebase ID 토큰 가져오기
-        String? idToken =
-            await auth.FirebaseAuth.instance.currentUser?.getIdToken();
-
-        // Firestore REST API URL 구성
-        // (default) 데이터베이스는 Firestore의 기본 데이터베이스를 의미합니다.
-        final firestoreApiUrl =
-            'https://firestore.googleapis.com/v1/projects/$_firebaseProjectId/databases/(default)/documents/members';
-
-        // Vercel 프록시 URL 구성
-        final proxyUrl = Uri.parse(
-            '$_proxyBaseUrl?url=${Uri.encodeComponent(firestoreApiUrl)}&idToken=${idToken ?? ''}');
-
-        debugPrint('[Refresh] Fetching members via proxy: $proxyUrl');
-
-        final response = await http
-            .get(proxyUrl)
-            .timeout(const Duration(seconds: 10)); // 프록시 호출 타임아웃 10초
-
-        if (response.statusCode == 200) {
-          final Map<String, dynamic> responseBody = json.decode(response.body);
-          final List<dynamic> documents = responseBody['documents'] ?? [];
-
-          for (var docData in documents) {
-            try {
-              // Firestore REST API 응답은 필드 타입별로 래핑되어 있습니다.
-              // 예: "name": { "stringValue": "홍길동" }, "age": { "integerValue": 30 }
-              final Map<String, dynamic> fields = docData['fields'];
-              final Map<String, dynamic> memberData = {};
-              fields.forEach((key, value) {
-                if (value is Map && value.isNotEmpty) {
-                  // 첫 번째 키-값 쌍의 값을 실제 값으로 간주
-                  // 예: { "stringValue": "value" } -> "value"
-                  memberData[key] = value.values.first;
-                }
-              });
-
-              // MemberModel이 DateTime을 기대하는 경우 문자열을 DateTime으로 파싱
-              if (memberData.containsKey('lastAnalysisDate') &&
-                  memberData['lastAnalysisDate'] is String) {
-                try {
-                  memberData['lastAnalysisDate'] =
-                      DateTime.parse(memberData['lastAnalysisDate']);
-                } catch (e) {
-                  debugPrint('[Refresh] Error parsing lastAnalysisDate: $e');
-                }
-              }
-              cloudMembers.add(MemberModel.fromJson(memberData));
-            } catch (e) {
-              debugPrint('[Refresh] Error parsing member data from proxy: $e');
-            }
-          }
-        } else {
-          debugPrint(
-              '[Refresh] Proxy returned status code: ${response.statusCode}, body: ${response.body}');
-          // 프록시 오류 시 기존 캐시된 멤버를 사용하거나 빈 리스트 반환
-          // 여기서는 오류 발생 시 빈 리스트로 처리하여 UI에 영향을 줍니다.
-          // 실제 앱에서는 오류 처리 전략에 따라 다르게 구현할 수 있습니다.
-        }
-      }
-    } catch (e) {
-      debugPrint('[FirestoreMemberRepository] Cloud Fetch Skip/Error: $e');
-    }
-
-    if (cloudMembers.isNotEmpty) {
-      final preliminary = cloudMembers
-          .map((m) => m.copyWith(isFavorite: favoriteIds.contains(m.id)))
-          .toList();
-      _notifyListeners(preliminary);
-      debugPrint('[FirestoreMemberRepository] Phase 1 (Cloud Sync) 완료');
-    }
-
-    // --- [2단계] 로컬 에셋 파일을 백그라운드에서 순차 로드 ---
-    await _loadAssetsAndMergeInBackground(cloudMembers, favoriteIds, now);
   }
 
   /// 로컬 split JSON 파일을 순차적으로 로드하며 점진적으로 UI 업데이트
