@@ -102,13 +102,13 @@ class _InitialScreenState extends State<InitialScreen> {
         // initialRegion이 null이거나 비어있으면 지역 선택 화면으로
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (_) => RegionSelectionScreen(
+            builder: (routeContext) => RegionSelectionScreen(
               onRegionSelected: (region) async {
                 final localService = di.sl<elecko.LocalStorageService>();
                 await localService.saveSelectedRegion(region);
-                // 지역 선택 후 다시 멤버 데이터를 로드할 필요 없이, 이미 로드된 members를 사용합니다.
-                if (mounted) {
-                  Navigator.of(context).pushReplacement(
+                
+                if (routeContext.mounted) {
+                  Navigator.of(routeContext).pushReplacement(
                     MaterialPageRoute(
                         builder: (_) =>
                             HomePage(members: members)), // 로드된 members 전달
@@ -197,12 +197,16 @@ class _InitialScreenState extends State<InitialScreen> {
     int receivedCount = 0;
 
     if (primaryMembers.isNotEmpty) {
-      await for (var message in receivePort) {
-        final String memberId = message['memberId'];
-        final double possibility = message['electionPossibility'];
-        calculatedPossibilities[memberId] = possibility;
-        receivedCount++;
-        if (receivedCount >= primaryMembers.length) break;
+      try {
+        await for (var message in receivePort.take(primaryMembers.length).timeout(const Duration(seconds: 10))) {
+          final String memberId = message['memberId'];
+          final double possibility = message['electionPossibility'];
+          calculatedPossibilities[memberId] = possibility;
+          receivedCount++;
+          if (receivedCount >= primaryMembers.length) break;
+        }
+      } catch (e) {
+        debugPrint('[Main] Isolate calculation timeout or error: $e');
       }
     }
     receivePort.close();
