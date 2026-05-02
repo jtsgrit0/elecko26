@@ -13,7 +13,7 @@ class MemberRepositoryImpl implements MemberRepository {
     if (_isInitialized) return;
 
     final String response =
-        await rootBundle.loadString('data/election_candidates.json');
+        await rootBundle.loadString('data/candidates_lightweight.json');
     final data = await json.decode(response) as List;
     _members = data
         .map((json) => MemberModel.fromJson(json as Map<String, dynamic>))

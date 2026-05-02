@@ -1,9 +1,7 @@
 import 'dart:isolate';
-import 'dart:math' as math;
 
 import 'package:elecko26_new/domain/entities/analysis_result.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
-import 'package:elecko26_new/domain/entities/poll.dart';
 import 'package:elecko26_new/domain/usecases/possibility_calculator.dart';
 import 'package:elecko26_new/core/utils/utility_functions.dart';
 
@@ -18,9 +16,25 @@ Future<void> calculateElectionPossibilityInIsolate(
   final Map<String, double> voterInterests = message['voterInterests'];
   final Map<String, String?> dominantParties = message['dominantParties'];
 
-  // CalculateElectionPossibilityUseCase의 내부 로직을 여기에 재현합니다.
-  // Isolate는 DI 컨테이너에 접근할 수 없으므로, 필요한 모든 데이터는 인자로 받아야 합니다.
+  final result = performMemberCalculation(
+    member: member,
+    regionalPartyAverages: regionalPartyAverages,
+    voterInterests: voterInterests,
+    dominantParties: dominantParties,
+  );
 
+  sendPort.send({
+    'memberId': member.id,
+    'analysisResult': result.toJson(),
+  });
+}
+
+AnalysisResult performMemberCalculation({
+  required Member member,
+  required Map<String, Map<String, double>> regionalPartyAverages,
+  required Map<String, double> voterInterests,
+  required Map<String, String?> dominantParties,
+}) {
   // 0.1) 역대 선거 데이터에서 지역 기반 지지율 및 투표 관심도 조회
   double historicalBaseSupport = 0.5;
   double voterInterest = 0.5; // 기본값
@@ -72,23 +86,18 @@ Future<void> calculateElectionPossibilityInIsolate(
     voterInterest: voterInterest,
   );
 
-  // B) 30초 간격 추세 생성/갱신 (Isolate 내에서 독립적으로 관리)
-  // _trendStore는 Isolate마다 독립적으로 존재하므로, 여기서는 간단히 초기값만 사용하거나
-  // 필요하다면 Isolate 내부에서 관리할 수 있도록 수정해야 합니다.
-  // 현재는 _trendStore를 사용하지 않고, 단일 계산으로 처리합니다.
-  // 만약 추세가 필요하다면, 이 부분을 더 복잡하게 구현해야 합니다.
-  final dailyTrends = <DailyPossibility>[]; // Isolate에서는 추세 저장을 하지 않음
-  final electionPossibility = scores['overall']!; // 단일 계산 결과
+  final dailyTrends = <DailyPossibility>[];
+  final electionPossibility = scores['overall']!;
 
   // C) 상세 분석 데이터
   final analysis = _performDetailedAnalysis(member, scores, historicalContext);
 
-  final result = AnalysisResult(
+  return AnalysisResult(
     memberId: member.id,
     analysisDate: DateTime.now(),
     electionPossibility: electionPossibility,
-    previousPossibility: electionPossibility - 0.02, // 임시 값
-    possibilityChange: 0.02, // 임시 값
+    previousPossibility: electionPossibility - 0.02,
+    possibilityChange: 0.02,
     achievementScore: scores['achievement']!,
     activityScore: scores['activity']!,
     policyScore: scores['policy']!,
@@ -103,11 +112,6 @@ Future<void> calculateElectionPossibilityInIsolate(
     dailyTrends: dailyTrends,
     snsAnalysis: _calculateSnsAnalysis(member),
   );
-
-  sendPort.send({
-    'memberId': member.id,
-    'analysisResult': result.toJson(), // AnalysisResult를 직렬화하여 전송
-  });
 }
 
 // CalculateElectionPossibilityUseCase의 private 메서드들을 여기에 복사하거나
