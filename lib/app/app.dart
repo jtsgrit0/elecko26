@@ -60,41 +60,36 @@ class _InitialScreenState extends State<InitialScreen> {
   }
 
   Future<void> _initializeApp() async {
-    debugPrint('[InitialScreen] _initializeApp: 시작');
+    debugPrint('[InitialScreen] _initializeApp: 즉시 실행');
     
-    // 타임아웃 설정: 5초 이상 걸리면 강제로 지역 선택 화면으로 이동
-    final timeoutTimer = Timer(const Duration(seconds: 5), () {
+    // 타임아웃: 어떤 경우에도 3초 후에는 지역 선택으로 이동
+    final timeoutTimer = Timer(const Duration(seconds: 3), () {
       if (mounted) {
-        debugPrint('[InitialScreen] 초기화 타임아웃 -> 강제 화면 전환');
+        debugPrint('[InitialScreen] 초기화 강제 타임아웃');
         _navigateToRegionSelection();
       }
     });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      try {
-        // 의존성 주입이 완료될 때까지 잠시 대기 (웹 환경 안정성 확보)
-        await Future.delayed(const Duration(milliseconds: 500));
-        
-        final localService = di.sl<elecko.LocalStorageService>();
-        final initialRegion = await localService.getSelectedRegion();
+    try {
+      // 프레임 렌더링을 기다리지 않고 즉시 의존성 확인 시도
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      final localService = di.sl<elecko.LocalStorageService>();
+      final initialRegion = await localService.getSelectedRegion();
 
-        timeoutTimer.cancel(); // 정상 완료 시 타이머 취소
+      timeoutTimer.cancel();
+      if (!mounted) return;
 
-        if (!mounted) return;
-
-        if (initialRegion == null || initialRegion.isEmpty) {
-          debugPrint('[InitialScreen] 지역 선택 정보 없음 -> 이동');
-          _navigateToRegionSelection();
-        } else {
-          debugPrint('[InitialScreen] 기존 지역 ($initialRegion) -> 로딩 시작');
-          _loadDataAndGoHome(context, initialRegion);
-        }
-      } catch (e) {
-        timeoutTimer.cancel();
-        debugPrint('[InitialScreen] 초기화 에러: $e');
-        if (mounted) _navigateToRegionSelection();
+      if (initialRegion != null && initialRegion.isNotEmpty) {
+        _loadDataAndGoHome(context, initialRegion);
+      } else {
+        _navigateToRegionSelection();
       }
-    });
+    } catch (e) {
+      timeoutTimer.cancel();
+      debugPrint('[InitialScreen] 초기화 에러: $e');
+      if (mounted) _navigateToRegionSelection();
+    }
   }
 
   void _navigateToRegionSelection() {
