@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest # Ubuntu 환경에서 실행
+    permissions:
+      contents: write # gh-pages 배포를 위해 쓰기 권한 허용
 
     steps:
       - uses: actions/checkout@v4 # 저장소 체크아웃
