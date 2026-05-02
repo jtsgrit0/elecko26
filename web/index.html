@@ -34,10 +34,7 @@
   <title>2026 당예기</title>
   <link rel="manifest" href="manifest.json">
 
-  <script>
-    // The value below is injected by flutter build, do not touch.
-    var serviceWorkerVersion = null;
-  </script>
+
   <!-- This script adds the flutter initialization JS code -->
   <script src="flutter.js" defer></script>
   <style>
@@ -88,18 +85,16 @@
   </div>
   <script>
     window.addEventListener('load', function(ev) {
-      // Download main.dart.js
-      _flutter.loader.loadEntrypoint({
-        serviceWorker: {
-          serviceWorkerVersion: serviceWorkerVersion,
-        },
+      _flutter.loader.load({
         onEntrypointLoaded: function(engineInitializer) {
           engineInitializer.initializeEngine({
             renderer: "html"
           }).then(function(appRunner) {
             appRunner.runApp().then(function(app) {
               var loadingIndicator = document.getElementById('loading-indicator');
-              loadingIndicator.style.display = 'none';
+              if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+              }
             });
           });
         }
