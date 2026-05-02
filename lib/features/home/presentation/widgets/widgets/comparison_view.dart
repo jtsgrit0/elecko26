@@ -2,7 +2,7 @@ import 'package:elecko26_new/domain/entities/analysis_result.dart';
 import 'package:elecko26_new/domain/usecases/calculate_election_possibility_usecase.dart';
 import 'package:elecko26_new/app/injection_container.dart';
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:elecko26_new/core/widgets/app_network_image.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/core/utils/image_util.dart';
 import 'package:elecko26_new/core/utils/party_util.dart';
@@ -118,7 +118,7 @@ class _ComparisonViewState extends State<ComparisonView> {
                       secondary: ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: member.imageUrl.isNotEmpty
-                            ? CachedNetworkImage(
+                            ? AppNetworkImage(
                                 imageUrl: '${ImageUtil.getProxyUrl(member.imageUrl, width: 100, height: 100)}&v=2',
                                 width: 40,
                                 height: 40,
@@ -253,7 +253,7 @@ class _ComparisonViewState extends State<ComparisonView> {
           ClipRRect(
             borderRadius: BorderRadius.circular(40),
             child: m.imageUrl.isNotEmpty
-                ? CachedNetworkImage(
+                ? AppNetworkImage(
                     imageUrl: '${ImageUtil.getProxyUrl(m.imageUrl, width: 200, height: 200)}&v=2',
                     width: 80,
                     height: 80,

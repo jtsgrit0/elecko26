@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:elecko26_new/core/widgets/app_network_image.dart';
 import 'package:elecko26_new/core/utils/image_util.dart';
 import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
@@ -382,7 +382,7 @@ class _SearchViewState extends State<SearchView>
     for (final member in members) {
       if (member.imageUrl.isNotEmpty) {
         precacheImage(
-          CachedNetworkImageProvider(
+          NetworkImage(
             ImageUtil.getProxyUrl(member.imageUrl, width: 120, height: 120),
           ),
           context,

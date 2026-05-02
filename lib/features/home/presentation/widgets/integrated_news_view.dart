@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:elecko26_new/core/widgets/app_network_image.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/core/utils/image_util.dart';
 import 'package:elecko26_new/core/utils/party_util.dart';
@@ -127,7 +127,7 @@ class _IntegratedNewsViewState extends State<IntegratedNewsView>
                                 backgroundColor: AppColors.lightGrey,
                                 child: m.imageUrl.isNotEmpty
                                     ? ClipOval(
-                                        child: CachedNetworkImage(
+                                        child: AppNetworkImage(
                                           imageUrl: ImageUtil.getProxyUrl(
                                               m.imageUrl,
                                               width: 48,

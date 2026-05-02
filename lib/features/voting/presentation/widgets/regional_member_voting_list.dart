@@ -4,7 +4,7 @@ import 'package:elecko26_new/core/utils/utility_functions.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/repositories/member_repository.dart';
 import 'package:elecko26_new/app/injection_container.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:elecko26_new/core/widgets/app_network_image.dart';
 import 'package:elecko26_new/data/datasources/local_storage_service.dart';
 import 'dart:async';
 import 'package:elecko26_new/features/home/presentation/widgets/member_card.dart';
@@ -443,7 +443,7 @@ class _RegionalMemberCard extends StatelessWidget {
                           style: AppTextStyles.headline4,
                         ),
                       )
-                    : CachedNetworkImage(
+                    : AppNetworkImage(
                         imageUrl: member.imageUrl,
                         fit: BoxFit.cover,
                         memCacheWidth: 140,

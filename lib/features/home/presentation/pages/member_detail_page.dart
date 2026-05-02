@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:elecko26_new/core/widgets/app_network_image.dart';
 import 'package:characters/characters.dart';
 import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
@@ -289,7 +289,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: member.imageUrl.isNotEmpty
-                ? CachedNetworkImage(
+                ? AppNetworkImage(
                     imageUrl: ImageUtil.getProxyUrl(member.imageUrl,
                         width: 200, height: 200),
                     width: 100,

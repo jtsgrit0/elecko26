@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:elecko26_new/core/widgets/app_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/utils/image_util.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
@@ -305,7 +305,7 @@ class _MemberCard extends StatelessWidget {
                 child: member.imageUrl.isNotEmpty
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(35),
-                        child: CachedNetworkImage(
+                        child: AppNetworkImage(
                           imageUrl: ImageUtil.getProxyUrl(member.imageUrl,
                               width: 140, height: 140),
                           fit: BoxFit.cover,

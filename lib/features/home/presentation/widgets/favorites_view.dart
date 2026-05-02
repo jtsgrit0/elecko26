@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:elecko26_new/core/widgets/app_network_image.dart';
 import 'package:elecko26_new/app/injection_container.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/core/utils/party_util.dart';
@@ -154,7 +154,7 @@ class FavoritesView extends StatelessWidget {
                   image: member.imageUrl.trim().isEmpty
                       ? null
                       : DecorationImage(
-                          image: CachedNetworkImageProvider(member.imageUrl),
+                          image: NetworkImage(member.imageUrl),
                           fit: BoxFit.cover,
                         ),
                 ),

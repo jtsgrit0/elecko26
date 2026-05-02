@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:elecko26_new/core/widgets/app_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/core/utils/utility_functions.dart';
@@ -392,7 +392,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
                             height: 48,
                             color: AppColors.lightGray,
                             child: member.imageUrl.isNotEmpty
-                                ? CachedNetworkImage(
+                                ? AppNetworkImage(
                                     imageUrl: member.imageUrl,
                                     fit: BoxFit.cover,
                                     memCacheWidth: 100,
