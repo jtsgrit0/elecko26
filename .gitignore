@@ -61,3 +61,4 @@ upload_firestore_restapi.sh
 
 # Large data files exceeding GitHub's limit
 data/*.json
+!data/candidates_lightweight.json
