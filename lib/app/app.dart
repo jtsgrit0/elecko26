@@ -191,47 +191,28 @@ class _InitialScreenState extends State<InitialScreen> {
     final Map<String, double> calculatedPossibilities = {};
 
     if (primaryMembers.isNotEmpty) {
-      if (kIsWeb) {
-        // 웹 환경: 비동기 루프로 처리
-        debugPrint('[InitialScreen] 웹 환경 계산 시작');
-        for (int i = 0; i < primaryMembers.length; i++) {
-          final result = performMemberCalculation(
-            member: primaryMembers[i],
-            regionalPartyAverages: regionalPartyAverages,
-            voterInterests: voterInterests,
-            dominantParties: dominantParties,
-          );
-          calculatedPossibilities[primaryMembers[i].id] = result.electionPossibility;
-          if (i % 10 == 0) await Future.delayed(Duration.zero);
-        }
-      } else {
-        // 모바일 환경: Isolate 전용 함수 호출 (격리됨)
-        final results = await _calculatePrimaryMembersMobile(
-          primaryMembers,
-          regionalPartyAverages,
-          voterInterests,
-          dominantParties,
+      debugPrint('[InitialScreen] 우선순위 멤버 계산 시작 (${primaryMembers.length}명)');
+      for (int i = 0; i < primaryMembers.length; i++) {
+        final result = performMemberCalculation(
+          member: primaryMembers[i],
+          regionalPartyAverages: regionalPartyAverages,
+          voterInterests: voterInterests,
+          dominantParties: dominantParties,
         );
-        calculatedPossibilities.addAll(results);
+        calculatedPossibilities[primaryMembers[i].id] = result.electionPossibility;
+        
+        // 10명마다 UI 프레임 양보 (웹 멈춤 방지)
+        if (i % 10 == 0) await Future.delayed(Duration.zero);
       }
     }
 
-    // 나머지 멤버는 백그라운드에서 처리 (Future로 비동기 실행)
-    if (kIsWeb) {
-      _calculateSecondaryMembersWeb(
-        secondaryMembers,
-        regionalPartyAverages,
-        voterInterests,
-        dominantParties,
-      );
-    } else {
-      _calculateSecondaryMembersInBackground(
-        secondaryMembers,
-        regionalPartyAverages,
-        voterInterests,
-        dominantParties,
-      );
-    }
+    // 나머지 멤버는 백그라운드에서 처리 (비동기 루프)
+    _calculateSecondaryMembersWeb(
+      secondaryMembers,
+      regionalPartyAverages,
+      voterInterests,
+      dominantParties,
+    );
 
     // 업데이트된 리스트 반환
     return loadedMembers.map((m) {
@@ -242,7 +223,7 @@ class _InitialScreenState extends State<InitialScreen> {
     }).toList();
   }
 
-  /// 웹 환경 백그라운드 계산 (Isolate 미지원 대응)
+  /// 백그라운드 계산 (Isolate 없이 비동기 루프로 처리)
   Future<void> _calculateSecondaryMembersWeb(
     List<Member> members,
     Map<String, Map<String, double>> regionalPartyAverages,
@@ -250,7 +231,7 @@ class _InitialScreenState extends State<InitialScreen> {
     Map<String, String?> dominantParties,
   ) async {
     if (members.isEmpty) return;
-    debugPrint('[InitialScreen] 웹 백그라운드 계산 시작 (${members.length}명)');
+    debugPrint('[InitialScreen] 백그라운드 계산 시작 (${members.length}명)');
     for (int i = 0; i < members.length; i++) {
       performMemberCalculation(
         member: members[i],
@@ -263,128 +244,7 @@ class _InitialScreenState extends State<InitialScreen> {
         await Future.delayed(const Duration(milliseconds: 10));
       }
     }
-    debugPrint('[InitialScreen] 웹 백그라운드 계산 완료');
-  }
-
-  /// 백그라운드에서 나머지 멤버들의 당선 가능성 계산
-  Future<void> _calculateSecondaryMembersInBackground(
-    List<Member> members,
-    Map<String, Map<String, double>> regionalPartyAverages,
-    Map<String, double> voterInterests,
-    Map<String, String?> dominantParties,
-  ) async {
-    if (members.isEmpty) return;
-    
-    // 대량의 데이터를 작은 배치로 나누어 계산 (UI 블로킹 방지)
-    const int batchSize = 50;
-    for (int i = 0; i < members.length; i += batchSize) {
-      final end = (i + batchSize < members.length) ? i + batchSize : members.length;
-      final batch = members.sublist(i, end);
-      
-      final ReceivePort tempPort = ReceivePort();
-      await _calculateBatchInIsolate(
-        batch,
-        regionalPartyAverages,
-        voterInterests,
-        dominantParties,
-        tempPort,
-      );
-      
-      // 결과는 현재 상태에서는 무시하거나, 필요시 전역 상태(Provider/BLoC)를 통해 업데이트
-      // 여기서는 초기 로딩 속도 최적화가 목적이므로 우선 계산만 수행
-      tempPort.close();
-      await Future.delayed(const Duration(milliseconds: 100)); // CPU 휴식
-    }
-  }
-
-  /// 모바일 전용 Isolate 계산 실행 (웹 에러 방지를 위해 격리됨)
-  Future<Map<String, double>> _calculatePrimaryMembersMobile(
-    List<Member> members,
-    Map<String, Map<String, double>> regionalPartyAverages,
-    Map<String, double> voterInterests,
-    Map<String, String?> dominantParties,
-  ) async {
-    final Map<String, double> results = {};
-    final ReceivePort receivePort = ReceivePort();
-
-    await _calculateBatchInIsolate(
-      members,
-      regionalPartyAverages,
-      voterInterests,
-      dominantParties,
-      receivePort,
-    );
-
-    int receivedCount = 0;
-    try {
-      await for (var message in receivePort
-          .take(members.length)
-          .timeout(const Duration(seconds: 10))) {
-        results[message['memberId']] = message['electionPossibility'];
-        receivedCount++;
-        if (receivedCount >= members.length) break;
-      }
-    } catch (e) {
-      debugPrint('[Main] Isolate calculation timeout or error: $e');
-    } finally {
-      receivePort.close();
-    }
-    return results;
-  }
-
-  /// Isolate에서 멤버 리스트를 배치로 처리
-  Future<void> _calculateBatchInIsolate(
-    List<Member> members,
-    Map<String, Map<String, double>> regionalPartyAverages,
-    Map<String, double> voterInterests,
-    Map<String, String?> dominantParties,
-    ReceivePort receivePort,
-  ) async {
-    await Isolate.spawn(
-      _batchCalculationEntry,
-      {
-        'sendPort': receivePort.sendPort,
-        'members': members,
-        'regionalPartyAverages': regionalPartyAverages,
-        'voterInterests': voterInterests,
-        'dominantParties': dominantParties,
-      },
-    );
-  }
-
-  /// Isolate 진입점 (여러 멤버를 루프 돌며 계산)
-  static void _batchCalculationEntry(Map<String, dynamic> message) {
-    final SendPort sendPort = message['sendPort'];
-    final List<Member> members = message['members'];
-    final Map<String, Map<String, double>> regionalPartyAverages = message['regionalPartyAverages'];
-    final Map<String, double> voterInterests = message['voterInterests'];
-    final Map<String, String?> dominantParties = message['dominantParties'];
-
-    for (var member in members) {
-      // 실제 계산 로직 호출 (IsolateCalculations의 로직과 유사하게 구현 또는 호출)
-      // Note: Isolate 내부에서는 static 함수만 호출 가능
-      _doActualCalculation(member, regionalPartyAverages, voterInterests, dominantParties, sendPort);
-    }
-  }
-
-  static void _doActualCalculation(
-    Member member,
-    Map<String, Map<String, double>> regionalPartyAverages,
-    Map<String, double> voterInterests,
-    Map<String, String?> dominantParties,
-    SendPort sendPort,
-  ) {
-    final result = performMemberCalculation(
-      member: member,
-      regionalPartyAverages: regionalPartyAverages,
-      voterInterests: voterInterests,
-      dominantParties: dominantParties,
-    );
-    
-    sendPort.send({
-      'memberId': member.id,
-      'electionPossibility': result.electionPossibility,
-    });
+    debugPrint('[InitialScreen] 백그라운드 계산 완료');
   }
 
   @override
