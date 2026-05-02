@@ -7,15 +7,17 @@ import 'package:elecko26_new/firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await di.init();
-
-  // Firebase 초기화
+  
+  // 앱 전체 초기화 안정성 확보 (병렬 처리)
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    ).timeout(const Duration(milliseconds: 5000));
+    await Future.wait([
+      di.initMinimal(),
+      Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      ).timeout(const Duration(milliseconds: 5000)),
+    ]).timeout(const Duration(milliseconds: 8000));
   } catch (e) {
-    debugPrint('[Main] Firebase Init Delay/Error: $e');
+    debugPrint('[Main] Initialization Delay or Error (Proceeding anyway): $e');
   }
 
   runApp(const MyApp(members: []));
