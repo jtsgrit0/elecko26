@@ -165,49 +165,27 @@ class _InitialScreenState extends State<InitialScreen> {
 
     if (primaryMembers.isNotEmpty) {
       if (kIsWeb) {
-        // 웹 환경: Isolate 대신 비동기 루프로 처리
-        debugPrint('[InitialScreen] 웹 환경 계산 시작 (배치 처리)');
+        // 웹 환경: 비동기 루프로 처리
+        debugPrint('[InitialScreen] 웹 환경 계산 시작');
         for (int i = 0; i < primaryMembers.length; i++) {
-          final member = primaryMembers[i];
           final result = performMemberCalculation(
-            member: member,
+            member: primaryMembers[i],
             regionalPartyAverages: regionalPartyAverages,
             voterInterests: voterInterests,
             dominantParties: dominantParties,
           );
-          calculatedPossibilities[member.id] = result.electionPossibility;
-
-          // 10개마다 한 번씩 메인 스레드에 제어권 양보 (UI 프리징 방지)
-          if (i % 10 == 0) {
-            await Future.delayed(Duration.zero);
-          }
+          calculatedPossibilities[primaryMembers[i].id] = result.electionPossibility;
+          if (i % 10 == 0) await Future.delayed(Duration.zero);
         }
       } else {
-        // 모바일 환경: Isolate를 통한 효율적 계산
-        final ReceivePort receivePort = ReceivePort();
-        await _calculateBatchInIsolate(
+        // 모바일 환경: Isolate 전용 함수 호출 (격리됨)
+        final results = await _calculatePrimaryMembersMobile(
           primaryMembers,
           regionalPartyAverages,
           voterInterests,
           dominantParties,
-          receivePort,
         );
-
-        int receivedCount = 0;
-        try {
-          await for (var message in receivePort
-              .take(primaryMembers.length)
-              .timeout(const Duration(seconds: 10))) {
-            final String memberId = message['memberId'];
-            final double possibility = message['electionPossibility'];
-            calculatedPossibilities[memberId] = possibility;
-            receivedCount++;
-            if (receivedCount >= primaryMembers.length) break;
-          }
-        } catch (e) {
-          debugPrint('[Main] Isolate calculation timeout or error: $e');
-        }
-        receivePort.close();
+        calculatedPossibilities.addAll(results);
       }
     }
 
@@ -290,6 +268,41 @@ class _InitialScreenState extends State<InitialScreen> {
       tempPort.close();
       await Future.delayed(const Duration(milliseconds: 100)); // CPU 휴식
     }
+  }
+
+  /// 모바일 전용 Isolate 계산 실행 (웹 에러 방지를 위해 격리됨)
+  Future<Map<String, double>> _calculatePrimaryMembersMobile(
+    List<Member> members,
+    Map<String, Map<String, double>> regionalPartyAverages,
+    Map<String, double> voterInterests,
+    Map<String, String?> dominantParties,
+  ) async {
+    final Map<String, double> results = {};
+    final ReceivePort receivePort = ReceivePort();
+
+    await _calculateBatchInIsolate(
+      members,
+      regionalPartyAverages,
+      voterInterests,
+      dominantParties,
+      receivePort,
+    );
+
+    int receivedCount = 0;
+    try {
+      await for (var message in receivePort
+          .take(members.length)
+          .timeout(const Duration(seconds: 10))) {
+        results[message['memberId']] = message['electionPossibility'];
+        receivedCount++;
+        if (receivedCount >= members.length) break;
+      }
+    } catch (e) {
+      debugPrint('[Main] Isolate calculation timeout or error: $e');
+    } finally {
+      receivePort.close();
+    }
+    return results;
   }
 
   /// Isolate에서 멤버 리스트를 배치로 처리
