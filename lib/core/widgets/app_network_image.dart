@@ -5,6 +5,10 @@ class AppNetworkImage extends StatelessWidget {
   final String imageUrl;
   final double? width;
   final double? height;
+  final int? memCacheWidth;
+  final int? memCacheHeight;
+  final int? maxWidthDiskCache;
+  final int? maxHeightDiskCache;
   final BoxFit fit;
   final Widget Function(BuildContext, String)? placeholder;
   final Widget Function(BuildContext, String, dynamic)? errorWidget;
@@ -14,6 +18,10 @@ class AppNetworkImage extends StatelessWidget {
     required this.imageUrl,
     this.width,
     this.height,
+    this.memCacheWidth,
+    this.memCacheHeight,
+    this.maxWidthDiskCache,
+    this.maxHeightDiskCache,
     this.fit = BoxFit.cover,
     this.placeholder,
     this.errorWidget,
@@ -29,6 +37,8 @@ class AppNetworkImage extends StatelessWidget {
       imageUrl,
       width: width,
       height: height,
+      cacheWidth: memCacheWidth,
+      cacheHeight: memCacheHeight,
       fit: fit,
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;
