@@ -79,49 +79,49 @@ class _InitialScreenState extends State<InitialScreen> {
   }
 
   Future<void> _initializeApp() async {
-    // 데이터 로딩 시작
-    debugPrint('[InitialScreen] _initializeApp: 데이터 로딩 시작');
-    List<Member> members = [];
-    try {
-      members = await _getLoadedMembers(); // 데이터를 먼저 로드합니다.
-      debugPrint('[InitialScreen] _initializeApp: 데이터 로딩 완료');
-    } catch (e, stackTrace) {
-      debugPrint('[InitialScreen] _initializeApp: 데이터 로딩 실패! 오류: $e');
-      debugPrint('Stack trace: $stackTrace');
-      // 오류 발생 시 빈 멤버 리스트로 진행하거나, 오류 화면을 표시할 수 있습니다.
-      // 여기서는 빈 리스트로 진행하여 앱이 멈추지 않도록 합니다.
-    }
-
-    if (!mounted) return; // 위젯이 마운트 해제되었으면 더 이상 진행하지 않습니다.
-
+    debugPrint('[InitialScreen] _initializeApp: 시작');
+    
     final localService = di.sl<elecko.LocalStorageService>();
     final initialRegion = await localService.getSelectedRegion();
 
-    if (mounted) {
-      if (initialRegion == null || initialRegion.isEmpty) {
-        // initialRegion이 null이거나 비어있으면 지역 선택 화면으로
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (routeContext) => RegionSelectionScreen(
-              onRegionSelected: (region) async {
-                final localService = di.sl<elecko.LocalStorageService>();
-                await localService.saveSelectedRegion(region);
-                
-                if (routeContext.mounted) {
-                  Navigator.of(routeContext).pushReplacement(
-                    MaterialPageRoute(
-                        builder: (_) =>
-                            HomePage(members: members)), // 로드된 members 전달
-                  );
-                }
-              },
-            ),
+    if (!mounted) return;
+
+    if (initialRegion == null || initialRegion.isEmpty) {
+      // 1. 지역 선택이 안 되어 있으면 즉시 지역 선택 화면으로
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (routeContext) => RegionSelectionScreen(
+            onRegionSelected: (region) async {
+              await localService.saveSelectedRegion(region);
+              if (routeContext.mounted) {
+                // 선택 후 데이터 로딩 시작
+                _loadDataAndGoHome(routeContext, region);
+              }
+            },
           ),
-        );
-      } else {
+        ),
+      );
+    } else {
+      // 2. 이미 지역이 선택되어 있으면 바로 데이터 로딩 시작
+      _loadDataAndGoHome(context, initialRegion);
+    }
+  }
+
+  Future<void> _loadDataAndGoHome(BuildContext context, String region) async {
+    try {
+      debugPrint('[InitialScreen] 데이터 로딩 시작 (지역: $region)');
+      final members = await _getLoadedMembers();
+      
+      if (context.mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-              builder: (_) => HomePage(members: members)), // 로드된 members 전달
+          MaterialPageRoute(builder: (_) => HomePage(members: members)),
+        );
+      }
+    } catch (e) {
+      debugPrint('[InitialScreen] 데이터 로딩 실패: $e');
+      if (context.mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomePage(members: [])),
         );
       }
     }
@@ -166,7 +166,7 @@ class _InitialScreenState extends State<InitialScreen> {
 
     if (selectedRegion != null && selectedRegion.isNotEmpty && selectedRegion != '전국') {
       for (var m in loadedMembers) {
-        if (getParentRegion(m.district) == selectedRegion) {
+        if (districtMatchesRegion(m.district, selectedRegion)) {
           primaryMembers.add(m);
         } else {
           secondaryMembers.add(m);
