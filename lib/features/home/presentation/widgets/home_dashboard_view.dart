@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
+import 'package:elecko26_new/core/utils/utility_functions.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'member_card.dart';
 
