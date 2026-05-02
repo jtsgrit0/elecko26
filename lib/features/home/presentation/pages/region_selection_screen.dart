@@ -22,7 +22,7 @@ class _RegionSelectionScreenState extends State<RegionSelectionScreen> {
     '울산광역시',
     '세종특별자치시',
     '경기도',
-    '강원도',
+    '강원특별자치도',
     '충청북도',
     '충청남도',
     '전북특별자치도',

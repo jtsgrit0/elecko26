@@ -95,7 +95,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
       filtered = List.from(_displayMembers);
     } else {
       filtered = _displayMembers
-          .where((m) => m.district.startsWith(widget.userRegion))
+          .where((m) => districtMatchesRegion(m.district, widget.userRegion))
           .toList();
     }
 
