@@ -1,4 +1,5 @@
-import 'dart:isolate';
+import 'package:flutter/foundation.dart';
+import 'dart:isolate' if (dart.library.html) '';
 
 import 'package:elecko26_new/domain/entities/analysis_result.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
