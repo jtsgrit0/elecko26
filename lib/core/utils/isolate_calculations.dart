@@ -1,34 +1,10 @@
-import 'package:flutter/foundation.dart';
-import 'dart:isolate' if (dart.library.html) '';
+export 'isolate_handler_io.dart'
+    if (dart.library.html) 'isolate_handler_web.dart';
 
 import 'package:elecko26_new/domain/entities/analysis_result.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/usecases/possibility_calculator.dart';
 import 'package:elecko26_new/core/utils/utility_functions.dart';
-
-// Isolate에서 실행될 최상위 함수
-// 이 함수는 CalculateElectionPossibilityUseCase의 핵심 로직을 포함합니다.
-Future<void> calculateElectionPossibilityInIsolate(
-    Map<String, dynamic> message) async {
-  final SendPort sendPort = message['sendPort'];
-  final Member member = message['member'];
-  final Map<String, Map<String, double>> regionalPartyAverages =
-      message['regionalPartyAverages'];
-  final Map<String, double> voterInterests = message['voterInterests'];
-  final Map<String, String?> dominantParties = message['dominantParties'];
-
-  final result = performMemberCalculation(
-    member: member,
-    regionalPartyAverages: regionalPartyAverages,
-    voterInterests: voterInterests,
-    dominantParties: dominantParties,
-  );
-
-  sendPort.send({
-    'memberId': member.id,
-    'analysisResult': result.toJson(),
-  });
-}
 
 AnalysisResult performMemberCalculation({
   required Member member,
