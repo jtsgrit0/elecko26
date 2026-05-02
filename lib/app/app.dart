@@ -159,46 +159,73 @@ class _InitialScreenState extends State<InitialScreen> {
       secondaryMembers = loadedMembers.skip(100).toList();
     }
 
-    // 5. Isolate를 통한 효율적 계산 (하나의 Isolate에서 배치 처리)
-    final ReceivePort receivePort = ReceivePort();
-    
-    // 우선순위 멤버 계산 시작
+    // 5. 당선 가능성 계산 시작
+    final Map<String, double> calculatedPossibilities = {};
+
     if (primaryMembers.isNotEmpty) {
-      await _calculateBatchInIsolate(
-        primaryMembers,
+      if (kIsWeb) {
+        // 웹 환경: Isolate 대신 비동기 루프로 처리
+        debugPrint('[InitialScreen] 웹 환경 계산 시작 (배치 처리)');
+        for (int i = 0; i < primaryMembers.length; i++) {
+          final member = primaryMembers[i];
+          final result = performMemberCalculation(
+            member: member,
+            regionalPartyAverages: regionalPartyAverages,
+            voterInterests: voterInterests,
+            dominantParties: dominantParties,
+          );
+          calculatedPossibilities[member.id] = result.electionPossibility;
+
+          // 10개마다 한 번씩 메인 스레드에 제어권 양보 (UI 프리징 방지)
+          if (i % 10 == 0) {
+            await Future.delayed(Duration.zero);
+          }
+        }
+      } else {
+        // 모바일 환경: Isolate를 통한 효율적 계산
+        final ReceivePort receivePort = ReceivePort();
+        await _calculateBatchInIsolate(
+          primaryMembers,
+          regionalPartyAverages,
+          voterInterests,
+          dominantParties,
+          receivePort,
+        );
+
+        int receivedCount = 0;
+        try {
+          await for (var message in receivePort
+              .take(primaryMembers.length)
+              .timeout(const Duration(seconds: 10))) {
+            final String memberId = message['memberId'];
+            final double possibility = message['electionPossibility'];
+            calculatedPossibilities[memberId] = possibility;
+            receivedCount++;
+            if (receivedCount >= primaryMembers.length) break;
+          }
+        } catch (e) {
+          debugPrint('[Main] Isolate calculation timeout or error: $e');
+        }
+        receivePort.close();
+      }
+    }
+
+    // 나머지 멤버는 백그라운드에서 처리 (Future로 비동기 실행)
+    if (kIsWeb) {
+      _calculateSecondaryMembersWeb(
+        secondaryMembers,
         regionalPartyAverages,
         voterInterests,
         dominantParties,
-        receivePort,
+      );
+    } else {
+      _calculateSecondaryMembersInBackground(
+        secondaryMembers,
+        regionalPartyAverages,
+        voterInterests,
+        dominantParties,
       );
     }
-
-    // 결과 수집 및 멤버 업데이트
-    final Map<String, double> calculatedPossibilities = {};
-    int receivedCount = 0;
-
-    if (primaryMembers.isNotEmpty) {
-      try {
-        await for (var message in receivePort.take(primaryMembers.length).timeout(const Duration(seconds: 10))) {
-          final String memberId = message['memberId'];
-          final double possibility = message['electionPossibility'];
-          calculatedPossibilities[memberId] = possibility;
-          receivedCount++;
-          if (receivedCount >= primaryMembers.length) break;
-        }
-      } catch (e) {
-        debugPrint('[Main] Isolate calculation timeout or error: $e');
-      }
-    }
-    receivePort.close();
-
-    // 나머지 멤버는 백그라운드에서 처리 (Future로 비동기 실행)
-    _calculateSecondaryMembersInBackground(
-      secondaryMembers,
-      regionalPartyAverages,
-      voterInterests,
-      dominantParties,
-    );
 
     // 업데이트된 리스트 반환
     return loadedMembers.map((m) {
@@ -207,6 +234,30 @@ class _InitialScreenState extends State<InitialScreen> {
       }
       return m;
     }).toList();
+  }
+
+  /// 웹 환경 백그라운드 계산 (Isolate 미지원 대응)
+  Future<void> _calculateSecondaryMembersWeb(
+    List<Member> members,
+    Map<String, Map<String, double>> regionalPartyAverages,
+    Map<String, double> voterInterests,
+    Map<String, String?> dominantParties,
+  ) async {
+    if (members.isEmpty) return;
+    debugPrint('[InitialScreen] 웹 백그라운드 계산 시작 (${members.length}명)');
+    for (int i = 0; i < members.length; i++) {
+      performMemberCalculation(
+        member: members[i],
+        regionalPartyAverages: regionalPartyAverages,
+        voterInterests: voterInterests,
+        dominantParties: dominantParties,
+      );
+      // 20개마다 한 번씩 쉬어감 (UI 부하 최소화)
+      if (i % 20 == 0) {
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
+    }
+    debugPrint('[InitialScreen] 웹 백그라운드 계산 완료');
   }
 
   /// 백그라운드에서 나머지 멤버들의 당선 가능성 계산
