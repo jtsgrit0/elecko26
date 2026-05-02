@@ -63,30 +63,54 @@ class _InitialScreenState extends State<InitialScreen> {
   Future<void> _initializeApp() async {
     debugPrint('[InitialScreen] _initializeApp: 시작');
     
-    final localService = di.sl<elecko.LocalStorageService>();
-    final initialRegion = await localService.getSelectedRegion();
+    // 프레임 렌더링 후 실행되도록 보장
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final localService = di.sl<elecko.LocalStorageService>();
+        final initialRegion = await localService.getSelectedRegion();
 
-    if (!mounted) return;
+        if (!mounted) return;
 
-    if (initialRegion == null || initialRegion.isEmpty) {
-      // 1. 지역 선택이 안 되어 있으면 즉시 지역 선택 화면으로
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (routeContext) => RegionSelectionScreen(
-            onRegionSelected: (region) async {
-              await localService.saveSelectedRegion(region);
-              if (routeContext.mounted) {
-                // 선택 후 데이터 로딩 시작
-                _loadDataAndGoHome(routeContext, region);
-              }
-            },
-          ),
-        ),
-      );
-    } else {
-      // 2. 이미 지역이 선택되어 있으면 바로 데이터 로딩 시작
-      _loadDataAndGoHome(context, initialRegion);
-    }
+        if (initialRegion == null || initialRegion.isEmpty) {
+          debugPrint('[InitialScreen] 지역 선택 정보 없음 -> 지역 선택 화면으로 이동');
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (routeContext) => RegionSelectionScreen(
+                onRegionSelected: (region) async {
+                  await localService.saveSelectedRegion(region);
+                  if (routeContext.mounted) {
+                    _loadDataAndGoHome(routeContext, region);
+                  }
+                },
+              ),
+            ),
+          );
+        } else {
+          debugPrint('[InitialScreen] 기존 지역 선택 정보 발견 ($initialRegion) -> 홈으로 로딩');
+          _loadDataAndGoHome(context, initialRegion);
+        }
+      } catch (e) {
+        debugPrint('[InitialScreen] 초기화 중 치명적 에러: $e');
+        // 에러 발생 시 폴백: 무조건 지역 선택 화면으로 이동 시도
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (routeContext) => RegionSelectionScreen(
+                onRegionSelected: (region) async {
+                  try {
+                    final localService = di.sl<elecko.LocalStorageService>();
+                    await localService.saveSelectedRegion(region);
+                  } catch (_) {}
+                  if (routeContext.mounted) {
+                    _loadDataAndGoHome(routeContext, region);
+                  }
+                },
+              ),
+            ),
+          );
+        }
+      }
+    });
   }
 
   Future<void> _loadDataAndGoHome(BuildContext context, String region) async {
