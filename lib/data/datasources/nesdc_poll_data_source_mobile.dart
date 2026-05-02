@@ -459,10 +459,10 @@ class NesdcPollDataSource {
       return Uri.parse(raw);
     }
     final base = Uri.parse(raw);
-    if (platform.kIsWeb) {
+    if (kIsWeb) {
       return base;
     }
-    if (platform.defaultTargetPlatform == platform.TargetPlatform.android &&
+    if (defaultTargetPlatform == TargetPlatform.android &&
         (base.host == 'localhost' || base.host == '12-7.0.0.1')) {
       return base.replace(host: '10.0.2.2');
     }
@@ -470,7 +470,7 @@ class NesdcPollDataSource {
   }
 
   Uri? _resolveWebBackendOverride() {
-    if (!platform.kIsWeb) {
+    if (!kIsWeb) {
       return null;
     }
     if (kIsNesdcProxyEnabled) {
