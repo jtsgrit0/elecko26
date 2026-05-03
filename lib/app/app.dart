@@ -10,7 +10,8 @@ import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/usecases/member_usecases.dart';
 import 'package:elecko26_new/domain/repositories/historical_election_repository.dart';
 import 'package:elecko26_new/features/home/presentation/pages/home_page.dart';
-import 'package:elecko26_new/data/datasources/local_storage_service.dart' as elecko;
+import 'package:elecko26_new/data/datasources/local_storage_service.dart'
+    as elecko;
 import 'package:elecko26_new/features/home/presentation/pages/region_selection_screen.dart';
 import 'package:elecko26_new/features/home/presentation/widgets/splash_screen.dart';
 
@@ -60,12 +61,12 @@ class _InitialScreenState extends State<InitialScreen> {
   }
 
   Future<void> _initializeApp() async {
-    debugPrint('[InitialScreen] _initializeApp: 즉시 실행');
-    
-    // 타임아웃: 어떤 경우에도 3초 후에는 지역 선택으로 이동
-    final timeoutTimer = Timer(const Duration(seconds: 3), () {
+    debugPrint('[InitialScreen] _initializeApp: 시작');
+
+    // 타임아웃: 어떤 경우에도 10초 후에는 지역 선택으로 이동 (디버깅을 위해 늘림)
+    final timeoutTimer = Timer(const Duration(seconds: 10), () {
       if (mounted) {
-        debugPrint('[InitialScreen] 초기화 강제 타임아웃');
+        debugPrint('[InitialScreen] 초기화 강제 타임아웃 발생');
         _navigateToRegionSelection();
       }
     });
@@ -73,16 +74,20 @@ class _InitialScreenState extends State<InitialScreen> {
     try {
       // 프레임 렌더링을 기다리지 않고 즉시 의존성 확인 시도
       await Future.delayed(const Duration(milliseconds: 100));
-      
+      debugPrint('[InitialScreen] 의존성 확인 시도');
+
       final localService = di.sl<elecko.LocalStorageService>();
       final initialRegion = await localService.getSelectedRegion();
+      debugPrint('[InitialScreen] 초기 지역: $initialRegion');
 
       timeoutTimer.cancel();
       if (!mounted) return;
 
       if (initialRegion != null && initialRegion.isNotEmpty) {
+        debugPrint('[InitialScreen] _loadDataAndGoHome 호출');
         _loadDataAndGoHome(context, initialRegion);
       } else {
+        debugPrint('[InitialScreen] _navigateToRegionSelection 호출');
         _navigateToRegionSelection();
       }
     } catch (e) {
@@ -90,6 +95,7 @@ class _InitialScreenState extends State<InitialScreen> {
       debugPrint('[InitialScreen] 초기화 에러: $e');
       if (mounted) _navigateToRegionSelection();
     }
+    debugPrint('[InitialScreen] _initializeApp: 종료');
   }
 
   void _navigateToRegionSelection() {
@@ -115,7 +121,7 @@ class _InitialScreenState extends State<InitialScreen> {
     try {
       debugPrint('[InitialScreen] 데이터 로딩 시작 (지역: $region)');
       final members = await _getLoadedMembers();
-      
+
       if (context.mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => HomePage(members: members)),
@@ -132,18 +138,27 @@ class _InitialScreenState extends State<InitialScreen> {
   }
 
   Future<List<Member>> _getLoadedMembers() async {
+    debugPrint('[InitialScreen] _getLoadedMembers: 시작');
     final getMembersUseCase = di.sl<GetMembersUseCase>();
     final historicalRepository = di.sl<HistoricalElectionRepository>();
     final localService = di.sl<elecko.LocalStorageService>();
 
     // 1. 기본 멤버 데이터 로드
+    debugPrint('[InitialScreen] 멤버 데이터 로드 시도');
     List<Member> loadedMembers = await getMembersUseCase.call();
-    if (loadedMembers.isEmpty) return [];
+    if (loadedMembers.isEmpty) {
+      debugPrint('[InitialScreen] 로드된 멤버 데이터 없음');
+      return [];
+    }
+    debugPrint('[InitialScreen] 멤버 데이터 로드 완료: ${loadedMembers.length}명');
 
     // 2. 선택된 지역 확인
+    debugPrint('[InitialScreen] 선택된 지역 확인 시도');
     final selectedRegion = await localService.getSelectedRegion();
+    debugPrint('[InitialScreen] 선택된 지역: $selectedRegion');
 
     // 3. 지역별 통계 데이터 미리 로드 (계산에 필요)
+    debugPrint('[InitialScreen] 지역별 통계 데이터 로드 시도');
     final Set<String> allRegions = loadedMembers
         .map((m) => getParentRegion(m.district) == ''
             ? '전국'
@@ -162,13 +177,17 @@ class _InitialScreenState extends State<InitialScreen> {
           await historicalRepository.getVoterInterest(region);
       dominantParties[region] =
           await historicalRepository.getDominantParty(region);
+      debugPrint('[InitialScreen] 지역 통계 로드 완료: $region');
     }
+    debugPrint('[InitialScreen] 모든 지역 통계 데이터 로드 완료');
 
     // 4. 우선순위 설정 (선택된 지역의 멤버를 먼저 계산)
     List<Member> primaryMembers = [];
     List<Member> secondaryMembers = [];
 
-    if (selectedRegion != null && selectedRegion.isNotEmpty && selectedRegion != '전국') {
+    if (selectedRegion != null &&
+        selectedRegion.isNotEmpty &&
+        selectedRegion != '전국') {
       for (var m in loadedMembers) {
         if (districtMatchesRegion(m.district, selectedRegion)) {
           primaryMembers.add(m);
@@ -176,10 +195,12 @@ class _InitialScreenState extends State<InitialScreen> {
           secondaryMembers.add(m);
         }
       }
+      debugPrint('[InitialScreen] 지역 기반 우선순위 설정 완료');
     } else {
       // 선택된 지역이 없으면 상위 일부만 우선 로드 (예: 100명)
       primaryMembers = loadedMembers.take(100).toList();
       secondaryMembers = loadedMembers.skip(100).toList();
+      debugPrint('[InitialScreen] 기본 우선순위 설정 완료 (상위 100명)');
     }
 
     // 5. 당선 가능성 계산 시작
@@ -194,22 +215,27 @@ class _InitialScreenState extends State<InitialScreen> {
           voterInterests: voterInterests,
           dominantParties: dominantParties,
         );
-        calculatedPossibilities[primaryMembers[i].id] = result.electionPossibility;
-        
+        calculatedPossibilities[primaryMembers[i].id] =
+            result.electionPossibility;
+
         // 10명마다 UI 프레임 양보 (웹 멈춤 방지)
         if (i % 10 == 0) await Future.delayed(Duration.zero);
       }
+      debugPrint('[InitialScreen] 우선순위 멤버 계산 완료');
     }
 
     // 나머지 멤버는 백그라운드에서 처리 (비동기 루프)
+    debugPrint('[InitialScreen] 백그라운드 멤버 계산 시작');
     _calculateSecondaryMembersWeb(
       secondaryMembers,
       regionalPartyAverages,
       voterInterests,
       dominantParties,
     );
+    debugPrint('[InitialScreen] 백그라운드 멤버 계산 호출 완료');
 
     // 업데이트된 리스트 반환
+    debugPrint('[InitialScreen] _getLoadedMembers: 종료');
     return loadedMembers.map((m) {
       if (calculatedPossibilities.containsKey(m.id)) {
         return m.copyWith(electionPossibility: calculatedPossibilities[m.id]);

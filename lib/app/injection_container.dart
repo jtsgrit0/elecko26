@@ -52,19 +52,21 @@ Future<void> init() async {
 }
 
 Future<void> initMinimal() async {
-  debugPrint('[DI] Initializing Minimal DI...');
+  debugPrint('[DI] initMinimal: 시작');
   try {
+    debugPrint('[DI] GetIt Reset 시도...');
     if (sl.isRegistered<MemberRepository>()) {
       // reset()이 가끔 dispose 대기로 인해 오래 걸릴 수 있으므로 1초 타임아웃
       await sl.reset().timeout(const Duration(seconds: 1));
     }
+    debugPrint('[DI] GetIt Reset 완료.');
   } catch (e) {
     debugPrint('[DI] GetIt Reset Timeout or Error (Proceeding anyway): $e');
   }
 
   //! External
   try {
-    debugPrint('[DI] Loading SharedPreferences...');
+    debugPrint('[DI] SharedPreferences 로드 시도...');
     final sharedPreferences = await SharedPreferences.getInstance().timeout(
       const Duration(milliseconds: 1500),
       onTimeout: () {
@@ -76,18 +78,24 @@ Future<void> initMinimal() async {
     sl.registerLazySingleton<LocalStorageService>(
       () => SharedPreferencesService(sl<SharedPreferences>()),
     );
+    debugPrint('[DI] SharedPreferences 및 LocalStorageService 등록 완료.');
   } catch (e) {
-    debugPrint('[DI] SharedPreferences Load failed, registering fallback: $e');
+    debugPrint('[DI] SharedPreferences 로드 실패, fallback 등록: $e');
     sl.registerLazySingleton<LocalStorageService>(
         () => InMemoryLocalStorageService());
+    debugPrint('[DI] InMemoryLocalStorageService 등록 완료.');
   }
 
+  debugPrint('[DI] _registerAll 호출...');
   _registerAll();
-  
+  debugPrint('[DI] _registerAll 완료.');
+
   // 백그라운드에서 지도 데이터 미리 로드 (캐시 활성화)
+  debugPrint('[DI] 지도 데이터 미리 로드 시도...');
   unawaited(sl<MapRepository>().getElectionMapData());
-  
-  debugPrint('[DI] Minimal DI Initialization Complete');
+  debugPrint('[DI] 지도 데이터 미리 로드 호출 완료.');
+
+  debugPrint('[DI] initMinimal: 완료');
 }
 
 void _registerAll() {
@@ -241,7 +249,8 @@ class InMemoryLocalStorageService implements LocalStorageService {
   Future<bool> isFavorite(String id) async =>
       (await getFavorites()).contains(id);
   @override
-  Future<String?> getSelectedRegion() async => _data['selected_region'] as String?;
+  Future<String?> getSelectedRegion() async =>
+      _data['selected_region'] as String?;
   @override
   Future<void> saveSelectedRegion(String region) async =>
       await setString('selected_region', region);
