@@ -121,13 +121,9 @@ void _registerAll() {
   sl.registerSingleton<SignOutUseCase>(SignOutUseCase(sl<AuthRepository>()));
 
   // Repository
-  if (AppConfig.enableFirebase) {
-    debugPrint('[DI] Firebase 활성화됨 - FirestoreMemberRepositoryImpl 등록');
-    sl.registerSingleton<MemberRepository>(FirestoreMemberRepositoryImpl());
-  } else {
-    debugPrint('[DI] Firebase 비활성화됨 - HttpMemberRepositoryImpl 등록');
-    sl.registerSingleton<MemberRepository>(HttpMemberRepositoryImpl());
-  }
+  // 무조건 HttpMemberRepositoryImpl를 사용하도록 강제하여 Firebase 종속성 제거
+  debugPrint('[DI] HttpMemberRepositoryImpl 강제 등록');
+  sl.registerSingleton<MemberRepository>(HttpMemberRepositoryImpl());
 
   sl.registerSingleton<HistoricalElectionDataSource>(
       HistoricalElectionDataSource());
