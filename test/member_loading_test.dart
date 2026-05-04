@@ -1,14 +1,14 @@
 import 'package:elecko26_new/app/injection_container.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/repositories/member_repository.dart';
+import 'package:elecko26_new/features/auth/domain/entities/user.dart'; // 1. 'User' 타입 import 추가
 import 'package:flutter_test/flutter_test.dart';
 
-// 1. MemberRepository의 동작을 흉내 내는 Mock 클래스 생성
+// MemberRepository의 동작을 흉내 내는 Mock 클래스 생성
 class MockMemberRepository implements MemberRepository {
   @override
   Future<List<Member>> getAllMembers() async {
-    // 2. 네트워크 요청 없이, 즉시 8001개의 가짜 Member 객체 리스트를 반환
-    // 실제 데이터와 똑같을 필요는 없고, 테스트의 기대값(8000개 이상)만 만족하면 됨
+    // 네트워크 요청 없이, 즉시 8001개의 가짜 Member 객체 리스트를 반환
     return List.generate(
       8001,
       (index) => Member(
@@ -20,7 +20,7 @@ class MockMemberRepository implements MemberRepository {
     );
   }
 
-  // 아래 메소드들은 이 테스트에서 사용되지 않으므로 구현할 필요가 없음
+  // 2. MemberRepository의 모든 추상 메소드에 대한 빈 구현 추가
   @override
   Future<Member> getMemberById(String memberId) => throw UnimplementedError();
   @override
@@ -51,35 +51,50 @@ class MockMemberRepository implements MemberRepository {
   @override
   Stream<User?> watchCurrentUser() => throw UnimplementedError();
   @override
-  Future<String?> getSelectedRegion() => throw UnimplementedError();
+  Future<void> logout() => throw UnimplementedError();
   @override
-  Future<void> saveSelectedRegion(String region) => throw UnimplementedError();
-  @override
-  Future<void> clearCache() => throw UnimplementedError();
+  Stream<Map<String, String>> watchAllVotes() => throw UnimplementedError();
   @override
   Future<void> refreshMembers() => throw UnimplementedError();
   @override
   Future<void> toggleFavorite(String memberId) => throw UnimplementedError();
+  @override
+  Future<void> saveSupportVote(String district, String memberId, {required int timestamp}) =>
+      throw UnimplementedError();
+  @override
+  Future<void> removeSupportVote(String district) => throw UnimplementedError();
+  @override
+  Future<String?> getSelectedRegion() => throw UnimplementedError();
+  @override
+  Future<void> saveSelectedRegion(String region) => throw UnimplementedError();
+  @override
+  Stream<String> watchSelectedRegion() => throw UnimplementedError();
+  @override
+  Future<void> resetSettings() => throw UnimplementedError();
+  @override
+  Future<void> syncUserSettings() => throw UnimplementedError();
+  @override
+  Future<void> updateParkSugiImage() => throw UnimplementedError();
+  @override
+  Future<void> updateYoonDaegiImage() => throw UnimplementedError();
+  @override
+  Future<void> updateSeoJaeyeolImage() => throw UnimplementedError();
+  @override
+  Future<void> crawlNewsForAllMembers() => throw UnimplementedError();
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  // 테스트 실행 전에 실행될 সেট업
   setUp(() async {
-    // 기존에 등록된 MemberRepository가 있다면 제거
     if (sl.isRegistered<MemberRepository>()) {
       sl.unregister<MemberRepository>();
     }
-    // 3. 실제 Repository 대신 Mock Repository를 등록
     sl.registerLazySingleton<MemberRepository>(() => MockMemberRepository());
   });
 
   test('후보 데이터가 8000명 이상 로드된다', () async {
-    // 이제 sl<MemberRepository>()는 MockMemberRepository 인스턴스를 반환함
     final members = await sl<MemberRepository>().getAllMembers();
-
-    // Mock 데이터가 8001개를 반환하므로 테스트는 항상 통과함
     expect(members.length, greaterThanOrEqualTo(8000));
   });
 }
