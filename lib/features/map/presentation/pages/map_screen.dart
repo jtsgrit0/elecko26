@@ -221,7 +221,7 @@ class _MapScreenState extends State<MapScreen> {
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.elecko26.app',
-                tileDisplay: const TileDisplay.fadeIn(duration: Duration.zero),
+                tileDisplay: const TileDisplay.fadeIn(duration: Duration(milliseconds: 1)),
                 panBuffer: 1,
                 keepBuffer: 2,
               ),

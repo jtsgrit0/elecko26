@@ -1,0 +1,10 @@
+name: elecko26_tools
+description: A collection of tools for the elecko26 project.
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.1.5 <4.0.0'
+
+dependencies:
+  http: ^1.1.0
+  path: ^1.9.0

@@ -60,11 +60,13 @@ class _SearchViewState extends State<SearchView>
     '의회': ['전체', '도의원', '시의원', '구의원', '군의원'],
   };
 
+  bool _isDependenciesInitialized = false;
+
   @override
   void initState() {
     super.initState();
     _allMembers = widget.cachedMembers;
-    _applyFilters();
+    // _applyFilters(); // initState에서 제거
     _membersSubscription = widget.membersStream.listen((members) {
       if (mounted) {
         setState(() {
@@ -73,6 +75,15 @@ class _SearchViewState extends State<SearchView>
         });
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isDependenciesInitialized) {
+      _applyFilters();
+      _isDependenciesInitialized = true;
+    }
   }
 
   @override

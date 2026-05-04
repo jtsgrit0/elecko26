@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:elecko26_new/core/config/app_config.dart';
+import 'package:elecko26_new/data/repositories/http_member_repository_impl.dart';
 import 'package:elecko26_new/data/repositories/firestore_member_repository_impl.dart';
 import 'package:get_it/get_it.dart';
 import 'package:elecko26_new/data/repositories/member_repository_impl.dart';
@@ -124,8 +125,8 @@ void _registerAll() {
     debugPrint('[DI] Firebase 활성화됨 - FirestoreMemberRepositoryImpl 등록');
     sl.registerSingleton<MemberRepository>(FirestoreMemberRepositoryImpl());
   } else {
-    debugPrint('[DI] Firebase 비활성화됨 - MemberRepositoryImpl 등록');
-    sl.registerSingleton<MemberRepository>(MemberRepositoryImpl());
+    debugPrint('[DI] Firebase 비활성화됨 - HttpMemberRepositoryImpl 등록');
+    sl.registerSingleton<MemberRepository>(HttpMemberRepositoryImpl());
   }
 
   sl.registerSingleton<HistoricalElectionDataSource>(
