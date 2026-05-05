@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'package:elecko26_new/data/repositories/firestore_member_repository_impl.dart'
-    as repo hide sl;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:elecko26_new/app/injection_container.dart';

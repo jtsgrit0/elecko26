@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:elecko26_new/core/config/app_config.dart';
 import 'package:elecko26_new/data/repositories/http_member_repository_impl.dart';
-import 'package:elecko26_new/data/repositories/firestore_member_repository_impl.dart';
 import 'package:get_it/get_it.dart';
 import 'package:elecko26_new/data/repositories/member_repository_impl.dart';
 import 'package:elecko26_new/domain/repositories/member_repository.dart';
