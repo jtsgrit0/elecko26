@@ -6,7 +6,7 @@ import 'package:elecko26_new/data/models/member_model.dart';
 import 'package:elecko26_new/features/auth/domain/entities/user.dart';
 
 class HttpMemberRepositoryImpl implements MemberRepository {
-  final String _baseUrl = 'api/members.json';
+  final String _baseUrl = 'members.json';
 
   // --- MemberRepository 인터페이스의 모든 메소드 구현 ---
 
