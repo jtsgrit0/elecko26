@@ -25,24 +25,16 @@ class MemberDetailPage extends StatefulWidget {
 }
 
 class _MemberDetailPageState extends State<MemberDetailPage> {
-  late Stream<Member> _memberStream;
+  late Member _member;
   late Stream<AnalysisResult> _analysisStream;
   late AnalysisResult _initialAnalysis;
 
   @override
   void initState() {
     super.initState();
-    _initialAnalysis = _buildFallbackAnalysis(widget.member);
-    _startMemberStream();
+    _member = widget.member;
+    _initialAnalysis = _buildFallbackAnalysis(_member);
     _startAnalysisStream();
-  }
-
-  void _startMemberStream() {
-    _memberStream = sl<WatchMemberByIdUseCase>().call(widget.member.id);
-  }
-
-  void _stopMemberStream() {
-    _memberStream = Stream<Member>.empty();
   }
 
   void _startAnalysisStream() {
@@ -76,102 +68,103 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<Member>(
-      stream: _memberStream,
-      initialData: widget.member,
-      builder: (context, memberSnapshot) {
-        final member = memberSnapshot.data ?? widget.member;
+    final member = _member;
 
-        return Scaffold(
-          appBar: AppBar(
-            leading: widget.onBack != null
-                ? IconButton(
-                    icon: const Icon(Icons.arrow_back, color: AppColors.white),
-                    onPressed: widget.onBack,
-                  )
-                : null,
-            title: Text(
-              member.name,
-              style: AppTextStyles.headline2.copyWith(
-                color: AppColors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            backgroundColor: AppColors.primary,
-            elevation: 0,
-            actions: [
-              IconButton(
-                icon: Icon(
-                  member.isFavorite ? Icons.star : Icons.star_border,
-                  color: member.isFavorite ? Colors.amber : AppColors.white,
-                ),
-                onPressed: () async {
-                  try {
-                    await sl<ToggleFavoriteUseCase>().call(member.id);
-                  } catch (e) {
-                    debugPrint('[MemberDetailPage] toggleFavorite failed: $e');
-                  }
-                },
-              ),
-              const SizedBox(width: 8),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        leading: widget.onBack != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: AppColors.white),
+                onPressed: widget.onBack,
+              )
+            : null,
+        title: Text(
+          member.name,
+          style: AppTextStyles.headline2.copyWith(
+            color: AppColors.white,
+            fontWeight: FontWeight.bold,
           ),
-          body: StreamBuilder<AnalysisResult>(
-            stream: _analysisStream,
-            initialData: _initialAnalysis,
-            builder: (context, snapshot) {
-              final analysis = snapshot.data ?? _buildFallbackAnalysis(member);
-
-              return SingleChildScrollView(
-                child: Column(
-                  children: [
-                    // 프로필 섹션
-                    _buildProfileSection(member),
-                    const SizedBox(height: 24),
-
-                    // 당선 가능성 섹션
-                    _buildElectionPossibilitySection(analysis),
-                    const SizedBox(height: 24),
-
-                    // 2018년 지방선거 득표율 섹션
-                    // 2018년도 정당 지지율은 당선 가능성 계산에 자동으로 반영됨
-                    const SizedBox(height: 24),
-
-                    // 상세 점수 섹션
-                    _buildDetailedScoresSection(analysis),
-                    const SizedBox(height: 24),
-                    // 여론조사 섹션
-                    _buildPollsSection(member),
-                    const SizedBox(height: 24),
-                    // SNS 분석 섹션
-                    _buildSnsAnalysisSection(analysis),
-                    const SizedBox(height: 24),
-                    // 강점 및 약점
-                    _buildStrengthsAndWeaknesses(analysis),
-                    const SizedBox(height: 24),
-
-                    // 개선점
-                    _buildImprovementsSection(analysis),
-                    const SizedBox(height: 24),
-
-                    // 사회적 책임 (Social Noblesse)
-                    _buildSocialContributionsSection(member),
-                    const SizedBox(height: 24),
-
-                    // 당선가능성 추이 그래프
-                    _buildTrendChartSection(analysis),
-                    const SizedBox(height: 24),
-
-                    // 분석 리포트
-                    _buildAnalysisReportSection(analysis),
-                    const SizedBox(height: 32),
-                  ],
-                ),
-              );
+        ),
+        backgroundColor: AppColors.primary,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(
+              member.isFavorite ? Icons.star : Icons.star_border,
+              color: member.isFavorite ? Colors.amber : AppColors.white,
+            ),
+            onPressed: () async {
+              final originalMember = _member;
+              setState(() {
+                _member = _member.copyWith(isFavorite: !_member.isFavorite);
+              });
+              try {
+                await sl<ToggleFavoriteUseCase>().call(member.id);
+              } catch (e) {
+                debugPrint('[MemberDetailPage] toggleFavorite failed: $e');
+                setState(() {
+                  _member = originalMember;
+                });
+              }
             },
           ),
-        );
-      },
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: StreamBuilder<AnalysisResult>(
+        stream: _analysisStream,
+        initialData: _initialAnalysis,
+        builder: (context, snapshot) {
+          final analysis = snapshot.data ?? _buildFallbackAnalysis(member);
+
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                // 프로필 섹션
+                _buildProfileSection(member),
+                const SizedBox(height: 24),
+
+                // 당선 가능성 섹션
+                _buildElectionPossibilitySection(analysis),
+                const SizedBox(height: 24),
+
+                // 2018년 지방선거 득표율 섹션
+                // 2018년도 정당 지지율은 당선 가능성 계산에 자동으로 반영됨
+                const SizedBox(height: 24),
+
+                // 상세 점수 섹션
+                _buildDetailedScoresSection(analysis),
+                const SizedBox(height: 24),
+                // 여론조사 섹션
+                _buildPollsSection(member),
+                const SizedBox(height: 24),
+                // SNS 분석 섹션
+                _buildSnsAnalysisSection(analysis),
+                const SizedBox(height: 24),
+                // 강점 및 약점
+                _buildStrengthsAndWeaknesses(analysis),
+                const SizedBox(height: 24),
+
+                // 개선점
+                _buildImprovementsSection(analysis),
+                const SizedBox(height: 24),
+
+                // 사회적 책임 (Social Noblesse)
+                _buildSocialContributionsSection(member),
+                const SizedBox(height: 24),
+
+                // 당선가능성 추이 그래프
+                _buildTrendChartSection(analysis),
+                const SizedBox(height: 24),
+
+                // 분석 리포트
+                _buildAnalysisReportSection(analysis),
+                const SizedBox(height: 32),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 

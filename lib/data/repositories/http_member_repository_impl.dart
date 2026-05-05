@@ -4,10 +4,12 @@ import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/repositories/member_repository.dart';
 import 'package:elecko26_new/data/models/member_model.dart';
 import 'package:elecko26_new/features/auth/domain/entities/user.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HttpMemberRepositoryImpl implements MemberRepository {
   final String _baseUrl = 'members.json';
   List<Member> _members = []; // 의원 목록을 캐시할 변수
+  static const String _favoritesKey = 'favorite_members';
 
   @override
   Future<List<Member>> getAllMembers() async {
@@ -21,7 +23,14 @@ class HttpMemberRepositoryImpl implements MemberRepository {
         // UTF-8로 명시적으로 디코딩
         final List<dynamic> jsonData =
             json.decode(utf8.decode(response.bodyBytes));
-        _members = jsonData.map((data) => MemberModel.fromJson(data)).toList();
+        final prefs = await SharedPreferences.getInstance();
+        final favoriteIds = prefs.getStringList(_favoritesKey) ?? [];
+
+        _members = jsonData.map((data) {
+          final member = MemberModel.fromJson(data);
+          return member.copyWith(isFavorite: favoriteIds.contains(member.id));
+        }).toList();
+
         return _members;
       } else {
         throw Exception(
@@ -128,8 +137,27 @@ class HttpMemberRepositoryImpl implements MemberRepository {
   }
 
   @override
-  Future<void> toggleFavorite(String memberId) {
-    throw UnimplementedError('toggleFavorite는 아직 구현되지 않았습니다.');
+  Future<void> toggleFavorite(String memberId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final favoriteIds = prefs.getStringList(_favoritesKey) ?? [];
+
+    if (favoriteIds.contains(memberId)) {
+      favoriteIds.remove(memberId);
+    } else {
+      favoriteIds.add(memberId);
+    }
+
+    await prefs.setStringList(_favoritesKey, favoriteIds);
+
+    // 캐시된 멤버 목록의 isFavorite 상태 업데이트
+    final index = _members.indexWhere((member) => member.id == memberId);
+    if (index != -1) {
+      final member = _members[index];
+      // Member entity에 copyWith가 있다고 가정합니다.
+      // MemberModel은 Member를 구현하므로 MemberModel의 copyWith를 사용합니다.
+      _members[index] =
+          (member as MemberModel).copyWith(isFavorite: !member.isFavorite);
+    }
   }
 
   @override
