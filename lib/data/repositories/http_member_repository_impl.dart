@@ -7,7 +7,7 @@ import 'package:elecko26_new/features/auth/domain/entities/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HttpMemberRepositoryImpl implements MemberRepository {
-  final String _baseUrl = 'members.json';
+  final String _baseUrl = 'api/members.json';
   List<Member> _members = []; // 의원 목록을 캐시할 변수
   static const String _favoritesKey = 'favorite_members';
 
