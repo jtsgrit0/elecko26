@@ -141,6 +141,17 @@ class MemberModel extends Member {
     );
   }
 
+  // The instruction mentions 'photo', which corresponds to 'imageUrl' in this model.
+  // It also implies overriding a 'profileImageUrl' getter from the superclass.
+  // This implementation adds the override with fallback logic.
+  String get profileImageUrl {
+    final url = imageUrl;
+    if (url == null || url.isEmpty || !url.startsWith('http')) {
+      return 'assets/images/avatar.png';
+    }
+    return 'https://wsrv.nl/?url=$url&w=120&h=120&fit=cover';
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

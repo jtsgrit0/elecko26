@@ -1,5 +1,6 @@
 import 'package:elecko26_new/core/widgets/app_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:elecko26_new/features/home/presentation/pages/member_detail_page.dart';
 import 'package:elecko26_new/core/utils/image_util.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/usecases/member_usecases.dart';
@@ -300,34 +301,25 @@ class _MemberCard extends StatelessWidget {
           child: Row(
             children: [
               // 프로필 이미지
-              Container(
+              SizedBox(
                 width: 70,
                 height: 70,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: AppColors.primaryGradient,
-                ),
-                child: member.imageUrl.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(35),
-                        child: AppNetworkImage(
-                          imageUrl: ImageUtil.getProxyUrl(member.imageUrl,
-                              width: 140, height: 140),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: member.imageUrl.isNotEmpty
+                      ? AppNetworkImage(
+                          imageUrl: member.imageUrl,
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                              color: AppColors.lightGrey.withOpacity(0.3)),
-                          errorWidget: (context, url, error) => const Icon(
-                            Icons.person,
-                            color: AppColors.white,
-                            size: 35,
+                          errorWidget: (context, url, error) => Image.asset(
+                            'assets/images/avatar.png',
+                            fit: BoxFit.cover,
                           ),
+                        )
+                      : Image.asset(
+                          'assets/images/avatar.png',
+                          fit: BoxFit.cover,
                         ),
-                      )
-                    : const Icon(
-                        Icons.person,
-                        color: AppColors.white,
-                        size: 35,
-                      ),
+                ),
               ),
               const SizedBox(width: 12),
               // 의원 정보

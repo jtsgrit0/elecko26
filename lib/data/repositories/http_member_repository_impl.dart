@@ -7,11 +7,13 @@ import 'package:elecko26_new/features/auth/domain/entities/user.dart';
 
 class HttpMemberRepositoryImpl implements MemberRepository {
   final String _baseUrl = 'members.json';
-
-  // --- MemberRepository 인터페이스의 모든 메소드 구현 ---
+  List<Member> _members = []; // 의원 목록을 캐시할 변수
 
   @override
   Future<List<Member>> getAllMembers() async {
+    if (_members.isNotEmpty) {
+      return _members;
+    }
     try {
       final response = await http.get(Uri.parse(_baseUrl));
 
@@ -19,9 +21,8 @@ class HttpMemberRepositoryImpl implements MemberRepository {
         // UTF-8로 명시적으로 디코딩
         final List<dynamic> jsonData =
             json.decode(utf8.decode(response.bodyBytes));
-        final List<Member> members =
-            jsonData.map((data) => MemberModel.fromJson(data)).toList();
-        return members;
+        _members = jsonData.map((data) => MemberModel.fromJson(data)).toList();
+        return _members;
       } else {
         throw Exception(
             'API로부터 멤버 정보를 불러오는데 실패했습니다. 상태 코드: ${response.statusCode}');
@@ -32,9 +33,16 @@ class HttpMemberRepositoryImpl implements MemberRepository {
   }
 
   @override
-  Future<Member> getMemberById(String memberId) {
-    // API에 단일 멤버를 가져오는 기능이 추가되어야 함
-    throw UnimplementedError('getMemberById는 아직 구현되지 않았습니다.');
+  Future<Member> getMemberById(String id) async {
+    // getAllMembers가 먼저 호출되었다고 가정
+    if (_members.isEmpty) {
+      await getAllMembers();
+    }
+    try {
+      return _members.firstWhere((member) => member.id == id);
+    } catch (e) {
+      throw Exception('$id 에 해당하는 의원을 찾을 수 없습니다.');
+    }
   }
 
   @override

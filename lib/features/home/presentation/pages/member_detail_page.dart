@@ -288,64 +288,40 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
           // 프로필 이미지
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: member.imageUrl.isNotEmpty
-                ? AppNetworkImage(
-                    imageUrl: ImageUtil.getProxyUrl(member.imageUrl,
-                        width: 200, height: 200),
-                    width: 100,
-                    height: 100,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                        width: 100, height: 100, color: AppColors.lightGrey),
-                    errorWidget: (context, url, error) {
-                      return Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.primary.withOpacity(0.8),
-                              AppColors.secondary.withOpacity(0.6)
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            _getProfileInitial(member.name),
-                            style: AppTextStyles.headline1.copyWith(
-                              color: AppColors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  )
-                : Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.primary.withOpacity(0.8),
-                          AppColors.secondary.withOpacity(0.6)
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+            child: AppNetworkImage(
+              imageUrl: ImageUtil.getProxyUrl(member.imageUrl,
+                  width: 200, height: 200),
+              width: 100,
+              height: 100,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Container(
+                  width: 100, height: 100, color: AppColors.lightGrey),
+              errorWidget: (context, url, error) {
+                return Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primary.withOpacity(0.8),
+                        AppColors.secondary.withOpacity(0.6)
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    child: Center(
-                      child: Text(
-                        _getProfileInitial(member.name),
-                        style: AppTextStyles.headline1.copyWith(
-                          color: AppColors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      _getProfileInitial(member.name),
+                      style: AppTextStyles.headline1.copyWith(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
+                );
+              },
+            ),
           ),
           const SizedBox(width: 20),
           Expanded(
