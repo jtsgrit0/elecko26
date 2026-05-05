@@ -288,6 +288,11 @@ class _MemberCard extends StatelessWidget {
       child: InkWell(
         onTap: () {
           // 의원 상세 페이지로 이동
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => MemberDetailPage(member: member),
+            ),
+          );
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
