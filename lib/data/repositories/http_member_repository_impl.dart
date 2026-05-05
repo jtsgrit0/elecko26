@@ -6,7 +6,7 @@ import 'package:elecko26_new/data/models/member_model.dart';
 import 'package:elecko26_new/features/auth/domain/entities/user.dart';
 
 class HttpMemberRepositoryImpl implements MemberRepository {
-  final String _baseUrl = 'https://jtsgrit0.dothome.co.kr/api/members.json';
+  final String _baseUrl = 'api/members.json';
 
   // --- MemberRepository 인터페이스의 모든 메소드 구현 ---
 
@@ -17,11 +17,14 @@ class HttpMemberRepositoryImpl implements MemberRepository {
 
       if (response.statusCode == 200) {
         // UTF-8로 명시적으로 디코딩
-        final List<dynamic> jsonData = json.decode(utf8.decode(response.bodyBytes));
-        final List<Member> members = jsonData.map((data) => MemberModel.fromJson(data)).toList();
+        final List<dynamic> jsonData =
+            json.decode(utf8.decode(response.bodyBytes));
+        final List<Member> members =
+            jsonData.map((data) => MemberModel.fromJson(data)).toList();
         return members;
       } else {
-        throw Exception('API로부터 멤버 정보를 불러오는데 실패했습니다. 상태 코드: ${response.statusCode}');
+        throw Exception(
+            'API로부터 멤버 정보를 불러오는데 실패했습니다. 상태 코드: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('멤버 정보를 불러오는 중 오류 발생: $e');
@@ -66,11 +69,12 @@ class HttpMemberRepositoryImpl implements MemberRepository {
   }
 
   @override
-  Stream<List<Member>> watchAllMembers({Duration interval = const Duration(hours: 1)}) {
+  Stream<List<Member>> watchAllMembers(
+      {Duration interval = const Duration(hours: 1)}) {
     // HTTP에서는 실시간 감지가 어려우므로, Future를 Stream으로 변환하여 한 번만 데이터를 제공합니다.
     return Stream.fromFuture(getAllMembers());
   }
-    
+
   @override
   Future<void> apply2018RegionalPartyRates() {
     throw UnimplementedError('apply2018RegionalPartyRates는 아직 구현되지 않았습니다.');
@@ -82,13 +86,14 @@ class HttpMemberRepositoryImpl implements MemberRepository {
   }
 
   @override
-  Stream<Member> watchMemberById(String memberId, {Duration interval = const Duration(hours: 1)}) {
+  Stream<Member> watchMemberById(String memberId,
+      {Duration interval = const Duration(hours: 1)}) {
     return Stream.fromFuture(getMemberById(memberId));
   }
 
   @override
   Stream<List<Member>> watchMembers() {
-     return Stream.fromFuture(getAllMembers());
+    return Stream.fromFuture(getAllMembers());
   }
 
   @override
@@ -120,7 +125,8 @@ class HttpMemberRepositoryImpl implements MemberRepository {
   }
 
   @override
-  Future<void> saveSupportVote(String district, String memberId, {required int timestamp}) {
+  Future<void> saveSupportVote(String district, String memberId,
+      {required int timestamp}) {
     throw UnimplementedError('saveSupportVote는 아직 구현되지 않았습니다.');
   }
 
