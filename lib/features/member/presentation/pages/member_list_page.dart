@@ -6,6 +6,7 @@ import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/usecases/member_usecases.dart';
 import 'package:elecko26_new/app/injection_container.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
+import 'package:elecko26_new/core/utils/utility_functions.dart';
 import 'package:elecko26_new/domain/repositories/member_repository.dart';
 
 class MemberListPage extends StatefulWidget {
@@ -32,10 +33,14 @@ class _MemberListPageState extends State<MemberListPage> {
   }
 
   Future<void> _loadUserRegion() async {
+    print('[MemberListPage] _loadUserRegion: 시작');
     final region = await sl<MemberRepository>().getSelectedRegion();
+    print('[MemberListPage] _loadUserRegion: 저장된 지역 값 "$region"');
     if (mounted) {
       setState(() {
         _userRegion = region ?? '전국';
+        print(
+            '[MemberListPage] _loadUserRegion: setState 호출 후 _userRegion = "$_userRegion"');
       });
     }
   }
@@ -65,18 +70,17 @@ class _MemberListPageState extends State<MemberListPage> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
+                print('[MemberListPage] 빌드 시작 - 현재 지역: $_userRegion');
                 var members = snapshot.data ?? [];
+                print('[MemberListPage] 필터링 전 의원 수: ${members.length}');
 
                 // 지역 필터링
                 if (_userRegion != '전국') {
-                  String shortRegion = _userRegion.substring(0, 2);
-                  if (_userRegion == '세종특별자치시') shortRegion = '세종';
-                  if (_userRegion == '제주특별자치도') shortRegion = '제주';
-                  if (_userRegion == '전북특별자치도') shortRegion = '전북';
-
                   members = members
-                      .where((m) => m.district.contains(shortRegion))
+                      .where(
+                          (m) => districtMatchesRegion(m.district, _userRegion))
                       .toList();
+                  print('[MemberListPage] 지역 필터링 후 의원 수: ${members.length}');
                 }
 
                 // 검색 필터
@@ -191,7 +195,7 @@ class _MemberListPageState extends State<MemberListPage> {
                 _FilterChip(
                   label: '지역',
                   icon: Icons.location_on,
-                  onPressed: () {},
+                  onPressed: () => _showRegionSelectionDialog(),
                 ),
               ],
             ),
@@ -248,20 +252,84 @@ class _MemberListPageState extends State<MemberListPage> {
               Navigator.pop(context);
             }),
             _FilterOption('더불어민주당', _filterParty == 'democratic', () {
-              setState(() => _filterParty == 'democratic');
+              setState(() => _filterParty = 'democratic');
               Navigator.pop(context);
             }),
             _FilterOption('국민의힘', _filterParty == 'power', () {
-              setState(() => _filterParty == 'power');
+              setState(() => _filterParty = 'power');
               Navigator.pop(context);
             }),
             _FilterOption('기타정당', _filterParty == 'other', () {
-              setState(() => _filterParty == 'other');
+              setState(() => _filterParty = 'other');
               Navigator.pop(context);
             }),
           ],
         ),
       ),
+    );
+  }
+
+  void _showRegionSelectionDialog() {
+    final regions = [
+      '전국',
+      '서울특별시',
+      '부산광역시',
+      '대구광역시',
+      '인천광역시',
+      '광주광역시',
+      '대전광역시',
+      '울산광역시',
+      '세종특별자치시',
+      '경기도',
+      '강원특별자치도',
+      '충청북도',
+      '충청남도',
+      '전북특별자치도',
+      '전라남도',
+      '경상북도',
+      '경상남도',
+      '제주특별자치도',
+    ];
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('지역 선택'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: regions.length,
+              itemBuilder: (BuildContext context, int index) {
+                return ListTile(
+                  title: Text(regions[index]),
+                  onTap: () {
+                    final selectedRegion = regions[index];
+                    print(
+                        '[MemberListPage] 지역 선택 다이얼로그: "$selectedRegion" 선택됨');
+
+                    // 이전 지역과 다른 경우에만 상태 업데이트
+                    if (_userRegion != selectedRegion) {
+                      setState(() {
+                        _userRegion = selectedRegion;
+                        print(
+                            '[MemberListPage] setState 호출 후 _userRegion = "$_userRegion"');
+                      });
+                      sl<MemberRepository>().saveSelectedRegion(selectedRegion);
+                      print('[MemberListPage] 선택된 지역 "$selectedRegion" 저장 완료');
+                    } else {
+                      print(
+                          '[MemberListPage] 현재 지역과 동일한 지역("$selectedRegion")을 선택하여 상태 변경 없음');
+                    }
+                    Navigator.of(context).pop();
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -440,7 +508,7 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilterChip(
+    return ActionChip(
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -449,7 +517,7 @@ class _FilterChip extends StatelessWidget {
           Text(label),
         ],
       ),
-      onSelected: (_) => onPressed(),
+      onPressed: onPressed,
       backgroundColor: AppColors.white,
       side: BorderSide(
         color: AppColors.primary.withOpacity(0.3),

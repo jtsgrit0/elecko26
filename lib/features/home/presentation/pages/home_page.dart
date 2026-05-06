@@ -19,7 +19,9 @@ import 'member_detail_page.dart';
 
 class HomePage extends StatefulWidget {
   final List<Member> members;
-  const HomePage({Key? key, required this.members}) : super(key: key);
+  final String? initialRegion;
+  const HomePage({Key? key, required this.members, this.initialRegion})
+      : super(key: key);
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -46,6 +48,9 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _cachedMembers = widget.members;
     _membersController.add(_cachedMembers);
+    if (widget.initialRegion != null) {
+      _userRegionNotifier.value = widget.initialRegion!;
+    }
     _updateFavoriteCount(_cachedMembers);
     _initializeListeners();
   }

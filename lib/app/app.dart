@@ -124,7 +124,9 @@ class _InitialScreenState extends State<InitialScreen> {
 
       if (context.mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => HomePage(members: members)),
+          MaterialPageRoute(
+              builder: (_) =>
+                  HomePage(members: members, initialRegion: region)),
         );
       }
     } catch (e) {
