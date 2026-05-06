@@ -161,27 +161,25 @@ class _InitialScreenState extends State<InitialScreen> {
 
     // 3. 지역별 통계 데이터 미리 로드 (계산에 필요)
     debugPrint('[InitialScreen] 지역별 통계 데이터 로드 시도');
-    final Set<String> allRegions = loadedMembers
-        .map((m) => getParentRegion(m.district) == ''
-            ? '전국'
-            : getParentRegion(m.district))
-        .toSet();
 
     final Map<String, Map<String, double>> regionalPartyAverages = {};
     final Map<String, double> voterInterests = {};
     final Map<String, String?> dominantParties = {};
 
-    // 모든 지역 데이터를 한꺼번에 로드 (캐시 활용)
-    for (final region in allRegions) {
-      regionalPartyAverages[region] =
-          await historicalRepository.getRegionalPartyAverages(region);
-      voterInterests[region] =
-          await historicalRepository.getVoterInterest(region);
-      dominantParties[region] =
-          await historicalRepository.getDominantParty(region);
-      debugPrint('[InitialScreen] 지역 통계 로드 완료: $region');
+    // 선택된 지역이 있을 경우, 해당 지역의 데이터만 미리 로드
+    if (selectedRegion != null &&
+        selectedRegion.isNotEmpty &&
+        selectedRegion != '전국') {
+      regionalPartyAverages[selectedRegion] =
+          await historicalRepository.getRegionalPartyAverages(selectedRegion);
+      voterInterests[selectedRegion] =
+          await historicalRepository.getVoterInterest(selectedRegion);
+      dominantParties[selectedRegion] =
+          await historicalRepository.getDominantParty(selectedRegion);
+      debugPrint('[InitialScreen] 선택 지역 통계 데이터 로드 완료: $selectedRegion');
+    } else {
+      debugPrint('[InitialScreen] 선택된 지역 없음. 통계 데이터 로드 건너뜀.');
     }
-    debugPrint('[InitialScreen] 모든 지역 통계 데이터 로드 완료');
 
     // 4. 우선순위 설정 (선택된 지역의 멤버를 먼저 계산)
     List<Member> primaryMembers = [];
@@ -199,10 +197,9 @@ class _InitialScreenState extends State<InitialScreen> {
       }
       debugPrint('[InitialScreen] 지역 기반 우선순위 설정 완료');
     } else {
-      // 선택된 지역이 없으면 상위 일부만 우선 로드 (예: 100명)
-      primaryMembers = loadedMembers.take(100).toList();
-      secondaryMembers = loadedMembers.skip(100).toList();
-      debugPrint('[InitialScreen] 기본 우선순위 설정 완료 (상위 100명)');
+      // 선택된 지역이 없으면, 모든 멤버를 secondary로 설정하여 계산을 지연
+      secondaryMembers = List.from(loadedMembers);
+      debugPrint('[InitialScreen] 기본 설정: 모든 멤버를 secondary로 설정');
     }
 
     // 5. 당선 가능성 계산 시작
@@ -227,14 +224,16 @@ class _InitialScreenState extends State<InitialScreen> {
     }
 
     // 나머지 멤버는 백그라운드에서 처리 (비동기 루프)
+    // 주의: 현재 _calculateSecondaryMembersWeb는 모든 지역 데이터를 필요로 함.
+    // 추후 이 부분도 최적화가 필요할 수 있음.
     debugPrint('[InitialScreen] 백그라운드 멤버 계산 시작');
-    _calculateSecondaryMembersWeb(
-      secondaryMembers,
-      regionalPartyAverages,
-      voterInterests,
-      dominantParties,
-    );
-    debugPrint('[InitialScreen] 백그라운드 멤버 계산 호출 완료');
+    // _calculateSecondaryMembersWeb(
+    //   secondaryMembers,
+    //   regionalPartyAverages,
+    //   voterInterests,
+    //   dominantParties,
+    // );
+    debugPrint('[InitialScreen] 백그라운드 멤버 계산은 현재 비활성화됨.');
 
     // 업데이트된 리스트 반환
     debugPrint('[InitialScreen] _getLoadedMembers: 종료');
