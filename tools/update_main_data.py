@@ -65,7 +65,7 @@ def main():
             if (candidate.get('name'), candidate.get('city_title')) not in existing_candidates_set:
                 new_member = convert_to_member_format(candidate)
                 # 6. 새로운 숫자 ID 할당
-                new_member['id'] = next_id
+                new_member['id'] = str(next_id)
                 existing_members.append(new_member)
                 existing_candidates_set.add((candidate.get('name'), candidate.get('city_title')))
                 next_id += 1
