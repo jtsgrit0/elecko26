@@ -6,6 +6,7 @@ class Member extends Equatable {
   final String name;
   final String party;
   final String district;
+  final String region;
   final String description;
   final String imageUrl;
   final List<Poll> polls;
@@ -24,6 +25,7 @@ class Member extends Equatable {
     required this.name,
     required this.party,
     required this.district,
+    required this.region,
     this.description = '',
     this.imageUrl = '',
     this.polls = const [],
@@ -44,6 +46,7 @@ class Member extends Equatable {
         name,
         party,
         district,
+        region,
         description,
         imageUrl,
         polls,
@@ -63,6 +66,7 @@ class Member extends Equatable {
     String? name,
     String? party,
     String? district,
+    String? region,
     String? description,
     String? imageUrl,
     List<Poll>? polls,
@@ -81,6 +85,7 @@ class Member extends Equatable {
       name: name ?? this.name,
       party: party ?? this.party,
       district: district ?? this.district,
+      region: region ?? this.region,
       description: description ?? this.description,
       imageUrl: imageUrl ?? this.imageUrl,
       polls: polls ?? this.polls,
