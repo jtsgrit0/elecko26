@@ -122,6 +122,14 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
               children: [
                 // 프로필 섹션
                 _buildProfileSection(member),
+                const SizedBox(height: 16),
+
+                // 상세 정보 섹션
+                _buildDetailedInfoSection(member),
+                const SizedBox(height: 24),
+
+                // 상세 정보 섹션
+                _buildDetailedInfoSection(member),
                 const SizedBox(height: 24),
 
                 // 당선 가능성 섹션
@@ -338,7 +346,9 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  member.district,
+                  member.districtName.isNotEmpty
+                      ? member.districtName
+                      : member.district,
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.mediumGray,
                   ),
@@ -351,6 +361,73 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                 //   ),
                 // ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailedInfoSection(Member member) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.lightGray),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '후보자 정보',
+              style: AppTextStyles.headline3.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.darkGray,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildInfoRow('이름(한자)', member.nameHanja),
+            _buildInfoRow('성별', member.gender),
+            _buildInfoRow('생년월일', member.birthdate),
+            _buildInfoRow('주소', member.address),
+            _buildInfoRow('직업', member.occupation),
+            _buildInfoRow('학력', member.education),
+            _buildInfoRow('경력', member.career),
+            _buildInfoRow('전과기록', member.criminalRecord),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String? value) {
+    if (value == null || value.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.darkGray,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              value,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.mediumGray,
+              ),
             ),
           ),
         ],

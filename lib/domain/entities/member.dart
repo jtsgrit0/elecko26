@@ -6,9 +6,18 @@ class Member extends Equatable {
   final String name;
   final String party;
   final String district;
+  final String districtName;
   final String region;
   final String description;
   final String imageUrl;
+  final String nameHanja;
+  final String gender;
+  final String birthdate;
+  final String address;
+  final String occupation;
+  final String education;
+  final String career;
+  final String criminalRecord;
   final List<Poll> polls;
   final double electionPossibility;
   final bool isFavorite;
@@ -25,9 +34,18 @@ class Member extends Equatable {
     required this.name,
     required this.party,
     required this.district,
+    this.districtName = '',
     required this.region,
     this.description = '',
     this.imageUrl = '',
+    this.nameHanja = '',
+    this.gender = '',
+    this.birthdate = '',
+    this.address = '',
+    this.occupation = '',
+    this.education = '',
+    this.career = '',
+    this.criminalRecord = '',
     this.polls = const [],
     this.electionPossibility = 0.0,
     this.isFavorite = false,
@@ -46,9 +64,18 @@ class Member extends Equatable {
         name,
         party,
         district,
+        districtName,
         region,
         description,
         imageUrl,
+        nameHanja,
+        gender,
+        birthdate,
+        address,
+        occupation,
+        education,
+        career,
+        criminalRecord,
         polls,
         electionPossibility,
         isFavorite,
@@ -66,9 +93,18 @@ class Member extends Equatable {
     String? name,
     String? party,
     String? district,
+    String? districtName,
     String? region,
     String? description,
     String? imageUrl,
+    String? nameHanja,
+    String? gender,
+    String? birthdate,
+    String? address,
+    String? occupation,
+    String? education,
+    String? career,
+    String? criminalRecord,
     List<Poll>? polls,
     double? electionPossibility,
     bool? isFavorite,
@@ -85,9 +121,18 @@ class Member extends Equatable {
       name: name ?? this.name,
       party: party ?? this.party,
       district: district ?? this.district,
+      districtName: districtName ?? this.districtName,
       region: region ?? this.region,
       description: description ?? this.description,
       imageUrl: imageUrl ?? this.imageUrl,
+      nameHanja: nameHanja ?? this.nameHanja,
+      gender: gender ?? this.gender,
+      birthdate: birthdate ?? this.birthdate,
+      address: address ?? this.address,
+      occupation: occupation ?? this.occupation,
+      education: education ?? this.education,
+      career: career ?? this.career,
+      criminalRecord: criminalRecord ?? this.criminalRecord,
       polls: polls ?? this.polls,
       electionPossibility: electionPossibility ?? this.electionPossibility,
       isFavorite: isFavorite ?? this.isFavorite,
