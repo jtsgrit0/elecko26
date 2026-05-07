@@ -73,7 +73,8 @@ class _HomePageState extends State<HomePage> {
     _membersSubscription =
         memberRepository.watchSelectedRegion().listen((region) {
       if (mounted) {
-        _userRegionNotifier.value = region;
+        _userRegionNotifier.value =
+            (region != null && region.isNotEmpty) ? region : '전국';
       }
     });
 

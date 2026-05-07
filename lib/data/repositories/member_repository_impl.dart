@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
@@ -6,19 +7,28 @@ import 'package:elecko26_new/data/models/member_model.dart';
 import 'package:elecko26_new/features/auth/domain/entities/user.dart';
 
 class MemberRepositoryImpl implements MemberRepository {
-  static List<Member> _members = [];
-  bool _isInitialized = false;
+  List<Member> _members = [];
+  Completer<void>? _initializer;
 
   Future<void> _initialize() async {
-    if (_isInitialized) return;
+    if (_initializer != null) {
+      return _initializer!.future;
+    }
+    _initializer = Completer<void>();
 
-    final String response =
-        await rootBundle.loadString('data/candidates_lightweight.json');
-    final data = await json.decode(response) as List;
-    _members = data
-        .map((json) => MemberModel.fromJson(json as Map<String, dynamic>))
-        .toList();
-    _isInitialized = true;
+    try {
+      final String response =
+          await rootBundle.loadString('api/members_enriched.json');
+      final data = await json.decode(response) as List;
+      _members = data
+          .map((json) => MemberModel.fromJson(json as Map<String, dynamic>))
+          .toList();
+      _initializer!.complete();
+    } catch (e) {
+      _initializer!.completeError(e);
+      // Re-throw the error to be handled by the caller
+      rethrow;
+    }
   }
 
   @override
@@ -65,7 +75,7 @@ class MemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<void> refreshMembers() async {
-    _isInitialized = false;
+    _initializer = null;
     await _initialize();
   }
 

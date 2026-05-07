@@ -122,7 +122,7 @@ void _registerAll() {
   // Repository
   // 무조건 HttpMemberRepositoryImpl를 사용하도록 강제하여 Firebase 종속성 제거
   debugPrint('[DI] HttpMemberRepositoryImpl 강제 등록');
-  sl.registerSingleton<MemberRepository>(HttpMemberRepositoryImpl());
+  sl.registerSingleton<MemberRepository>(MemberRepositoryImpl());
 
   sl.registerSingleton<HistoricalElectionDataSource>(
       HistoricalElectionDataSource());

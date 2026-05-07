@@ -107,18 +107,37 @@ String getProfileInitial(String name) {
 bool districtMatchesRegion(String district, String region) {
   if (region == '전국') return true;
 
-  // 1. district에서 상위 지역 추출 시도 (예: "종로구청장" -> "서울특별시")
-  final parentRegion = getParentRegion(district);
-  if (parentRegion == region) return true;
+  final normalizedDistrict = district.replaceAll(' ', '');
+  final normalizedRegion = region.replaceAll(' ', '');
 
-  // 2. getParentRegion으로도 매칭되지 않은 경우에만 텍스트 포함 매칭 시도
-  // 이미 매핑 테이블에 있는 지역은 정확히 매칭되도록 함
-  if (parentRegion.isEmpty) {
-    // 텍스트 포함 여부로 매칭 (fallback)
-    final normalizedDistrict = district.replaceAll(' ', '');
-    for (final keyword in _regionKeywords(region)) {
-      if (normalizedDistrict.contains(keyword)) return true;
-    }
+  // 1. 직접 매칭 또는 상호 포함 관계 확인
+  if (normalizedDistrict == normalizedRegion ||
+      normalizedDistrict.contains(normalizedRegion) ||
+      normalizedRegion.contains(normalizedDistrict)) {
+    return true;
+  }
+
+  // 2. 특별/광역시 축약형 매칭 (예: "서울" vs "서울특별시")
+  const shortForms = {
+    '서울': '서울특별시',
+    '부산': '부산광역시',
+    '대구': '대구광역시',
+    '인천': '인천광역시',
+    '광주': '광주광역시',
+    '대전': '대전광역시',
+    '울산': '울산광역시',
+    '세종': '세종특별자치시',
+  };
+
+  if (shortForms[normalizedDistrict] == normalizedRegion ||
+      shortForms[normalizedRegion] == normalizedDistrict) {
+    return true;
+  }
+
+  // 3. 상위 지역 추출을 통한 매칭 (기존 로직)
+  final parentRegion = getParentRegion(district);
+  if (parentRegion.isNotEmpty && parentRegion == region) {
+    return true;
   }
 
   return false;
