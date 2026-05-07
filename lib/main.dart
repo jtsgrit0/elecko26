@@ -2,12 +2,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:elecko26_new/app/injection_container.dart' as di;
 import 'package:elecko26_new/app/app.dart';
+import 'package:elecko26_new/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 Future<void> main() async {
   debugPrint('[Main] main 함수 시작');
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   debugPrint('[Main] WidgetsFlutterBinding.ensureInitialized() 완료');
 
   // 앱 전체 초기화 안정성 확보

@@ -1,4 +1,5 @@
-import 'package:elecko26_new/core/widgets/app_network_image.dart';
+import 'package:elecko26_new/core/widgets/pdf_image_renderer.dart';
+import 'package:elecko26_new/core/widgets/pdf_image_renderer.dart';
 import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/utils/image_util.dart';
 import 'package:elecko26_new/core/utils/party_util.dart';
@@ -24,10 +25,8 @@ class MemberCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final possibility = analysisResult?.electionPossibility ??
-        (member.polls.isNotEmpty
-            ? member.polls.first.supportRate
-            : member.electionPossibility);
+    final possibility =
+        analysisResult?.electionPossibility ?? member.electionPossibility;
     final partyLogoUrl = PartyUtil.getPartyLogoUrl(member.party);
 
     return RepaintBoundary(
@@ -44,7 +43,7 @@ class MemberCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              if (rank != null) ...[
+              if (rank != null && rank! <= 3) ...[
                 SizedBox(
                   width: 32,
                   child: Text(
@@ -58,87 +57,32 @@ class MemberCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
               ],
-              Stack(
-                alignment: Alignment.bottomCenter,
+              if (rank != null && rank! > 3) ...[
+                const SizedBox(width: 40), // 순위 공간 확보
+              ],
+              Column(
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: SizedBox(
                       width: 60,
                       height: 60,
-                      child: member.imageUrl.isNotEmpty
-                          ? AppNetworkImage(
-                              imageUrl: ImageUtil.getProxyUrl(member.imageUrl,
-                                  width: 120, height: 120),
-                              memCacheWidth: 120,
-                              memCacheHeight: 120,
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => Container(
-                                color: AppColors.lightGrey,
-                              ),
-                              errorWidget: (context, url, error) => Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      AppColors.primary.withOpacity(0.8),
-                                      AppColors.secondary.withOpacity(0.6),
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    _getProfileInitial(member.name),
-                                    style: AppTextStyles.headline3.copyWith(
-                                      color: AppColors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            )
-                          : Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    AppColors.primary.withOpacity(0.8),
-                                    AppColors.secondary.withOpacity(0.6),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  _getProfileInitial(member.name),
-                                  style: AppTextStyles.headline3.copyWith(
-                                    color: AppColors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
+                      child: _buildProfileImage(),
                     ),
                   ),
-                  if (partyLogoUrl.isNotEmpty)
-                    Transform.translate(
-                      offset: const Offset(0, 12),
-                      child: Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                              color: AppColors.lightGrey.withOpacity(0.5)),
-                          image: DecorationImage(
-                            image: AssetImage(partyLogoUrl),
-                            fit: BoxFit.contain,
-                          ),
+                  if (partyLogoUrl.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      width: 40,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage(partyLogoUrl),
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),
+                  ]
                 ],
               ),
               const SizedBox(width: 12),
@@ -183,7 +127,7 @@ class MemberCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        '당선 가능성: ${possibility?.toStringAsFixed(1) ?? 'N/A'}%',
+                        '당선 가능성: ${possibility != null ? '${possibility.toStringAsFixed(1)}%' : '집계중'}',
                         style: AppTextStyles.labelSmall.copyWith(
                           color: AppColors.success,
                         ),
@@ -242,5 +186,40 @@ class MemberCard extends StatelessWidget {
       return '?';
     }
     return trimmed.characters.first;
+  }
+
+  Widget _buildProfileImage() {
+    if (member.imageUrl.isEmpty) {
+      return _buildFallbackProfile();
+    }
+    return PdfImageRenderer.fromUrl(
+      member.imageUrl,
+      placeholder: (context) => Container(color: AppColors.lightGrey),
+      errorWidget: (context, error, stackTrace) => _buildFallbackProfile(),
+    );
+  }
+
+  Widget _buildFallbackProfile() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withOpacity(0.8),
+            AppColors.secondary.withOpacity(0.6),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          _getProfileInitial(member.name),
+          style: AppTextStyles.headline3.copyWith(
+            color: AppColors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:elecko26_new/core/widgets/app_network_image.dart';
+import 'package:elecko26_new/core/widgets/pdf_image_renderer.dart';
 import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/core/utils/utility_functions.dart';
@@ -11,7 +12,6 @@ class HomeDashboardView extends StatefulWidget {
   final bool isLoading;
   final Stream<List<Member>> membersStream;
   final List<Member> cachedMembers;
-  final Stream<Map<String, AnalysisResult>>? analysisResultsStream;
   final Map<String, AnalysisResult> cachedAnalysisResults;
   final String userRegion;
   final ValueChanged<Member> onMemberSelected;
@@ -23,7 +23,6 @@ class HomeDashboardView extends StatefulWidget {
     required this.isLoading,
     required this.membersStream,
     required this.cachedMembers,
-    this.analysisResultsStream,
     required this.cachedAnalysisResults,
     required this.userRegion,
     required this.onMemberSelected,
@@ -40,11 +39,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
   @override
   bool get wantKeepAlive => true;
 
-  List<Member> _displayMembers = [];
-  Map<String, AnalysisResult> _analysisResults = {};
   List<Member> _filteredAndSortedMembers = [];
-  StreamSubscription? _membersSubscription;
-  StreamSubscription? _analysisSubscription;
 
   final List<String> _regions = [
     '서울특별시',
@@ -70,78 +65,36 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
   @override
   void initState() {
     super.initState();
-    _displayMembers = widget.cachedMembers;
-    _analysisResults = widget.cachedAnalysisResults;
     _updateFilteredAndSortedMembers();
-
-    _membersSubscription = widget.membersStream.listen((members) {
-      if (mounted) {
-        setState(() {
-          _displayMembers = members;
-          _updateFilteredAndSortedMembers();
-        });
-      }
-    });
-
-    _analysisSubscription = widget.analysisResultsStream?.listen((results) {
-      if (mounted) {
-        setState(() {
-          _analysisResults = results;
-          _updateFilteredAndSortedMembers();
-        });
-      }
-    });
   }
 
   @override
   void didUpdateWidget(covariant HomeDashboardView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.userRegion != oldWidget.userRegion) {
+    if (widget.userRegion != oldWidget.userRegion ||
+        widget.cachedMembers != oldWidget.cachedMembers ||
+        widget.cachedAnalysisResults != oldWidget.cachedAnalysisResults) {
       _updateFilteredAndSortedMembers();
     }
-    if (widget.cachedMembers != oldWidget.cachedMembers) {
-      _displayMembers = widget.cachedMembers;
-      _updateFilteredAndSortedMembers();
-    }
-    if (widget.cachedAnalysisResults != oldWidget.cachedAnalysisResults) {
-      _analysisResults = widget.cachedAnalysisResults;
-      _updateFilteredAndSortedMembers();
-    }
-    if (widget.analysisResultsStream != oldWidget.analysisResultsStream) {
-      _analysisSubscription?.cancel();
-      _analysisSubscription = widget.analysisResultsStream?.listen((results) {
-        if (mounted) {
-          setState(() {
-            _analysisResults = results;
-            _updateFilteredAndSortedMembers();
-          });
-        }
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _membersSubscription?.cancel();
-    _analysisSubscription?.cancel();
-    super.dispose();
   }
 
   void _updateFilteredAndSortedMembers() {
     List<Member> filtered;
     if (widget.userRegion == '전국') {
-      filtered = List.from(_displayMembers);
+      filtered = List.from(widget.cachedMembers);
     } else {
-      filtered = _displayMembers
+      filtered = widget.cachedMembers
           .where((m) => districtMatchesRegion(m.district, widget.userRegion))
           .toList();
     }
 
     filtered.sort((a, b) {
       final possibilityA =
-          _analysisResults[a.id]?.electionPossibility ?? a.electionPossibility;
+          widget.cachedAnalysisResults[a.id]?.electionPossibility ??
+              a.electionPossibility;
       final possibilityB =
-          _analysisResults[b.id]?.electionPossibility ?? b.electionPossibility;
+          widget.cachedAnalysisResults[b.id]?.electionPossibility ??
+              b.electionPossibility;
       return possibilityB.compareTo(possibilityA);
     });
 
@@ -160,13 +113,18 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
     if (_filteredAndSortedMembers.length <= 3) {
       return [];
     }
-    return _filteredAndSortedMembers.sublist(3);
+    // 홈 탭에는 10위까지만 표시
+    final end = _filteredAndSortedMembers.length > 10
+        ? 10
+        : _filteredAndSortedMembers.length;
+    if (3 >= end) return [];
+    return _filteredAndSortedMembers.sublist(3, end);
   }
 
   String get _updateValue {
-    if (_displayMembers.isEmpty) return '-';
+    if (widget.cachedMembers.isEmpty) return '-';
     DateTime? latest;
-    for (final member in _displayMembers) {
+    for (final member in widget.cachedMembers) {
       if (member.lastAnalysisDate != null) {
         if (latest == null || member.lastAnalysisDate!.isAfter(latest)) {
           latest = member.lastAnalysisDate;
@@ -179,7 +137,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
 
   int get _nesdcCount {
     int total = 0;
-    for (var m in _displayMembers) {
+    for (var m in widget.cachedMembers) {
       total += m.pressReports.length;
     }
     return total;
@@ -288,9 +246,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
   Widget build(BuildContext context) {
     super.build(context);
 
-    if (widget.isLoading &&
-        _displayMembers.isEmpty &&
-        widget.cachedMembers.isEmpty) {
+    if (widget.isLoading && widget.cachedMembers.isEmpty) {
       return const Center(child: CircularProgressIndicator(color: Colors.red));
     }
 
@@ -397,9 +353,9 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
             children: List.generate(_top3.length, (index) {
               final member = _top3[index];
               final rank = index + 1;
-              final possibility =
-                  _analysisResults[member.id]?.electionPossibility ??
-                      member.electionPossibility;
+              final possibility = widget
+                      .cachedAnalysisResults[member.id]?.electionPossibility ??
+                  member.electionPossibility;
               return Padding(
                 padding:
                     EdgeInsets.only(bottom: index < _top3.length - 1 ? 12 : 0),
@@ -423,36 +379,23 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
                         const SizedBox(width: 16),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(24),
-                          child: Container(
+                          child: SizedBox(
                             width: 48,
                             height: 48,
-                            color: AppColors.lightGray,
-                            child: member.imageUrl.isNotEmpty
-                                ? AppNetworkImage(
-                                    imageUrl: member.imageUrl,
-                                    fit: BoxFit.cover,
-                                    memCacheWidth: 100,
-                                    memCacheHeight: 100,
-                                    placeholder: (context, url) =>
-                                        Container(color: AppColors.lightGrey),
-                                    errorWidget: (context, url, error) =>
-                                        Center(
-                                      child: Text(
-                                        member.name.substring(0, 1),
-                                        style: AppTextStyles.headline4.copyWith(
-                                          color: AppColors.mediumGray,
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                : Center(
-                                    child: Text(
-                                      member.name.substring(0, 1),
-                                      style: AppTextStyles.headline4.copyWith(
-                                        color: AppColors.mediumGray,
-                                      ),
-                                    ),
+                            child: PdfImageRenderer.fromUrl(
+                              member.imageUrl,
+                              placeholder: (context) =>
+                                  Container(color: AppColors.lightGrey),
+                              errorWidget: (context, error, stackTrace) =>
+                                  Center(
+                                child: Text(
+                                  member.name.substring(0, 1),
+                                  style: AppTextStyles.headline4.copyWith(
+                                    color: AppColors.mediumGray,
                                   ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -569,7 +512,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
               _memberList.length,
               (index) {
                 final member = _memberList[index];
-                final analysisResult = _analysisResults[member.id];
+                final analysisResult = widget.cachedAnalysisResults[member.id];
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: MemberCard(

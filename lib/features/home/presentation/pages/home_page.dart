@@ -270,13 +270,14 @@ class _HomePageState extends State<HomePage> {
             isLoading: isLoading,
             membersStream: _membersStream,
             cachedMembers: _cachedMembers,
-            analysisResultsStream: _analysisStreamController?.stream,
             cachedAnalysisResults: _analysisResults,
             userRegion: region,
             onMemberSelected: (m) => setState(() => _selectedMember = m),
             onNavigateToSearch: () => _selectedIndexNotifier.value = 1,
             onRegionChanged: (newRegion) async {
-              _userRegionNotifier.value = newRegion;
+              setState(() {
+                _userRegionNotifier.value = newRegion;
+              });
               await sl<MemberRepository>().saveSelectedRegion(newRegion);
             },
           ),
