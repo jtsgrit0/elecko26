@@ -24,8 +24,12 @@ class MemberCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final possibility =
-        analysisResult?.electionPossibility ?? member.electionPossibility;
+    final possibility = analysisResult?.electionPossibility ??
+        (member.mockPolls.isNotEmpty
+            ? member.mockPolls.first.supportRate
+            : member.electionPossibility);
+    final partyLogoUrl = PartyUtil.getPartyLogoUrl(member.party);
+
     return RepaintBoundary(
       child: GestureDetector(
         onTap: onTap,
@@ -54,31 +58,52 @@ class MemberCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
               ],
-              Column(
+              Stack(
+                alignment: Alignment.bottomCenter,
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: member.imageUrl.isNotEmpty
-                        ? AppNetworkImage(
-                            imageUrl: ImageUtil.getProxyUrl(member.imageUrl,
-                                width: 120, height: 120),
-                            width: 60,
-                            height: 60,
-                            memCacheWidth: 120,
-                            memCacheHeight: 120,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                                width: 60,
-                                height: 60,
-                                color: AppColors.lightGrey),
-                            errorWidget: (context, url, error) => Container(
-                              width: 60,
-                              height: 60,
+                    child: SizedBox(
+                      width: 60,
+                      height: 60,
+                      child: member.imageUrl.isNotEmpty
+                          ? AppNetworkImage(
+                              imageUrl: ImageUtil.getProxyUrl(member.imageUrl,
+                                  width: 120, height: 120),
+                              memCacheWidth: 120,
+                              memCacheHeight: 120,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: AppColors.lightGrey,
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColors.primary.withOpacity(0.8),
+                                      AppColors.secondary.withOpacity(0.6),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    _getProfileInitial(member.name),
+                                    style: AppTextStyles.headline3.copyWith(
+                                      color: AppColors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Container(
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
                                     AppColors.primary.withOpacity(0.8),
-                                    AppColors.secondary.withOpacity(0.6),
+                                    App.secondary.withOpacity(0.6),
                                   ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
@@ -94,43 +119,26 @@ class MemberCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                          )
-                        : Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppColors.primary.withOpacity(0.8),
-                                  AppColors.secondary.withOpacity(0.6),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                _getProfileInitial(member.name),
-                                style: AppTextStyles.headline3.copyWith(
-                                  color: AppColors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                  ),
-                  const SizedBox(height: 6),
-                  SizedBox(
-                    width: 50,
-                    height: 18,
-                    child: Image.asset(
-                      PartyUtil.getPartyLogoUrl(member.party),
-                      fit: BoxFit.contain,
-                      cacheWidth: 100,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const SizedBox(),
                     ),
                   ),
+                  if (partyLogoUrl.isNotEmpty)
+                    Transform.translate(
+                      offset: const Offset(0, 12),
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: AppColors.lightGrey.withOpacity(0.5)),
+                          image: DecorationImage(
+                            image: AssetImage(partyLogoUrl),
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
               const SizedBox(width: 12),
