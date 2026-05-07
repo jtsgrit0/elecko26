@@ -1528,9 +1528,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                           ),
                         ),
                         Text(
-                          (contrib.date ?? DateTime.now())
-                              .toString()
-                              .split(' ')[0],
+                          _formatDateTime(contrib.date),
                           style: AppTextStyles.labelSmall.copyWith(
                             color: AppColors.mediumGray,
                           ),

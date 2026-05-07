@@ -25,8 +25,8 @@ class MemberCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final possibility = analysisResult?.electionPossibility ??
-        (member.mockPolls.isNotEmpty
-            ? member.mockPolls.first.supportRate
+        (member.polls.isNotEmpty
+            ? member.polls.first.supportRate
             : member.electionPossibility);
     final partyLogoUrl = PartyUtil.getPartyLogoUrl(member.party);
 
@@ -103,7 +103,7 @@ class MemberCard extends StatelessWidget {
                                 gradient: LinearGradient(
                                   colors: [
                                     AppColors.primary.withOpacity(0.8),
-                                    App.secondary.withOpacity(0.6),
+                                    AppColors.secondary.withOpacity(0.6),
                                   ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
@@ -166,7 +166,7 @@ class MemberCard extends StatelessWidget {
                             ),
                           ),
                           TextSpan(
-                            text: ' • ${member.district}',
+                            text: ' • ${member.region}',
                             style: AppTextStyles.bodySmall,
                           ),
                         ],
@@ -183,7 +183,7 @@ class MemberCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        '당선 가능성: ${possibility.toStringAsFixed(1)}%',
+                        '당선 가능성: ${possibility?.toStringAsFixed(1) ?? 'N/A'}%',
                         style: AppTextStyles.labelSmall.copyWith(
                           color: AppColors.success,
                         ),
