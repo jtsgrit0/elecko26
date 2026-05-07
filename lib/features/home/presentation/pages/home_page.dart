@@ -316,8 +316,11 @@ class _HomePageState extends State<HomePage> {
       ),
       // 5: 즐겨찾기
       FavoritesView(
+        key: const ValueKey('favorites_view'),
         membersStream: _membersStream,
         cachedMembers: _cachedMembers,
+        analysisResults: _analysisResults,
+        analysisStream: _analysisStreamController!.stream,
         onMemberSelected: (m) => setState(() => _selectedMember = m),
       ),
       // 6: 지도

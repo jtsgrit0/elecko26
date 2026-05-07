@@ -4,56 +4,93 @@ import 'package:elecko26_new/app/injection_container.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/core/utils/party_util.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
+import 'package:elecko26_new/domain/entities/analysis_result.dart';
 import 'package:elecko26_new/domain/usecases/member_usecases.dart';
 import 'package:elecko26_new/features/home/presentation/widgets/member_card.dart';
+import 'package:rxdart/rxdart.dart';
 
 class FavoritesView extends StatelessWidget {
   final Stream<List<Member>> membersStream;
   final List<Member> cachedMembers;
+  final Map<String, AnalysisResult> analysisResults;
+  final Stream<Map<String, AnalysisResult>> analysisStream;
   final Function(Member) onMemberSelected;
 
   const FavoritesView({
     Key? key,
     required this.membersStream,
     required this.cachedMembers,
+    required this.analysisResults,
+    required this.analysisStream,
     required this.onMemberSelected,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Member>>(
-      stream: membersStream,
+    return StreamBuilder<List<dynamic>>(
+      stream:
+          Rx.combineLatest2(membersStream, analysisStream, (a, b) => [a, b]),
       builder: (context, snapshot) {
-        final members = snapshot.data ?? cachedMembers;
+        if (!snapshot.hasData) {
+          // 초기 로딩 상태 또는 데이터 없는 상태 처리
+          final favoriteMembers =
+              cachedMembers.where((m) => m.isFavorite).toList();
+          if (favoriteMembers.isEmpty) {
+            return _buildEmptyStateWithSuggestions(
+                cachedMembers, analysisResults);
+          }
+          return _buildFavoriteList(favoriteMembers, analysisResults);
+        }
+
+        final members = snapshot.data![0] as List<Member>;
+        final currentAnalysisResults =
+            snapshot.data![1] as Map<String, AnalysisResult>;
+
         final favoriteMembers = members.where((m) => m.isFavorite).toList();
 
         if (favoriteMembers.isEmpty) {
-          return _buildEmptyStateWithSuggestions(members);
+          return _buildEmptyStateWithSuggestions(
+              members, currentAnalysisResults);
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: favoriteMembers.length,
-          itemBuilder: (context, index) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: MemberCard(
-                key: ValueKey(favoriteMembers[index].id),
-                member: favoriteMembers[index],
-                onTap: () => onMemberSelected(favoriteMembers[index]),
-              ),
-            );
-          },
+        return _buildFavoriteList(favoriteMembers, currentAnalysisResults);
+      },
+    );
+  }
+
+  Widget _buildFavoriteList(List<Member> favoriteMembers,
+      Map<String, AnalysisResult> analysisResults) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: favoriteMembers.length,
+      itemBuilder: (context, index) {
+        final member = favoriteMembers[index];
+        final analysisResult = analysisResults[member.id];
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: MemberCard(
+            key: ValueKey(member.id),
+            member: member,
+            analysisResult: analysisResult,
+            onTap: () => onMemberSelected(member),
+          ),
         );
       },
     );
   }
 
-  Widget _buildEmptyStateWithSuggestions(List<Member> members) {
+  Widget _buildEmptyStateWithSuggestions(
+      List<Member> members, Map<String, AnalysisResult> analysisResults) {
     // 선거가능성 높은 후보 Top 6 추천
     final topCandidates = List<Member>.from(members)
-      ..sort(
-          (a, b) => (b.electionPossibility).compareTo(a.electionPossibility));
+      ..sort((a, b) {
+        final aPossibility =
+            analysisResults[a.id]?.electionPossibility ?? a.electionPossibility;
+        final bPossibility =
+            analysisResults[b.id]?.electionPossibility ?? b.electionPossibility;
+        return bPossibility.compareTo(aPossibility);
+      });
     final suggestions = topCandidates.take(6).toList();
 
     return RefreshIndicator(
@@ -109,10 +146,13 @@ class FavoritesView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          ...suggestions.map((member) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildSuggestionCard(member),
-              )),
+          ...suggestions.map((member) {
+            final analysisResult = analysisResults[member.id];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildSuggestionCard(member, analysisResult),
+            );
+          }),
 
           // 최신 뉴스 섹션
           const SizedBox(height: 24),
@@ -131,7 +171,10 @@ class FavoritesView extends StatelessWidget {
     );
   }
 
-  Widget _buildSuggestionCard(Member member) {
+  Widget _buildSuggestionCard(Member member, AnalysisResult? analysisResult) {
+    final possibility =
+        analysisResult?.electionPossibility ?? member.electionPossibility;
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -200,10 +243,10 @@ class FavoritesView extends StatelessWidget {
                     const SizedBox(height: 6),
                     // 선거가능성 바
                     LinearProgressIndicator(
-                      value: member.electionPossibility,
+                      value: possibility,
                       backgroundColor: AppColors.lightGrey,
                       valueColor: AlwaysStoppedAnimation(
-                        member.electionPossibility > 0.5
+                        possibility > 0.5
                             ? AppColors.success
                             : AppColors.warning,
                       ),
@@ -211,7 +254,7 @@ class FavoritesView extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '당선 가능성 ${(member.electionPossibility * 100).toInt()}%',
+                      '당선 가능성 ${(possibility * 100).toInt()}%',
                       style: const TextStyle(
                         fontSize: 11,
                         color: AppColors.mediumGray,
