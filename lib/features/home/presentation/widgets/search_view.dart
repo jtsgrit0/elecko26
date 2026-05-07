@@ -7,9 +7,12 @@ import 'package:elecko26_new/core/utils/utility_functions.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/features/home/presentation/widgets/member_card.dart';
 
+import 'package:elecko26_new/domain/entities/analysis_result.dart';
+
 class SearchView extends StatefulWidget {
   final Stream<List<Member>> membersStream;
   final List<Member> cachedMembers;
+  final Map<String, AnalysisResult> analysisResults;
   final String userRegion;
   final Function(Member) onMemberSelected;
 
@@ -17,6 +20,7 @@ class SearchView extends StatefulWidget {
     Key? key,
     required this.membersStream,
     required this.cachedMembers,
+    required this.analysisResults,
     required this.userRegion,
     required this.onMemberSelected,
   }) : super(key: key);
@@ -285,8 +289,13 @@ class _SearchViewState extends State<SearchView>
     _precacheMemberImages(context, filtered.take(50).toList());
 
     // 당선 가능성 높은 순으로 정렬
-    filtered.sort(
-        (a, b) => b.electionPossibility.compareTo(a.electionPossibility));
+    filtered.sort((a, b) {
+      final possibilityA = widget.analysisResults[a.id]?.electionPossibility ??
+          a.electionPossibility;
+      final possibilityB = widget.analysisResults[b.id]?.electionPossibility ??
+          b.electionPossibility;
+      return possibilityB.compareTo(possibilityA);
+    });
 
     _filteredMembers = filtered;
   }
@@ -319,12 +328,15 @@ class _SearchViewState extends State<SearchView>
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: results.length,
       itemBuilder: (context, index) {
+        final member = results[index];
+        final analysisResult = widget.analysisResults[member.id];
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: MemberCard(
-            key: ValueKey(results[index].id),
-            member: results[index],
-            onTap: () => widget.onMemberSelected(results[index]),
+            key: ValueKey(member.id),
+            member: member,
+            analysisResult: analysisResult,
+            onTap: () => widget.onMemberSelected(member),
           ),
         );
       },

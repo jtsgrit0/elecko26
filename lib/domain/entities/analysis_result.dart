@@ -144,6 +144,35 @@ class AnalysisResult {
           : null,
     );
   }
+
+  factory AnalysisResult.fallback(double initialPossibility) {
+    return AnalysisResult(
+      memberId: 'fallback',
+      analysisDate: DateTime.now(),
+      electionPossibility: initialPossibility,
+      previousPossibility: initialPossibility,
+      possibilityChange: 0,
+      achievementScore: 0,
+      activityScore: 0,
+      policyScore: 0,
+      publicImageScore: 0,
+      socialContributionScore: 0,
+      pollScore: 0,
+      historicalScore: 0,
+      improvements: [],
+      strengths: [],
+      weaknesses: [],
+      analysisReport: '데이터를 불러오는 중입니다. 잠시만 기다려주세요.',
+      dailyTrends: [
+        DailyPossibility(
+          date: DateTime.now(),
+          possibility: initialPossibility,
+          reason: '초기 데이터',
+        )
+      ],
+      snsAnalysis: null,
+    );
+  }
 }
 
 class DailyPossibility {

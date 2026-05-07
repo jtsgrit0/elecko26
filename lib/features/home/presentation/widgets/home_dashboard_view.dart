@@ -4,12 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/core/utils/utility_functions.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
+import 'package:elecko26_new/domain/entities/analysis_result.dart';
 import 'member_card.dart';
 
 class HomeDashboardView extends StatefulWidget {
   final bool isLoading;
   final Stream<List<Member>> membersStream;
   final List<Member> cachedMembers;
+  final Stream<Map<String, AnalysisResult>>? analysisResultsStream;
+  final Map<String, AnalysisResult> cachedAnalysisResults;
   final String userRegion;
   final ValueChanged<Member> onMemberSelected;
   final VoidCallback onNavigateToSearch;
@@ -20,6 +23,8 @@ class HomeDashboardView extends StatefulWidget {
     required this.isLoading,
     required this.membersStream,
     required this.cachedMembers,
+    this.analysisResultsStream,
+    required this.cachedAnalysisResults,
     required this.userRegion,
     required this.onMemberSelected,
     required this.onNavigateToSearch,
@@ -36,8 +41,10 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
   bool get wantKeepAlive => true;
 
   List<Member> _displayMembers = [];
+  Map<String, AnalysisResult> _analysisResults = {};
   List<Member> _filteredAndSortedMembers = [];
-  StreamSubscription? _subscription;
+  StreamSubscription? _membersSubscription;
+  StreamSubscription? _analysisSubscription;
 
   final List<String> _regions = [
     '서울특별시',
@@ -64,13 +71,23 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
   void initState() {
     super.initState();
     _displayMembers = widget.cachedMembers;
-    _updateFilteredAndSortedMembers(); // 초기 필터링 및 정렬
+    _analysisResults = widget.cachedAnalysisResults;
+    _updateFilteredAndSortedMembers();
 
-    _subscription = widget.membersStream.listen((members) {
+    _membersSubscription = widget.membersStream.listen((members) {
       if (mounted) {
         setState(() {
           _displayMembers = members;
-          _updateFilteredAndSortedMembers(); // 멤버 목록 변경 시 업데이트
+          _updateFilteredAndSortedMembers();
+        });
+      }
+    });
+
+    _analysisSubscription = widget.analysisResultsStream?.listen((results) {
+      if (mounted) {
+        setState(() {
+          _analysisResults = results;
+          _updateFilteredAndSortedMembers();
         });
       }
     });
@@ -80,13 +97,33 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
   void didUpdateWidget(covariant HomeDashboardView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.userRegion != oldWidget.userRegion) {
-      _updateFilteredAndSortedMembers(); // 지역 변경 시 업데이트
+      _updateFilteredAndSortedMembers();
+    }
+    if (widget.cachedMembers != oldWidget.cachedMembers) {
+      _displayMembers = widget.cachedMembers;
+      _updateFilteredAndSortedMembers();
+    }
+    if (widget.cachedAnalysisResults != oldWidget.cachedAnalysisResults) {
+      _analysisResults = widget.cachedAnalysisResults;
+      _updateFilteredAndSortedMembers();
+    }
+    if (widget.analysisResultsStream != oldWidget.analysisResultsStream) {
+      _analysisSubscription?.cancel();
+      _analysisSubscription = widget.analysisResultsStream?.listen((results) {
+        if (mounted) {
+          setState(() {
+            _analysisResults = results;
+            _updateFilteredAndSortedMembers();
+          });
+        }
+      });
     }
   }
 
   @override
   void dispose() {
-    _subscription?.cancel();
+    _membersSubscription?.cancel();
+    _analysisSubscription?.cancel();
     super.dispose();
   }
 
@@ -100,13 +137,19 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
           .toList();
     }
 
-    // 당선 가능성 내림차순 정렬
-    filtered
-        .sort((a, b) => b.electionPossibility.compareTo(a.electionPossibility));
-
-    setState(() {
-      _filteredAndSortedMembers = filtered;
+    filtered.sort((a, b) {
+      final possibilityA =
+          _analysisResults[a.id]?.electionPossibility ?? a.electionPossibility;
+      final possibilityB =
+          _analysisResults[b.id]?.electionPossibility ?? b.electionPossibility;
+      return possibilityB.compareTo(possibilityA);
     });
+
+    if (mounted) {
+      setState(() {
+        _filteredAndSortedMembers = filtered;
+      });
+    }
   }
 
   List<Member> get _top3 {
@@ -114,7 +157,10 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
   }
 
   List<Member> get _memberList {
-    return _filteredAndSortedMembers;
+    if (_filteredAndSortedMembers.length <= 3) {
+      return [];
+    }
+    return _filteredAndSortedMembers.sublist(3);
   }
 
   String get _updateValue {
@@ -240,48 +286,42 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // AutomaticKeepAliveClientMixin 필요
+    super.build(context);
 
-    // 캐시된 데이터가 있으면 바로 표시, 로딩 중이어도 기존 데이터 유지
     if (widget.isLoading &&
         _displayMembers.isEmpty &&
         widget.cachedMembers.isEmpty) {
       return const Center(child: CircularProgressIndicator(color: Colors.red));
     }
 
-    final filteredMembers = _filteredAndSortedMembers;
-    final top3 = _top3;
-    final memberList = _memberList;
-    final updateValue = _updateValue;
-    final nesdcCount = _nesdcCount;
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 데이터가 있으면 항상 표시 (로딩 중이어도 기존 데이터 유지)
-          if (filteredMembers.isNotEmpty) ...[
-            // 통계 섹션 (분석의원, 여론조사심의회)
+          if (_filteredAndSortedMembers.isNotEmpty) ...[
             _buildStatisticsSection(
-                filteredMembers.length, nesdcCount, updateValue),
+                _filteredAndSortedMembers.length, _nesdcCount, _updateValue),
             const SizedBox(height: 24),
-            _buildMemberList(memberList),
+            _buildTop3Section(),
+            _buildMemberList(),
           ] else if (widget.isLoading) ...[
-            // 데이터가 없고 로딩 중일 때만 로딩바 표시
             const Center(child: CircularProgressIndicator(color: Colors.red)),
           ] else ...[
-            // 데이터가 없고 로딩도 안할 때는 빈 상태 표시
-            Center(
-              child: Text(
-                '표시할 후보자가 없습니다.',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.mediumGray,
-                ),
-              ),
-            ),
+            _buildEmptyState(),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Text(
+        '표시할 후보자가 없습니다.',
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: AppColors.mediumGray,
+        ),
       ),
     );
   }
@@ -313,8 +353,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
     );
   }
 
-  Widget _buildTop3Section(List<Member> top3) {
-    if (top3.isEmpty) return const SizedBox.shrink();
+  Widget _buildTop3Section() {
+    if (_top3.isEmpty) return const SizedBox.shrink();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
@@ -342,7 +382,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
                       ),
                     ),
                     const SizedBox(width: 4),
-                    Icon(
+                    const Icon(
                       Icons.location_on,
                       size: 16,
                       color: AppColors.primary,
@@ -354,13 +394,15 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
           ),
           const SizedBox(height: 12),
           Column(
-            children: List.generate(top3.length, (index) {
-              final member = top3[index];
+            children: List.generate(_top3.length, (index) {
+              final member = _top3[index];
               final rank = index + 1;
-              final possibility = member.electionPossibility;
+              final possibility =
+                  _analysisResults[member.id]?.electionPossibility ??
+                      member.electionPossibility;
               return Padding(
                 padding:
-                    EdgeInsets.only(bottom: index < top3.length - 1 ? 12 : 0),
+                    EdgeInsets.only(bottom: index < _top3.length - 1 ? 12 : 0),
                 child: GestureDetector(
                   onTap: () => widget.onMemberSelected(member),
                   child: Container(
@@ -438,7 +480,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              '${(possibility * 100).toStringAsFixed(1)}%',
+                              '${(possibility).toStringAsFixed(1)}%',
                               style: AppTextStyles.headline4.copyWith(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.bold,
@@ -465,8 +507,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
     );
   }
 
-  Widget _buildMemberList(List<Member> members) {
-    if (members.isEmpty) {
+  Widget _buildMemberList() {
+    if (_memberList.isEmpty) {
       return Container(
         margin: const EdgeInsets.only(bottom: 24),
         child: Column(
@@ -524,14 +566,16 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
           const SizedBox(height: 8),
           Column(
             children: List.generate(
-              members.length,
+              _memberList.length,
               (index) {
-                final member = members[index];
+                final member = _memberList[index];
+                final analysisResult = _analysisResults[member.id];
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: MemberCard(
                     member: member,
-                    rank: index + 1,
+                    rank: index + 4,
+                    analysisResult: analysisResult,
                     onTap: () => widget.onMemberSelected(member),
                   ),
                 );

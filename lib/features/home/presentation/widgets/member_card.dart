@@ -4,7 +4,7 @@ import 'package:elecko26_new/core/utils/image_util.dart';
 import 'package:elecko26_new/core/utils/party_util.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
-import 'package:elecko26_new/domain/usecases/calculate_election_possibility_usecase.dart';
+import 'package:elecko26_new/domain/entities/analysis_result.dart';
 import 'package:elecko26_new/domain/usecases/member_usecases.dart';
 import 'package:elecko26_new/app/injection_container.dart';
 
@@ -12,13 +12,20 @@ class MemberCard extends StatelessWidget {
   final Member member;
   final VoidCallback? onTap;
   final int? rank;
+  final AnalysisResult? analysisResult;
 
-  const MemberCard({Key? key, required this.member, this.onTap, this.rank})
-      : super(key: key);
+  const MemberCard({
+    Key? key,
+    required this.member,
+    this.onTap,
+    this.rank,
+    this.analysisResult,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final possibility = member.electionPossibility;
+    final possibility =
+        analysisResult?.electionPossibility ?? member.electionPossibility;
     return RepaintBoundary(
       child: GestureDetector(
         onTap: onTap,
@@ -168,7 +175,7 @@ class MemberCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        '당선 가능성: ${(possibility * 100).toStringAsFixed(1)}%',
+                        '당선 가능성: ${possibility.toStringAsFixed(1)}%',
                         style: AppTextStyles.labelSmall.copyWith(
                           color: AppColors.success,
                         ),

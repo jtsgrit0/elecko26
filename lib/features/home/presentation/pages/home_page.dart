@@ -7,6 +7,8 @@ import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/features/auth/domain/entities/user.dart' as auth;
 import 'package:elecko26_new/domain/repositories/member_repository.dart';
 import 'package:elecko26_new/domain/usecases/member_usecases.dart';
+import 'package:elecko26_new/domain/entities/analysis_result.dart';
+import 'package:elecko26_new/domain/usecases/calculate_election_possibility_usecase.dart';
 import 'package:elecko26_new/features/auth/presentation/pages/auth_gate.dart';
 import 'package:elecko26_new/features/home/presentation/widgets/comparison_view.dart';
 import 'package:elecko26_new/features/home/presentation/widgets/favorites_view.dart';
@@ -33,16 +35,19 @@ class _HomePageState extends State<HomePage> {
   final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier<bool>(false);
   final ValueNotifier<int> _favoriteCountNotifier = ValueNotifier<int>(0);
 
-  // HomePage의 자체 StreamController는 제거하고 Repository의 스트림을 직접 사용합니다.
   Stream<List<Member>> get _membersStream =>
       sl<MemberRepository>().watchMembers();
 
   List<Member> _cachedMembers = [];
+  Map<String, AnalysisResult> _analysisResults = {};
+  StreamController<Map<String, AnalysisResult>>? _analysisStreamController;
+
   Member? _selectedMember;
   auth.User? _currentUser;
   StreamSubscription? _authSubscription;
   StreamSubscription? _membersSubscription;
   StreamSubscription? _regionSubscription;
+  StreamSubscription? _analysisSubscription;
 
   @override
   void initState() {
@@ -53,6 +58,7 @@ class _HomePageState extends State<HomePage> {
     }
     _updateFavoriteCount(_cachedMembers);
     _initializeListeners();
+    _initializeAnalysisStream();
   }
 
   @override
@@ -60,6 +66,8 @@ class _HomePageState extends State<HomePage> {
     _authSubscription?.cancel();
     _membersSubscription?.cancel();
     _regionSubscription?.cancel();
+    _analysisSubscription?.cancel();
+    _analysisStreamController?.close();
     _selectedIndexNotifier.dispose();
     _userRegionNotifier.dispose();
     _isLoadingNotifier.dispose();
@@ -70,7 +78,6 @@ class _HomePageState extends State<HomePage> {
   Future<void> _initializeListeners() async {
     final memberRepository = sl<MemberRepository>();
 
-    // 1. 멤버 데이터 스트림 구독 (즐겨찾기 등 실시간 업데이트)
     _membersSubscription = memberRepository.watchMembers().listen((members) {
       if (mounted) {
         setState(() {
@@ -80,7 +87,6 @@ class _HomePageState extends State<HomePage> {
       }
     });
 
-    // 2. 사용자 지역 로드 및 구독
     _regionSubscription =
         memberRepository.watchSelectedRegion().listen((region) {
       if (mounted) {
@@ -89,7 +95,6 @@ class _HomePageState extends State<HomePage> {
       }
     });
 
-    // 3. 인증 상태 구독
     _authSubscription =
         memberRepository.watchCurrentUser().listen((auth.User? user) {
       if (mounted) {
@@ -98,6 +103,49 @@ class _HomePageState extends State<HomePage> {
         });
       }
     });
+  }
+
+  void _initializeAnalysisStream() {
+    _analysisStreamController =
+        StreamController<Map<String, AnalysisResult>>.broadcast();
+    _analysisSubscription = _allMembersAnalysisTicker().listen(
+      (results) {
+        if (mounted) {
+          setState(() {
+            _analysisResults = results;
+          });
+          _analysisStreamController?.add(results);
+        }
+      },
+      onError: (e) {
+        if (kDebugMode) {
+          print("Error in analysis stream: $e");
+        }
+      },
+    );
+  }
+
+  Stream<Map<String, AnalysisResult>> _allMembersAnalysisTicker() async* {
+    final useCase = sl<CalculateElectionPossibilityUseCase>();
+    while (true) {
+      if (_cachedMembers.isNotEmpty) {
+        final newResults = Map<String, AnalysisResult>.from(_analysisResults);
+        for (final member in _cachedMembers) {
+          try {
+            final result = await useCase.call(member.id);
+            newResults[member.id] = result;
+          } catch (e) {
+            if (!newResults.containsKey(member.id)) {
+              newResults[member.id] = AnalysisResult.fallback(
+                member.electionPossibility,
+              );
+            }
+          }
+        }
+        yield newResults;
+      }
+      await Future.delayed(const Duration(minutes: 1));
+    }
   }
 
   void _updateFavoriteCount(List<Member> members) {
@@ -222,6 +270,8 @@ class _HomePageState extends State<HomePage> {
             isLoading: isLoading,
             membersStream: _membersStream,
             cachedMembers: _cachedMembers,
+            analysisResultsStream: _analysisStreamController?.stream,
+            cachedAnalysisResults: _analysisResults,
             userRegion: region,
             onMemberSelected: (m) => setState(() => _selectedMember = m),
             onNavigateToSearch: () => _selectedIndexNotifier.value = 1,
@@ -238,6 +288,7 @@ class _HomePageState extends State<HomePage> {
         builder: (context, region, _) => SearchView(
           membersStream: _membersStream,
           cachedMembers: _cachedMembers,
+          analysisResults: _analysisResults,
           userRegion: region,
           onMemberSelected: (m) => setState(() => _selectedMember = m),
         ),
