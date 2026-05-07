@@ -114,12 +114,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
   }
 
   List<Member> get _memberList {
-    if (_filteredAndSortedMembers.length <= 3) return [];
-    return _filteredAndSortedMembers.sublist(
-        3,
-        _filteredAndSortedMembers.length > 13
-            ? 13
-            : _filteredAndSortedMembers.length);
+    return _filteredAndSortedMembers;
   }
 
   String get _updateValue {
@@ -271,7 +266,6 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
             _buildStatisticsSection(
                 filteredMembers.length, nesdcCount, updateValue),
             const SizedBox(height: 24),
-            _buildTop3Section(top3),
             _buildMemberList(memberList),
           ] else if (widget.isLoading) ...[
             // 데이터가 없고 로딩 중일 때만 로딩바 표시
@@ -516,7 +510,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '후보자 목록',
+                '실시간 후보 순위',
                 style: AppTextStyles.headline4.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -537,6 +531,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
                   padding: const EdgeInsets.only(bottom: 8),
                   child: MemberCard(
                     member: member,
+                    rank: index + 1,
                     onTap: () => widget.onMemberSelected(member),
                   ),
                 );

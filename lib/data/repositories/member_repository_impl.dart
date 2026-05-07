@@ -10,6 +10,9 @@ class MemberRepositoryImpl implements MemberRepository {
   List<Member> _members = [];
   Completer<void>? _initializer;
 
+  // 데이터 변경을 알리기 위한 StreamController
+  final _membersController = StreamController<List<Member>>.broadcast();
+
   Future<void> _initialize() async {
     if (_initializer != null) {
       return _initializer!.future;
@@ -23,10 +26,12 @@ class MemberRepositoryImpl implements MemberRepository {
       _members = data
           .map((json) => MemberModel.fromJson(json as Map<String, dynamic>))
           .toList();
+
+      // 초기 데이터 로드 후 스트림에 추가
+      _membersController.add(_members);
       _initializer!.complete();
     } catch (e) {
       _initializer!.completeError(e);
-      // Re-throw the error to be handled by the caller
       rethrow;
     }
   }
@@ -47,6 +52,7 @@ class MemberRepositoryImpl implements MemberRepository {
   Future<void> addMember(Member member) async {
     await _initialize();
     _members.add(member);
+    _membersController.add(List.from(_members)); // 변경 알림
   }
 
   @override
@@ -55,6 +61,7 @@ class MemberRepositoryImpl implements MemberRepository {
     final index = _members.indexWhere((m) => m.id == member.id);
     if (index != -1) {
       _members[index] = member;
+      _membersController.add(List.from(_members)); // 변경 알림
     }
   }
 
@@ -62,6 +69,7 @@ class MemberRepositoryImpl implements MemberRepository {
   Future<void> deleteMember(String memberId) async {
     await _initialize();
     _members.removeWhere((member) => member.id == memberId);
+    _membersController.add(List.from(_members)); // 변경 알림
   }
 
   @override
@@ -82,27 +90,46 @@ class MemberRepositoryImpl implements MemberRepository {
   @override
   Stream<List<Member>> watchAllMembers(
       {Duration interval = const Duration(hours: 1)}) {
-    // This is a simplified implementation for a local repository.
-    // For a real implementation, you might use a StreamController
-    // and update it when the data changes.
-    return Stream.fromFuture(getAllMembers());
+    // 이제 실제 스트림을 반환합니다.
+    return _membersController.stream;
   }
 
   @override
   Stream<Member> watchMemberById(String memberId,
       {Duration interval = const Duration(hours: 1)}) {
-    return Stream.fromFuture(getMemberById(memberId));
+    // 특정 멤버의 변경을 감지하려면 더 복잡한 로직이 필요하지만,
+    // 여기서는 전체 목록 스트림을 기반으로 필터링합니다.
+    return _membersController.stream.map((members) {
+      return members.firstWhere((member) => member.id == memberId,
+          orElse: () => throw Exception('Member not found'));
+    });
   }
 
   @override
   Future<void> crawlNewsForAllMembers() async {
     // This is a local implementation, so we do nothing here.
-    // The actual logic is in FirestoreMemberRepositoryImpl.
     return;
   }
 
-  // Methods below are not fully implemented for the local repository
-  // as they depend on local storage or more complex logic.
+  @override
+  Future<void> toggleFavorite(String memberId) async {
+    await _initialize();
+    final index = _members.indexWhere((m) => m.id == memberId);
+    if (index != -1) {
+      final member = _members[index];
+      final updatedMember = member.copyWith(isFavorite: !member.isFavorite);
+      _members[index] = updatedMember;
+      _membersController.add(List.from(_members)); // 변경 알림
+    }
+  }
+
+  @override
+  Stream<List<Member>> watchMembers() {
+    // watchAllMembers와 동일한 스트림을 사용합니다.
+    return _membersController.stream;
+  }
+
+  // ... 나머지 메소드들은 변경 없음 ...
 
   @override
   Future<void> apply2018RegionalPartyRates() async {}
@@ -134,14 +161,12 @@ class MemberRepositoryImpl implements MemberRepository {
   Future<void> syncUserSettings() async {}
 
   @override
-  Future<void> toggleFavorite(String memberId) async {}
-
-  @override
   Future<void> updateMember2018Rates(String memberId) async {}
 
   @override
   Future<void> updateMembers(List<Member> members) async {
     _members = members;
+    _membersController.add(List.from(_members)); // 변경 알림
   }
 
   @override
@@ -163,22 +188,11 @@ class MemberRepositoryImpl implements MemberRepository {
   }
 
   @override
-  Stream<List<Member>> watchMembers() {
-    return Stream.fromFuture(getAllMembers());
-  }
+  Future<void> updateParkSugiImage() async {}
 
   @override
-  Future<void> updateParkSugiImage() async {
-    // Local implementation does nothing.
-  }
+  Future<void> updateSeoJaeyeolImage() async {}
 
   @override
-  Future<void> updateSeoJaeyeolImage() async {
-    // Local implementation does nothing.
-  }
-
-  @override
-  Future<void> updateYoonDaegiImage() async {
-    // Local implementation does nothing.
-  }
+  Future<void> updateYoonDaegiImage() async {}
 }

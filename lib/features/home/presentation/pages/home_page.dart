@@ -33,21 +33,21 @@ class _HomePageState extends State<HomePage> {
   final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier<bool>(false);
   final ValueNotifier<int> _favoriteCountNotifier = ValueNotifier<int>(0);
 
-  final StreamController<List<Member>> _membersController =
-      StreamController<List<Member>>.broadcast();
-  Stream<List<Member>> get _membersStream => _membersController.stream;
+  // HomePage의 자체 StreamController는 제거하고 Repository의 스트림을 직접 사용합니다.
+  Stream<List<Member>> get _membersStream =>
+      sl<MemberRepository>().watchMembers();
 
   List<Member> _cachedMembers = [];
   Member? _selectedMember;
   auth.User? _currentUser;
   StreamSubscription? _authSubscription;
   StreamSubscription? _membersSubscription;
+  StreamSubscription? _regionSubscription;
 
   @override
   void initState() {
     super.initState();
     _cachedMembers = widget.members;
-    _membersController.add(_cachedMembers);
     if (widget.initialRegion != null) {
       _userRegionNotifier.value = widget.initialRegion!;
     }
@@ -59,7 +59,7 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     _authSubscription?.cancel();
     _membersSubscription?.cancel();
-    _membersController.close();
+    _regionSubscription?.cancel();
     _selectedIndexNotifier.dispose();
     _userRegionNotifier.dispose();
     _isLoadingNotifier.dispose();
@@ -68,9 +68,20 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _initializeListeners() async {
-    // 1. 사용자 지역 로드 및 구독
     final memberRepository = sl<MemberRepository>();
-    _membersSubscription =
+
+    // 1. 멤버 데이터 스트림 구독 (즐겨찾기 등 실시간 업데이트)
+    _membersSubscription = memberRepository.watchMembers().listen((members) {
+      if (mounted) {
+        setState(() {
+          _cachedMembers = members;
+        });
+        _updateFavoriteCount(members);
+      }
+    });
+
+    // 2. 사용자 지역 로드 및 구독
+    _regionSubscription =
         memberRepository.watchSelectedRegion().listen((region) {
       if (mounted) {
         _userRegionNotifier.value =
@@ -78,19 +89,9 @@ class _HomePageState extends State<HomePage> {
       }
     });
 
-    // 2. 실시간 업데이트 구독 (선택적)
-    // _membersSubscription =
-    //     sl<MemberRepository>().watchMembers().listen((members) {
-    //   if (mounted) {
-    //     _cachedMembers = members;
-    //     _membersController.add(members);
-    //     _updateFavoriteCount(members);
-    //   }
-    // });
-
     // 3. 인증 상태 구독
     _authSubscription =
-        sl<MemberRepository>().watchCurrentUser().listen((auth.User? user) {
+        memberRepository.watchCurrentUser().listen((auth.User? user) {
       if (mounted) {
         setState(() {
           _currentUser = user;
@@ -466,7 +467,7 @@ class _HomePageState extends State<HomePage> {
             BottomNavigationBarItem(
               icon: Icon(Icons.star_outline),
               activeIcon: Icon(Icons.star),
-              label: '관심',
+              label: '관심후보',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.map_outlined),

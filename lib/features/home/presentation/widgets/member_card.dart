@@ -11,8 +11,9 @@ import 'package:elecko26_new/app/injection_container.dart';
 class MemberCard extends StatelessWidget {
   final Member member;
   final VoidCallback? onTap;
+  final int? rank;
 
-  const MemberCard({Key? key, required this.member, this.onTap})
+  const MemberCard({Key? key, required this.member, this.onTap, this.rank})
       : super(key: key);
 
   @override
@@ -32,6 +33,20 @@ class MemberCard extends StatelessWidget {
           ),
           child: Row(
             children: [
+              if (rank != null) ...[
+                SizedBox(
+                  width: 32,
+                  child: Text(
+                    '${rank}위',
+                    style: AppTextStyles.headline4.copyWith(
+                      color: AppColors.error,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
               Column(
                 children: [
                   ClipRRect(
