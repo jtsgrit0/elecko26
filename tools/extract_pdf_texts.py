@@ -1,16 +1,9 @@
 import os
 import pypdf
+import unicodedata
 
-pdf_files = [
-    'MON0120180035_0001S.pdf',
-    'MON0120060695_0001S.pdf',
-    'MON0120060482_0001S.pdf',
-    'MON0120070003_0001S.pdf',
-    'MON0120100019_0001S.pdf',
-    'MON0120060696_0001S.pdf',
-    'MON0120140064_0001S.pdf',
-    '중앙선거관리위원회_제7회 전국동시지방선거 유권자 의식조사_20180613/제7회 전국동시지방선거 유권자 의식조사(인쇄본).pdf',
-]
+pdf_dir = 'assets/pdf'
+pdf_files = [os.path.join(pdf_dir, f) for f in os.listdir(pdf_dir) if unicodedata.normalize('NFC', f).endswith('.pdf')]
 
 output_dir = 'data/pdf_texts'
 if not os.path.exists(output_dir):

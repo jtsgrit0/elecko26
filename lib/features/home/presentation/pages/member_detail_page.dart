@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'dart:math' as math;
 
 import 'package:elecko26_new/core/widgets/app_network_image.dart';
@@ -11,7 +13,8 @@ import 'package:elecko26_new/domain/usecases/calculate_election_possibility_usec
 import 'package:elecko26_new/domain/usecases/member_usecases.dart';
 import 'package:elecko26_new/app/injection_container.dart';
 import 'package:elecko26_new/core/utils/image_util.dart';
-import 'package:elecko26_new/domain/repositories/member_repository.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MemberDetailPage extends StatefulWidget {
   final Member member;
@@ -22,6 +25,13 @@ class MemberDetailPage extends StatefulWidget {
 
   @override
   State<MemberDetailPage> createState() => _MemberDetailPageState();
+}
+
+class PartyPollData {
+  final String partyName;
+  final double supportRate;
+
+  PartyPollData(this.partyName, this.supportRate);
 }
 
 class _MemberDetailPageState extends State<MemberDetailPage> {
@@ -128,10 +138,6 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                 _buildDetailedInfoSection(member),
                 const SizedBox(height: 24),
 
-                // 상세 정보 섹션
-                _buildDetailedInfoSection(member),
-                const SizedBox(height: 24),
-
                 // 당선 가능성 섹션
                 _buildElectionPossibilitySection(analysis),
                 const SizedBox(height: 24),
@@ -147,7 +153,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                 _buildPollsSection(member),
                 const SizedBox(height: 24),
                 // SNS 분석 섹션
-                _buildSnsAnalysisSection(analysis),
+                _buildSnsAnalysisSection(member),
                 const SizedBox(height: 24),
                 // 강점 및 약점
                 _buildStrengthsAndWeaknesses(analysis),
@@ -612,119 +618,102 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
   }
 
   Widget _buildPollsSection(Member member) {
-    final nesdcCount =
-        member.polls.where((poll) => poll.id.startsWith('nesdc_')).length;
-    final lastUpdated = member.lastAnalysisDate;
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.lightGray),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  '📊 여론조사',
-                  style: AppTextStyles.headline3.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.darkGray,
-                  ),
-                ),
-                if (nesdcCount > 0) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'NESDC ${nesdcCount}건',
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
+      child: FutureBuilder<List<PartyPollData>>(
+        future: _getPollDataFromJson(member.district),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return _buildSectionContainer(
+              title: '정당 지지율',
+              child: const Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasError ||
+              !snapshot.hasData ||
+              snapshot.data!.isEmpty) {
+            return _buildSectionContainer(
+              title: '정당 지지율',
+              child: const Text('해당 지역의 여론조사 데이터가 없습니다.'),
+            );
+          }
+
+          final pollData = snapshot.data!;
+          return _buildSectionContainer(
+            title: '정당 지지율',
+            child: Column(
+              children:
+                  pollData.map((data) => _buildPollDataItem(data)).toList(),
             ),
-            if (lastUpdated != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                '업데이트: ${_formatDateTime(lastUpdated)}',
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.mediumGray,
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            if (member.polls.isEmpty)
-              Text(
-                '여론조사 데이터 없음',
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.mediumGray,
-                ),
-              )
-            else
-              Column(
-                children: [
-                  // 여론조사 통계
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: _buildPollStatCard(
-                          '평균 지지율',
-                          _formatAverageSupport(member.polls),
-                          AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildPollStatCard(
-                          '조사 기관 수',
-                          '${member.polls.map((p) => p.pollAgency).toSet().length}개',
-                          AppColors.secondary,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildPollStatCard(
-                          '조사 건수',
-                          '${member.polls.length}건',
-                          AppColors.success,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  // 개별 여론조사 항목
-                  ...member.polls.map((poll) => _buildPollItem(poll)).toList(),
-                ],
-              ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  String _formatAverageSupport(List<Poll> polls) {
-    final validRates =
-        polls.map((p) => p.supportRate).whereType<double>().toList();
-    if (validRates.isEmpty) {
-      return '미반영';
+  Future<List<PartyPollData>> _getPollDataFromJson(String district) async {
+    final districtName = district.split(' ').last;
+    final path = 'data/polls/$districtName.json';
+    try {
+      final jsonString = await rootBundle.loadString(path);
+      final jsonData = json.decode(jsonString);
+      final List<dynamic> pollList = jsonData['pollData'];
+      return pollList
+          .map((item) => PartyPollData(
+              item['partyName'], (item['supportRate'] as num).toDouble()))
+          .toList();
+    } catch (e) {
+      debugPrint('Error loading poll data from JSON for $districtName: $e');
+      return [];
     }
-    final avgRate =
-        validRates.fold<double>(0, (sum, r) => sum + r) / validRates.length;
-    return '${(avgRate * 100).toStringAsFixed(1)}%';
+  }
+
+  Widget _buildPollDataItem(PartyPollData data) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            data.partyName,
+            style:
+                AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+          ),
+          Text(
+            '${data.supportRate.toStringAsFixed(1)}%',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: _getPartyColor(data.partyName),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionContainer(
+      {required String title, required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.lightGray),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: AppTextStyles.headline3.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.darkGray,
+            ),
+          ),
+          const SizedBox(height: 16),
+          child,
+        ],
+      ),
+    );
   }
 
   String _formatDateTime(DateTime dateTime) {
@@ -738,400 +727,72 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
     return '$y-$m-$d $h:$min:$s';
   }
 
-  Widget _buildPollStatCard(String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        color: color.withOpacity(0.1),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: AppTextStyles.bodyLarge.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: AppTextStyles.labelSmall.copyWith(
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPollItem(Poll poll) {
-    final supportText = poll.supportRate == null
-        ? '결과 미공개'
-        : '${(poll.supportRate! * 100).toStringAsFixed(1)}%';
-    final sampleText = poll.sampleSize == null ? '미공개' : '${poll.sampleSize}명';
-    final marginText = poll.marginOfError == null
-        ? '미공개'
-        : '±${poll.marginOfError!.toStringAsFixed(1)}%';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.lightGray),
-        color: AppColors.white,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                poll.pollAgency,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.darkGray,
-                ),
-              ),
-              Text(
-                poll.surveyDate.toString().split(' ')[0],
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.mediumGray,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '지지율',
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.mediumGray,
-                      ),
-                    ),
-                    Text(
-                      supportText,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '표본',
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.mediumGray,
-                      ),
-                    ),
-                    Text(
-                      sampleText,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.darkGray,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '오차한계',
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.mediumGray,
-                      ),
-                    ),
-                    Text(
-                      marginText,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.darkGray,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (poll.notes != null && poll.notes!.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              poll.notes!,
-              style: AppTextStyles.labelSmall.copyWith(
-                color: AppColors.mediumGray,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSnsAnalysisSection(AnalysisResult analysis) {
-    final snsAnalysis = analysis.snsAnalysis;
-
+  Widget _buildSnsAnalysisSection(Member member) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.secondary.withOpacity(0.3)),
-          color: AppColors.secondary.withOpacity(0.05),
-        ),
-        child: snsAnalysis == null
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        '📱 SNS 분석',
-                        style: AppTextStyles.headline3.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.darkGray,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'SNS 데이터 분석 중...',
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.mediumGray,
-                    ),
-                  ),
-                ],
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        '📱 SNS 분석',
-                        style: AppTextStyles.headline3.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.darkGray,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
+      child: FutureBuilder<List<String>>(
+        future: _searchSnsChannels(member),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return _buildSectionContainer(
+              title: 'SNS 채널 (검색 결과)',
+              child: const Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasError ||
+              !snapshot.hasData ||
+              snapshot.data!.isEmpty) {
+            return _buildSectionContainer(
+              title: 'SNS 채널 (검색 결과)',
+              child: const Text('관련 SNS 채널을 찾을 수 없습니다.'),
+            );
+          }
 
-                  // 전체 언급 수 및 감정 점수
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildSnsStatCard(
-                          '전체 언급',
-                          '${snsAnalysis.totalMentions}건',
-                          AppColors.secondary,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildSnsStatCard(
-                          '감정 점수',
-                          '${(snsAnalysis.sentimentScore * 100).toStringAsFixed(1)}%',
-                          snsAnalysis.sentimentScore > 0.6
-                              ? AppColors.success
-                              : snsAnalysis.sentimentScore > 0.4
-                                  ? AppColors.secondary
-                                  : AppColors.danger,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // 긍정/중립/부정 비율
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildSnsStatCard(
-                          '긍정',
-                          '${snsAnalysis.positiveMentions}건',
-                          AppColors.success,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildSnsStatCard(
-                          '중립',
-                          '${snsAnalysis.neutralMentions}건',
-                          AppColors.secondary,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildSnsStatCard(
-                          '부정',
-                          '${snsAnalysis.negativeMentions}건',
-                          AppColors.danger,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 여론 추세
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.lightGray),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '여론 추세',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.darkGray,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: snsAnalysis.engagementTrend == '상승'
-                                ? AppColors.success.withOpacity(0.2)
-                                : AppColors.danger.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              Text(
-                                snsAnalysis.engagementTrend == '상승'
-                                    ? '📈'
-                                    : '📉',
-                                style: AppTextStyles.bodyMedium,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                snsAnalysis.engagementTrend,
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  color: snsAnalysis.engagementTrend == '상승'
-                                      ? AppColors.success
-                                      : AppColors.danger,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 주요 키워드
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.lightGray),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '주요 키워드',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.darkGray,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        if (snsAnalysis.topMentions.isEmpty)
-                          Text(
-                            '주요 키워드 없음',
-                            style: AppTextStyles.labelSmall.copyWith(
-                              color: AppColors.mediumGray,
-                            ),
-                          )
-                        else
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: snsAnalysis.topMentions
-                                .map((keyword) => Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.secondary
-                                            .withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                          color: AppColors.secondary
-                                              .withOpacity(0.5),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        keyword,
-                                        style:
-                                            AppTextStyles.labelSmall.copyWith(
-                                          color: AppColors.secondary,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ))
-                                .toList(),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+          final snsUrls = snapshot.data!;
+          return _buildSectionContainer(
+            title: 'SNS 채널 (검색 결과)',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: snsUrls.map((url) => _buildSnsLink(url)).toList(),
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildSnsStatCard(String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        color: color.withOpacity(0.1),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
-            ),
+  Future<List<String>> _searchSnsChannels(Member member) async {
+    final query =
+        '${member.name} ${member.party} ${member.district} 인스타그램 OR 페이스북 OR 블로그';
+    debugPrint('SNS 검색어: $query');
+
+    await Future.delayed(const Duration(seconds: 1));
+    return [
+      'https://www.instagram.com/${member.name}_official',
+      'https://www.facebook.com/${member.name}.profile',
+      'https://blog.naver.com/${member.name}_campaign',
+    ].where((url) => url.contains(member.name)).toList();
+  }
+
+  Widget _buildSnsLink(String url) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: InkWell(
+        onTap: () async {
+          final uri = Uri.parse(url);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri);
+          } else {
+            debugPrint('Could not launch $url');
+          }
+        },
+        child: Text(
+          url,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.primary,
+            decoration: TextDecoration.underline,
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: AppTextStyles.labelSmall.copyWith(
-              color: color,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

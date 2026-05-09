@@ -64,10 +64,10 @@ def parse_candidate_data(page, election_district, election_type):
 
 def main():
     """PyMuPDF를 사용하여 PDF에서 후보자 목록을 생성하고 JSON 파일로 저장합니다."""
-    pdf_dir = "/Users/jtsgrit0/Documents/flutter/elecko26_new"
+    pdf_dir = "/Users/jtsgrit0/Documents/flutter/elecko26_new/assets/pdf"
     output_path = "/Users/jtsgrit0/Documents/flutter/elecko26_new/api/members.json"
     
-    pdf_files = [f for f in os.listdir(pdf_dir) if unicodedata.normalize('NFC', f).endswith('.pdf') and '후보' in unicodedata.normalize('NFC', f)]
+    pdf_files = [f for f in os.listdir(pdf_dir) if unicodedata.normalize('NFC', f).endswith('.pdf')]
     
     all_candidates = []
 

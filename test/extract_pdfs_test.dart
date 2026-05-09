@@ -5,16 +5,12 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 void main() {
   test('Extract text from all project PDFs', () async {
-    final pdfFiles = [
-      'MON0120180035_0001S.pdf',
-      'MON0120060695_0001S.pdf',
-      'MON0120060482_0001S.pdf',
-      'MON0120070003_0001S.pdf',
-      'MON0120100019_0001S.pdf',
-      'MON0120060696_0001S.pdf',
-      'MON0120140064_0001S.pdf',
-      '중앙선거관리위원회_제7회 전국동시지방선거 유권자 의식조사_20180613/제7회 전국동시지방선거 유권자 의식조사(인쇄본).pdf',
-    ];
+    final pdfDir = Directory('assets/pdf');
+    final pdfFiles = pdfDir
+        .listSync()
+        .where((item) => item.path.endsWith('.pdf'))
+        .map((item) => item.path)
+        .toList();
 
     final outputDir = Directory('data/pdf_texts');
     if (!outputDir.existsSync()) {
