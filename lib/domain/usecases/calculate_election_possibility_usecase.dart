@@ -107,7 +107,7 @@ class CalculateElectionPossibilityUseCase {
     return AnalysisResult(
       memberId: member.id,
       analysisDate: DateTime.now(),
-      electionPossibility: recentAvg,
+      electionPossibility: scores['overall']!,
       previousPossibility: dailyTrends.length > 1
           ? dailyTrends[dailyTrends.length - 2].possibility
           : recentAvg - 0.02,
