@@ -127,7 +127,7 @@ class MemberCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        '당선 가능성: ${possibility != null ? '${possibility.toStringAsFixed(1)}%' : '집계중'}',
+                        '당선 가능성: ${possibility != null ? '${(possibility * 100).toStringAsFixed(1)}%' : '집계중'}',
                         style: AppTextStyles.labelSmall.copyWith(
                           color: AppColors.success,
                         ),

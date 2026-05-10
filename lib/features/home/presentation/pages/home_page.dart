@@ -153,6 +153,22 @@ class _HomePageState extends State<HomePage> {
     _favoriteCountNotifier.value = count;
   }
 
+  Future<void> _updateAnalysisForMember(String memberId) async {
+    final useCase = sl<CalculateElectionPossibilityUseCase>();
+    try {
+      final result = await useCase.call(memberId);
+      if (mounted) {
+        setState(() {
+          _analysisResults[memberId] = result;
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error updating analysis for member $memberId: $e");
+      }
+    }
+  }
+
   void _showSettingsModal() {
     showModalBottomSheet(
       context: context,
@@ -354,7 +370,12 @@ class _HomePageState extends State<HomePage> {
               color: AppColors.white,
               child: MemberDetailPage(
                 member: _selectedMember!,
-                onBack: () => setState(() => _selectedMember = null),
+                onBack: () async {
+                  await _updateAnalysisForMember(_selectedMember!.id);
+                  if (mounted) {
+                    setState(() => _selectedMember = null);
+                  }
+                },
               ),
             ),
           ),

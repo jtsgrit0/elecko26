@@ -96,9 +96,7 @@ class PossibilityCalculator {
     final totalLength = items.fold<int>(0, (sum, item) => sum + item.length);
     final avgLength = totalLength / items.length;
     final qualityScore = (avgLength / 50).clamp(0.0, 1.0) * 0.2;
-    final uniqueness = (memberId.hashCode + seed).abs() % 100 / 1000.0;
-
-    return (countScore + qualityScore + uniqueness).clamp(0.05, 0.98);
+    return (countScore + qualityScore).clamp(0.05, 0.98);
   }
 
   static double _calculatePublicImageScore(Member member) {
