@@ -64,8 +64,9 @@ def parse_candidate_data(page, election_district, election_type):
 
 def main():
     """PyMuPDF를 사용하여 PDF에서 후보자 목록을 생성하고 JSON 파일로 저장합니다."""
-    pdf_dir = "/Users/jtsgrit0/Documents/flutter/elecko26_new/assets/pdf"
-    output_path = "/Users/jtsgrit0/Documents/flutter/elecko26_new/api/members.json"
+    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    pdf_dir = os.path.join(base_path, "assets", "pdf")
+    output_path = os.path.join(base_path, "api", "members.json")
     
     pdf_files = [f for f in os.listdir(pdf_dir) if unicodedata.normalize('NFC', f).endswith('.pdf')]
     
@@ -112,14 +113,15 @@ def main():
         # 실제 ID 정책에 따라 이 부분을 수정해야 합니다.
         candidate['id'] = str(i + 1) # 임시 ID
         
-        image_path = f"assets/images/candidates/{candidate['id']}.png"
-        if os.path.exists(os.path.join("/Users/jtsgrit0/Documents/flutter/elecko26_new", image_path)):
-            candidate['imageUrl'] = image_path
+        image_path_in_assets = f"images/candidates/{candidate['id']}.png"
+        image_path = os.path.join(base_path, "assets", image_path_in_assets)
+        if os.path.exists(image_path):
+            candidate['imageUrl'] = image_path_in_assets
         else:
-            # jpg 등 다른 확장자도 확인
-            image_path_jpg = f"assets/images/candidates/{candidate['id']}.jpg"
-            if os.path.exists(os.path.join("/Users/jtsgrit0/Documents/flutter/elecko26_new", image_path_jpg)):
-                candidate['imageUrl'] = image_path_jpg
+            image_path_in_assets_jpg = f"images/candidates/{candidate['id']}.jpg"
+            image_path_jpg = os.path.join(base_path, "assets", image_path_in_assets_jpg)
+            if os.path.exists(image_path_jpg):
+                candidate['imageUrl'] = image_path_in_assets_jpg
             else:
                 candidate['imageUrl'] = ""
 

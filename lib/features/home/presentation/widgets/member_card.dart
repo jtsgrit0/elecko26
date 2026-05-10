@@ -187,13 +187,7 @@ class MemberCard extends StatelessWidget {
   }
 
   Widget _buildProfileImage() {
-    if (member.imageUrl.isNotEmpty && member.imageUrl.startsWith('assets/')) {
-      return Image.asset(
-        member.imageUrl,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildFallbackProfile(),
-      );
-    } else if (member.imageUrl.isNotEmpty) {
+    if (member.imageUrl.startsWith('http')) {
       return Image.network(
         member.imageUrl,
         fit: BoxFit.cover,
@@ -201,6 +195,12 @@ class MemberCard extends StatelessWidget {
           if (loadingProgress == null) return child;
           return Container(color: AppColors.lightGrey);
         },
+        errorBuilder: (context, error, stackTrace) => _buildFallbackProfile(),
+      );
+    } else if (member.imageUrl.isNotEmpty) {
+      return Image.asset(
+        member.imageUrl,
+        fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) => _buildFallbackProfile(),
       );
     }
