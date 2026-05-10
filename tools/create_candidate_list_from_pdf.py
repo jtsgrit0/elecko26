@@ -106,9 +106,22 @@ def main():
             unique_candidates.append(candidate)
             seen.add(identifier)
 
-    # ID 할당
+    # ID 할당 및 imageUrl 추가
     for i, candidate in enumerate(unique_candidates):
-        candidate['id'] = i + 1
+        # 파일명 기반으로 ID를 생성하도록 수정 (예시)
+        # 실제 ID 정책에 따라 이 부분을 수정해야 합니다.
+        candidate['id'] = str(i + 1) # 임시 ID
+        
+        image_path = f"assets/images/candidates/{candidate['id']}.png"
+        if os.path.exists(os.path.join("/Users/jtsgrit0/Documents/flutter/elecko26_new", image_path)):
+            candidate['imageUrl'] = image_path
+        else:
+            # jpg 등 다른 확장자도 확인
+            image_path_jpg = f"assets/images/candidates/{candidate['id']}.jpg"
+            if os.path.exists(os.path.join("/Users/jtsgrit0/Documents/flutter/elecko26_new", image_path_jpg)):
+                candidate['imageUrl'] = image_path_jpg
+            else:
+                candidate['imageUrl'] = ""
 
     # JSON 파일로 저장
     with open(output_path, 'w', encoding='utf-8') as f:

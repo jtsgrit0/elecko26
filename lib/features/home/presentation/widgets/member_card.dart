@@ -1,5 +1,3 @@
-import 'package:elecko26_new/core/widgets/pdf_image_renderer.dart';
-import 'package:elecko26_new/core/widgets/pdf_image_renderer.dart';
 import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/utils/image_util.dart';
 import 'package:elecko26_new/core/utils/party_util.dart';
@@ -189,33 +187,37 @@ class MemberCard extends StatelessWidget {
   }
 
   Widget _buildProfileImage() {
-    if (member.imageUrl.isEmpty) {
-      return _buildFallbackProfile();
+    if (member.imageUrl.isNotEmpty && member.imageUrl.startsWith('assets/')) {
+      return Image.asset(
+        member.imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildFallbackProfile(),
+      );
+    } else if (member.imageUrl.isNotEmpty) {
+      return Image.network(
+        member.imageUrl,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(color: AppColors.lightGrey);
+        },
+        errorBuilder: (context, error, stackTrace) => _buildFallbackProfile(),
+      );
     }
-    return PdfImageRenderer.fromUrl(
-      member.imageUrl,
-      placeholder: (context) => Container(color: AppColors.lightGrey),
-      errorWidget: (context, error, stackTrace) => _buildFallbackProfile(),
-    );
+    return _buildFallbackProfile();
   }
 
   Widget _buildFallbackProfile() {
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary.withOpacity(0.8),
-            AppColors.secondary.withOpacity(0.6),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: PartyUtil.getPartyColor(member.party).withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Center(
         child: Text(
           _getProfileInitial(member.name),
-          style: AppTextStyles.headline3.copyWith(
-            color: AppColors.white,
+          style: AppTextStyles.headline4.copyWith(
+            color: PartyUtil.getPartyColor(member.party),
             fontWeight: FontWeight.bold,
           ),
         ),
