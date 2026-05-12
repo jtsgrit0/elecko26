@@ -50,6 +50,8 @@ class AnalysisResultModel extends AnalysisResult {
     required super.policyScore,
     required super.publicImageScore,
     required super.socialContributionScore,
+    required super.pollScore,
+    required super.historicalScore,
     required super.improvements,
     required super.strengths,
     required super.weaknesses,
@@ -71,6 +73,8 @@ class AnalysisResultModel extends AnalysisResult {
       publicImageScore: (json['publicImageScore'] as num).toDouble(),
       socialContributionScore:
           (json['socialContributionScore'] as num).toDouble(),
+      pollScore: (json['pollScore'] as num? ?? 0.0).toDouble(),
+      historicalScore: (json['historicalScore'] as num? ?? 0.0).toDouble(),
       improvements: List<String>.from(json['improvements'] as List),
       strengths: List<String>.from(json['strengths'] as List),
       weaknesses: List<String>.from(json['weaknesses'] as List),

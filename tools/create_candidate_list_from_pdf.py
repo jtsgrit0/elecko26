@@ -2,134 +2,138 @@ import os
 import json
 import re
 import fitz  # PyMuPDF
-import unicodedata
+from PIL import Image
+import io
+
+def clean_text(text):
+    if not text: return ""
+    return str(text).replace('\n', ' ').strip()
+
+def find_column_indices(header):
+    indices = {
+        'party': -1, 'name': -1, 'gender': -1, 'birth': -1,
+        'occupation': -1, 'edu': -1, 'career': -1, 'photo': -1
+    }
+    for i, h in enumerate(header):
+        h_clean = clean_text(h).replace(' ', '')
+        if '정당' in h_clean: indices['party'] = i
+        elif '성명' in h_clean: indices['name'] = i
+        elif '성별' in h_clean: indices['gender'] = i
+        elif '생년월일' in h_clean or '연령' in h_clean: indices['birth'] = i
+        elif '직업' in h_clean: indices['occupation'] = i
+        elif '학력' in h_clean: indices['edu'] = i
+        elif '경력' in h_clean: indices['career'] = i
+        elif '사진' in h_clean: indices['photo'] = i
+    return indices
 
 def parse_candidate_data(page, election_district, election_type):
     candidates = []
+    images_info = page.get_image_info(xrefs=True)
     tabs = page.find_tables()
-    
-    if not tabs.tables:
-        return []
+    if not tabs.tables: return []
 
-    print(f"  - {len(tabs.tables)}개의 테이블을 찾았습니다.")
-    
     for table in tabs.tables:
         table_data = table.extract()
-        if not table_data or len(table_data) < 2:
-            continue
-        
-        header = [str(h).replace('\n', '') for h in table_data[0]]
-        try:
-            # 헤더를 기반으로 각 필드의 인덱스를 동적으로 찾음
-            party_idx = header.index('소속정당명')
-            name_idx = header.index('성명(한자)')
-            gender_idx = header.index('성별')
-            birth_idx = header.index('생년월일(연령)')
-            occupation_idx = header.index('직업')
-            edu_idx = header.index('학력')
-            career_idx = header.index('경력')
-        except ValueError:
-            print(f"  - 경고: 테이블 헤더가 예상과 다릅니다. 건너뜁니다. 헤더: {header}")
-            continue
+        if not table_data or len(table_data) < 2: continue
+        header = table_data[0]
+        idx = find_column_indices(header)
+        if idx['party'] == -1 or idx['name'] == -1: continue
 
-        for row in table_data[1:]:
-            if not row or len(row) <= max(party_idx, name_idx, birth_idx):
-                continue
+        for i, row in enumerate(table.rows):
+            if i == 0: continue
+            row_data = table_data[i]
+            if not row_data or len(row_data) <= max(idx.values()): continue
 
             try:
-                name_data = row[name_idx].split('\n')[0].strip()
-                birth_data = row[birth_idx].split('\n')[0].replace('.', '-').strip()
+                name_raw = row_data[idx['name']]
+                if not name_raw: continue
+                name_data = clean_text(name_raw).split(' ')[0].split('(')[0].strip()
+                if not name_data or name_data == '성명': continue
 
-                candidate = {
-                    "id": 0,
+                row_bbox = fitz.Rect()
+                for cell in row.cells: row_bbox.include_rect(cell)
+
+                candidate_image_data = None
+                for img_info in images_info:
+                    img_bbox = fitz.Rect(img_info['bbox'])
+                    if row_bbox.intersects(img_bbox):
+                        xref = img_info['xref']
+                        try:
+                            base_image = fitz.Pixmap(page.parent, xref)
+                            pil_image = Image.open(io.BytesIO(base_image.tobytes()))
+                            img_byte_arr = io.BytesIO()
+                            pil_image.save(img_byte_arr, format='PNG')
+                            candidate_image_data = img_byte_arr.getvalue()
+                        except: pass
+                        break
+                
+                candidates.append({
                     "name": name_data,
-                    "party": row[party_idx].strip(),
+                    "party": clean_text(row_data[idx['party']]),
                     "region": election_district,
                     "district": election_type,
-                    "gender": row[gender_idx].strip(),
-                    "birthdate": birth_data,
-                    "occupation": row[occupation_idx].replace('\n', ' ').strip(),
-                    "education": row[edu_idx].replace('\n', ' ').strip(),
-                    "career": row[career_idx].replace('\n', ' ').strip(),
-                    "achievementsList": [], "policies": [], "improvementPoints": [],
-                    "socialContributions": [], "positive_mentions": 0, "negative_mentions": 0,
-                    "mockData": True
-                }
-                candidates.append(candidate)
-            except (IndexError, ValueError) as e:
-                print(f"  - 행 처리 중 오류 발생: {row}, 오류: {e}")
-                continue
-                
+                    "gender": clean_text(row_data[idx['gender']]) if idx['gender'] != -1 else "",
+                    "birthdate": clean_text(row_data[idx['birth']]) if idx['birth'] != -1 else "",
+                    "occupation": clean_text(row_data[idx['occupation']]) if idx['occupation'] != -1 else "",
+                    "education": clean_text(row_data[idx['edu']]) if idx['edu'] != -1 else "",
+                    "career": clean_text(row_data[idx['career']]) if idx['career'] != -1 else "",
+                    "imageData": candidate_image_data
+                })
+            except: continue
     return candidates
 
 def main():
-    """PyMuPDF를 사용하여 PDF에서 후보자 목록을 생성하고 JSON 파일로 저장합니다."""
     base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     pdf_dir = os.path.join(base_path, "assets", "pdf")
     output_path = os.path.join(base_path, "api", "members.json")
     
-    pdf_files = [f for f in os.listdir(pdf_dir) if unicodedata.normalize('NFC', f).endswith('.pdf')]
-    
-    all_candidates = []
+    all_extracted = []
+    seen_candidates = set() # (name, party, birthdate)
+    unique_candidates = []
 
-    if not pdf_files:
-        print("처리할 PDF 파일을 찾을 수 없습니다.")
-        return
+    pdf_files = [f for f in os.listdir(pdf_dir) if f.endswith('.pdf')]
+    print(f"Processing {len(pdf_files)} PDF files...")
 
     for pdf_file in pdf_files:
-        print(f"Processing {pdf_file}...")
+        pdf_path = os.path.join(pdf_dir, pdf_file)
         
-        # 파일명에서 선거 종류와 지역 정보 추출
-        matches = re.findall(r'\[(.*?)\]', unicodedata.normalize('NFC', pdf_file))
         election_type = "정보 없음"
         election_district = "정보 없음"
-        if len(matches) > 1:
-            election_type = matches[1]
-            if len(matches) > 2:
-                election_district = matches[2]
-
-        pdf_path = os.path.join(pdf_dir, pdf_file)
+        match = re.search(r'\[([^\]]+)\]', pdf_file)
+        if match: election_type = match.group(1)
+            
         try:
             doc = fitz.open(pdf_path)
-            for page_num, page in enumerate(doc):
-                print(f"- Page {page_num + 1} 처리 중...")
-                candidates = parse_candidate_data(page, election_district, election_type)
-                all_candidates.extend(candidates)
+            for page in doc:
+                for cand in parse_candidate_data(page, election_district, election_type):
+                    key = (cand['name'], cand['party'], cand['birthdate'])
+                    if key not in seen_candidates:
+                        seen_candidates.add(key)
+                        
+                        # ID 생성 및 이미지 저장
+                        unique_id = f"m_{len(unique_candidates) + 1}"
+                        cand['id'] = unique_id
+                        
+                        if cand.get("imageData"):
+                            image_filename = f"{unique_id}_{cand['name']}.png".replace('/', '_')
+                            image_path = os.path.join(base_path, "assets", "images", "candidates", image_filename)
+                            os.makedirs(os.path.dirname(image_path), exist_ok=True)
+                            with open(image_path, "wb") as img_file:
+                                img_file.write(cand["imageData"])
+                            cand["imageUrl"] = f"assets/images/candidates/{image_filename}"
+                        else:
+                            cand["imageUrl"] = ""
+                        
+                        if "imageData" in cand: del cand["imageData"]
+                        unique_candidates.append(cand)
+            print(f"  - {pdf_file}: Done")
         except Exception as e:
-            print(f"파일 처리 실패 {pdf_file}: {e}")
+            print(f"  - Failed {pdf_file}: {e}")
 
-    # 중복 제거
-    unique_candidates = []
-    seen = set()
-    for candidate in all_candidates:
-        identifier = (candidate['name'], candidate['party'], candidate['birthdate'])
-        if identifier not in seen:
-            unique_candidates.append(candidate)
-            seen.add(identifier)
-
-    # ID 할당 및 imageUrl 추가
-    for i, candidate in enumerate(unique_candidates):
-        # 파일명 기반으로 ID를 생성하도록 수정 (예시)
-        # 실제 ID 정책에 따라 이 부분을 수정해야 합니다.
-        candidate['id'] = str(i + 1) # 임시 ID
-        
-        image_path_in_assets = f"images/candidates/{candidate['id']}.png"
-        image_path = os.path.join(base_path, "assets", image_path_in_assets)
-        if os.path.exists(image_path):
-            candidate['imageUrl'] = image_path_in_assets
-        else:
-            image_path_in_assets_jpg = f"images/candidates/{candidate['id']}.jpg"
-            image_path_jpg = os.path.join(base_path, "assets", image_path_in_assets_jpg)
-            if os.path.exists(image_path_jpg):
-                candidate['imageUrl'] = image_path_in_assets_jpg
-            else:
-                candidate['imageUrl'] = ""
-
-    # JSON 파일로 저장
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(unique_candidates, f, ensure_ascii=False, indent=4)
         
-    print(f"\n성공적으로 {output_path} 파일을 생성했으며, {len(unique_candidates)}명의 후보자 정보를 저장했습니다.")
+    print(f"\nExtraction complete. Total unique candidates: {len(unique_candidates)}")
 
 if __name__ == "__main__":
     main()

@@ -1,9 +1,9 @@
+library;
 import 'package:flutter/foundation.dart';
 
 /// 2018년 제7회 전국동시지방선거 데이터 추출기
 /// 
 /// 실제 선거 결과 데이터를 파싱하여 정당별 지지율을 추출합니다.
-library;
 
 class Election2018DataExtractor {
   /// 2018년 지방선거 결과 텍스트에서 정당별 지지율 추출

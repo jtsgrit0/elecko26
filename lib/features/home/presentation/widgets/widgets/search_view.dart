@@ -242,7 +242,7 @@ class _SearchViewState extends State<SearchView> {
           return m.name.toLowerCase().contains(query) ||
               m.party.toLowerCase().contains(query) ||
               m.district.toLowerCase().contains(query) ||
-              m.bio.toLowerCase().contains(query) ||
+              m.description.toLowerCase().contains(query) ||
               m.policies.any((p) => p.toLowerCase().contains(query)) ||
               m.achievementsList.any((a) => a.toLowerCase().contains(query));
         }).toList();

@@ -466,11 +466,10 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
         .toList();
 
     // 통계 계산 - 실제 업데이트 시간 표시
-    final latestAnalysis = filteredMembers.isNotEmpty
-        ? filteredMembers
-            .map((m) => m.lastAnalysisDate)
-            .reduce((a, b) => a.isAfter(b) ? a : b)
-        : null;
+    final latestAnalysis = filteredMembers
+        .map((m) => m.lastAnalysisDate)
+        .whereType<DateTime>()
+        .fold<DateTime?>(null, (prev, curr) => (prev == null || curr.isAfter(prev)) ? curr : prev);
     
     // 실시간 업데이트 시간 표시 (형식: YYYY-MM-DD HH:MM)
     final updateValue = latestAnalysis != null 

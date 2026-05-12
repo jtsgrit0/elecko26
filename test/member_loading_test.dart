@@ -16,6 +16,7 @@ class MockMemberRepository implements MemberRepository {
         name: 'Test Member $index',
         party: 'Test Party',
         district: 'Test District',
+        region: 'Test Region',
       ),
     );
   }

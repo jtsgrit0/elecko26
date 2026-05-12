@@ -1,28 +1,17 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:elecko26_new/app/injection_container.dart' as di;
 import 'package:elecko26_new/app/app.dart';
-import 'package:elecko26_new/firebase_options.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:elecko26_new/app/injection_container.dart' as di;
+import 'package:elecko26_new/domain/usecases/member_usecases.dart';
 
-Future<void> main() async {
-  debugPrint('[Main] main 함수 시작');
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  debugPrint('[Main] WidgetsFlutterBinding.ensureInitialized() 완료');
-
-  // 앱 전체 초기화 안정성 확보
-  try {
-    debugPrint('[Main] DI 초기화 시작');
-    await di.initMinimal().timeout(const Duration(milliseconds: 15000));
-    debugPrint('[Main] DI 초기화 완료');
-  } catch (e) {
-    debugPrint('[Main] Initialization Delay or Error (Proceeding anyway): $e');
-  }
-
-  debugPrint('[Main] runApp 호출 직전');
-  runApp(const MyApp(members: []));
-  debugPrint('[Main] runApp 호출 완료 (이 메시지는 보이지 않을 수 있음)');
+  
+  // Initialize dependency injection
+  await di.initMinimal();
+  
+  // Load initial members
+  final getMembersUseCase = di.sl<GetMembersUseCase>();
+  final members = await getMembersUseCase.call();
+  
+  runApp(MyApp(members: members));
 }

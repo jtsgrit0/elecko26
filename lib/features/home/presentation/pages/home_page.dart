@@ -404,6 +404,8 @@ class _HomePageState extends State<HomePage> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              const SizedBox(width: 6),
+              _buildDDayBadge(),
               const SizedBox(width: 8),
               Padding(
                 padding: const EdgeInsets.only(bottom: 2.0),
@@ -486,6 +488,42 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDDayBadge() {
+    final electionDate = DateTime(2026, 6, 3);
+    final now = DateTime.now();
+    final difference = electionDate.difference(DateTime(now.year, now.month, now.day)).inDays;
+    
+    String dDayText;
+    Color badgeColor;
+    
+    if (difference == 0) {
+      dDayText = 'D-Day';
+      badgeColor = AppColors.error;
+    } else if (difference > 0) {
+      dDayText = 'D-$difference';
+      badgeColor = AppColors.primary;
+    } else {
+      dDayText = 'D+${difference.abs()}';
+      badgeColor = AppColors.mediumGray;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: badgeColor,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        dDayText,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

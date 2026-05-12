@@ -10,6 +10,7 @@ import 'package:elecko26_new/data/datasources/github_datasource.dart';
 import 'package:elecko26_new/data/datasources/historical_election_data_source.dart';
 import 'package:elecko26_new/data/repositories/historical_election_repository_impl.dart';
 import 'package:elecko26_new/domain/repositories/historical_election_repository.dart';
+import 'package:elecko26_new/features/auth/domain/entities/user.dart';
 import 'package:http/http.dart' as http;
 
 final sl = GetIt.instance;
@@ -179,6 +180,40 @@ class CliMemberRepository implements MemberRepository {
             m.district.toLowerCase().contains(q))
         .toList();
   }
+
+  @override
+  Future<void> apply2018RegionalPartyRates() async {}
+
+  @override
+  Future<void> updateMember2018Rates(String memberId) async {}
+
+  @override
+  Stream<List<Member>> watchMembers() => watchAllMembers();
+
+  @override
+  Stream<Map<String, String>> watchAllVotes() async* {
+    yield {};
+  }
+
+  @override
+  Future<void> logout() async {}
+
+  @override
+  Stream<User?> watchCurrentUser() async* {
+    yield null;
+  }
+
+  @override
+  Future<void> updateParkSugiImage() async {}
+
+  @override
+  Future<void> updateYoonDaegiImage() async {}
+
+  @override
+  Future<void> updateSeoJaeyeolImage() async {}
+
+  @override
+  Future<void> crawlNewsForAllMembers() async {}
 }
 
 /// CLI 도구 전용 초기화 로직

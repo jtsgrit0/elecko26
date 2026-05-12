@@ -280,7 +280,10 @@ class _ProfilePageState extends State<ProfilePage> {
   void _navigateToMap() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const MapScreen(),
+        builder: (context) => MapScreen(
+          selectedIndexNotifier: ValueNotifier<int>(0),
+          tabIndex: 0,
+        ),
       ),
     );
   }
