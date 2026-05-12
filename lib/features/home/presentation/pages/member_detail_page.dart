@@ -39,11 +39,16 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
   late Stream<AnalysisResult> _analysisStream;
   late AnalysisResult _initialAnalysis;
 
+  late Future<List<PartyPollData>> _pollDataFuture;
+  late Future<List<String>> _snsChannelsFuture;
+
   @override
   void initState() {
     super.initState();
     _member = widget.member;
     _initialAnalysis = _buildFallbackAnalysis(_member);
+    _pollDataFuture = _getPollDataFromJson(_member.district);
+    _snsChannelsFuture = _searchSnsChannels(_member);
     _startAnalysisStream();
   }
 
@@ -621,7 +626,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: FutureBuilder<List<PartyPollData>>(
-        future: _getPollDataFromJson(member.district),
+        future: _pollDataFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return _buildSectionContainer(
@@ -731,7 +736,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: FutureBuilder<List<String>>(
-        future: _searchSnsChannels(member),
+        future: _snsChannelsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return _buildSectionContainer(

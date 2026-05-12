@@ -35,6 +35,20 @@ class AppNetworkImage extends StatelessWidget {
 
     // 안정성을 위해 Image.network 대신 CachedNetworkImage와 유사한 패턴을 사용합니다.
     // 여기서는 errorBuilder를 강화하여 앱 크래시를 방지합니다.
+    if (imageUrl.startsWith('assets/')) {
+      return Image.asset(
+        imageUrl,
+        width: width,
+        height: height,
+        fit: fit,
+        errorBuilder: (context, error, stackTrace) {
+          print('### AppNetworkImage: 에셋 로드 실패 ###');
+          print('Path: $imageUrl');
+          return _buildErrorWidget(context, imageUrl, error);
+        },
+      );
+    }
+
     return Image.network(
       imageUrl,
       width: width,
@@ -53,11 +67,8 @@ class AppNetworkImage extends StatelessWidget {
             );
       },
       errorBuilder: (context, error, stackTrace) {
-        // 웹 환경에서 404 에러 발생 시 앱이 멈추는 것을 방지하기 위해
-        // 항상 에러 위젯을 반환하도록 합니다.
         print('### AppNetworkImage: 이미지 로드 실패 ###');
         print('URL: $imageUrl');
-        print('Error: $error');
         return _buildErrorWidget(context, imageUrl, error);
       },
     );

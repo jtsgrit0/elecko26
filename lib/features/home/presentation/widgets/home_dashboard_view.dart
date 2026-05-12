@@ -66,6 +66,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
   void initState() {
     super.initState();
     _updateFilteredAndSortedMembers();
+    _updateStats();
   }
 
   @override
@@ -75,6 +76,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
         widget.cachedMembers != oldWidget.cachedMembers ||
         widget.cachedAnalysisResults != oldWidget.cachedAnalysisResults) {
       _updateFilteredAndSortedMembers();
+      _updateStats();
     }
   }
 
@@ -121,26 +123,36 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
     return _filteredAndSortedMembers.sublist(3, end);
   }
 
-  String get _updateValue {
-    if (widget.cachedMembers.isEmpty) return '-';
+  String _updateValueCache = '-';
+  int _nesdcCountCache = 0;
+
+  void _updateStats() {
+    if (widget.cachedMembers.isEmpty) {
+      _updateValueCache = '-';
+      _nesdcCountCache = 0;
+      return;
+    }
+
     DateTime? latest;
+    int totalPolls = 0;
+    
     for (final member in widget.cachedMembers) {
+      // 최신 업데이트 시간 계산
       if (member.lastAnalysisDate != null) {
         if (latest == null || member.lastAnalysisDate!.isAfter(latest)) {
           latest = member.lastAnalysisDate;
         }
       }
+      // 여론조사 총계 계산
+      totalPolls += member.pressReports.length;
     }
-    if (latest == null) return '-';
-    return '${latest.month}/${latest.day} ${latest.hour}:${latest.minute}';
-  }
 
-  int get _nesdcCount {
-    int total = 0;
-    for (var m in widget.cachedMembers) {
-      total += m.pressReports.length;
+    _nesdcCountCache = totalPolls;
+    if (latest == null) {
+      _updateValueCache = '-';
+    } else {
+      _updateValueCache = '${latest.month}/${latest.day} ${latest.hour.toString().padLeft(2, '0')}:${latest.minute.toString().padLeft(2, '0')}';
     }
-    return total;
   }
 
   void _showRegionSelectionModal() {
@@ -257,7 +269,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
         children: [
           if (_filteredAndSortedMembers.isNotEmpty) ...[
             _buildStatisticsSection(
-                _filteredAndSortedMembers.length, _nesdcCount, _updateValue),
+                _filteredAndSortedMembers.length, _nesdcCountCache, _updateValueCache),
             const SizedBox(height: 24),
             _buildTop3Section(),
             _buildMemberList(),
@@ -382,20 +394,34 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
                           child: SizedBox(
                             width: 48,
                             height: 48,
-                            child: PdfImageRenderer.fromUrl(
-                              member.imageUrl,
-                              placeholder: (context) =>
-                                  Container(color: AppColors.lightGrey),
-                              errorWidget: (context, error, stackTrace) =>
-                                  Center(
-                                child: Text(
-                                  member.name.substring(0, 1),
-                                  style: AppTextStyles.headline4.copyWith(
-                                    color: AppColors.mediumGray,
+                            child: member.imageUrl.startsWith('assets/')
+                                ? Image.asset(
+                                    member.imageUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) =>
+                                        Center(
+                                      child: Text(
+                                        member.name.substring(0, 1),
+                                        style: AppTextStyles.headline4.copyWith(
+                                          color: AppColors.mediumGray,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : PdfImageRenderer.fromUrl(
+                                    member.imageUrl,
+                                    placeholder: (context) =>
+                                        Container(color: AppColors.lightGrey),
+                                    errorWidget: (context, error, stackTrace) =>
+                                        Center(
+                                      child: Text(
+                                        member.name.substring(0, 1),
+                                        style: AppTextStyles.headline4.copyWith(
+                                          color: AppColors.mediumGray,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
-                            ),
                           ),
                         ),
                         const SizedBox(width: 16),

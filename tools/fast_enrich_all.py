@@ -55,7 +55,7 @@ def fast_enrich():
             enriched['description'] = f"{m.get('district', '지역')}의 발전을 위해 헌신하는 {m.get('name', '의원')}입니다."
             
         if not enriched.get('electionPossibility'):
-            enriched['electionPossibility'] = round(random.uniform(15.0, 55.0), 1)
+            enriched['electionPossibility'] = round(random.uniform(0.15, 0.55), 3)
             
         # Analysis Date (spread over last 30 days)
         analysis_date = now - timedelta(days=random.randint(0, 30), hours=random.randint(0, 23))
@@ -104,7 +104,7 @@ def fast_enrich():
                     "id": str(uuid.uuid4()),
                     "pollAgency": f"대한민국 리서치 {j+1}",
                     "surveyDate": date.strftime('%Y-%m-%d'),
-                    "supportRate": round(base_support + random.uniform(-5, 5), 1),
+                    "supportRate": round(base_support + random.uniform(-0.05, 0.05), 3),
                     "partyName": m.get('party', '무소속'),
                     "sampleSize": random.choice([500, 1000, 1500]),
                     "marginOfError": 3.1,

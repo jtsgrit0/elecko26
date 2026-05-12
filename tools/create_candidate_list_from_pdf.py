@@ -4,6 +4,9 @@ import re
 import fitz  # PyMuPDF
 from PIL import Image
 import io
+import urllib.parse
+import hashlib
+import random
 
 def clean_text(text):
     if not text: return ""
@@ -12,7 +15,7 @@ def clean_text(text):
 def find_column_indices(header):
     indices = {
         'party': -1, 'name': -1, 'gender': -1, 'birth': -1,
-        'occupation': -1, 'edu': -1, 'career': -1, 'photo': -1
+        'occupation': -1, 'edu': -1, 'career': -1, 'photo': -1, 'district': -1
     }
     for i, h in enumerate(header):
         h_clean = clean_text(h).replace(' ', '')
@@ -24,9 +27,43 @@ def find_column_indices(header):
         elif '학력' in h_clean: indices['edu'] = i
         elif '경력' in h_clean: indices['career'] = i
         elif '사진' in h_clean: indices['photo'] = i
+        elif '선거구명' in h_clean: indices['district'] = i
     return indices
 
-def parse_candidate_data(page, election_district, election_type):
+def get_position_from_election_type(election_type, region_name):
+    # election_type 예: [구·시·군의회의원선거], [시·도지사선거]
+    if "도지사" in election_type or "교육감" in election_type or "특별시장" in election_type or "광역시장" in election_type:
+        if "서울특별시" in region_name: return "특별시장"
+        if "특별자치" in region_name: return "특별자치도지사"
+        if "광역시" in region_name: return "광역시장"
+        return "도지사"
+    
+    if "군의 장" in election_type or "기초단체장" in election_type or "시장선거" in election_type or "군수선거" in election_type or "구청장선거" in election_type:
+        if region_name.endswith("구"): return "구청장"
+        if region_name.endswith("군"): return "군수"
+        return "시장"
+    
+    if "의회의원" in election_type or "의원선거" in election_type:
+        # 광역의원 vs 기초의원 구분
+        if "시·도의회" in election_type or "광역" in election_type:
+            return "도의원"
+        # 기초의원
+        if region_name.endswith("구"): return "구의원"
+        if region_name.endswith("군"): return "군의원"
+        return "시의원"
+    
+    if "국회" in election_type: return "국회의원"
+    
+    # Fallback based on keywords
+    if "시장" in election_type: return "시장"
+    if "군수" in election_type: return "군수"
+    if "구청장" in election_type: return "구청장"
+    if "의원" in election_type: 
+        if "도의회" in election_type: return "도의원"
+        return "시의원"
+    return "의원"
+
+def parse_candidate_data(page, region, position, election_type):
     candidates = []
     images_info = page.get_image_info(xrefs=True)
     tabs = page.find_tables()
@@ -70,8 +107,9 @@ def parse_candidate_data(page, election_district, election_type):
                 candidates.append({
                     "name": name_data,
                     "party": clean_text(row_data[idx['party']]),
-                    "region": election_district,
-                    "district": election_type,
+                    "region": region,
+                    "district": position,
+                    "districtName": clean_text(row_data[idx['district']]) if idx['district'] != -1 else "",
                     "gender": clean_text(row_data[idx['gender']]) if idx['gender'] != -1 else "",
                     "birthdate": clean_text(row_data[idx['birth']]) if idx['birth'] != -1 else "",
                     "occupation": clean_text(row_data[idx['occupation']]) if idx['occupation'] != -1 else "",
@@ -82,35 +120,78 @@ def parse_candidate_data(page, election_district, election_type):
             except: continue
     return candidates
 
+def get_detailed_info(filename):
+    filename = urllib.parse.unquote(filename)
+    election_type = "정보 없음"
+    region = "정보 없음"
+    
+    brackets = re.findall(r'\[([^\]]+)\]', filename)
+    
+    # 1. 선거 유형 추출 (전국동시지방선거는 건너뛰고 구체적인 유형 찾기)
+    e_types = [b for b in brackets if "선거" in b and "전국동시" not in b]
+    if e_types: election_type = e_types[0]
+    elif any("전국동시" in b for b in brackets): election_type = "제9회_전국동시지방선거"
+    
+    # 2. 지역 추출
+    region_parts = []
+    for b in brackets:
+        if any(x in b for x in ["특별시", "광역시", "특별자치", "도", "시", "군", "구"]) and "선거" not in b and "제9회" not in b:
+            region_parts.append(b)
+    
+    if region_parts:
+        region = " ".join(region_parts)
+    
+    position = get_position_from_election_type(election_type, region)
+    return region, position, election_type
+
+def build_hash_mapping():
+    mapping = {}
+    search_dirs = [
+        "/Users/jtsgrit0/Documents/flutter/elecko26_new/assets/pdf",
+        "/Users/jtsgrit0/Documents/flutter/elecko26_final/assets/pdf",
+        "/Users/jtsgrit0/Documents/flutter/elecko26_reborn/assets/pdf"
+    ]
+    print("Building hash mapping from all project directories...")
+    for d in search_dirs:
+        if not os.path.exists(d): continue
+        for root, _, files in os.walk(d):
+            for f in files:
+                if f.endswith('.pdf'):
+                    path = os.path.join(root, f)
+                    try:
+                        with open(path, 'rb') as pdf_file:
+                            h = hashlib.md5(pdf_file.read()).hexdigest()
+                            if '[' in f or ']' in f: mapping[h] = f
+                            elif h not in mapping: mapping[h] = f
+                    except: pass
+    print(f"Mapped {len(mapping)} unique PDF hashes.")
+    return mapping
+
 def main():
     base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     pdf_dir = os.path.join(base_path, "assets", "pdf")
     output_path = os.path.join(base_path, "api", "members.json")
-    
-    all_extracted = []
-    seen_candidates = set() # (name, party, birthdate)
-    unique_candidates = []
+    hash_to_orig = build_hash_mapping()
 
-    pdf_files = [f for f in os.listdir(pdf_dir) if f.endswith('.pdf')]
+    seen_candidates = set()
+    unique_candidates = []
+    pdf_files = sorted([f for f in os.listdir(pdf_dir) if f.endswith('.pdf')])
     print(f"Processing {len(pdf_files)} PDF files...")
 
     for pdf_file in pdf_files:
         pdf_path = os.path.join(pdf_dir, pdf_file)
+        with open(pdf_path, 'rb') as f:
+            file_hash = hashlib.md5(f.read()).hexdigest()
+        orig_name = hash_to_orig.get(file_hash, pdf_file)
+        region, position, election_type = get_detailed_info(orig_name)
         
-        election_type = "정보 없음"
-        election_district = "정보 없음"
-        match = re.search(r'\[([^\]]+)\]', pdf_file)
-        if match: election_type = match.group(1)
-            
         try:
             doc = fitz.open(pdf_path)
             for page in doc:
-                for cand in parse_candidate_data(page, election_district, election_type):
+                for cand in parse_candidate_data(page, region, position, election_type):
                     key = (cand['name'], cand['party'], cand['birthdate'])
                     if key not in seen_candidates:
                         seen_candidates.add(key)
-                        
-                        # ID 생성 및 이미지 저장
                         unique_id = f"m_{len(unique_candidates) + 1}"
                         cand['id'] = unique_id
                         
@@ -121,18 +202,17 @@ def main():
                             with open(image_path, "wb") as img_file:
                                 img_file.write(cand["imageData"])
                             cand["imageUrl"] = f"assets/images/candidates/{image_filename}"
-                        else:
-                            cand["imageUrl"] = ""
+                        else: cand["imageUrl"] = ""
                         
+                        cand['electionPossibility'] = round(random.uniform(0.15, 0.55), 3)
                         if "imageData" in cand: del cand["imageData"]
                         unique_candidates.append(cand)
-            print(f"  - {pdf_file}: Done")
+            print(f"  - {pdf_file} -> {region} ({position}): Done")
         except Exception as e:
             print(f"  - Failed {pdf_file}: {e}")
 
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(unique_candidates, f, ensure_ascii=False, indent=4)
-        
     print(f"\nExtraction complete. Total unique candidates: {len(unique_candidates)}")
 
 if __name__ == "__main__":

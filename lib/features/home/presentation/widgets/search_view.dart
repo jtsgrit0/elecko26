@@ -272,30 +272,37 @@ class _SearchViewState extends State<SearchView>
     );
   }
 
+  // 검색 인덱스 캐시 (memberId -> lowercase search string)
+  final Map<String, String> _searchIndex = {};
+
   void _applyFilters() {
+    final query = _searchQuery.toLowerCase();
+    
     final filtered = _allMembers.where((m) {
       if (!districtMatchesRegion(m.district, widget.userRegion)) return false;
       if (!_matchesSearchCategory(m)) return false;
       if (!_matchesSearchOffice(m)) return false;
 
-      if (_searchQuery.isEmpty) return true;
-      final query = _searchQuery.toLowerCase();
-      return m.name.toLowerCase().contains(query) ||
-          m.party.toLowerCase().contains(query) ||
-          m.district.toLowerCase().contains(query);
+      if (query.isEmpty) return true;
+      
+      // 검색 인덱스 생성 및 활용
+      final searchStr = _searchIndex.putIfAbsent(m.id, () {
+        return '${m.name} ${m.party} ${m.region} ${m.district} ${m.districtName}'.toLowerCase();
+      });
+      
+      return searchStr.contains(query);
     }).toList();
 
     // 상위 50명 이미지 선행 로딩
     _precacheMemberImages(context, filtered.take(50).toList());
 
-    // 당선 가능성 높은 순으로 정렬
-    filtered.sort((a, b) {
-      final possibilityA = widget.analysisResults[a.id]?.electionPossibility ??
-          a.electionPossibility;
-      final possibilityB = widget.analysisResults[b.id]?.electionPossibility ??
-          b.electionPossibility;
-      return possibilityB.compareTo(possibilityA);
-    });
+    // 당선 가능성 캐시를 통한 정렬 최적화
+    final possibilities = <String, double>{};
+    for (var m in filtered) {
+      possibilities[m.id] = widget.analysisResults[m.id]?.electionPossibility ?? m.electionPossibility;
+    }
+
+    filtered.sort((a, b) => possibilities[b.id]!.compareTo(possibilities[a.id]!));
 
     _filteredMembers = filtered;
   }

@@ -22,10 +22,9 @@ class MemberRepositoryImpl implements MemberRepository {
     try {
       final String response =
           await rootBundle.loadString('api/members_enriched.json');
-      final data = await json.decode(response) as List;
-      _members = data
-          .map((json) => MemberModel.fromJson(json as Map<String, dynamic>))
-          .toList();
+      
+      // 백그라운드에서 JSON 파싱 및 객체 변환 수행
+      _members = await compute(_parseMembers, response);
 
       // 초기 데이터 로드 후 스트림에 추가
       _membersController.add(_members);
@@ -34,6 +33,14 @@ class MemberRepositoryImpl implements MemberRepository {
       _initializer!.completeError(e);
       rethrow;
     }
+  }
+
+  // 최상위 함수 또는 정적 함수여야 compute에서 사용 가능
+  static List<Member> _parseMembers(String response) {
+    final data = json.decode(response) as List;
+    return data
+        .map((json) => MemberModel.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   @override
