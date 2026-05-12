@@ -279,7 +279,23 @@ class _SearchViewState extends State<SearchView>
     final query = _searchQuery.toLowerCase();
     
     final filtered = _allMembers.where((m) {
-      if (!districtMatchesRegion(m.district, widget.userRegion)) return false;
+      // 지역 필터: m.region을 사용 (m.district는 직위명이므로 사용 불가)
+      if (widget.userRegion != '전국') {
+        final region = m.region;
+        if (region.isEmpty || region == '정보 없음') {
+          // 지역 정보 없는 후보는 '전국' 선택 시에만 표시
+          return false;
+        } else {
+          // 선택된 지역과 매칭되는지 확인
+          final normalizedRegion = region.replaceAll(' ', '');
+          final normalizedSelected = widget.userRegion.replaceAll(' ', '');
+          if (!normalizedRegion.contains(normalizedSelected) &&
+              !normalizedSelected.contains(normalizedRegion)) {
+            return false;
+          }
+        }
+      }
+      
       if (!_matchesSearchCategory(m)) return false;
       if (!_matchesSearchOffice(m)) return false;
 
@@ -293,13 +309,17 @@ class _SearchViewState extends State<SearchView>
       return searchStr.contains(query);
     }).toList();
 
-    // 상위 50명 이미지 선행 로딩
-    _precacheMemberImages(context, filtered.take(50).toList());
+    // 이미지 선행 로딩 (context가 유효한 경우)
+    if (context.mounted) {
+      _precacheMemberImages(context, filtered.take(50).toList());
+    }
 
     // 당선 가능성 캐시를 통한 정렬 최적화
     final possibilities = <String, double>{};
     for (var m in filtered) {
-      possibilities[m.id] = widget.analysisResults[m.id]?.electionPossibility ?? m.electionPossibility;
+      final raw = widget.analysisResults[m.id]?.electionPossibility ?? m.electionPossibility;
+      // 이미 % 단위(>1)인 경우 0~1 범위로 변환
+      possibilities[m.id] = raw > 1.0 ? raw / 100.0 : raw;
     }
 
     filtered.sort((a, b) => possibilities[b.id]!.compareTo(possibilities[a.id]!));
@@ -375,10 +395,12 @@ class _SearchViewState extends State<SearchView>
             district.endsWith('군수') ||
             district.endsWith('구청장');
       case '의회':
+        // '의원'으로만 저장된 후보도 의회 카테고리에 포함
         return district.endsWith('도의원') ||
             district.endsWith('시의원') ||
             district.endsWith('구의원') ||
-            district.endsWith('군의원');
+            district.endsWith('군의원') ||
+            district == '의원';
       default:
         return true;
     }
@@ -403,6 +425,9 @@ class _SearchViewState extends State<SearchView>
         return district.endsWith('시장') &&
             !district.contains('광역시장') &&
             !district.contains('특별시장');
+      case '시의원':
+        // 일반 '의원'도 시의원 필터에 포함
+        return district.endsWith('시의원') || district == '의원';
       default:
         return district.endsWith(_searchOffice);
     }

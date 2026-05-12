@@ -4,24 +4,28 @@ import 'package:elecko26_new/core/utils/image_util.dart';
 import 'package:elecko26_new/core/utils/party_util.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
-import 'package:elecko26_new/domain/usecases/calculate_election_possibility_usecase.dart';
 import 'package:elecko26_new/domain/usecases/member_usecases.dart';
 import 'package:elecko26_new/app/injection_container.dart';
+
+import 'package:elecko26_new/domain/entities/analysis_result.dart';
 
 class MemberCard extends StatelessWidget {
   final Member member;
   final VoidCallback? onTap;
+  final int? rank;
+  final AnalysisResult? analysisResult;
 
-  const MemberCard({Key? key, required this.member, this.onTap})
+  const MemberCard({Key? key, required this.member, this.onTap, this.rank, this.analysisResult})
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<double>(
-      future: _getElectionPossibility(),
-      builder: (context, snapshot) {
-        final possibility = snapshot.data ?? member.electionPossibility;
-        return GestureDetector(
+    // 당선 가능성: analysisResult 우선, 없으면 member.electionPossibility
+    final raw = analysisResult?.electionPossibility ?? member.electionPossibility;
+    // 방어 코드: 이미 % 단위(>1.0)인 경우 정규화
+    final possibility = raw > 1.0 ? raw / 100.0 : raw;
+
+    return GestureDetector(
           onTap: onTap,
           child: Container(
             padding: const EdgeInsets.all(12),
@@ -212,19 +216,6 @@ class MemberCard extends StatelessWidget {
             ),
           ),
         );
-      },
-    );
-  }
-
-  Future<double> _getElectionPossibility() async {
-    try {
-      final result = await sl<CalculateElectionPossibilityUseCase>()
-          .call(member.id)
-          .timeout(const Duration(seconds: 3));
-      return result.electionPossibility;
-    } catch (e) {
-      return member.electionPossibility;
-    }
   }
 
   String _formatRelativeTime(DateTime date) {
