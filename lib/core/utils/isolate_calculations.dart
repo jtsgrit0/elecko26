@@ -75,18 +75,21 @@ AnalysisResult performMemberCalculation({
     electionPossibility: electionPossibility,
     previousPossibility: electionPossibility - 0.02,
     possibilityChange: 0.02,
-    achievementScore: scores['achievement']!,
-    activityScore: scores['activity']!,
-    policyScore: scores['policy']!,
-    publicImageScore: scores['publicImage']!,
-    socialContributionScore: scores['socialContribution']!,
-    pollScore: scores['poll']!,
-    historicalScore: scores['historical']!,
-    improvements: analysis['improvements']!,
-    strengths: analysis['strengths']!,
-    weaknesses: analysis['weaknesses']!,
+    achievementScore: (scores['achievement'] as num).toDouble(),
+    activityScore: (scores['activity'] as num).toDouble(),
+    policyScore: (scores['policy'] as num).toDouble(),
+    publicImageScore: (scores['publicImage'] as num).toDouble(),
+    socialContributionScore: (scores['socialContribution'] as num).toDouble(),
+    pollScore: (scores['poll'] as num).toDouble(),
+    historicalScore: (scores['historical'] as num).toDouble(),
+    improvements: List<String>.from(analysis['improvements'] ?? []),
+    strengths: List<String>.from(analysis['strengths'] ?? []),
+    weaknesses: List<String>.from(analysis['weaknesses'] ?? []),
     analysisReport: analysis['report']!,
     dailyTrends: dailyTrends,
+    viralIndex: (scores['viralIndex'] as num?)?.toDouble() ?? 0.3,
+    orgStrength: (scores['orgStrength'] as num?)?.toDouble() ?? 0.3,
+    expertiseScore: (scores['expertise'] as num?)?.toDouble() ?? 0.3,
     snsAnalysis: _calculateSnsAnalysis(member),
   );
 }
@@ -97,7 +100,7 @@ AnalysisResult performMemberCalculation({
 /// C) 상세 분석 데이터
 Map<String, dynamic> _performDetailedAnalysis(
   Member member,
-  Map<String, double> scores, [
+  Map<String, dynamic> scores, [
   String? historicalContext,
 ]) {
   final strengths = <String>[];
@@ -164,16 +167,15 @@ Map<String, dynamic> _performDetailedAnalysis(
 
 1. 개요
 분석일: ${DateTime.now().toString().split(' ')[0]}
-현재 당선 가능성: ${(scores['overall']! * 100).toStringAsFixed(1)}%
+현재 당선 가능성: ${((scores['overall'] as num).toDouble() * 100).toStringAsFixed(1)}% (2018 비교 모델 적용)
 
-2. 점수 분석
-- 성과지수: ${(scores['achievement']! * 100).toStringAsFixed(1)}% (10~12%)
-- 활동도: ${(scores['activity']! * 100).toStringAsFixed(1)}% (10~12%)
-- 정책도: ${(scores['policy']! * 100).toStringAsFixed(1)}% (10~12%)
-- 언론도: ${(scores['publicImage']! * 100).toStringAsFixed(1)}% (10~12%)
-- 사회공헌: ${(scores['socialContribution']! * 100).toStringAsFixed(1)}% (10~12% - 신설)
-- 여론조사 지지율: ${scores['poll']! < 0 ? '미반영 (지지율 미공개)' : '${(scores['poll']! * 100).toStringAsFixed(1)}% (30% - 가중치)'}
-- 역대 선거 지역 기반: $historicalPct% (${scores['poll']! < 0 ? '40% - 미반영분 재분배' : '20% - 가중치'})
+2. 점수 분석 (2026 전략 가중치 반영)
+- 정당 지지율(현재+2018): ${((scores['poll'] as num).toDouble() * 100).toStringAsFixed(1)}% (가중치 60%)
+- 지역별 보정 계수: ${((scores['historical'] as num).toDouble() * 100).toStringAsFixed(1)}% (가중치 20%)
+- 후보 경쟁력: ${((scores['achievement'] as num).toDouble() * 100).toStringAsFixed(1)}% (가중치 20%)
+- 세부 성과도: ${((scores['achievement'] as num).toDouble() * 100).toStringAsFixed(1)}%
+- 사회공헌도: ${((scores['socialContribution'] as num).toDouble() * 100).toStringAsFixed(1)}%
+- 언론 평판: ${((scores['publicImage'] as num).toDouble() * 100).toStringAsFixed(1)}%
 ${scores['poll']! < 0 ? '\n※ 여론조사 미반영에 따라 지역 성향 및 실적 중심의 예측 모델로 보정되었습니다.\n' : ''}
 ${_generateSocialSummary(member)}
 

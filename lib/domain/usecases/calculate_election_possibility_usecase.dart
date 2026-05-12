@@ -243,15 +243,15 @@ class CalculateElectionPossibilityUseCase {
 
 1. 개요
 분석일: ${DateTime.now().toString().split(' ')[0]}
-현재 당선 가능성: ${(scores['overall'] as double * 100).toStringAsFixed(1)}% (2018 비교 모델 적용)
+현재 당선 가능성: ${((scores['overall'] as double) * 100).toStringAsFixed(1)}% (2018 비교 모델 적용)
 
 2. 점수 분석 (2026 전략 가중치 반영)
-- 정당 지지율(현재+2018): ${(scores['poll'] as double * 100).toStringAsFixed(1)}% (가중치 60%)
-- 지역별 보정 계수: ${(scores['historical'] as double * 100).toStringAsFixed(1)}% (가중치 20%)
-- 후보 경쟁력: ${(scores['achievement'] as double * 100).toStringAsFixed(1)}% (가중치 20%)
-- 세부 성과도: ${(scores['achievement'] as double * 100).toStringAsFixed(1)}%
-- 사회공헌도: ${(scores['socialContribution'] as double * 100).toStringAsFixed(1)}%
-- 언론 평판: ${(scores['publicImage'] as double * 100).toStringAsFixed(1)}%
+- 정당 지지율(현재+2018): ${((scores['poll'] as double) * 100).toStringAsFixed(1)}% (가중치 60%)
+- 지역별 보정 계수: ${((scores['historical'] as double) * 100).toStringAsFixed(1)}% (가중치 20%)
+- 후보 경쟁력: ${((scores['achievement'] as double) * 100).toStringAsFixed(1)}% (가중치 20%)
+- 세부 성과도: ${((scores['achievement'] as double) * 100).toStringAsFixed(1)}%
+- 사회공헌도: ${((scores['socialContribution'] as double) * 100).toStringAsFixed(1)}%
+- 언론 평판: ${((scores['publicImage'] as double) * 100).toStringAsFixed(1)}%
 ${_generateSocialSummary(member)}
 
 3. 여론조사 현황
