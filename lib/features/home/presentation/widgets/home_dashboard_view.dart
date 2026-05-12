@@ -135,7 +135,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
 
     DateTime? latest;
     int totalPolls = 0;
-    
+
     for (final member in widget.cachedMembers) {
       // 최신 업데이트 시간 계산
       if (member.lastAnalysisDate != null) {
@@ -151,7 +151,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
     if (latest == null) {
       _updateValueCache = '-';
     } else {
-      _updateValueCache = '${latest.month}/${latest.day} ${latest.hour.toString().padLeft(2, '0')}:${latest.minute.toString().padLeft(2, '0')}';
+      _updateValueCache =
+          '${latest.month}/${latest.day} ${latest.hour.toString().padLeft(2, '0')}:${latest.minute.toString().padLeft(2, '0')}';
     }
   }
 
@@ -268,8 +269,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (_filteredAndSortedMembers.isNotEmpty) ...[
-            _buildStatisticsSection(
-                _filteredAndSortedMembers.length, _nesdcCountCache, _updateValueCache),
+            _buildStatisticsSection(_filteredAndSortedMembers.length,
+                _nesdcCountCache, _updateValueCache),
             const SizedBox(height: 24),
             _buildTop3Section(),
             _buildMemberList(),
@@ -398,8 +399,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
                                 ? Image.asset(
                                     member.imageUrl,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) =>
-                                        Center(
+                                    errorBuilder:
+                                        (context, error, stackTrace) => Center(
                                       child: Text(
                                         member.name.substring(0, 1),
                                         style: AppTextStyles.headline4.copyWith(
