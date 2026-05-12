@@ -57,6 +57,9 @@ class AnalysisResultModel extends AnalysisResult {
     required super.weaknesses,
     required super.analysisReport,
     required super.dailyTrends,
+    required super.viralIndex,
+    required super.orgStrength,
+    required super.expertiseScore,
     super.snsAnalysis,
   });
 
@@ -79,6 +82,9 @@ class AnalysisResultModel extends AnalysisResult {
       strengths: List<String>.from(json['strengths'] as List),
       weaknesses: List<String>.from(json['weaknesses'] as List),
       analysisReport: json['analysisReport'] as String,
+      viralIndex: (json['viralIndex'] as num?)?.toDouble() ?? 0.3,
+      orgStrength: (json['orgStrength'] as num?)?.toDouble() ?? 0.3,
+      expertiseScore: (json['expertiseScore'] as num?)?.toDouble() ?? 0.3,
       dailyTrends: (json['dailyTrends'] as List)
           .map((e) => DailyPossibilityModel.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -104,6 +110,9 @@ class AnalysisResultModel extends AnalysisResult {
       'strengths': strengths,
       'weaknesses': weaknesses,
       'analysisReport': analysisReport,
+      'viralIndex': viralIndex,
+      'orgStrength': orgStrength,
+      'expertiseScore': expertiseScore,
       'dailyTrends': dailyTrends
           .map((e) => (e as DailyPossibilityModel).toJson())
           .toList(),
