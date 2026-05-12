@@ -47,7 +47,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
     super.initState();
     _member = widget.member;
     _initialAnalysis = _buildFallbackAnalysis(_member);
-    _pollDataFuture = _getPollDataFromJson(_member.district);
+    _pollDataFuture = _getPollDataFromJson(_member);
     _snsChannelsFuture = _searchSnsChannels(_member);
     _startAnalysisStream();
   }
@@ -147,8 +147,8 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                 _buildElectionPossibilitySection(analysis),
                 const SizedBox(height: 24),
 
-                // 2018년 지방선거 득표율 섹션
-                // 2018년도 정당 지지율은 당선 가능성 계산에 자동으로 반영됨
+                // 2018년 지방선거 비교 섹션 (데칼코마니 분석)
+                _buildHistoricalComparisonSection(member),
                 const SizedBox(height: 24),
 
                 // 상세 점수 섹션
@@ -656,21 +656,34 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
     );
   }
 
-  Future<List<PartyPollData>> _getPollDataFromJson(String district) async {
-    final districtName = district.split(' ').last;
-    final path = 'data/polls/$districtName.json';
-    try {
-      final jsonString = await rootBundle.loadString(path);
-      final jsonData = json.decode(jsonString);
-      final List<dynamic> pollList = jsonData['pollData'];
-      return pollList
-          .map((item) => PartyPollData(
-              item['partyName'], (item['supportRate'] as num).toDouble()))
-          .toList();
-    } catch (e) {
-      debugPrint('Error loading poll data from JSON for $districtName: $e');
-      return [];
+  Future<List<PartyPollData>> _getPollDataFromJson(Member member) async {
+    final raw = await _getPollDataWithHistory(member);
+    return raw.map((item) => PartyPollData(
+      item['partyName'], 
+      (item['supportRate'] as num).toDouble()
+    )).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> _getPollDataWithHistory(Member member) async {
+    final regionName = member.region.split(' ').last;
+    final districtName = member.district.split(' ').last;
+    
+    final paths = [
+      'data/polls/$regionName.json',
+      'data/polls/$districtName.json',
+    ];
+
+    for (final path in paths) {
+      try {
+        final jsonString = await rootBundle.loadString(path);
+        final jsonData = json.decode(jsonString);
+        final List<dynamic> pollList = jsonData['pollData'];
+        return pollList.map((item) => Map<String, dynamic>.from(item)).toList();
+      } catch (e) {
+        continue;
+      }
     }
+    return [];
   }
 
   Widget _buildPollDataItem(PartyPollData data) {
@@ -721,6 +734,69 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
     );
   }
 
+  Widget _buildHistoricalComparisonSection(Member member) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _getPollDataWithHistory(member),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox.shrink();
+        
+        final data = snapshot.data!;
+        return _buildSectionContainer(
+          title: '📈 2018년 동기 대비 지지율 추이',
+          child: Column(
+            children: [
+              Text(
+                '2018년 지방선거와 현재의 판세는 매우 유사합니다. 당시 득표율을 기준점(최대 기대치)으로 삼아 현재의 결집도를 분석합니다.',
+                style: AppTextStyles.labelSmall.copyWith(color: AppColors.mediumGray),
+              ),
+              const SizedBox(height: 16),
+              ...data.take(3).map((item) {
+                final current = (item['supportRate'] as num).toDouble();
+                final hist = (item['historical2018'] as num).toDouble();
+                final diff = current - hist;
+                
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(item['partyName'], style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+                          Text('${current.toStringAsFixed(1)}% (현재)', style: AppTextStyles.labelSmall),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Stack(
+                        children: [
+                          Container(height: 8, decoration: BoxDecoration(color: AppColors.lightGray, borderRadius: BorderRadius.circular(4))),
+                          FractionallySizedBox(
+                            widthFactor: (hist / 100).clamp(0, 1),
+                            child: Container(height: 8, decoration: BoxDecoration(color: AppColors.mediumGray.withOpacity(0.5), borderRadius: BorderRadius.circular(4))),
+                          ),
+                          FractionallySizedBox(
+                            widthFactor: (current / 100).clamp(0, 1),
+                            child: Container(height: 8, decoration: BoxDecoration(color: _getPartyColor(item['partyName']), borderRadius: BorderRadius.circular(4))),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '2018년 대비 ${diff >= 0 ? '+' : ''}${diff.toStringAsFixed(1)}%p',
+                        style: AppTextStyles.labelSmall.copyWith(color: diff >= 0 ? AppColors.success : AppColors.danger, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   String _formatDateTime(DateTime dateTime) {
     final local = dateTime.toLocal();
     final y = local.year.toString().padLeft(4, '0');
@@ -767,36 +843,45 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
   }
 
   Future<List<String>> _searchSnsChannels(Member member) async {
-    final query =
-        '${member.name} ${member.party} ${member.district} 인스타그램 OR 페이스북 OR 블로그';
-    debugPrint('SNS 검색어: $query');
-
-    await Future.delayed(const Duration(seconds: 1));
+    final name = Uri.encodeComponent(member.name);
+    final party = Uri.encodeComponent(member.party);
+    final region = Uri.encodeComponent(member.region);
+    
+    // Bing 검색을 통한 SNS 채널 직접 링크 제공
     return [
-      'https://www.instagram.com/${member.name}_official',
-      'https://www.facebook.com/${member.name}.profile',
-      'https://blog.naver.com/${member.name}_campaign',
-    ].where((url) => url.contains(member.name)).toList();
+      'https://www.bing.com/search?q=$name+$party+$region+인스타그램',
+      'https://www.bing.com/search?q=$name+$party+$region+페이스북',
+      'https://www.bing.com/search?q=$name+$party+$region+네이버블로그',
+    ];
   }
 
   Widget _buildSnsLink(String url) {
+    String label = 'SNS 검색 결과';
+    if (url.contains('인스타그램')) label = '인스타그램 검색';
+    else if (url.contains('페이스북')) label = '페이스북 검색';
+    else if (url.contains('네이버블로그')) label = '네이버 블로그 검색';
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: InkWell(
         onTap: () async {
           final uri = Uri.parse(url);
           if (await canLaunchUrl(uri)) {
-            await launchUrl(uri);
-          } else {
-            debugPrint('Could not launch $url');
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
           }
         },
-        child: Text(
-          url,
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.primary,
-            decoration: TextDecoration.underline,
-          ),
+        child: Row(
+          children: [
+            Icon(Icons.search, size: 16, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.primary,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -85,10 +85,12 @@ class CalculateElectionPossibilityUseCase {
       voterInterest: voterInterest,
     );
 
+    final double overallScore = scores['overall'] as double;
+
     // B) 30초 간격 추세 생성/갱신
     final dailyTrends = _getOrUpdateTrends(
       memberId: member.id,
-      baseScore: scores['overall']!,
+      baseScore: overallScore,
     );
 
     // C) 상세 분석 데이터
@@ -107,7 +109,7 @@ class CalculateElectionPossibilityUseCase {
     return AnalysisResult(
       memberId: member.id,
       analysisDate: DateTime.now(),
-      electionPossibility: scores['overall']!,
+      electionPossibility: overallScore,
       previousPossibility: dailyTrends.length > 1
           ? dailyTrends[dailyTrends.length - 2].possibility
           : recentAvg - 0.02,
@@ -115,16 +117,16 @@ class CalculateElectionPossibilityUseCase {
           (dailyTrends.length > 1
               ? dailyTrends[dailyTrends.length - 2].possibility
               : recentAvg - 0.02),
-      achievementScore: scores['achievement']!,
-      activityScore: scores['activity']!,
-      policyScore: scores['policy']!,
-      publicImageScore: scores['publicImage']!,
-      socialContributionScore: scores['socialContribution']!,
-      pollScore: scores['poll']!,
-      historicalScore: scores['historical']!,
-      improvements: analysis['improvements']!,
-      strengths: analysis['strengths']!,
-      weaknesses: analysis['weaknesses']!,
+      achievementScore: scores['achievement'] as double,
+      activityScore: scores['activity'] as double,
+      policyScore: scores['policy'] as double,
+      publicImageScore: scores['publicImage'] as double,
+      socialContributionScore: scores['socialContribution'] as double,
+      pollScore: scores['poll'] as double,
+      historicalScore: scores['historical'] as double,
+      improvements: List<String>.from(analysis['improvements'] ?? []),
+      strengths: List<String>.from(analysis['strengths'] ?? []),
+      weaknesses: List<String>.from(analysis['weaknesses'] ?? []),
       analysisReport: analysis['report']!,
       dailyTrends: dailyTrends,
       snsAnalysis: _calculateSnsAnalysis(member),
@@ -214,62 +216,19 @@ class CalculateElectionPossibilityUseCase {
   /// C) 상세 분석 데이터
   Map<String, dynamic> _performDetailedAnalysis(
     Member member,
-    Map<String, double> scores, [
+    Map<String, dynamic> scores, [
     String? historicalContext,
   ]) {
-    final strengths = <String>[];
-    final weaknesses = <String>[];
+    final strengths = List<String>.from(scores['strengths'] ?? []);
+    final weaknesses = List<String>.from(scores['weaknesses'] ?? []);
+    final improvements = List<String>.from(scores['improvements'] ?? []);
 
-    // 1. 강점 분석 (실제 데이터 기반)
-    if (member.achievementsList.isNotEmpty) {
-      // 가장 최근 성과를 강점으로 추출
+    // 기존 분석 로직 보완 (데이터가 부족할 경우 추가)
+    if (strengths.isEmpty && member.achievementsList.isNotEmpty) {
       strengths.add('성과: ${member.achievementsList.first}');
     }
-    if (scores['poll']! > 0.6) {
-      strengths.add('지지율: 상대적으로 높은 여론조사 지지율 확보');
-    }
-    // 긍정 보도 키워드 추출
-    final positivePress =
-        member.pressReports.where((r) => r.sentiment == 'positive').toList();
-    if (positivePress.isNotEmpty) {
-      strengths.add('평판: 언론의 긍정적 평가 (${positivePress.first.title})');
-    }
-
-    // 2. 약점 분석 (데이터 공백 및 부정 실적 기반)
-    if (member.policies.isEmpty) {
+    if (weaknesses.isEmpty && member.policies.isEmpty) {
       weaknesses.add('정책: 아직 구체적인 정책 공약이 발표되지 않음');
-    }
-    final negativePress =
-        member.pressReports.where((r) => r.sentiment == 'negative').toList();
-    if (negativePress.isNotEmpty) {
-      weaknesses.add('논란: 최근 부정적 이슈 감지 (${negativePress.first.title})');
-    }
-    if (scores['poll']! < 0.45) {
-      weaknesses.add('지지세: 중도층 및 지지 기반 확장 필요');
-    }
-
-    // 3. 개선 필요 사항을 약점으로 추가 (데이터 보강)
-    if (member.improvementPoints.isNotEmpty) {
-      // 개선점 중 핵심적인 내용을 약점/도전 과제로 포함
-      for (var point in member.improvementPoints.take(2)) {
-        if (!weaknesses.contains(point)) {
-          weaknesses.add(point);
-        }
-      }
-    }
-
-    // 4. 개선점 제시 (JSON의 improvementPoints 필드 적극 활용)
-    final improvements = <String>[];
-    if (member.improvementPoints.isNotEmpty) {
-      improvements.addAll(member.improvementPoints);
-    } else {
-      // 데이터가 없을 경우에만 자동 생성
-      if (scores['activity']! < 0.6) {
-        improvements.add('SNS 및 오프라인 활동 빈도 확대 필요');
-      }
-      if (scores['policy']! < 0.6) {
-        improvements.add('유권자 체감형 생활 밀착 정책 개발 필요');
-      }
     }
 
     final historicalPct = scores['historical'] != null
@@ -281,17 +240,15 @@ class CalculateElectionPossibilityUseCase {
 
 1. 개요
 분석일: ${DateTime.now().toString().split(' ')[0]}
-현재 당선 가능성: ${(scores['overall']! * 100).toStringAsFixed(1)}%
+현재 당선 가능성: ${(scores['overall'] as double * 100).toStringAsFixed(1)}% (2018 비교 모델 적용)
 
-2. 점수 분석
-- 성과지수: ${(scores['achievement']! * 100).toStringAsFixed(1)}% (10~12%)
-- 활동도: ${(scores['activity']! * 100).toStringAsFixed(1)}% (10~12%)
-- 정책도: ${(scores['policy']! * 100).toStringAsFixed(1)}% (10~12%)
-- 언론도: ${(scores['publicImage']! * 100).toStringAsFixed(1)}% (10~12%)
-- 사회공헌: ${(scores['socialContribution']! * 100).toStringAsFixed(1)}% (10~12% - 신설)
-- 여론조사 지지율: ${scores['poll']! < 0 ? '미반영 (지지율 미공개)' : '${(scores['poll']! * 100).toStringAsFixed(1)}% (30% - 가중치)'}
-- 역대 선거 지역 기반: $historicalPct% (${scores['poll']! < 0 ? '40% - 미반영분 재분배' : '20% - 가중치'})
-${scores['poll']! < 0 ? '\n※ 여론조사 미반영에 따라 지역 성향 및 실적 중심의 예측 모델로 보정되었습니다.\n' : ''}
+2. 점수 분석 (2026 전략 가중치 반영)
+- 정당 지지율(현재+2018): ${(scores['poll'] as double * 100).toStringAsFixed(1)}% (가중치 60%)
+- 지역별 보정 계수: ${(scores['historical'] as double * 100).toStringAsFixed(1)}% (가중치 20%)
+- 후보 경쟁력: ${(scores['achievement'] as double * 100).toStringAsFixed(1)}% (가중치 20%)
+- 세부 성과도: ${(scores['achievement'] as double * 100).toStringAsFixed(1)}%
+- 사회공헌도: ${(scores['socialContribution'] as double * 100).toStringAsFixed(1)}%
+- 언론 평판: ${(scores['publicImage'] as double * 100).toStringAsFixed(1)}%
 ${_generateSocialSummary(member)}
 
 3. 여론조사 현황
