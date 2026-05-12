@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/repositories/member_repository.dart';
 import 'package:elecko26_new/data/models/member_model.dart';
@@ -10,9 +11,14 @@ import 'package:elecko26_new/features/auth/domain/entities/user.dart';
 class MemberRepositoryImpl implements MemberRepository {
   List<Member> _members = [];
   Completer<void>? _initializer;
+  SharedPreferences? _prefs;
 
   // 데이터 변경을 알리기 위한 StreamController
   final _membersController = StreamController<List<Member>>.broadcast();
+
+  Future<void> _initPrefs() async {
+    _prefs ??= await SharedPreferences.getInstance();
+  }
 
   Future<void> _initialize() async {
     if (_initializer != null) {
@@ -23,7 +29,7 @@ class MemberRepositoryImpl implements MemberRepository {
     try {
       final String response =
           await rootBundle.loadString('api/members_enriched.json');
-      
+
       // 백그라운드에서 JSON 파싱 및 객체 변환 수행
       _members = await compute(_parseMembers, response);
 
@@ -149,7 +155,8 @@ class MemberRepositoryImpl implements MemberRepository {
 
   @override
   Future<String?> getSelectedRegion() async {
-    return null;
+    await _initPrefs();
+    return _prefs?.getString('selectedRegion');
   }
 
   @override
@@ -159,7 +166,10 @@ class MemberRepositoryImpl implements MemberRepository {
   Future<void> resetSettings() async {}
 
   @override
-  Future<void> saveSelectedRegion(String region) async {}
+  Future<void> saveSelectedRegion(String region) async {
+    await _initPrefs();
+    await _prefs?.setString('selectedRegion', region);
+  }
 
   @override
   Future<void> saveSupportVote(String district, String memberId,
@@ -188,7 +198,10 @@ class MemberRepositoryImpl implements MemberRepository {
   }
 
   @override
-  Future<void> logout() async {}
+  Future<void> logout() async {
+    await _initPrefs();
+    await _prefs?.remove('selectedRegion');
+  }
 
   @override
   Stream<User?> watchCurrentUser() {
