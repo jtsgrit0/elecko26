@@ -238,20 +238,28 @@ class CalculateElectionPossibilityUseCase {
         ? (scores['historical']! * 100).toStringAsFixed(1)
         : 'N/A';
 
+    final overall = ((scores['overall'] as double) * 100).toStringAsFixed(1);
+    final poll = ((scores['poll'] as double) * 100).toStringAsFixed(1);
+    final hist = ((scores['historical'] as double) * 100).toStringAsFixed(1);
+    final achievement = ((scores['achievement'] as double) * 100).toStringAsFixed(1);
+    final social = ((scores['socialContribution'] as double) * 100).toStringAsFixed(1);
+    final public = ((scores['publicImage'] as double) * 100).toStringAsFixed(1);
+
     final report = '''
 【${member.name} 의원 당선 가능성 분석 보고서】
 
 1. 개요
 분석일: ${DateTime.now().toString().split(' ')[0]}
-현재 당선 가능성: ${((scores['overall'] as double) * 100).toStringAsFixed(1)}% (2018 비교 모델 적용)
+현재 당선 가능성: $overall% (2018 비교 모델 적용)
 
 2. 점수 분석 (2026 전략 가중치 반영)
-- 정당 지지율(현재+2018): ${((scores['poll'] as double) * 100).toStringAsFixed(1)}% (가중치 60%)
-- 지역별 보정 계수: ${((scores['historical'] as double) * 100).toStringAsFixed(1)}% (가중치 20%)
-- 후보 경쟁력: ${((scores['achievement'] as double) * 100).toStringAsFixed(1)}% (가중치 20%)
-- 세부 성과도: ${((scores['achievement'] as double) * 100).toStringAsFixed(1)}%
-- 사회공헌도: ${((scores['socialContribution'] as double) * 100).toStringAsFixed(1)}%
-- 언론 평판: ${((scores['publicImage'] as double) * 100).toStringAsFixed(1)}%
+- 정당 지지율(현재+2018): $poll% (가중치 60%)
+- 지역별 보정 계수: $hist% (가중치 20%)
+- 후보 경쟁력: $achievement% (가중치 20%)
+- 세부 성과도: $achievement%
+- 사회공헌도: $social%
+- 언론 평판: $public%
+${(scores['poll'] as double) < 0 ? '\n※ 여론조사 미반영에 따라 지역 성향 및 실적 중심의 예측 모델로 보정되었습니다.\n' : ''}
 ${_generateSocialSummary(member)}
 
 3. 여론조사 현황

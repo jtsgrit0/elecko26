@@ -236,6 +236,9 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
         if (member.achievementsList.isEmpty) '활동 이력 데이터가 부족합니다.',
       ],
       analysisReport: '${member.name} 후보의 기본 정보를 기반으로 빠른 분석 결과를 표시하고 있습니다.',
+      viralIndex: 0.3,
+      orgStrength: 0.3,
+      expertiseScore: achievement,
       dailyTrends: trends,
       snsAnalysis: SnsAnalysis(
         totalMentions: 0,

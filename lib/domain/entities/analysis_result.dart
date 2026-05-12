@@ -177,6 +177,9 @@ class AnalysisResult {
       strengths: [],
       weaknesses: [],
       analysisReport: '데이터를 불러오는 중입니다. 잠시만 기다려주세요.',
+      viralIndex: 0.3,
+      orgStrength: 0.3,
+      expertiseScore: 0.3,
       dailyTrends: [
         DailyPossibility(
           date: DateTime.now(),

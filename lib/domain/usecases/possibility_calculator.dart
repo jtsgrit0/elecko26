@@ -48,9 +48,12 @@ class PossibilityCalculator {
     final interestAdjustment = (voterInterest - 0.5) * 0.06;
     overall = (overall + interestAdjustment).clamp(0.01, 0.99);
 
+    // 사회 공헌도 계산 (기존 로직 유지)
+    final socialScore = _calculateSocialScore(member);
+
     // 강점/약점/개선점 생성
-    final strengths = _generateStrengths(member, achievementScore, socialScore);
-    final weaknesses = _generateWeaknesses(member, publicImageScore, partyScore);
+    final strengths = _generateStrengths(member, expertiseScore, socialScore);
+    final weaknesses = _generateWeaknesses(member, viralIndex, partyScore);
     final improvements = _generateImprovements(member, weaknesses);
 
     return {
