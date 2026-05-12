@@ -536,40 +536,86 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
           ),
           const SizedBox(height: 16),
           _buildScoreItem(
-            '성과도',
-            analysis.achievementScore,
-            '주요 성과와 경력',
+            '지역 인지도 (Viral Index)',
+            analysis.viralIndex,
+            '뉴스 노출도(네이버 API), SNS 참여도, 검색량 분석 기반',
+            icon: Icons.trending_up,
           ),
           const SizedBox(height: 12),
           _buildScoreItem(
-            '활동도',
-            analysis.activityScore,
-            '의정 활동',
+            '조직력 (Org Strength)',
+            analysis.orgStrength,
+            '경력 기반 조직 규모, 직능 단체 지지 선언 분석 기반',
+            icon: Icons.groups,
           ),
           const SizedBox(height: 12),
           _buildScoreItem(
-            '정책도',
-            analysis.policyScore,
-            '정책 제안',
+            '전문성 및 경력 (Expertise)',
+            analysis.expertiseScore,
+            '학위, 주요 전문 경력, 의정 활동(조례 발의 등) 성적 기반',
+            icon: Icons.verified,
+          ),
+          const SizedBox(height: 20),
+          _buildSelfCheckBanner(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSelfCheckBanner() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(Icons.edit_note, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '더 정확한 당선 가능성을 원하시나요?',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '보유 당원 수, 선거 캠프 규모 등 비공개 데이터를 직접 입력하여 100% 맞춤형 분석 리포트를 생성해보세요.',
+            style: AppTextStyles.labelSmall.copyWith(color: AppColors.darkGray),
           ),
           const SizedBox(height: 12),
-          _buildScoreItem(
-            '언론도',
-            analysis.publicImageScore,
-            '언론 평가 및 신뢰도',
-          ),
-          const SizedBox(height: 12),
-          _buildScoreItem(
-            '사회공헌도',
-            analysis.socialContributionScore,
-            '기부/봉사 등 사회적 책임 실천',
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                // Self-Check 모드 진입 (Placeholder)
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('준비 중인 기능입니다. 후보자 인증 후 이용 가능합니다.')),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('Self-Check 데이터 입력하기'),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildScoreItem(String label, double score, String description) {
+  Widget _buildScoreItem(String label, double score, String description, {IconData? icon}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

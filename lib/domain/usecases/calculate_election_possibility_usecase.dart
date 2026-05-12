@@ -129,6 +129,9 @@ class CalculateElectionPossibilityUseCase {
       weaknesses: List<String>.from(analysis['weaknesses'] ?? []),
       analysisReport: analysis['report']!,
       dailyTrends: dailyTrends,
+      viralIndex: scores['viralIndex'] as double? ?? 0.3,
+      orgStrength: scores['orgStrength'] as double? ?? 0.3,
+      expertiseScore: scores['expertise'] as double? ?? 0.3,
       snsAnalysis: _calculateSnsAnalysis(member),
     );
   }

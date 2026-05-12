@@ -71,6 +71,11 @@ class AnalysisResult {
   // 추세 데이터
   final List<DailyPossibility> dailyTrends;
 
+  // 전략적 분석 지표 (인지도, 조직력, 전문성)
+  final double viralIndex;
+  final double orgStrength;
+  final double expertiseScore;
+
   // SNS 분석 데이터 (선택사항)
   final SnsAnalysis? snsAnalysis;
 
@@ -92,6 +97,9 @@ class AnalysisResult {
     required this.weaknesses,
     required this.analysisReport,
     required this.dailyTrends,
+    required this.viralIndex,
+    required this.orgStrength,
+    required this.expertiseScore,
     this.snsAnalysis,
   });
 
@@ -113,7 +121,10 @@ class AnalysisResult {
       'strengths': strengths,
       'weaknesses': weaknesses,
       'analysisReport': analysisReport,
-      'dailyTrends': dailyTrends.map((e) => e.toJson()).toList(),
+      'viralIndex': viralIndex,
+      'orgStrength': orgStrength,
+      'expertiseScore': expertiseScore,
+      'dailyTrends': dailyTrends.map((t) => t.toJson()).toList(),
       'snsAnalysis': snsAnalysis?.toJson(),
     };
   }
@@ -136,6 +147,9 @@ class AnalysisResult {
       strengths: List<String>.from(json['strengths']),
       weaknesses: List<String>.from(json['weaknesses']),
       analysisReport: json['analysisReport'],
+      viralIndex: (json['viralIndex'] as num?)?.toDouble() ?? 0.3,
+      orgStrength: (json['orgStrength'] as num?)?.toDouble() ?? 0.3,
+      expertiseScore: (json['expertiseScore'] as num?)?.toDouble() ?? 0.3,
       dailyTrends: (json['dailyTrends'] as List)
           .map((e) => DailyPossibility.fromJson(e))
           .toList(),
