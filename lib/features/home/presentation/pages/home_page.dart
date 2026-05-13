@@ -21,9 +21,8 @@ import 'member_detail_page.dart';
 
 class HomePage extends StatefulWidget {
   final List<Member> members;
-  final String? initialRegion;
-  const HomePage({Key? key, required this.members, this.initialRegion})
-      : super(key: key);
+
+  const HomePage({Key? key, required this.members}) : super(key: key);
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -53,9 +52,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _cachedMembers = widget.members;
-    if (widget.initialRegion != null) {
-      _userRegionNotifier.value = widget.initialRegion!;
-    }
+
     _updateFavoriteCount(_cachedMembers);
     _initializeListeners();
     _initializeAnalysisStream();
@@ -496,11 +493,12 @@ class _HomePageState extends State<HomePage> {
   Widget _buildDDayBadge() {
     final electionDate = DateTime(2026, 6, 3);
     final now = DateTime.now();
-    final difference = electionDate.difference(DateTime(now.year, now.month, now.day)).inDays;
-    
+    final difference =
+        electionDate.difference(DateTime(now.year, now.month, now.day)).inDays;
+
     String dDayText;
     Color badgeColor;
-    
+
     if (difference == 0) {
       dDayText = 'D-Day';
       badgeColor = AppColors.error;

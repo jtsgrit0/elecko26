@@ -42,6 +42,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
   List<Member> _filteredAndSortedMembers = [];
 
   final List<String> _regions = [
+    '전국',
     '서울특별시',
     '부산광역시',
     '대구광역시',
@@ -59,7 +60,6 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
     '경상북도',
     '경상남도',
     '제주특별자치도',
-    '전국',
   ];
 
   @override
