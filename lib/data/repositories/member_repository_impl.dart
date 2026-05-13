@@ -7,6 +7,7 @@ import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/repositories/member_repository.dart';
 import 'package:elecko26_new/data/models/member_model.dart';
 import 'package:elecko26_new/features/auth/domain/entities/user.dart';
+import 'package:rxdart/rxdart.dart'; // rxdart 임포트
 
 class MemberRepositoryImpl implements MemberRepository {
   List<Member> _members = [];
@@ -15,9 +16,19 @@ class MemberRepositoryImpl implements MemberRepository {
 
   // 데이터 변경을 알리기 위한 StreamController
   final _membersController = StreamController<List<Member>>.broadcast();
+  // 선택된 지역 변경을 알리기 위한 BehaviorSubject
+  final _selectedRegionController = BehaviorSubject<String>();
 
   Future<void> _initPrefs() async {
-    _prefs ??= await SharedPreferences.getInstance();
+    if (_prefs == null) {
+      _prefs = await SharedPreferences.getInstance();
+      // SharedPreferences에서 초기 지역 값을 읽어와 BehaviorSubject 초기화
+      final initialRegion = _prefs?.getString('selectedRegion') ?? '전국';
+      if (!_selectedRegionController.isClosed &&
+          _selectedRegionController.valueOrNull != initialRegion) {
+        _selectedRegionController.add(initialRegion);
+      }
+    }
   }
 
   Future<void> _initialize() async {
@@ -156,7 +167,7 @@ class MemberRepositoryImpl implements MemberRepository {
   @override
   Future<String?> getSelectedRegion() async {
     await _initPrefs();
-    return _prefs?.getString('selectedRegion');
+    return _selectedRegionController.valueOrNull;
   }
 
   @override
@@ -169,6 +180,9 @@ class MemberRepositoryImpl implements MemberRepository {
   Future<void> saveSelectedRegion(String region) async {
     await _initPrefs();
     await _prefs?.setString('selectedRegion', region);
+    if (!_selectedRegionController.isClosed) {
+      _selectedRegionController.add(region); // 스트림에 새로운 지역 추가
+    }
   }
 
   @override
@@ -194,13 +208,24 @@ class MemberRepositoryImpl implements MemberRepository {
 
   @override
   Stream<String> watchSelectedRegion() {
-    return Stream.value('');
+    // _initPrefs가 호출되어 _selectedRegionController가 초기화되도록 보장
+    _initPrefs();
+    return _selectedRegionController.stream;
   }
 
   @override
   Future<void> logout() async {
     await _initPrefs();
     await _prefs?.remove('selectedRegion');
+    if (!_selectedRegionController.isClosed) {
+      _selectedRegionController.add('전국'); // 로그아웃 시 지역을 '전국'으로 초기화
+    }
+  }
+
+  // 리소스 해제를 위한 dispose 메서드 추가
+  void dispose() {
+    _membersController.close();
+    _selectedRegionController.close();
   }
 
   @override
