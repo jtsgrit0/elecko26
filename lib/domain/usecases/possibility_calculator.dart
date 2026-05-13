@@ -321,22 +321,6 @@ class PossibilityCalculator {
     return partyScore;
   }
 
-  /// 우세 정당 판단 - 2018년 데이터를 기반으로 해당 지역의 우세 정당 결정
-  static String? _determineDominantParty(Member member, double historical2018) {
-    // 2018년 지지율이 45% 이상인 정당을 우세 정당으로 판단
-    if (historical2018 >= 0.45) {
-      return member.party;
-    }
-
-    // 현재 여론조사 데이터가 있다면 함께 고려
-    final currentPollSupport = _calculatePollScore(member);
-    if (currentPollSupport != null && currentPollSupport >= 0.45) {
-      return member.party;
-    }
-
-    return null;
-  }
-
   static List<String> _generateImprovements(
       Member member, List<String> weaknesses) {
     final list = <String>[];
