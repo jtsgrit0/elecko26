@@ -43,6 +43,11 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
   late Future<List<String>> _snsChannelsFuture;
   double? _supportTrend;
 
+  // 시뮬레이션 슬라이더 상태
+  double _simulatedPartySupport = 0.0;
+  bool _isSimulationMode = false;
+  AnalysisResult? _simulatedAnalysis;
+
   @override
   void initState() {
     super.initState();
@@ -173,6 +178,10 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
 
                 // 당선 가능성 섹션
                 _buildElectionPossibilitySection(analysis),
+                const SizedBox(height: 24),
+
+                // 시뮬레이션 슬라이더 섹션
+                _buildSimulationSlider(analysis),
                 const SizedBox(height: 24),
 
                 // 2018년 지방선거 비교 섹션 (데칼코마니 분석)
@@ -479,7 +488,13 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
 
   Widget _buildElectionPossibilitySection(AnalysisResult analysis) {
     final trendValue = _supportTrend ?? 0.0;
-    final finalPossibility = analysis.electionPossibility + (trendValue / 100);
+    final basePossibility = analysis.electionPossibility;
+    final finalPossibility = _isSimulationMode && _simulatedAnalysis != null
+        ? _simulatedAnalysis!.electionPossibility
+        : basePossibility + (trendValue / 100);
+
+    // 격전지 지수 계산
+    final battlegroundIndex = _calculateBattlegroundIndex(analysis);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -492,13 +507,53 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '당선 가능성',
-              style: AppTextStyles.headline3.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.darkGray,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '당선 가능성',
+                  style: AppTextStyles.headline3.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.darkGray,
+                  ),
+                ),
+                // 격전지 지수 배지
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _getBattlegroundColor(battlegroundIndex),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    battlegroundIndex,
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ),
+            if (_isSimulationMode) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                ),
+                child: Text(
+                  '시뮬레이션 모드 - 정당 지지율: ${(_simulatedPartySupport * 100).toStringAsFixed(1)}%',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1531,6 +1586,224 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
         ],
       ),
     );
+  }
+
+  /// 시뮬레이션 슬라이더 UI 구성
+  Widget _buildSimulationSlider(AnalysisResult analysis) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '정당 지지율 시뮬레이션',
+                  style: AppTextStyles.headline3.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.darkGray,
+                  ),
+                ),
+                if (_isSimulationMode)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '시뮬레이션 중',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '정당 지지율을 조절하여 당선 가능성의 변화를 실시간으로 확인하세요',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.mediumGray,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                activeTrackColor: AppColors.primary,
+                inactiveTrackColor: AppColors.lightGray,
+                thumbColor: AppColors.primary,
+                overlayColor: AppColors.primary.withOpacity(0.2),
+                valueIndicatorColor: AppColors.primary,
+                valueIndicatorTextStyle: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.white,
+                ),
+              ),
+              child: Slider(
+                value: _simulatedPartySupport,
+                min: 0.0,
+                max: 1.0,
+                divisions: 20,
+                label: '${(_simulatedPartySupport * 100).toStringAsFixed(1)}%',
+                onChanged: (value) {
+                  setState(() {
+                    _simulatedPartySupport = value;
+                    _isSimulationMode = true;
+                    _recalculateWithSimulation(value);
+                  });
+                },
+                onChangeEnd: (value) {
+                  // 시뮬레이션 모드 해제
+                  Future.delayed(const Duration(seconds: 2), () {
+                    if (mounted) {
+                      setState(() {
+                        _isSimulationMode = false;
+                      });
+                    }
+                  });
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (_isSimulationMode && _simulatedAnalysis != null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '시뮬레이션 결과',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '조정된 당선 가능성:',
+                          style: AppTextStyles.bodySmall,
+                        ),
+                        Text(
+                          '${(_simulatedAnalysis!.electionPossibility * 100).toStringAsFixed(1)}%',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '정당 지지율 ${(_simulatedPartySupport * 100).toStringAsFixed(1)}% 기준',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.mediumGray,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 격전지 지수 계산
+  String _calculateBattlegroundIndex(AnalysisResult analysis) {
+    // 2018년 데이터와 현재 지지율을 기반으로 격전지 지수 계산
+    final historical2018 = analysis.historicalScore;
+    final currentSupport = analysis.pollScore;
+
+    // 가중치 적용 (2018년 40%, 현재 60%)
+    final combinedScore = (historical2018 * 0.4) + (currentSupport * 0.6);
+
+    if (combinedScore >= 0.6) {
+      return '안정';
+    } else if (combinedScore >= 0.4) {
+      return '경합';
+    } else {
+      return '위험';
+    }
+  }
+
+  /// 격전지 지수에 따른 색상 반환
+  Color _getBattlegroundColor(String index) {
+    switch (index) {
+      case '안정':
+        return Colors.green;
+      case '경합':
+        return Colors.orange;
+      case '위험':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  /// 시뮬레이션에 따른 재계산
+  void _recalculateWithSimulation(double simulatedSupport) async {
+    try {
+      // 현재 분석 결과를 기반으로 시뮬레이션
+      final currentAnalysis =
+          _isSimulationMode ? _simulatedAnalysis : _initialAnalysis;
+      if (currentAnalysis == null) return;
+
+      // 정당 지지율 변화에 따른 당선 가능성 재계산
+      final basePossibility = currentAnalysis.electionPossibility;
+      const maxAdjustment = 0.3; // 최대 30% 조정
+
+      // 시뮬레이션 지지율에 따른 조정값 계산
+      final adjustment = (simulatedSupport - 0.5) * maxAdjustment;
+      final newPossibility = (basePossibility + adjustment).clamp(0.01, 0.99);
+
+      // 시뮬레이션 결과 생성
+      final simulatedAnalysis = AnalysisResult(
+        memberId: currentAnalysis.memberId,
+        analysisDate: DateTime.now(),
+        electionPossibility: newPossibility,
+        previousPossibility: currentAnalysis.electionPossibility,
+        possibilityChange: newPossibility - currentAnalysis.electionPossibility,
+        achievementScore: currentAnalysis.achievementScore,
+        activityScore: currentAnalysis.activityScore,
+        policyScore: currentAnalysis.policyScore,
+        publicImageScore: currentAnalysis.publicImageScore,
+        socialContributionScore: currentAnalysis.socialContributionScore,
+        pollScore: simulatedSupport,
+        historicalScore: currentAnalysis.historicalScore,
+        improvements: currentAnalysis.improvements,
+        strengths: currentAnalysis.strengths,
+        weaknesses: currentAnalysis.weaknesses,
+        analysisReport: currentAnalysis.analysisReport,
+        dailyTrends: currentAnalysis.dailyTrends,
+        viralIndex: currentAnalysis.viralIndex,
+        orgStrength: currentAnalysis.orgStrength,
+        expertiseScore: currentAnalysis.expertiseScore,
+        snsAnalysis: currentAnalysis.snsAnalysis,
+      );
+
+      setState(() {
+        _simulatedAnalysis = simulatedAnalysis;
+      });
+    } catch (e) {
+      debugPrint('Simulation error: $e');
+    }
   }
 }
 
