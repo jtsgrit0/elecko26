@@ -41,6 +41,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
 
   late Future<List<PartyPollData>> _pollDataFuture;
   late Future<List<String>> _snsChannelsFuture;
+  double? _supportTrend;
 
   @override
   void initState() {
@@ -49,7 +50,34 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
     _initialAnalysis = _buildFallbackAnalysis(_member);
     _pollDataFuture = _getPollDataFromJson(_member);
     _snsChannelsFuture = _searchSnsChannels(_member);
+    _loadSupportTrend();
     _startAnalysisStream();
+  }
+
+  Future<void> _loadSupportTrend() async {
+    try {
+      final jsonString =
+          await rootBundle.loadString('api/party_support_trends.json');
+      final trendsData = json.decode(jsonString);
+
+      final region = _member.region;
+      final party = _member.party;
+
+      if (trendsData.containsKey(region) &&
+          trendsData[region].containsKey('2018') &&
+          trendsData[region].containsKey('current')) {
+        final pastSupport = trendsData[region]['2018'][party] ?? 0.0;
+        final currentSupport = trendsData[region]['current'][party] ?? 0.0;
+
+        if (pastSupport > 0) {
+          setState(() {
+            _supportTrend = currentSupport - pastSupport;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to load support trend: $e');
+    }
   }
 
   void _startAnalysisStream() {
@@ -450,6 +478,9 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
   }
 
   Widget _buildElectionPossibilitySection(AnalysisResult analysis) {
+    final trendValue = _supportTrend ?? 0.0;
+    final finalPossibility = analysis.electionPossibility + (trendValue / 100);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
@@ -471,13 +502,29 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  '${(analysis.electionPossibility * 100).toStringAsFixed(1)}%',
-                  style: AppTextStyles.headline1.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      '${(finalPossibility * 100).toStringAsFixed(1)}%',
+                      style: AppTextStyles.headline1.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (_supportTrend != null)
+                      Text(
+                        '(${(analysis.electionPossibility * 100).toStringAsFixed(1)}%)',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.mediumGray,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                  ],
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -501,18 +548,47 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                 ),
               ],
             ),
+            if (_supportTrend != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    'vs 2018',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.mediumGray,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    trendValue > 0 ? Icons.arrow_upward : Icons.arrow_downward,
+                    color:
+                        trendValue > 0 ? AppColors.success : AppColors.danger,
+                    size: 16,
+                  ),
+                  Text(
+                    '${trendValue.toStringAsFixed(1)}%p',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color:
+                          trendValue > 0 ? AppColors.success : AppColors.danger,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 16),
             // 진행 바
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: LinearProgressIndicator(
-                value: analysis.electionPossibility,
+                value: finalPossibility,
                 minHeight: 8,
                 backgroundColor: AppColors.lightGray,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  analysis.electionPossibility > 0.7
+                  finalPossibility > 0.7
                       ? AppColors.success
-                      : analysis.electionPossibility > 0.5
+                      : finalPossibility > 0.5
                           ? AppColors.secondary
                           : AppColors.danger,
                 ),
@@ -602,13 +678,15 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
               onPressed: () {
                 // Self-Check 모드 진입 (Placeholder)
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('준비 중인 기능입니다. 후보자 인증 후 이용 가능합니다.')),
+                  const SnackBar(
+                      content: Text('준비 중인 기능입니다. 후보자 인증 후 이용 가능합니다.')),
                 );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
               child: const Text('Self-Check 데이터 입력하기'),
             ),
@@ -618,7 +696,8 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
     );
   }
 
-  Widget _buildScoreItem(String label, double score, String description, {IconData? icon}) {
+  Widget _buildScoreItem(String label, double score, String description,
+      {IconData? icon}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -707,16 +786,17 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
 
   Future<List<PartyPollData>> _getPollDataFromJson(Member member) async {
     final raw = await _getPollDataWithHistory(member);
-    return raw.map((item) => PartyPollData(
-      item['partyName'], 
-      (item['supportRate'] as num).toDouble()
-    )).toList();
+    return raw
+        .map((item) => PartyPollData(
+            item['partyName'], (item['supportRate'] as num).toDouble()))
+        .toList();
   }
 
-  Future<List<Map<String, dynamic>>> _getPollDataWithHistory(Member member) async {
+  Future<List<Map<String, dynamic>>> _getPollDataWithHistory(
+      Member member) async {
     final regionName = member.region.split(' ').last;
     final districtName = member.district.split(' ').last;
-    
+
     final paths = [
       'data/polls/$regionName.json',
       'data/polls/$districtName.json',
@@ -787,8 +867,9 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _getPollDataWithHistory(member),
       builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox.shrink();
-        
+        if (!snapshot.hasData || snapshot.data!.isEmpty)
+          return const SizedBox.shrink();
+
         final data = snapshot.data!;
         return _buildSectionContainer(
           title: '📈 2018년 동기 대비 지지율 추이',
@@ -796,14 +877,15 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
             children: [
               Text(
                 '2018년 지방선거와 현재의 판세는 매우 유사합니다. 당시 득표율을 기준점(최대 기대치)으로 삼아 현재의 결집도를 분석합니다.',
-                style: AppTextStyles.labelSmall.copyWith(color: AppColors.mediumGray),
+                style: AppTextStyles.labelSmall
+                    .copyWith(color: AppColors.mediumGray),
               ),
               const SizedBox(height: 16),
               ...data.take(3).map((item) {
                 final current = (item['supportRate'] as num).toDouble();
                 final hist = (item['historical2018'] as num).toDouble();
                 final diff = current - hist;
-                
+
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Column(
@@ -812,28 +894,48 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(item['partyName'], style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
-                          Text('${current.toStringAsFixed(1)}% (현재)', style: AppTextStyles.labelSmall),
+                          Text(item['partyName'],
+                              style: AppTextStyles.bodyMedium
+                                  .copyWith(fontWeight: FontWeight.bold)),
+                          Text('${current.toStringAsFixed(1)}% (현재)',
+                              style: AppTextStyles.labelSmall),
                         ],
                       ),
                       const SizedBox(height: 4),
                       Stack(
                         children: [
-                          Container(height: 8, decoration: BoxDecoration(color: AppColors.lightGray, borderRadius: BorderRadius.circular(4))),
+                          Container(
+                              height: 8,
+                              decoration: BoxDecoration(
+                                  color: AppColors.lightGray,
+                                  borderRadius: BorderRadius.circular(4))),
                           FractionallySizedBox(
                             widthFactor: (hist / 100).clamp(0, 1),
-                            child: Container(height: 8, decoration: BoxDecoration(color: AppColors.mediumGray.withOpacity(0.5), borderRadius: BorderRadius.circular(4))),
+                            child: Container(
+                                height: 8,
+                                decoration: BoxDecoration(
+                                    color:
+                                        AppColors.mediumGray.withOpacity(0.5),
+                                    borderRadius: BorderRadius.circular(4))),
                           ),
                           FractionallySizedBox(
                             widthFactor: (current / 100).clamp(0, 1),
-                            child: Container(height: 8, decoration: BoxDecoration(color: _getPartyColor(item['partyName']), borderRadius: BorderRadius.circular(4))),
+                            child: Container(
+                                height: 8,
+                                decoration: BoxDecoration(
+                                    color: _getPartyColor(item['partyName']),
+                                    borderRadius: BorderRadius.circular(4))),
                           ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '2018년 대비 ${diff >= 0 ? '+' : ''}${diff.toStringAsFixed(1)}%p',
-                        style: AppTextStyles.labelSmall.copyWith(color: diff >= 0 ? AppColors.success : AppColors.danger, fontWeight: FontWeight.bold),
+                        style: AppTextStyles.labelSmall.copyWith(
+                            color: diff >= 0
+                                ? AppColors.success
+                                : AppColors.danger,
+                            fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -895,7 +997,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
     final name = Uri.encodeComponent(member.name);
     final party = Uri.encodeComponent(member.party);
     final region = Uri.encodeComponent(member.region);
-    
+
     // Bing 검색을 통한 SNS 채널 직접 링크 제공
     return [
       'https://www.bing.com/search?q=$name+$party+$region+인스타그램',
@@ -906,8 +1008,10 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
 
   Widget _buildSnsLink(String url) {
     String label = 'SNS 검색 결과';
-    if (url.contains('인스타그램')) label = '인스타그램 검색';
-    else if (url.contains('페이스북')) label = '페이스북 검색';
+    if (url.contains('인스타그램'))
+      label = '인스타그램 검색';
+    else if (url.contains('페이스북'))
+      label = '페이스북 검색';
     else if (url.contains('네이버블로그')) label = '네이버 블로그 검색';
 
     return Padding(
