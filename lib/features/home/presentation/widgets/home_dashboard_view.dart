@@ -77,6 +77,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
         widget.cachedAnalysisResults != oldWidget.cachedAnalysisResults) {
       print(
           'HomeDashboardView: didUpdateWidget - userRegion: ${widget.userRegion}, cachedMembers count: ${widget.cachedMembers.length}');
+      print('Current userRegion: ${widget.userRegion}');
       _updateFilteredAndSortedMembers();
       _updateStats();
     }
