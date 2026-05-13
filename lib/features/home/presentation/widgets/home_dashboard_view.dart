@@ -305,7 +305,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
           flex: 3,
           child: _StatisticCard(
             title: '분석후보',
-            value: '4000+',
+            value: '$memberCount',
             icon: Icons.people,
             color: AppColors.primary,
           ),
