@@ -43,6 +43,8 @@ class MemberRepositoryImpl implements MemberRepository {
 
       // 백그라운드에서 JSON 파싱 및 객체 변환 수행
       _members = await compute(_parseMembers, response);
+      debugPrint(
+          '[MemberRepositoryImpl] Loaded members from JSON: ${_members.length}명');
 
       // 초기 데이터 로드 후 스트림에 추가
       _membersController.add(_members);
