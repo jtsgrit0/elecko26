@@ -359,19 +359,32 @@ class _MemberCard extends StatelessWidget {
                 height: 70,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: member.imageUrl.isNotEmpty
-                      ? AppNetworkImage(
-                          imageUrl: member.imageUrl,
-                          fit: BoxFit.cover,
-                          errorWidget: (context, url, error) => Image.asset(
-                            'assets/images/avatar.png',
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      : Image.asset(
+                  child: member.imageUrl.isEmpty
+                      ? Image.asset(
                           'assets/images/avatar.png',
                           fit: BoxFit.cover,
-                        ),
+                        )
+                      : member.imageUrl.startsWith('assets/')
+                          ? Image.asset(
+                              member.imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Image.asset(
+                                'assets/images/avatar.png',
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : AppNetworkImage(
+                              imageUrl: member.imageUrl.contains('nesdc.go.kr')
+                                  ? member.imageUrl
+                                  : ImageUtil.getProxyUrl(member.imageUrl,
+                                      width: 120, height: 120),
+                              fit: BoxFit.cover,
+                              errorWidget: (context, url, error) => Image.asset(
+                                'assets/images/avatar.png',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
                 ),
               ),
               const SizedBox(width: 12),
