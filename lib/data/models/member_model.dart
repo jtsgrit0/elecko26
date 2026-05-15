@@ -27,7 +27,7 @@ class MemberModel extends Member {
     super.historical2018PartyRates,
     super.lastAnalysisDate,
     super.achievementsList,
-    policies: parseStringList(json['policies']),
+    super.policies,
     super.improvementPoints,
     super.socialContributions,
   });
