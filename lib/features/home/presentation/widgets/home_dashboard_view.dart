@@ -4,6 +4,7 @@ import 'package:elecko26_new/core/widgets/pdf_image_renderer.dart';
 import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/core/utils/utility_functions.dart';
+import 'package:elecko26_new/core/utils/image_util.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/entities/analysis_result.dart';
 import 'member_card.dart';
@@ -398,12 +399,10 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
                           child: SizedBox(
                             width: 48,
                             height: 48,
-                            child: member.imageUrl.startsWith('assets/')
-                                ? Image.asset(
-                                    member.imageUrl,
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) => Center(
+                            child: member.imageUrl.isEmpty
+                                ? Container(
+                                    color: AppColors.lightGrey,
+                                    child: Center(
                                       child: Text(
                                         member.name.substring(0, 1),
                                         style: AppTextStyles.headline4.copyWith(
@@ -412,20 +411,38 @@ class _HomeDashboardViewState extends State<HomeDashboardView>
                                       ),
                                     ),
                                   )
-                                : PdfImageRenderer.fromUrl(
-                                    member.imageUrl,
-                                    placeholder: (context) =>
-                                        Container(color: AppColors.lightGrey),
-                                    errorWidget: (context, error, stackTrace) =>
-                                        Center(
-                                      child: Text(
-                                        member.name.substring(0, 1),
-                                        style: AppTextStyles.headline4.copyWith(
-                                          color: AppColors.mediumGray,
+                                : member.imageUrl.startsWith('assets/')
+                                    ? Image.asset(
+                                        member.imageUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) =>
+                                            Center(
+                                          child: Text(
+                                            member.name.substring(0, 1),
+                                            style: AppTextStyles.headline4.copyWith(
+                                              color: AppColors.mediumGray,
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    : AppNetworkImage(
+                                        imageUrl: member.imageUrl.contains('nesdc.go.kr')
+                                            ? member.imageUrl
+                                            : ImageUtil.getProxyUrl(member.imageUrl,
+                                                width: 120, height: 120),
+                                        fit: BoxFit.cover,
+                                        placeholder: (context, url) => Container(
+                                          color: AppColors.lightGrey,
+                                        ),
+                                        errorWidget: (context, url, error) => Center(
+                                          child: Text(
+                                            member.name.substring(0, 1),
+                                            style: AppTextStyles.headline4.copyWith(
+                                              color: AppColors.mediumGray,
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ),
                           ),
                         ),
                         const SizedBox(width: 16),
