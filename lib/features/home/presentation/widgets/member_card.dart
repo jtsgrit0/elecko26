@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elecko26_new/core/widgets/app_network_image.dart';
 import 'package:elecko26_new/core/utils/image_util.dart';
 import 'package:elecko26_new/core/utils/party_util.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
@@ -187,24 +188,26 @@ class MemberCard extends StatelessWidget {
   }
 
   Widget _buildProfileImage() {
-    if (member.imageUrl.startsWith('http')) {
-      return Image.network(
-        member.imageUrl,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(color: AppColors.lightGrey);
-        },
-        errorBuilder: (context, error, stackTrace) => _buildFallbackProfile(),
-      );
-    } else if (member.imageUrl.isNotEmpty) {
+    if (member.imageUrl.isEmpty) {
+      return _buildFallbackProfile();
+    }
+
+    if (member.imageUrl.startsWith('assets/')) {
       return Image.asset(
         member.imageUrl,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) => _buildFallbackProfile(),
       );
     }
-    return _buildFallbackProfile();
+
+    return AppNetworkImage(
+      imageUrl: member.imageUrl.contains('nesdc.go.kr')
+          ? member.imageUrl
+          : ImageUtil.getProxyUrl(member.imageUrl, width: 120, height: 120),
+      fit: BoxFit.cover,
+      placeholder: (context, url) => Container(color: AppColors.lightGrey),
+      errorWidget: (context, url, error) => _buildFallbackProfile(),
+    );
   }
 
   Widget _buildFallbackProfile() {
