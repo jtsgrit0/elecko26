@@ -189,17 +189,27 @@ class MemberCard extends StatelessWidget {
 
   Widget _buildProfileImage() {
     if (member.imageUrl.isEmpty) {
+      print(
+          'DEBUG: Image URL is empty for member: ${member.name} (ID: ${member.id})');
       return _buildFallbackProfile();
     }
 
     if (member.imageUrl.startsWith('assets/')) {
+      print(
+          'DEBUG: Attempting to load asset image: ${member.imageUrl} for member: ${member.name} (ID: ${member.id})');
       return Image.asset(
         member.imageUrl,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildFallbackProfile(),
+        errorBuilder: (context, error, stackTrace) {
+          print(
+              'DEBUG: ERROR loading asset image ${member.imageUrl} for member ${member.name}: $error');
+          return _buildFallbackProfile();
+        },
       );
     }
 
+    print(
+        'DEBUG: Attempting to load network image: ${member.imageUrl} for member: ${member.name} (ID: ${member.id})');
     return AppNetworkImage(
       imageUrl: member.imageUrl.contains('nesdc.go.kr')
           ? member.imageUrl

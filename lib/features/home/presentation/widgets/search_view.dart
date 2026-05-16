@@ -277,7 +277,7 @@ class _SearchViewState extends State<SearchView>
 
   void _applyFilters() {
     final query = _searchQuery.toLowerCase();
-    
+
     final filtered = _allMembers.where((m) {
       // 지역 필터: m.region을 사용 (m.district는 직위명이므로 사용 불가)
       if (widget.userRegion != '전국') {
@@ -295,17 +295,18 @@ class _SearchViewState extends State<SearchView>
           }
         }
       }
-      
+
       if (!_matchesSearchCategory(m)) return false;
       if (!_matchesSearchOffice(m)) return false;
 
       if (query.isEmpty) return true;
-      
+
       // 검색 인덱스 생성 및 활용
       final searchStr = _searchIndex.putIfAbsent(m.id, () {
-        return '${m.name} ${m.party} ${m.region} ${m.district} ${m.districtName}'.toLowerCase();
+        return '${m.name} ${m.party} ${m.region} ${m.district} ${m.districtName}'
+            .toLowerCase();
       });
-      
+
       return searchStr.contains(query);
     }).toList();
 
@@ -317,12 +318,14 @@ class _SearchViewState extends State<SearchView>
     // 당선 가능성 캐시를 통한 정렬 최적화
     final possibilities = <String, double>{};
     for (var m in filtered) {
-      final raw = widget.analysisResults[m.id]?.electionPossibility ?? m.electionPossibility;
+      final raw = widget.analysisResults[m.id]?.electionPossibility ??
+          m.electionPossibility;
       // 이미 % 단위(>1)인 경우 0~1 범위로 변환
       possibilities[m.id] = raw > 1.0 ? raw / 100.0 : raw;
     }
 
-    filtered.sort((a, b) => possibilities[b.id]!.compareTo(possibilities[a.id]!));
+    filtered
+        .sort((a, b) => possibilities[b.id]!.compareTo(possibilities[a.id]!));
 
     _filteredMembers = filtered;
   }
@@ -414,7 +417,7 @@ class _SearchViewState extends State<SearchView>
     final district = member.district;
     switch (_searchOffice) {
       case '도지사':
-        return district.contains('도지사') && !district.contains('특별자치도지사');
+        return district.contains('도지사');
       case '광역시장':
         return district.contains('광역시장');
       case '특별시장':
@@ -435,13 +438,14 @@ class _SearchViewState extends State<SearchView>
 
   void _precacheMemberImages(BuildContext context, List<Member> members) {
     for (final member in members) {
-      if (member.imageUrl.isNotEmpty) {
-        precacheImage(
-          NetworkImage(
-            ImageUtil.getProxyUrl(member.imageUrl, width: 120, height: 120),
-          ),
-          context,
-        );
+      if (member.imageUrl.isEmpty) continue;
+
+      final url =
+          ImageUtil.getProxyUrl(member.imageUrl, width: 120, height: 120);
+      if (url.startsWith('assets/')) {
+        precacheImage(AssetImage(url), context);
+      } else {
+        precacheImage(NetworkImage(url), context);
       }
     }
   }
