@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-
+import 'package:elecko26_new/core/widgets/app_network_image.dart';
+import 'package:elecko26_new/core/utils/image_util.dart';
 import 'package:elecko26_new/app/injection_container.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/core/utils/party_util.dart';
@@ -144,31 +145,45 @@ class FavoritesView extends StatelessWidget {
           child: Row(
             children: [
               // 프로필 이미지
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: AppColors.lightGrey,
-                  borderRadius: BorderRadius.circular(10),
-                  image: member.imageUrl.trim().isEmpty
-                      ? null
-                      : DecorationImage(
-                          image: NetworkImage(member.imageUrl),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  width: 56,
+                  height: 56,
+                  child: member.imageUrl.trim().isEmpty
+                      ? Container(
+                          color: AppColors.lightGrey,
+                          child: Center(
+                            child: Text(
+                              member.name.characters.first,
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.mediumGray,
+                              ),
+                            ),
+                          ),
+                        )
+                      : AppNetworkImage(
+                          imageUrl: member.imageUrl.contains('nesdc.go.kr')
+                              ? member.imageUrl
+                              : ImageUtil.getProxyUrl(member.imageUrl,
+                                  width: 120, height: 120),
                           fit: BoxFit.cover,
-                        ),
-                ),
-                child: member.imageUrl.trim().isEmpty
-                    ? Center(
-                        child: Text(
-                          member.name.characters.first,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.mediumGray,
+                          placeholder: (context, url) =>
+                              Container(color: AppColors.lightGrey),
+                          errorWidget: (context, url, error) => Center(
+                            child: Text(
+                              member.name.characters.first,
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.mediumGray,
+                              ),
+                            ),
                           ),
                         ),
-                      )
-                    : null,
+                ),
               ),
               const SizedBox(width: 12),
               // 정보

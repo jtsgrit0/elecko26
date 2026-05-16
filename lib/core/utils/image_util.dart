@@ -3,6 +3,7 @@ class ImageUtil {
   /// [width], [height]가 지정되면 해당 크기로 리사이징하며, 기본적으로 WebP 형식으로 변환합니다.
   static String getProxyUrl(String url, {int? width, int? height}) {
     if (url.isEmpty) return url;
+    if (url.startsWith('assets/')) return url;
 
     // 모든 외부 이미지에 대해 프록시 적용 (CORS 및 리사이징)
     final encodedUrl = Uri.encodeComponent(url);

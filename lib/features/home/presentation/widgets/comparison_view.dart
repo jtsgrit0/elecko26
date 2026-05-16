@@ -129,7 +129,7 @@ class _ComparisonViewState extends State<ComparisonView>
                         child: member.imageUrl.isNotEmpty
                             ? AppNetworkImage(
                                 imageUrl:
-                                    '${ImageUtil.getProxyUrl(member.imageUrl, width: 100, height: 100)}&v=2',
+                                    ImageUtil.getProxyUrl(member.imageUrl, width: 100, height: 100),
                                 width: 40,
                                 height: 40,
                                 fit: BoxFit.cover,
@@ -292,7 +292,7 @@ class _ComparisonViewState extends State<ComparisonView>
             child: m.imageUrl.isNotEmpty
                 ? AppNetworkImage(
                     imageUrl:
-                        '${ImageUtil.getProxyUrl(m.imageUrl, width: 200, height: 200)}&v=2',
+                        ImageUtil.getProxyUrl(m.imageUrl, width: 200, height: 200),
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,

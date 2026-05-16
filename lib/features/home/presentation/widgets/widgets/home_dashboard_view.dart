@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/core/utils/utility_functions.dart' show districtMatchesRegion;
 import 'package:elecko26_new/domain/entities/member.dart';
+import 'package:elecko26_new/core/widgets/app_network_image.dart';
+import 'package:elecko26_new/core/utils/image_util.dart';
 import 'package:elecko26_new/features/home/presentation/widgets/member_card.dart';
 import 'package:elecko26_new/domain/usecases/calculate_election_possibility_usecase.dart';
 import 'package:get_it/get_it.dart';
@@ -278,29 +280,42 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
                         ),
                       ),
                       const SizedBox(width: 16),
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.lightGray,
-                          image: member.imageUrl.isNotEmpty
-                              ? DecorationImage(
-                                  image: NetworkImage(member.imageUrl),
-                                  fit: BoxFit.cover,
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: member.imageUrl.isEmpty
+                              ? Container(
+                                  color: AppColors.lightGray,
+                                  child: Center(
+                                    child: Text(
+                                      member.name.substring(0, 1),
+                                      style: AppTextStyles.headline4.copyWith(
+                                        color: AppColors.mediumGray,
+                                      ),
+                                    ),
+                                  ),
                                 )
-                              : null,
-                        ),
-                        child: member.imageUrl.isEmpty
-                            ? Center(
-                                child: Text(
-                                  member.name.substring(0, 1),
-                                  style: AppTextStyles.headline4.copyWith(
-                                    color: AppColors.mediumGray,
+                              : AppNetworkImage(
+                                  imageUrl: member.imageUrl.contains('nesdc.go.kr')
+                                      ? member.imageUrl
+                                      : ImageUtil.getProxyUrl(member.imageUrl,
+                                          width: 100, height: 100),
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(
+                                    color: AppColors.lightGray,
+                                  ),
+                                  errorWidget: (context, url, error) => Center(
+                                    child: Text(
+                                      member.name.substring(0, 1),
+                                      style: AppTextStyles.headline4.copyWith(
+                                        color: AppColors.mediumGray,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              )
-                            : null,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(

@@ -444,11 +444,15 @@ class _RegionalMemberCard extends StatelessWidget {
                         ),
                       )
                     : AppNetworkImage(
-                        imageUrl: member.imageUrl,
+                        imageUrl: member.imageUrl.contains('nesdc.go.kr')
+                            ? member.imageUrl
+                            : ImageUtil.getProxyUrl(member.imageUrl,
+                                width: 140, height: 140),
                         fit: BoxFit.cover,
                         memCacheWidth: 140,
                         memCacheHeight: 140,
-                        placeholder: (context, url) => Container(color: AppColors.lightGrey),
+                        placeholder: (context, url) =>
+                            Container(color: AppColors.lightGrey),
                         errorWidget: (context, url, error) => Center(
                           child: Text(
                             getProfileInitial(member.name),
