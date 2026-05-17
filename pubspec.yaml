@@ -52,7 +52,7 @@ dependencies:
   flutter_svg: ^2.0.9
   lottie: ^2.7.0
   xml: ^6.3.0
-  pdf_render: 1.4.0
+  pdfrx: ^0.0.46
   image: ^4.3.0
   url_launcher: ^6.1.14
 
@@ -90,6 +90,7 @@ flutter:
     - assets/images/candidates/
     - assets/pdf/
     - assets/data/
+    - assets/data/polls/
     # - data/candidates_split/
     # - data/polls/
     - api/

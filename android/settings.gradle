@@ -10,19 +10,45 @@ pluginManagement {
 
     includeBuild("${settings.ext.flutterSdkPath}/packages/flutter_tools/gradle")
 
-    repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
+    include ':firebase_core'
+    project(':firebase_core').projectDir = new File(System.getProperty("user.home") + "/.pub-cache/hosted/pub.dev/firebase_core-2.24.2/android")
+    include ':firebase_auth'
+    project(':firebase_auth').projectDir = new File(System.getProperty("user.home") + "/.pub-cache/hosted/pub.dev/firebase_auth-4.16.0/android")
+    include ':cloud_firestore'
+    project(':cloud_firestore').projectDir = new File(System.getProperty("user.home") + "/.pub-cache/hosted/pub.dev/cloud_firestore-4.14.0/android")
+    include ':google_sign_in'
+    project(':google_sign_in').projectDir = new File(System.getProperty("user.home") + "/.pub-cache/hosted/pub.dev/google_sign_in-6.1.6/android")
+    include ':google_sign_in_android'
+    project(':google_sign_in_android').projectDir = new File(System.getProperty("user.home") + "/.pub-cache/hosted/pub.dev/google_sign_in_android-6.1.35/android")
+    include ':sign_in_with_apple'
+    project(':sign_in_with_apple').projectDir = new File(System.getProperty("user.home") + "/.pub-cache/hosted/pub.dev/sign_in_with_apple-3.3.0/android")
+    include ':url_launcher'
+    project(':url_launcher').projectDir = new File(System.getProperty("user.home") + "/.pub-cache/hosted/pub.dev/url_launcher-6.1.14/android")
+    include ':url_launcher_android'
+    project(':url_launcher_android').projectDir = new File(System.getProperty("user.home") + "/.pub-cache/hosted/pub.dev/url_launcher_android-6.1.0/android")
+    include ':flutter_native_splash'
+    project(':flutter_native_splash').projectDir = new File(System.getProperty("user.home") + "/.pub-cache/hosted/pub.dev/flutter_native_splash-2.3.7/android")
+    include ':shared_preferences'
+    project(':shared_preferences').projectDir = new File(System.getProperty("user.home") + "/.pub-cache/hosted/pub.dev/shared_preferences-2.2.3/android")
+    include ':shared_preferences_android'
+    project(':shared_preferences_android').projectDir = new File(System.getProperty("user.home") + "/.pub-cache/hosted/pub.dev/shared_preferences_android-2.2.2/android")
+    include ':path_provider_android'
+    project(':path_provider_android').projectDir = new File(System.getProperty("user.home") + "/.pub-cache/hosted/pub.dev/path_provider_android-2.2.3/android")
+    include ':pdfrx'
+    project(':pdfrx').projectDir = new File(System.getProperty("user.home") + "/.pub-cache/hosted/pub.dev/pdfrx-0.0.46/android")
+
+repositories {
+    google()
+    mavenCentral()
+    gradlePluginPortal()
+    // Flutter SDK의 로컬 Maven 저장소 추가
+    maven { url "${settings.ext.flutterSdkPath}/packages/flutter_tools/gradle" }
+}
 }
 
 plugins {
-    id "dev.flutter.flutter-plugin-loader" version "1.0.0"
     id "com.android.application" version "8.4.0" apply false
-    // START: FlutterFire Configuration
     id "com.google.gms.google-services" version "4.3.15" apply false
-    // END: FlutterFire Configuration
     id "org.jetbrains.kotlin.android" version "1.9.23" apply false
 }
 
