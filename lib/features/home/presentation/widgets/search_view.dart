@@ -43,7 +43,15 @@ class _SearchViewState extends State<SearchView>
   @override
   bool get wantKeepAlive => true;
 
-  static const List<String> _searchCategories = ['전체', '광역', '기초', '의회'];
+  static const List<String> _searchCategories = [
+    '전체',
+    '시·도지사선거',
+    '구·시·군의 장선거',
+    '시·도의회의원선거',
+    '구·시·군의회의원선거',
+    '교육감선거',
+    '국회의원선거'
+  ];
   static const Map<String, List<String>> _officeOptionsByCategory = {
     '전체': [
       '전체',
@@ -57,11 +65,17 @@ class _SearchViewState extends State<SearchView>
       '도의원',
       '시의원',
       '구의원',
-      '군의원'
+      '구의원',
+      '군의원',
+      '교육감',
+      '국회의원'
     ],
-    '광역': ['전체', '도지사', '광역시장', '특별시장', '특별자치도지사'],
-    '기초': ['전체', '시장', '군수', '구청장'],
-    '의회': ['전체', '도의원', '시의원', '구의원', '군의원'],
+    '시·도지사선거': ['전체', '도지사', '광역시장', '특별시장', '특별자치도지사'],
+    '구·시·군의 장선거': ['전체', '시장', '군수', '구청장'],
+    '시·도의회의원선거': ['전체', '도의원', '시의원'],
+    '구·시·군의회의원선거': ['전체', '시의원', '구의원', '군의원'],
+    '교육감선거': ['전체', '교육감'],
+    '국회의원선거': ['전체', '국회의원'],
   };
 
   bool _isDependenciesInitialized = false;
@@ -384,26 +398,36 @@ class _SearchViewState extends State<SearchView>
       return true;
     }
 
+    if (member.electionType.isNotEmpty) {
+      if (member.electionType == _searchCategory) return true;
+      if (_searchCategory == '시·도지사선거' && member.electionType == '광역단체장 후보') return true;
+      if (_searchCategory == '국회의원선거' && member.electionType == '국회의원 선거') return true;
+      return false;
+    }
+
     final district = member.district;
     switch (_searchCategory) {
-      case '광역':
+      case '시·도지사선거':
         return district.contains('도지사') ||
             district.contains('광역시장') ||
             district.contains('특별시장') ||
             district.contains('특별자치도지사');
-      case '기초':
+      case '구·시·군의 장선거':
         return (district.endsWith('시장') &&
                 !district.contains('광역시장') &&
                 !district.contains('특별시장')) ||
             district.endsWith('군수') ||
             district.endsWith('구청장');
-      case '의회':
-        // '의원'으로만 저장된 후보도 의회 카테고리에 포함
-        return district.endsWith('도의원') ||
-            district.endsWith('시의원') ||
-            district.endsWith('구의원') ||
+      case '시·도의회의원선거':
+        return district.endsWith('도의원') || (district.endsWith('시의원') && district.contains('광역시'));
+      case '구·시·군의회의원선거':
+        return district.endsWith('구의원') ||
             district.endsWith('군의원') ||
-            district == '의원';
+            (district.endsWith('시의원') && !district.contains('광역시'));
+      case '교육감선거':
+        return district.endsWith('교육감');
+      case '국회의원선거':
+        return district.endsWith('국회의원');
       default:
         return true;
     }
@@ -417,19 +441,22 @@ class _SearchViewState extends State<SearchView>
     final district = member.district;
     switch (_searchOffice) {
       case '도지사':
-        return district.contains('도지사');
+        return district.contains('도지사') || (district.endsWith('도') && member.electionType == '시·도지사선거');
       case '광역시장':
-        return district.contains('광역시장');
+        return district.contains('광역시장') || (district.endsWith('광역시') && member.electionType == '시·도지사선거');
       case '특별시장':
-        return district.contains('특별시장');
+        return district.contains('특별시장') || (district == '서울특별시' && member.electionType == '시·도지사선거');
       case '특별자치도지사':
-        return district.contains('특별자치도지사');
+        return district.contains('특별자치도지사') || (district.contains('특별자치도') && member.electionType == '시·도지사선거');
+      case '교육감':
+        return district.contains('교육감') || member.electionType == '교육감선거';
+      case '국회의원':
+        return district.contains('국회의원') || member.electionType == '국회의원선거';
       case '시장':
         return district.endsWith('시장') &&
             !district.contains('광역시장') &&
             !district.contains('특별시장');
       case '시의원':
-        // 일반 '의원'도 시의원 필터에 포함
         return district.endsWith('시의원') || district == '의원';
       default:
         return district.endsWith(_searchOffice);

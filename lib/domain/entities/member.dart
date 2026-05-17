@@ -18,6 +18,7 @@ class Member extends Equatable {
   final String education;
   final String career;
   final String criminalRecord;
+  final String electionType;
   final List<Poll> polls;
   final double electionPossibility;
   final bool isFavorite;
@@ -46,6 +47,7 @@ class Member extends Equatable {
     this.education = '',
     this.career = '',
     this.criminalRecord = '',
+    this.electionType = '',
     this.polls = const [],
     this.electionPossibility = 0.0,
     this.isFavorite = false,
@@ -76,6 +78,7 @@ class Member extends Equatable {
         education,
         career,
         criminalRecord,
+        electionType,
         polls,
         electionPossibility,
         isFavorite,
@@ -105,6 +108,7 @@ class Member extends Equatable {
     String? education,
     String? career,
     String? criminalRecord,
+    String? electionType,
     List<Poll>? polls,
     double? electionPossibility,
     bool? isFavorite,
@@ -133,6 +137,7 @@ class Member extends Equatable {
       education: education ?? this.education,
       career: career ?? this.career,
       criminalRecord: criminalRecord ?? this.criminalRecord,
+      electionType: electionType ?? this.electionType,
       polls: polls ?? this.polls,
       electionPossibility: electionPossibility ?? this.electionPossibility,
       isFavorite: isFavorite ?? this.isFavorite,
