@@ -1,7 +1,8 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:pdf_render/pdf_render.dart';
+// import 'package:pdfrx/pdfrx.dart'; // Changed from pdf_render
 import 'dart:ui';
+import 'package:image/image.dart' as img; // Added for image encoding
 
 class PdfImageRenderer extends StatefulWidget {
   final String pdfPath;
@@ -67,45 +68,85 @@ class _PdfImageRendererState extends State<PdfImageRenderer> {
   @override
   void initState() {
     super.initState();
-    if (widget.pdfPath.isNotEmpty) {
-      _imageFuture = _renderPdfPage();
-    }
+    // if (widget.pdfPath.isNotEmpty) {
+    //   _imageFuture = _renderPdfPage();
+    // }
+    _imageFuture = Future.value(null); // PDF 렌더링이 지원되지 않음을 나타냄
   }
 
   @override
   void didUpdateWidget(PdfImageRenderer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.pdfPath != oldWidget.pdfPath ||
-        widget.pageNumber != oldWidget.pageNumber) {
-      setState(() {
-        if (widget.pdfPath.isNotEmpty) {
-          _imageFuture = _renderPdfPage();
-        } else {
-          _imageFuture = null;
-        }
-      });
+    // if (widget.pdfPath != oldWidget.pdfPath ||
+    //     widget.pageNumber != oldWidget.pageNumber) {
+    //   setState(() {
+    //     if (widget.pdfPath.isNotEmpty) {
+    //       _imageFuture = _renderPdfPage();
+    //     } else {
+    //       _imageFuture = null;
+    //     }
+    //   });
+    // }
+    // pdfrx가 제거되었으므로 PDF 렌더링은 지원되지 않습니다.
+    // 항상 null 또는 null로 해결되는 Future를 설정합니다.
+    if (widget.pdfPath.isNotEmpty) {
+      _imageFuture = Future.value(null);
+    } else {
+      _imageFuture = null;
     }
   }
 
+  /*
   Future<Uint8List?> _renderPdfPage() async {
     if (widget.pdfPath.isEmpty) return null;
+
+    PdfDocument? doc;
     try {
-      final doc = await PdfDocument.openFile(widget.pdfPath);
-      if (widget.pageNumber > doc.pageCount) {
-        await doc.dispose();
+      if (widget.pdfPath.startsWith('assets/')) {
+        doc = await PdfDocument.openAsset(widget.pdfPath);
+      } else {
+        doc = await PdfDocument.openFile(widget.pdfPath);
+      }
+
+      if (widget.pageNumber > doc.pages.length) {
         return null;
       }
-      final page = await doc.getPage(widget.pageNumber);
-      final imgPDF = await page.render(width: 200); // 해상도 조절
-      final img = await imgPDF.createImageDetached();
-      final imgBytes = await img.toByteData(format: ImageByteFormat.png);
-      await doc.dispose();
-      return imgBytes?.buffer.asUint8List();
+
+      final page =
+          doc.pages[widget.pageNumber - 1]; // pdfrx pages are 0-indexed
+
+      // Render the page with a reasonable resolution
+      final double renderWidth = widget.width ?? 200;
+      final double renderHeight =
+          widget.height ?? (page.height * renderWidth / page.width);
+
+      final PdfPageImage? pageImage = await page.render(
+        width: renderWidth,
+        height: renderHeight,
+      );
+
+      if (pageImage == null) {
+        return null;
+      }
+
+      final img.Image? image = pageImage.createImageNF();
+      pageImage.dispose(); // Dispose the PdfPageImage after creating img.Image
+
+      if (image == null) {
+        return null;
+      }
+
+      final Uint8List imgBytes = img.encodePng(image); // Encode to PNG
+
+      return imgBytes;
     } catch (e) {
-      debugPrint('Error rendering PDF page: $e');
+      debugPrint('Error rendering PDF page with pdfrx: $e');
       return null;
+    } finally {
+      doc?.close(); // Close the PdfDocument
     }
   }
+  */
 
   @override
   Widget build(BuildContext context) {

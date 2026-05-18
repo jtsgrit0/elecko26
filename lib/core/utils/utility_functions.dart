@@ -100,24 +100,18 @@ String getProfileInitial(String name) {
   return trimmed.characters.first;
 }
 
-/// 지역명 매칭 유틸리티
-///
-/// 저장된 지역명(예: 충청북도/전북특별자치도)과 실제 district 문자열(예: 충북 청주시장)을
-/// 안정적으로 매칭하기 위해 약칭/정식명/행정명 변형을 함께 비교합니다.
-bool districtMatchesRegion(String district, String region) {
-  if (region == '전국') return true;
+/// 지역명 또는 선거구명에서 정규화된 키워드 목록을 추출합니다.
+/// 다양한 형태의 지역명을 통일된 키워드로 변환하여 매칭의 정확도를 높입니다.
+List<String> _getNormalizedRegionKeywords(String name) {
+  final normalizedName = name.replaceAll(' ', '');
+  final keywords = <String>{};
 
-  final normalizedDistrict = district.replaceAll(' ', '');
-  final normalizedRegion = region.replaceAll(' ', '');
+  if (normalizedName.isEmpty) return keywords.toList();
 
-  // 1. 직접 매칭 또는 상호 포함 관계 확인
-  if (normalizedDistrict == normalizedRegion ||
-      normalizedDistrict.contains(normalizedRegion) ||
-      normalizedRegion.contains(normalizedDistrict)) {
-    return true;
-  }
+  // 1. 원본 이름 및 정규화된 이름 추가
+  keywords.add(normalizedName);
 
-  // 2. 특별/광역시 축약형 매칭 (예: "서울" vs "서울특별시")
+  // 2. 특별/광역시 축약형 추가 (예: "서울" -> "서울특별시")
   const shortForms = {
     '서울': '서울특별시',
     '부산': '부산광역시',
@@ -127,17 +121,85 @@ bool districtMatchesRegion(String district, String region) {
     '대전': '대전광역시',
     '울산': '울산광역시',
     '세종': '세종특별자치시',
+    '경기': '경기도',
+    '강원': '강원특별자치도',
+    '충북': '충청북도',
+    '충남': '충청남도',
+    '전북': '전북특별자치도',
+    '전남': '전라남도',
+    '경북': '경상북도',
+    '경남': '경상남도',
+    '제주': '제주특별자치도',
   };
+  shortForms.forEach((short, full) {
+    if (normalizedName.contains(short) &&
+        normalizedName.length <= full.length + 2) {
+      // 짧은 이름이 포함되고 길이가 크게 차이나지 않을 때
+      keywords.add(short);
+      keywords.add(full);
+    }
+    if (normalizedName.contains(full)) {
+      keywords.add(short);
+      keywords.add(full);
+    }
+  });
 
-  if (shortForms[normalizedDistrict] == normalizedRegion ||
-      shortForms[normalizedRegion] == normalizedDistrict) {
-    return true;
+  // 3. getParentRegion을 통해 상위 지역명 추가
+  final parentRegion = getParentRegion(name);
+  if (parentRegion.isNotEmpty) {
+    keywords.add(parentRegion.replaceAll(' ', ''));
+    // 상위 지역의 축약형도 추가
+    shortForms.forEach((short, full) {
+      if (parentRegion == full) {
+        keywords.add(short);
+      }
+    });
   }
 
-  // 3. 상위 지역 추출을 통한 매칭 (기존 로직)
-  final parentRegion = getParentRegion(district);
-  if (parentRegion.isNotEmpty && parentRegion == region) {
-    return true;
+  // 4. 특정 접미사 제거 (예: "시장", "구청장", "의원")
+  final suffixesToRemove = ['시장', '구청장', '군수', '의원', '도지사'];
+  String cleanedName = normalizedName;
+  for (final suffix in suffixesToRemove) {
+    if (cleanedName.endsWith(suffix)) {
+      cleanedName =
+          cleanedName.substring(0, cleanedName.length - suffix.length);
+      keywords.add(cleanedName);
+    }
+  }
+
+  // 5. "시", "도", "구", "군" 등의 행정구역 단위 제거
+  final adminUnitsToRemove = ['시', '도', '구', '군'];
+  String nameWithoutAdminUnits = normalizedName;
+  for (final unit in adminUnitsToRemove) {
+    if (nameWithoutAdminUnits.endsWith(unit)) {
+      nameWithoutAdminUnits = nameWithoutAdminUnits.substring(
+          0, nameWithoutAdminUnits.length - unit.length);
+      keywords.add(nameWithoutAdminUnits);
+    }
+  }
+
+  return keywords.where((k) => k.isNotEmpty).toSet().toList();
+}
+
+/// 지역명 매칭 유틸리티
+///
+/// 저장된 지역명(예: 충청북도/전북특별자치도)과 실제 district 문자열(예: 충북 청주시장)을
+/// 안정적으로 매칭하기 위해 약칭/정식명/행정명 변형을 함께 비교합니다.
+bool districtMatchesRegion(String district, String region) {
+  if (region == '전국') return true;
+
+  final districtKeywords = _getNormalizedRegionKeywords(district);
+  final regionKeywords = _getNormalizedRegionKeywords(region);
+
+  // 두 키워드 집합 사이에 공통된 요소가 있는지 확인
+  for (final dKeyword in districtKeywords) {
+    for (final rKeyword in regionKeywords) {
+      if (dKeyword == rKeyword ||
+          dKeyword.contains(rKeyword) ||
+          rKeyword.contains(dKeyword)) {
+        return true;
+      }
+    }
   }
 
   return false;

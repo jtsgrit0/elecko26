@@ -9,6 +9,7 @@ import 'package:elecko26_new/data/datasources/local_storage_service.dart';
 import 'dart:async';
 import 'package:elecko26_new/features/home/presentation/widgets/member_card.dart';
 import 'package:elecko26_new/features/home/presentation/pages/member_detail_page.dart';
+import 'package:elecko26_new/core/utils/image_util.dart';
 
 class RegionalMemberVotingList extends StatefulWidget {
   final String region;
@@ -88,7 +89,7 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
       }
       grouped[member.district]!.add(member);
     }
-    
+
     // 선거구명(district)을 사용자 요청 순서(도지사 > 시장 > 구의원 > 군수 > 군의원)에 따라 정렬
     final sortedKeys = grouped.keys.toList()
       ..sort((a, b) {
@@ -102,7 +103,7 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
     for (final key in sortedKeys) {
       sortedGrouped[key] = grouped[key]!;
     }
-    
+
     _cachedGroupedMembers = sortedGrouped;
   }
 
@@ -129,7 +130,7 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
       final localStorage = sl<LocalStorageService>();
       final votes = await localStorage.getAllVotes();
       final timestamps = await localStorage.getAllVoteTimestamps();
-      
+
       // 1단계: 캐시된 데이터를 먼저 즉시 표시 (블로킹 없음)
       final cached = await sl<MemberRepository>().getCachedMembers();
       if (cached.isNotEmpty) {
@@ -297,7 +298,6 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
         ),
       );
     }
-
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
