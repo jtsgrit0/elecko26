@@ -402,7 +402,6 @@ class _SearchViewState extends State<SearchView>
       if (member.electionType == _searchCategory) return true;
       if (_searchCategory == '시·도지사선거' && member.electionType == '광역단체장 후보') return true;
       if (_searchCategory == '국회의원선거' && member.electionType == '국회의원 선거') return true;
-      return false;
     }
 
     final district = member.district;
@@ -439,19 +438,22 @@ class _SearchViewState extends State<SearchView>
     }
 
     final district = member.district;
+    final region = member.region;
+    final isGwangyeok = member.electionType == '시·도지사선거' || member.electionType == '광역단체장 후보';
+
     switch (_searchOffice) {
       case '도지사':
-        return district.contains('도지사') || (district.endsWith('도') && member.electionType == '시·도지사선거');
+        return district.contains('도지사') || ((district.endsWith('도') || region.endsWith('도')) && isGwangyeok);
       case '광역시장':
-        return district.contains('광역시장') || (district.endsWith('광역시') && member.electionType == '시·도지사선거');
+        return district.contains('광역시장') || ((district.endsWith('광역시') || region.endsWith('광역시')) && isGwangyeok);
       case '특별시장':
-        return district.contains('특별시장') || (district == '서울특별시' && member.electionType == '시·도지사선거');
+        return district.contains('특별시장') || ((district == '서울특별시' || region == '서울특별시') && isGwangyeok);
       case '특별자치도지사':
-        return district.contains('특별자치도지사') || (district.contains('특별자치도') && member.electionType == '시·도지사선거');
+        return district.contains('특별자치도지사') || ((district.contains('특별자치도') || region.contains('특별자치도')) && isGwangyeok);
       case '교육감':
         return district.contains('교육감') || member.electionType == '교육감선거';
       case '국회의원':
-        return district.contains('국회의원') || member.electionType == '국회의원선거';
+        return district.contains('국회의원') || member.electionType == '국회의원선거' || member.electionType == '국회의원 선거';
       case '시장':
         return district.endsWith('시장') &&
             !district.contains('광역시장') &&

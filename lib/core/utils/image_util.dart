@@ -10,16 +10,16 @@ class ImageUtil {
     // 강제 WebP 변환 옵션을 제거하여 안정성 확보 (PNG 등 포맷 존중)
     String proxyUrl = 'https://wsrv.nl/?url=$encodedUrl';
 
-    if (width != null) {
-      proxyUrl += '&w=$width';
-    }
-    if (height != null) {
-      proxyUrl += '&h=$height';
-    }
-
-    // 리사이징 시 이미지가 잘리지 않도록 cover fit 적용
-    if (width != null || height != null) {
-      proxyUrl += '&fit=cover';
+    if (!url.contains('cpmadang.org')) {
+      if (width != null) {
+        proxyUrl += '&w=$width';
+      }
+      if (height != null) {
+        proxyUrl += '&h=$height';
+      }
+      if (width != null || height != null) {
+        proxyUrl += '&fit=cover';
+      }
     }
 
     return proxyUrl;
