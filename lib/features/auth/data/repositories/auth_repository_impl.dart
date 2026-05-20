@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import '../../domain/entities/user.dart';
@@ -36,7 +35,6 @@ class AuthRepositoryImpl implements AuthRepository {
     if (user.providerData.isNotEmpty) {
       final providerId = user.providerData.first.providerId;
       if (providerId == 'google.com') provider = AuthProvider.google;
-      if (providerId == 'apple.com') provider = AuthProvider.apple;
     }
 
     return User(
@@ -131,39 +129,6 @@ class AuthRepositoryImpl implements AuthRepository {
       return AuthResult.failure('Firebase 오류: ${e.message ?? e.code}');
     } catch (e) {
       return AuthResult.failure('구글 로그인 중 오류 발생: $e');
-    }
-  }
-
-  @override
-  Future<AuthResult> signInWithApple() async {
-    try {
-      if (Firebase.apps.isEmpty)
-        return AuthResult.failure('Firebase가 활성화되지 않았습니다.');
-      final credential = await SignInWithApple.getAppleIDCredential(
-        scopes: [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ],
-      );
-
-      final firebase_auth.OAuthProvider oAuthProvider =
-          firebase_auth.OAuthProvider('apple.com');
-      final firebase_auth.AuthCredential authCredential =
-          oAuthProvider.credential(
-        idToken: credential.identityToken,
-        accessToken: credential.authorizationCode,
-      );
-
-      final userCredential =
-          await _firebaseAuth.signInWithCredential(authCredential);
-      if (userCredential.user == null)
-        return AuthResult.failure('애플 로그인 연동에 실패했습니다.');
-
-      return AuthResult.success(_mapFirebaseUser(userCredential.user)!);
-    } on FirebaseException catch (e) {
-      return AuthResult.failure('Firebase 오류: ${e.message ?? e.code}');
-    } catch (e) {
-      return AuthResult.failure('애플 로그인 중 오류 발생: $e');
     }
   }
 

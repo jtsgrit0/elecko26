@@ -1,18 +1,12 @@
-import 'dart:async';
-import 'package:elecko26_new/core/widgets/app_network_image.dart';
-import 'package:elecko26_new/core/utils/image_util.dart';
 import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/core/utils/utility_functions.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/features/home/presentation/widgets/member_card.dart';
 
-import 'package:elecko26_new/domain/entities/analysis_result.dart';
-
 class SearchView extends StatefulWidget {
   final Stream<List<Member>> membersStream;
   final List<Member> cachedMembers;
-  final Map<String, AnalysisResult> analysisResults;
   final String userRegion;
   final Function(Member) onMemberSelected;
 
@@ -20,7 +14,6 @@ class SearchView extends StatefulWidget {
     Key? key,
     required this.membersStream,
     required this.cachedMembers,
-    required this.analysisResults,
     required this.userRegion,
     required this.onMemberSelected,
   }) : super(key: key);
@@ -29,29 +22,13 @@ class SearchView extends StatefulWidget {
   State<SearchView> createState() => _SearchViewState();
 }
 
-class _SearchViewState extends State<SearchView>
-    with AutomaticKeepAliveClientMixin {
+class _SearchViewState extends State<SearchView> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _searchCategory = '전체';
   String _searchOffice = '전체';
-  Timer? _debounceTimer;
-  List<Member> _allMembers = [];
-  List<Member> _filteredMembers = [];
-  StreamSubscription? _membersSubscription;
 
-  @override
-  bool get wantKeepAlive => true;
-
-  static const List<String> _searchCategories = [
-    '전체',
-    '시·도지사선거',
-    '구·시·군의 장선거',
-    '시·도의회의원선거',
-    '구·시·군의회의원선거',
-    '교육감선거',
-    '국회의원선거'
-  ];
+  static const List<String> _searchCategories = ['전체', '광역', '기초', '의회'];
   static const Map<String, List<String>> _officeOptionsByCategory = {
     '전체': [
       '전체',
@@ -65,50 +42,16 @@ class _SearchViewState extends State<SearchView>
       '도의원',
       '시의원',
       '구의원',
-      '구의원',
-      '군의원',
-      '교육감',
-      '국회의원'
+      '군의원'
     ],
-    '시·도지사선거': ['전체', '도지사', '광역시장', '특별시장', '특별자치도지사'],
-    '구·시·군의 장선거': ['전체', '시장', '군수', '구청장'],
-    '시·도의회의원선거': ['전체', '도의원', '시의원'],
-    '구·시·군의회의원선거': ['전체', '시의원', '구의원', '군의원'],
-    '교육감선거': ['전체', '교육감'],
-    '국회의원선거': ['전체', '국회의원'],
+    '광역': ['전체', '도지사', '광역시장', '특별시장', '특별자치도지사'],
+    '기초': ['전체', '시장', '군수', '구청장'],
+    '의회': ['전체', '도의원', '시의원', '구의원', '군의원'],
   };
-
-  bool _isDependenciesInitialized = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _allMembers = widget.cachedMembers;
-    // _applyFilters(); // initState에서 제거
-    _membersSubscription = widget.membersStream.listen((members) {
-      if (mounted) {
-        setState(() {
-          _allMembers = members;
-          _applyFilters();
-        });
-      }
-    });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_isDependenciesInitialized) {
-      _applyFilters();
-      _isDependenciesInitialized = true;
-    }
-  }
 
   @override
   void dispose() {
     _searchController.dispose();
-    _debounceTimer?.cancel();
-    _membersSubscription?.cancel();
     super.dispose();
   }
 
@@ -136,14 +79,8 @@ class _SearchViewState extends State<SearchView>
       child: TextField(
         controller: _searchController,
         onChanged: (value) {
-          _debounceTimer?.cancel();
-          _debounceTimer = Timer(const Duration(milliseconds: 300), () {
-            if (mounted) {
-              setState(() {
-                _searchQuery = value;
-                _applyFilters();
-              });
-            }
+          setState(() {
+            _searchQuery = value;
           });
         },
         decoration: InputDecoration(
@@ -206,7 +143,6 @@ class _SearchViewState extends State<SearchView>
                       setState(() {
                         _searchCategory = category;
                         _searchOffice = '전체';
-                        _applyFilters();
                       });
                     },
                   ),
@@ -235,7 +171,6 @@ class _SearchViewState extends State<SearchView>
                     onTap: () {
                       setState(() {
                         _searchOffice = office;
-                        _applyFilters();
                       });
                     },
                   ),
@@ -286,102 +221,66 @@ class _SearchViewState extends State<SearchView>
     );
   }
 
-  // 검색 인덱스 캐시 (memberId -> lowercase search string)
-  final Map<String, String> _searchIndex = {};
-
-  void _applyFilters() {
-    final query = _searchQuery.toLowerCase();
-
-    final filtered = _allMembers.where((m) {
-      // 지역 필터: m.region을 사용 (m.district는 직위명이므로 사용 불가)
-      if (widget.userRegion != '전국') {
-        final region = m.region;
-        if (region.isEmpty || region == '정보 없음') {
-          // 지역 정보 없는 후보는 '전국' 선택 시에만 표시
-          return false;
-        } else {
-          // 선택된 지역과 매칭되는지 확인
-          final normalizedRegion = region.replaceAll(' ', '');
-          final normalizedSelected = widget.userRegion.replaceAll(' ', '');
-          if (!normalizedRegion.contains(normalizedSelected) &&
-              !normalizedSelected.contains(normalizedRegion)) {
-            return false;
-          }
-        }
-      }
-
-      if (!_matchesSearchCategory(m)) return false;
-      if (!_matchesSearchOffice(m)) return false;
-
-      if (query.isEmpty) return true;
-
-      // 검색 인덱스 생성 및 활용
-      final searchStr = _searchIndex.putIfAbsent(m.id, () {
-        return '${m.name} ${m.party} ${m.region} ${m.district} ${m.districtName}'
-            .toLowerCase();
-      });
-
-      return searchStr.contains(query);
-    }).toList();
-
-    // 이미지 선행 로딩 (context가 유효한 경우)
-    if (context.mounted) {
-      _precacheMemberImages(context, filtered);
-    }
-
-    // 당선 가능성 캐시를 통한 정렬 최적화
-    final possibilities = <String, double>{};
-    for (var m in filtered) {
-      final raw = widget.analysisResults[m.id]?.electionPossibility ??
-          m.electionPossibility;
-      // 이미 % 단위(>1)인 경우 0~1 범위로 변환
-      possibilities[m.id] = raw > 1.0 ? raw / 100.0 : raw;
-    }
-
-    filtered
-        .sort((a, b) => possibilities[b.id]!.compareTo(possibilities[a.id]!));
-
-    _filteredMembers = filtered;
-  }
-
   Widget _buildSearchResults() {
-    if (_allMembers.isEmpty && _filteredMembers.isEmpty) {
-      return const Center(child: CircularProgressIndicator(color: Colors.red));
-    }
-    return _buildResultList(_filteredMembers);
-  }
+    return StreamBuilder<List<Member>>(
+      stream: widget.membersStream,
+      builder: (context, snapshot) {
+        final allMembers = snapshot.data ?? widget.cachedMembers;
+        if (allMembers.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-  Widget _buildResultList(List<Member> results) {
-    if (results.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.search_off, size: 64, color: AppColors.grey),
-            const SizedBox(height: 16),
-            Text(
-              '검색 결과가 없습니다',
-              style: AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
+        final filteredMembers = allMembers.where((m) {
+          // 지역 필터링 먼저 적용
+          if (!districtMatchesRegion(m.district, widget.userRegion))
+            return false;
+
+          if (!_matchesSearchCategory(m)) return false;
+          if (!_matchesSearchOffice(m)) return false;
+
+          final query = _searchQuery.toLowerCase();
+          return m.name.toLowerCase().contains(query) ||
+              m.party.toLowerCase().contains(query) ||
+              m.district.toLowerCase().contains(query) ||
+              m.description.toLowerCase().contains(query) ||
+              m.policies.any((p) => p.toLowerCase().contains(query)) ||
+              m.achievementsList.any((a) => a.toLowerCase().contains(query));
+        }).toList();
+
+        // 당선 가능성 높은 순으로 정렬
+        filteredMembers.sort(
+            (a, b) => b.electionPossibility.compareTo(a.electionPossibility));
+
+        if (filteredMembers.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.search_off, size: 64, color: AppColors.grey),
+                const SizedBox(height: 16),
+                Text(
+                  '검색 결과가 없습니다',
+                  style:
+                      AppTextStyles.bodyLarge.copyWith(color: AppColors.grey),
+                ),
+              ],
             ),
-          ],
-        ),
-      );
-    }
+          );
+        }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: results.length,
-      itemBuilder: (context, index) {
-        final member = results[index];
-        final analysisResult = widget.analysisResults[member.id];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: MemberCard(
-            key: ValueKey(member.id),
-            member: member,
-            analysisResult: analysisResult,
-            onTap: () => widget.onMemberSelected(member),
-          ),
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: filteredMembers.length,
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: MemberCard(
+                key: ValueKey(filteredMembers[index].id),
+                member: filteredMembers[index],
+                onTap: () => widget.onMemberSelected(filteredMembers[index]),
+              ),
+            );
+          },
         );
       },
     );
@@ -389,7 +288,6 @@ class _SearchViewState extends State<SearchView>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // AutomaticKeepAliveClientMixin 필수 호출
     return _buildSearchPage();
   }
 
@@ -398,38 +296,24 @@ class _SearchViewState extends State<SearchView>
       return true;
     }
 
-    if (member.electionType.isNotEmpty) {
-      if (member.electionType == _searchCategory) return true;
-      if (_searchCategory == '시·도지사선거' && member.electionType == '광역단체장 후보')
-        return true;
-      if (_searchCategory == '국회의원선거' && member.electionType == '국회의원 선거')
-        return true;
-    }
-
     final district = member.district;
     switch (_searchCategory) {
-      case '시·도지사선거':
+      case '광역':
         return district.contains('도지사') ||
             district.contains('광역시장') ||
             district.contains('특별시장') ||
             district.contains('특별자치도지사');
-      case '구·시·군의 장선거':
+      case '기초':
         return (district.endsWith('시장') &&
                 !district.contains('광역시장') &&
                 !district.contains('특별시장')) ||
             district.endsWith('군수') ||
             district.endsWith('구청장');
-      case '시·도의회의원선거':
+      case '의회':
         return district.endsWith('도의원') ||
-            (district.endsWith('시의원') && district.contains('광역시'));
-      case '구·시·군의회의원선거':
-        return district.endsWith('구의원') ||
-            district.endsWith('군의원') ||
-            (district.endsWith('시의원') && !district.contains('광역시'));
-      case '교육감선거':
-        return district.endsWith('교육감');
-      case '국회의원선거':
-        return district.endsWith('국회의원');
+            district.endsWith('시의원') ||
+            district.endsWith('구의원') ||
+            district.endsWith('군의원');
       default:
         return true;
     }
@@ -441,53 +325,21 @@ class _SearchViewState extends State<SearchView>
     }
 
     final district = member.district;
-    final region = member.region;
-    final isGwangyeok =
-        member.electionType == '시·도지사선거' || member.electionType == '광역단체장 후보';
-
     switch (_searchOffice) {
       case '도지사':
-        return district.contains('도지사') ||
-            ((district.endsWith('도') || region.endsWith('도')) && isGwangyeok);
+        return district.contains('도지사') && !district.contains('특별자치도지사');
       case '광역시장':
-        return district.contains('광역시장') ||
-            ((district.endsWith('광역시') || region.endsWith('광역시')) &&
-                isGwangyeok);
+        return district.contains('광역시장');
       case '특별시장':
-        return district.contains('특별시장') ||
-            ((district == '서울특별시' || region == '서울특별시') && isGwangyeok);
+        return district.contains('특별시장');
       case '특별자치도지사':
-        return district.contains('특별자치도지사') ||
-            ((district.contains('특별자치도') || region.contains('특별자치도')) &&
-                isGwangyeok);
-      case '교육감':
-        return district.contains('교육감') || member.electionType == '교육감선거';
-      case '국회의원':
-        return district.contains('국회의원') ||
-            member.electionType == '국회의원선거' ||
-            member.electionType == '국회의원 선거';
+        return district.contains('특별자치도지사');
       case '시장':
         return district.endsWith('시장') &&
             !district.contains('광역시장') &&
             !district.contains('특별시장');
-      case '시의원':
-        return district.endsWith('시의원') || district == '의원';
       default:
         return district.endsWith(_searchOffice);
-    }
-  }
-
-  void _precacheMemberImages(BuildContext context, List<Member> members) {
-    for (final member in members) {
-      if (member.imageUrl.isEmpty) continue;
-
-      final url =
-          ImageUtil.getProxyUrl(member.imageUrl, width: 120, height: 120);
-      if (url.startsWith('assets/')) {
-        precacheImage(AssetImage(url), context);
-      } else {
-        precacheImage(NetworkImage(url), context);
-      }
     }
   }
 }

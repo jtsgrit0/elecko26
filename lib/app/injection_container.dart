@@ -111,8 +111,7 @@ void _registerAll() {
       SignUpWithEmailUseCase(sl<AuthRepository>()));
   sl.registerSingleton<SignInWithGoogleUseCase>(
       SignInWithGoogleUseCase(sl<AuthRepository>()));
-  sl.registerSingleton<SignInWithAppleUseCase>(
-      SignInWithAppleUseCase(sl<AuthRepository>()));
+
   sl.registerSingleton<SignInWithFacebookUseCase>(
       SignInWithFacebookUseCase(sl<AuthRepository>()));
   sl.registerSingleton<SignInWithKakaoUseCase>(

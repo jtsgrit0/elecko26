@@ -14,9 +14,6 @@ abstract class AuthRepository {
   /// 구글 로그인
   Future<AuthResult> signInWithGoogle();
 
-  /// 애플 로그인
-  Future<AuthResult> signInWithApple();
-
   /// 페이스북 로그인
   Future<AuthResult> signInWithFacebook();
 

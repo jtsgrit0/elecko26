@@ -31,29 +31,27 @@ def find_column_indices(header):
     return indices
 
 def get_position_from_election_type(election_type, region_name):
-    if "도지사" in election_type or "교육감" in election_type or "특별시장" in election_type or "광역시장" in election_type:
+    if election_type == "시·도지사선거":
         if "서울특별시" in region_name: return "특별시장"
         if "특별자치" in region_name: return "특별자치도지사"
         if "광역시" in region_name: return "광역시장"
         return "도지사"
-    if "구·시·군의 장 선거" in election_type or "기초단체장" in election_type or "시장선거" in election_type or "군수선거" in election_type or "구청장선거" in election_type:
+    if election_type == "구·시·군의 장선거":
         if region_name.endswith("구"): return "구청장"
         if region_name.endswith("군"): return "군수"
         return "시장"
-    if "의회의원" in election_type or "의원선거" in election_type:
-        if "시·도의회" in election_type or "광역" in election_type:
-            return "도의원"
+    if election_type == "시·도의회의원선거":
+        # 시·도의회의원선거는 지역명에 따라 도의원/시의원 구분
+        if "도" in region_name or "특별자치도" in region_name: return "도의원"
+        return "시의원"
+    if election_type == "구·시·군의회의원선거":
+        # 구·시·군의회의원선거는 지역명에 따라 구의원/군의원/시의원 구분
         if region_name.endswith("구"): return "구의원"
         if region_name.endswith("군"): return "군의원"
-        return "시의원"
-    if "국회" in election_type: return "국회의원"
-    if "시장" in election_type: return "시장"
-    if "군수" in election_type: return "군수"
-    if "구청장" in election_type: return "구청장"
-    if "의원" in election_type:
-        if "도의회" in election_type: return "도의원"
-        return "시의원"
-    return "의원"
+        return "시의원" # 시의원 (기초의원)
+    if election_type == "교육감선거": return "교육감"
+    if election_type == "국회의원선거": return "국회의원"
+    return "의원" # 기본값, 필요시 더 구체화
 
 def extract_info_from_pdf_text(doc):
     """PDF 내용을 직접 읽어 선거 유형 및 지역 정보 추출"""

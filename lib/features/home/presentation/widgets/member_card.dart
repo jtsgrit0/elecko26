@@ -1,12 +1,13 @@
-import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/widgets/app_network_image.dart';
+import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/utils/image_util.dart';
 import 'package:elecko26_new/core/utils/party_util.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
-import 'package:elecko26_new/domain/entities/analysis_result.dart';
 import 'package:elecko26_new/domain/usecases/member_usecases.dart';
 import 'package:elecko26_new/app/injection_container.dart';
+
+import 'package:elecko26_new/domain/entities/analysis_result.dart';
 
 class MemberCard extends StatelessWidget {
   final Member member;
@@ -14,158 +15,207 @@ class MemberCard extends StatelessWidget {
   final int? rank;
   final AnalysisResult? analysisResult;
 
-  const MemberCard({
-    Key? key,
-    required this.member,
-    this.onTap,
-    this.rank,
-    this.analysisResult,
-  }) : super(key: key);
+  const MemberCard({Key? key, required this.member, this.onTap, this.rank, this.analysisResult})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final possibility =
-        analysisResult?.electionPossibility ?? member.electionPossibility;
-    final partyLogoUrl = PartyUtil.getPartyLogoUrl(member.party);
+    // 당선 가능성: analysisResult 우선, 없으면 member.electionPossibility
+    final raw = analysisResult?.electionPossibility ?? member.electionPossibility;
+    // 방어 코드: 이미 % 단위(>1.0)인 경우 정규화
+    final possibility = raw > 1.0 ? raw / 100.0 : raw;
 
-    return RepaintBoundary(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.primary.withOpacity(0.15),
-            ),
-          ),
-          child: Row(
-            children: [
-              if (rank != null && rank! <= 3) ...[
-                SizedBox(
-                  width: 32,
-                  child: Text(
-                    '${rank}위',
-                    style: AppTextStyles.headline4.copyWith(
-                      color: AppColors.error,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                const SizedBox(width: 8),
-              ],
-              if (rank != null && rank! > 3) ...[
-                const SizedBox(width: 40), // 순위 공간 확보
-              ],
-              Column(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: SizedBox(
-                      width: 60,
-                      height: 60,
-                      child: _buildProfileImage(),
-                    ),
-                  ),
-                  if (partyLogoUrl.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Container(
-                      width: 40,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        image: DecorationImage(
-                          image: AssetImage(partyLogoUrl),
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ),
-                  ]
-                ],
+    return GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primary.withOpacity(0.2),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Column(
                   children: [
-                    Text(
-                      member.name,
-                      style: AppTextStyles.bodyLarge,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    RichText(
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: member.party,
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: PartyUtil.getPartyColor(member.party),
-                              fontWeight: FontWeight.bold,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: member.imageUrl.isNotEmpty
+                          ? AppNetworkImage(
+                              imageUrl: ImageUtil.getProxyUrl(member.imageUrl,
+                                  width: 120, height: 120),
+                              width: 60,
+                              height: 60,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                  width: 60,
+                                  height: 60,
+                                  color: AppColors.lightGrey),
+                              errorWidget: (context, url, error) => Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColors.primary.withOpacity(0.8),
+                                      AppColors.secondary.withOpacity(0.6),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    _getProfileInitial(member.name),
+                                    style: AppTextStyles.headline3.copyWith(
+                                      color: AppColors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.primary.withOpacity(0.8),
+                                    AppColors.secondary.withOpacity(0.6),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  _getProfileInitial(member.name),
+                                  style: AppTextStyles.headline3.copyWith(
+                                    color: AppColors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                          TextSpan(
-                            text: ' • ${member.region}',
-                            style: AppTextStyles.bodySmall,
-                          ),
-                        ],
-                      ),
                     ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '당선 가능성: ${possibility != null ? '${(possibility * 100).toStringAsFixed(1)}%' : '집계중'}',
-                        style: AppTextStyles.labelSmall.copyWith(
-                          color: AppColors.success,
+                    const SizedBox(height: 6),
+                    SizedBox(
+                      width: 50,
+                      child: AspectRatio(
+                        aspectRatio: 3 / 1,
+                        child: Builder(
+                          builder: (context) {
+                            final logoUrl =
+                                PartyUtil.getPartyLogoUrl(member.party);
+                            if (logoUrl.isEmpty) {
+                              return const SizedBox(); // 로고 URL이 없으면 아무것도 표시하지 않음
+                            }
+                            return Image.asset(
+                              logoUrl,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const SizedBox(), // 이미지 로드 실패 시
+                            );
+                          },
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '업데이트: ${member.lastAnalysisDate != null ? _formatRelativeTime(member.lastAnalysisDate!) : '정보 없음'}',
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.mediumGray,
                       ),
                     ),
                   ],
                 ),
-              ),
-              const Icon(
-                Icons.arrow_forward_ios,
-                color: AppColors.grey,
-                size: 16,
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: Icon(
-                  member.isFavorite ? Icons.star : Icons.star_border,
-                  color: member.isFavorite ? Colors.amber : AppColors.grey,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        member.name,
+                        style: AppTextStyles.bodyLarge,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      RichText(
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: member.party,
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: PartyUtil.getPartyColor(member.party),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            TextSpan(
+                              text: ' • ${member.district}',
+                              style: AppTextStyles.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '당선 가능성: ${(possibility * 100).toStringAsFixed(1)}%',
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: AppColors.success,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        member.lastAnalysisDate != null
+                            ? '업데이트: ${_formatRelativeTime(member.lastAnalysisDate!)}'
+                            : '업데이트 정보 없음',
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: AppColors.mediumGray,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                onPressed: () async {
-                  try {
-                    await sl<ToggleFavoriteUseCase>().call(member.id);
-                  } catch (e) {
-                    debugPrint('[MemberCard] toggleFavorite failed: $e');
-                  }
-                },
-              ),
-            ],
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: AppColors.grey,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: Icon(
+                    member.isFavorite ? Icons.star : Icons.star_border,
+                    color: member.isFavorite ? Colors.amber : AppColors.grey,
+                  ),
+                  onPressed: () async {
+                    try {
+                      // 리포지토리에 토글 요청 (스트림을 통해 UI가 자동으로 갱신됨)
+                      await sl<ToggleFavoriteUseCase>().call(member.id);
+                    } catch (e) {
+                      debugPrint('[MemberCard] toggleFavorite failed: $e');
+                    }
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
-    );
+        );
   }
 
   String _formatRelativeTime(DateTime date) {
@@ -185,56 +235,5 @@ class MemberCard extends StatelessWidget {
       return '?';
     }
     return trimmed.characters.first;
-  }
-
-  Widget _buildProfileImage() {
-    if (member.imageUrl.isEmpty) {
-      debugPrint(
-          'DEBUG: Image URL is empty for member: ${member.name} (ID: ${member.id})');
-      return _buildFallbackProfile();
-    }
-
-    if (member.imageUrl.startsWith('assets/')) {
-      debugPrint(
-          'DEBUG: Attempting to load asset image: ${member.imageUrl} for member: ${member.name} (ID: ${member.id})');
-      return Image.asset(
-        member.imageUrl,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          debugPrint(
-              'DEBUG: ERROR loading asset image ${member.imageUrl} for member ${member.name}: $error');
-          return _buildFallbackProfile();
-        },
-      );
-    }
-
-    debugPrint(
-        'DEBUG: Attempting to load network image: ${member.imageUrl} for member: ${member.name} (ID: ${member.id})');
-    return AppNetworkImage(
-      imageUrl: member.imageUrl.contains('nesdc.go.kr')
-          ? member.imageUrl
-          : ImageUtil.getProxyUrl(member.imageUrl, width: 120, height: 120),
-      fit: BoxFit.cover,
-      placeholder: (context, url) => Container(color: AppColors.lightGrey),
-      errorWidget: (context, url, error) => _buildFallbackProfile(),
-    );
-  }
-
-  Widget _buildFallbackProfile() {
-    return Container(
-      decoration: BoxDecoration(
-        color: PartyUtil.getPartyColor(member.party).withOpacity(0.2),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Center(
-        child: Text(
-          _getProfileInitial(member.name),
-          style: AppTextStyles.headline4.copyWith(
-            color: PartyUtil.getPartyColor(member.party),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
   }
 }

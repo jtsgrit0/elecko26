@@ -1,32 +1,35 @@
-/// 여론조사 결과 엔티티
-class Poll {
-  final String id;
-  final String pollAgency; // 조사 기관 (갤럽, 리서치앤리서치 등)
-  final DateTime surveyDate; // 조사일
-  final double? supportRate; // 지지율 (0~1) - 결과 미공개 시 null
-  final String partyName; // 정당 이름
-  final int? sampleSize; // 표본 크기
-  final double? marginOfError; // 오차한계 (%)
-  final String source; // 출처 URL
-  final String? notes; // 특이사항
+import 'package:equatable/equatable.dart';
 
-  Poll({
+class Poll extends Equatable {
+  final String id;
+  final String question;
+  final DateTime dueDate;
+  // Add other fields as necessary, e.g., List<String> options, Map<String, int> results
+
+  const Poll({
     required this.id,
-    required this.pollAgency,
-    required this.surveyDate,
-    this.supportRate,
-    required this.partyName,
-    this.sampleSize,
-    this.marginOfError,
-    required this.source,
-    this.notes,
+    required this.question,
+    required this.dueDate,
   });
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is Poll && runtimeType == other.runtimeType && id == other.id;
+  List<Object?> get props => [id, question, dueDate];
 
-  @override
-  int get hashCode => id.hashCode;
+  // Factory constructor for creating a new Poll instance from a map
+  factory Poll.fromJson(Map<String, dynamic> json) {
+    return Poll(
+      id: json['id'] as String,
+      question: json['question'] as String,
+      dueDate: DateTime.parse(json['dueDate'] as String),
+    );
+  }
+
+  // Method for converting a Poll instance to a map
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'question': question,
+      'dueDate': dueDate.toIso8601String(),
+    };
+  }
 }
