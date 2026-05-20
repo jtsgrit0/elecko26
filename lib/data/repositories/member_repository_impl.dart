@@ -50,7 +50,8 @@ class MemberRepositoryImpl implements MemberRepository {
       // 2차 폴백: assets/data/candidates_2026.json (cpmadang 크롤링 데이터)
       if (response == null || response.trim().isEmpty) {
         try {
-          final raw = await rootBundle.loadString('assets/data/candidates_2026.json');
+          final raw =
+              await rootBundle.loadString('assets/data/candidates_2026.json');
           // candidates_2026.json은 { metadata, candidates: [...] } 형식
           final decoded = jsonDecode(raw) as Map<String, dynamic>;
           final list = decoded['candidates'] as List<dynamic>? ?? [];
@@ -117,6 +118,13 @@ class MemberRepositoryImpl implements MemberRepository {
   Future<void> deleteMember(String memberId) async {
     await _initialize();
     _members.removeWhere((member) => member.id == memberId);
+    _membersController.add(List.from(_members)); // 변경 알림
+  }
+
+  @override
+  Future<void> clearAllMembers() async {
+    await _initialize();
+    _members.clear();
     _membersController.add(List.from(_members)); // 변경 알림
   }
 

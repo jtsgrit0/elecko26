@@ -24,6 +24,9 @@ abstract class MemberRepository {
   /// 의원 삭제
   Future<void> deleteMember(String memberId);
 
+  /// 모든 의원 삭제
+  Future<void> clearAllMembers();
+
   /// 캐시된 의원 데이터 조회
   Future<List<Member>> getCachedMembers();
 

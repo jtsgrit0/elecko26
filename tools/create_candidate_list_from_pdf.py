@@ -201,7 +201,7 @@ def build_hash_mapping():
 
 def main():
     base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-    pdf_dir = os.path.join(base_path, "assets", "pdf")
+    pdf_dir = os.path.join(base_path, "assets", "elec_pdf")
     output_path = os.path.join(base_path, "api", "members.json")
     hash_to_orig = build_hash_mapping()
 
