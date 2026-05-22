@@ -13,15 +13,33 @@ def clean_cell(cell):
 
 def extract_region_from_filename(filename):
     normalized_filename = normalize_text(filename)
+    
+    # 기초 -> 광역 매핑
+    region_map = {
+        "해운대구": "부산광역시",
+        # 필요에 따라 다른 매핑 추가
+    }
+
     matches = re.findall(r'\[(.*?)\]', normalized_filename)
     if len(matches) >= 3:
         region = matches[2]
+        
+        # 매핑 확인
+        for key, value in region_map.items():
+            if key in region:
+                return value
+
         known_provinces = ["서울특별시", "부산광역시", "대구광역시", "인천광역시", "광주광역시", "대전광역시", "울산광역시", "세종특별자치시", "경기도", "강원특별자치도", "충청북도", "충청남도", "전북특별자치도", "전라남도", "경상북도", "경상남도", "제주특별자치도"]
         if '광주' in region and ('전남' in region or '통합' in region): return "광주광역시"
         for province in known_provinces:
             if province in region: return province
         return region
-    elif len(matches) == 2: return matches[1]
+    elif len(matches) == 2: 
+        region = matches[1]
+        for key, value in region_map.items():
+            if key in region:
+                return value
+        return region
     return None
 
 
