@@ -104,81 +104,49 @@ def parse_individual_candidate_block(block_text, region, filename):
 
 import pdfplumber
 
-def analyze_pdf_plumber_strategy(filepath, region, filename, debug=False):
-    """
-    pdfplumber를 사용하여 PDF에서 텍스트를 추출합니다. (초기 방식으로 복귀)
-    """
+def analyze_pdf_text_strategy(filepath, region):
     candidates = []
     try:
         with pdfplumber.open(filepath) as pdf:
-            for page_num, page in enumerate(pdf.pages):
-                if debug: print(f"\n- Analyzing Page {page_num+1} with pdfplumber...")
+            full_text = ""
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    full_text += page_text + "\n"
+
+            if not full_text.strip():
+                return []
+
+            # '성 명' 또는 '성명'을 기준으로 후보자 블록 분리
+            pattern = r'성\s*명'
+            matches = list(re.finditer(pattern, full_text))
+            
+            if not matches:
+                return []
+
+            positions = [m.start() for m in matches]
+            candidate_blocks = []
+            for i in range(len(positions)):
+                start = positions[i]
+                end = positions[i+1] if i+1 < len(positions) else len(full_text)
+                candidate_blocks.append(full_text[start:end])
+
+            for block in candidate_blocks:
+                # '성명' 정보 추출 (분리 기준이었던 '성 명' 제거 후 첫 단어)
+                block_content = re.sub(pattern, '', block, 1).strip()
                 
-                text = page.extract_text(x_tolerance=1, y_tolerance=3)
-                
-                if not text:
-                    if debug: print("  - No text found on this page.")
-                    continue
+                # 정규표현식을 사용하여 필드 추출
+                parsed_candidate = parse_individual_candidate_block(block_content, region, os.path.basename(filepath))
+                if parsed_candidate and parsed_candidate.get('성명'):
+                    candidates.append(parsed_candidate)
 
-                if debug:
-                    print(f"  - Extracted Text (Page {page_num+1}):")
-                    print("--------------------")
-                    print(text)
-                    print("--------------------")
-
-                blocks = re.split(r'(성\s*명)', text)
-                candidate_text_blocks = [blocks[i] + blocks[i+1] for i in range(1, len(blocks), 2)]
-
-                if debug: print(f"  - Found {len(candidate_text_blocks)} candidate blocks.")
-
-                for i, block_text in enumerate(candidate_text_blocks):
-                    if debug:
-                        print(f"\n--- Plumber Candidate Block {i+1} ---")
-                        print(block_text)
-                        print("-----------------------------")
-                    
-                    parsed_candidate = parse_individual_candidate_block(block_text, region, filename)
-                    if parsed_candidate and parsed_candidate.get('성명'):
-                        if debug: print(f"  - Parsed data: {parsed_candidate}")
-                        candidates.append(parsed_candidate)
-    except Exception as e:
-        if debug: print(f"  - An unexpected error occurred with pdfplumber: {e}")
-        
+    except Exception:
+        # 오류가 발생해도 전체 프로세스는 중단되지 않도록 함
+        pass
+    
     return candidates
 
-def process_pdfs_with_plumber(directory, debug_file=None):
-    all_candidates = []
-    files = os.listdir(directory)
-    if debug_file:
-        files = [f for f in files if normalize('NFC', f) == debug_file]
- 
-    total_files = len([f for f in files if f.endswith(".pdf")])
- 
-    for i, filename in enumerate(files):
-        if not filename.endswith(".pdf"):
-            continue
- 
-        start_time = time.time()
-        filepath = os.path.join(directory, filename)
-        region = extract_region_from_filename(filename)
-         
-        print(f"[{i+1}/{total_files}] Analyzing (Plumber): {filename}...", end="", flush=True)
-         
-        try:
-            is_debug = bool(debug_file)
-            candidates_from_file = analyze_pdf_plumber_strategy(filepath, region, filename, debug=is_debug)
-            all_candidates.extend(candidates_from_file)
-             
-            elapsed_time = time.time() - start_time
-            print(f" Done in {elapsed_time:.2f}s. Found {len(candidates_from_file)} candidates.")
-
-        except Exception as e:
-            elapsed_time = time.time() - start_time
-            print(f" Error in {elapsed_time:.2f}s: {e}")
-
-    return all_candidates
-
-def analyze_pdfs_table_strategy(directory, debug_file=None):
+def analyze_pdfs_hybrid_strategy(directory, debug_file=None):
     all_candidates = []
     files = os.listdir(directory)
     
@@ -197,58 +165,45 @@ def analyze_pdfs_table_strategy(directory, debug_file=None):
         filepath = os.path.join(directory, filename)
         region = extract_region_from_filename(filename)
         
-        print(f"[{i+1}/{total_files}] Analyzing (Table Strategy): {filename}...", end="", flush=True)
+        print(f"[{i+1}/{total_files}] Analyzing: {filename}...", end="", flush=True)
         
         candidates_from_file = []
+        strategy_used = ""
         try:
+            # 1. 테이블 분석 시도
             with pdfplumber.open(filepath) as pdf:
-                for page_num, page in enumerate(pdf.pages):
-                    if debug_file: print(f"\n  - Page {page_num+1}:")
+                for page in pdf.pages:
                     tables = page.extract_tables()
-                    if debug_file: print(f"    - Found {len(tables)} tables.")
-                    
-                    for table_num, table in enumerate(tables):
+                    for table in tables:
                         if not table or len(table) < 2: continue
-
-                        # --- 복잡한 다중 헤더 처리 로직 ---
-                        raw_headers = table[0]
-                        sub_headers = table[1]
+                        raw_headers, sub_headers = table[0], table[1]
                         merged_headers = []
                         for idx, raw_header_cell in enumerate(raw_headers):
-                            main_header = clean_cell(raw_header_cell)
-                            # '성명 (한자)' -> '성명'
-                            main_header = main_header.split('(')[0].strip()
-                            
-                            # 세금 항목처럼 메인 헤더가 비어있고 서브 헤더가 있는 경우
-                            if not main_header and idx < len(sub_headers):
-                                sub_header = clean_cell(sub_headers[idx])
-                                if sub_header:
-                                    merged_headers.append(sub_header)
-                                    continue
-                            
+                            main_header = clean_cell(raw_header_cell).split('(')[0].strip()
+                            if not main_header and idx < len(sub_headers) and clean_cell(sub_headers[idx]):
+                                merged_headers.append(clean_cell(sub_headers[idx]))
+                                continue
                             merged_headers.append(main_header)
                         
-                        # 실제 데이터는 3번째 줄부터 시작
                         data_rows = table[2:]
-
-                        if debug_file: 
-                            print(f"    - Table {table_num+1} Merged Headers: {merged_headers}")
-                            if data_rows:
-                                print(f"    - Table {table_num+1} First Data Row: {[clean_cell(c) for c in data_rows[0]]}")
-
                         for row in data_rows:
                             candidate = {'region': region, 'source_file': filename}
                             for j, cell in enumerate(row):
                                 if j < len(merged_headers) and merged_headers[j]:
                                     candidate[merged_headers[j]] = clean_cell(cell)
-                            
-                            # '성명' 필드가 있는지 확인하여 유효한 후보자인지 판단
                             if candidate.get('성명'):
                                 candidates_from_file.append(candidate)
+            
+            strategy_used = "Table"
+
+            # 2. 테이블 분석 실패 시 텍스트 분석으로 전환
+            if not candidates_from_file:
+                candidates_from_file = analyze_pdf_text_strategy(filepath, region)
+                strategy_used = "Text" if candidates_from_file else "Table (Fail)"
 
             all_candidates.extend(candidates_from_file)
             elapsed_time = time.time() - start_time
-            print(f" Done in {elapsed_time:.2f}s. Found {len(candidates_from_file)} candidates.")
+            print(f" Done ({strategy_used}) in {elapsed_time:.2f}s. Found {len(candidates_from_file)} candidates.")
 
         except Exception as e:
             elapsed_time = time.time() - start_time
@@ -276,7 +231,7 @@ if __name__ == "__main__":
         all_candidates = analyze_pdfs_table_strategy(PDF_DIRECTORY, debug_file=DEBUG_FILENAME)
     else:
         print("전체 PDF 파일을 분석합니다...")
-        all_candidates = analyze_pdfs_table_strategy(PDF_DIRECTORY)
+        all_candidates = analyze_pdfs_hybrid_strategy(PDF_DIRECTORY)
 
     # 중복 제거 및 필드 정리
     unique_candidates = []
