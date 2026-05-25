@@ -49,59 +49,54 @@ def extract_district_from_filename(filename):
     return "알수없음"
 
 def parse_candidate_block(block_text, region, source_file):
-    """
-    하나의 후보자 텍스트 블록을 파싱하여 필드별로 데이터를 추출합니다.
-    """
     candidate = {
-        'region': region,
-        'source_file': source_file,
-        '선거구명': extract_district_from_filename(source_file),
-        '기호': '', '정당명': '', '성명': '', '성별': '', '생년월일': '', '주소': '',
-        '직업': '', '학력': '', '경력': '', '재산신고액': '', '병역사항': '',
-        '납부액': '', '체납액': '', '전과기록': ''
+        'region': region, 'source_file': source_file, '선거구명': extract_district_from_filename(source_file),
+        '기호': '', '정당명': '', '성명': '', '성별': '', '생년월일': '', '주소': '', '직업': '', '학력': '',
+        '경력': '', '재산신고액': '', '병역사항': '', '납부액': '', '체납액': '', '전과기록': ''
     }
-    
     text = re.sub(r'\s+', ' ', block_text)
-    
-    keywords = ['기호', '정당명', '성명', '성별', '생년월일', '주소', '직업', '학력', '경력', '재산신고액', '병역사항', '납부액', '체납액', '전과기록']
-    
-    match = re.search(r'기호\s*(\d{1,2}(?:-[가-힣])?)\s*정당명\s*(.*?)\s*성명\(한자\)\s*([가-힣]+)\((.*?)\)', text)
+
+    # Case 1: 기호 1 더불어민주당 OOO
+    match = re.search(r'기호\s*(\d{1,2}(?:-[가-힣])?)\s*([^\s]+)\s*([가-힣]{2,4})', text)
     if match:
         candidate['기호'] = clean_text(match.group(1))
         candidate['정당명'] = clean_text(match.group(2))
         candidate['성명'] = clean_text(match.group(3))
     else:
-        match = re.search(r'(\d{1,2}(?:-[가-힣])?)\s*(.*?)\s*([가-힣]{2,4})\s*\(', text)
+        # Case 2: 1 OOO OOO
+        match = re.search(r'^\s*(\d{1,2}(?:-[가-힣])?)\s*([^\s]+)\s*([가-힣]{2,4})', text)
         if match:
             candidate['기호'] = clean_text(match.group(1))
             candidate['정당명'] = clean_text(match.group(2))
             candidate['성명'] = clean_text(match.group(3))
 
-    for i, keyword in enumerate(keywords):
-        if not candidate.get(keyword):
-            try:
-                next_keyword = keywords[i+1] if i+1 < len(keywords) else None
-                if next_keyword:
-                    regex = f"{keyword}(.*?)(?={next_keyword})"
-                else:
-                    regex = f"{keyword}(.*)"
-                
-                field_match = re.search(regex, text)
-                if field_match:
-                    candidate[keyword] = clean_text(field_match.group(1))
-            except Exception:
-                pass
+    fields = ['성별', '생년월일', '주소', '직업', '학력', '경력', '재산신고액', '병역사항', '납부액', '체납액', '전과기록']
+    field_keywords = [r'성별', r'생년월일', r'주소', r'직업', r'학력', r'경력', r'재산신고액', r'병역사항', r'납부액', r'체납액', r'전과기록']
 
-    dob_match = re.search(r'(\d{4}\.\d{2}\.\d{2})\s*\(만\s*(\d+)세\)', text)
-    if dob_match:
-        candidate['생년월일'] = f"{dob_match.group(1)} ({dob_match.group(2)}세)"
+    for i, field in enumerate(fields):
+        try:
+            keyword = field_keywords[i]
+            next_keywords = '|'.join(field_keywords[i+1:])
+            
+            regex = fr"{keyword}\s*(.*?)(?=\s*(?:{next_keywords}|$))"
+            
+            field_match = re.search(regex, text)
+            if field_match:
+                value = clean_text(field_match.group(1))
+                if field == '생년월일':
+                    dob_match = re.search(r'(\d{4}\.\d{2}\.\d{2})', value)
+                    if dob_match:
+                        candidate[field] = dob_match.group(1)
+                else:
+                    candidate[field] = value
+        except Exception:
+            pass
 
     return candidate if candidate.get('성명') else None
 
 def analyze_pdfs_with_blocks(pdf_dir):
     all_candidates = []
     pdf_files = [f for f in os.listdir(pdf_dir) if f.lower().endswith('.pdf')]
-    
     print(f"총 {len(pdf_files)}개의 PDF 파일을 분석합니다.")
 
     for filename in pdf_files:
@@ -118,27 +113,40 @@ def analyze_pdfs_with_blocks(pdf_dir):
             continue
 
         for page in doc:
-            blocks = page.get_text("blocks", sort=True)
-            candidate_blocks = []
-            current_block_lines = []
-
-            for block in blocks:
-                block_text = block[4]
-                if re.match(r'^\s*기호\s*\d+', block_text) or (not current_block_lines and re.match(r'^\s*\d{1,2}(-[가-힣])?', block_text)):
-                    if current_block_lines:
-                        candidate_blocks.append("\n".join(current_block_lines))
-                    current_block_lines = [block_text]
-                elif current_block_lines:
-                    current_block_lines.append(block_text)
+            page_dict = page.get_text("dict", flags=11)
             
-            if current_block_lines:
-                candidate_blocks.append("\n".join(current_block_lines))
+            # Reconstruct lines from spans, grouped by y-coordinate
+            lines = {}
+            for block in page_dict.get("blocks", []):
+                if block['type'] == 0: # Text block
+                    for line in block.get("lines", []):
+                        y0 = round(line['bbox'][1])
+                        line_text = " ".join([span['text'] for span in line.get("spans", [])])
+                        if y0 not in lines:
+                            lines[y0] = []
+                        lines[y0].append(line_text)
 
-            for cb_text in candidate_blocks:
-                candidate_data = parse_candidate_block(cb_text, province, os.path.basename(filename))
+            sorted_lines = [" ".join(lines[y]) for y in sorted(lines.keys())]
+
+            # Group lines into candidate blocks
+            candidate_text_blocks = []
+            current_block = ""
+            for line_text in sorted_lines:
+                # A new candidate block starts with a symbol pattern
+                if re.match(r'^\s*기호\s*\d|^\s*\d{1,2}(?:-[가-힣])?', line_text.strip()):
+                    if current_block:
+                        candidate_text_blocks.append(current_block)
+                    current_block = line_text
+                elif current_block: # Append to the current block if it's not a new candidate
+                    current_block += " " + line_text
+            
+            if current_block: # Add the last block
+                candidate_text_blocks.append(current_block)
+
+            for block_text in candidate_text_blocks:
+                candidate_data = parse_candidate_block(block_text, province, os.path.basename(filename))
                 if candidate_data:
                     all_candidates.append(candidate_data)
-
     return all_candidates
 
 def main():
