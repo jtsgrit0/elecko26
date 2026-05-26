@@ -3,58 +3,6 @@ import json
 import re
 from collections import defaultdict
 
-def clean_candidate_data(candidate):
-    """
-    후보자 데이터의 오류를 정제하고 보정합니다.
-    """
-    # 이름에서 한자와 불필요한 부분을 분리/제거합니다.
-    if '성명' in candidate and candidate['성명']:
-        name_match = re.match(r'([가-힣]+)\s*\((.*?)\)?\s*(.*)', candidate['성명'])
-        if name_match:
-            candidate['성명'] = name_match.group(1)
-            # 나머지 부분을 다른 필드로 재분배 시도
-            remaining = name_match.group(3).strip()
-            if remaining and not candidate.get('정당명'):
-                 candidate['정당명'] = remaining
-
-    # 정당명 필드 정리
-    if '정당명' in candidate and candidate['정당명']:
-        # '선거통계시스템'과 같은 불필요한 문자열 제거
-        candidate['정당명'] = candidate['정당명'].replace('선거통계시스템', '').strip()
-        # 정당명에 이름이 들어간 경우 분리
-        party_match = re.match(r'([가-힣\s]+)\s+([가-힣]{2,4})$', candidate['정당명'])
-        if party_match and not candidate.get('성명'):
-            candidate['정당명'] = party_match.group(1).strip()
-            candidate['성명'] = party_match.group(2).strip()
-
-    # 기호 필드 정리
-    if '기호' in candidate and candidate['기호']:
-        symbol_match = re.search(r'(\d{1,2}(-[가-힣])?)', candidate['기호'])
-        if symbol_match:
-            candidate['기호'] = symbol_match.group(1)
-
-    # 생년월일 필드 정리
-    if '생년월일' in candidate and candidate['생년월일']:
-        dob_match = re.search(r'(\d{4}\.\d{2}\.\d{2})', candidate['생년월일'])
-        if dob_match:
-            candidate['생년월일'] = dob_match.group(1)
-
-    # 주소, 직업, 학력, 경력 필드에서 다른 필드의 키워드가 시작되는 부분 제거
-    fields_to_clean = ['주소', '직업', '학력', '경력']
-    all_keywords = ['직업', '학력', '경력', '재산신고액', '병역사항', '납부액', '체납액', '전과기록']
-    for i, field in enumerate(fields_to_clean):
-        if field in candidate and candidate[field]:
-            text = candidate[field]
-            # 현재 필드 이후의 키워드들을 찾아서 분리
-            next_keywords = all_keywords[all_keywords.index(field)+1:] if field in all_keywords else []
-            for keyword in next_keywords:
-                if keyword in text:
-                    text = text.split(keyword)[0]
-            candidate[field] = text.strip()
-
-    return candidate
-
-
 def calculate_score(candidate):
     """후보자 프로필을 기반으로 가상 점수를 계산합니다."""
     score = 0
@@ -121,11 +69,8 @@ def main():
         print(f"Error: {CANDIDATES_JSON_PATH} 파일을 찾을 수 없습니다.")
         return
 
-    # 데이터 정제 단계 추가
-    cleaned_candidates = [clean_candidate_data(c) for c in candidates]
-
     electoral_districts = defaultdict(list)
-    for candidate in cleaned_candidates:
+    for candidate in candidates:
         score = calculate_score(candidate)
         candidate['당선가능성_점수'] = score
         
