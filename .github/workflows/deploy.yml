@@ -20,6 +20,9 @@ jobs:
           cache: true
 
       - name: Install dependencies
+        run: flutter clean
+
+      - name: Install dependencies
         run: flutter pub get
 
       - name: Build Web
