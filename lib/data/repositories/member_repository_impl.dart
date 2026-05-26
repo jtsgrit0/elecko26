@@ -38,35 +38,12 @@ class MemberRepositoryImpl implements MemberRepository {
     _initializer = Completer<void>();
 
     try {
-      String? response;
-
-      // 1차: 기존 api/members_with_images.json 시도
-      try {
-        response = await rootBundle.loadString('api/members_with_images.json');
-      } catch (_) {
-        debugPrint('[MemberRepo] api/members_with_images.json 로드 실패, 폴백 시도...');
-      }
-
-      // 2차 폴백: assets/data/candidates_2026.json (cpmadang 크롤링 데이터)
-      if (response == null || response.trim().isEmpty) {
-        try {
-          final raw =
-              await rootBundle.loadString('assets/data/candidates_2026.json');
-          // candidates_2026.json은 { metadata, candidates: [...] } 형식
-          final decoded = jsonDecode(raw) as Map<String, dynamic>;
-          final list = decoded['candidates'] as List<dynamic>? ?? [];
-          response = jsonEncode(list);
-        } catch (e2) {
-          debugPrint('[MemberRepo] candidates_2026.json 로드도 실패: $e2');
-        }
-      }
-
-      if (response == null || response.trim().isEmpty) {
-        throw Exception('후보자 데이터를 불러올 수 없습니다.');
-      }
+      // 항상 assets/data/election_candidates.json 파일을 로드하도록 수정
+      final jsonStr =
+          await rootBundle.loadString('assets/data/election_candidates.json');
 
       // 백그라운드에서 JSON 파싱 및 객체 변환 수행
-      _members = await compute(_parseMembers, response);
+      _members = await compute(_parseMembers, jsonStr);
 
       // 초기 데이터 로드 후 스트림에 추가
       _membersController.add(_members);
