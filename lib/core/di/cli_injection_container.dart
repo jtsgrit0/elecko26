@@ -35,22 +35,19 @@ class CliMemberRepository implements MemberRepository {
       }
     } catch (_) {}
 
-    // GitHub Raw에서 후보자 데이터 로드
+    // 애셋에서 후보자 데이터 로드
     String? jsonStr;
     try {
-      final url =
-          'https://raw.githubusercontent.com/jtsgrit0/elecko26/main/data/election_candidates.json';
-      final resp =
-          await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
+      // 웹 환경에서는 http.get으로 애셋 파일을 불러옵니다.
+      final url = 'assets/data/election_candidates.json';
+      final resp = await http.get(Uri.parse(url));
       if (resp.statusCode == 200) {
         jsonStr = utf8.decode(resp.bodyBytes);
       }
-    } catch (_) {}
-
-    // fallback: 로컬 파일
-    if (jsonStr == null) {
+    } catch (e) {
+      // 웹이 아닌 환경(예: CLI)을 위한 fallback
       try {
-        final localFile = File('data/election_candidates.json');
+        final localFile = File('assets/data/election_candidates.json');
         if (await localFile.exists()) {
           jsonStr = await localFile.readAsString();
         }
@@ -59,11 +56,10 @@ class CliMemberRepository implements MemberRepository {
 
     if (jsonStr != null) {
       try {
-        final list = jsonDecode(jsonStr!) as List;
+        final list = jsonDecode(jsonStr) as List;
         for (final item in list) {
           final member = MemberModel.fromJson(item as Map<String, dynamic>);
-          _members
-              .add(member.copyWith(isFavorite: _favorites.contains(member.id)));
+          _members.add(member);
         }
       } catch (_) {}
     }
@@ -113,6 +109,12 @@ class CliMemberRepository implements MemberRepository {
   }
 
   @override
+  Future<void> clearAllMembers() async {
+    _members.clear();
+    _loaded = false;
+  }
+
+  @override
   Future<void> toggleFavorite(String memberId) async {
     await _ensureLoaded();
     if (_favorites.contains(memberId)) {
@@ -120,12 +122,7 @@ class CliMemberRepository implements MemberRepository {
     } else {
       _favorites.add(memberId);
     }
-    final idx = _members.indexWhere((m) => m.id == memberId);
-    if (idx != -1) {
-      _members[idx] =
-          _members[idx].copyWith(isFavorite: _favorites.contains(memberId));
-    }
-    // 로컬 파일에 저장
+    // Member 객체는 불변이므로, _favorites Set으로만 상태 관리
     try {
       final favFile = File('data/favorites.json');
       await favFile.writeAsString(jsonEncode(_favorites.toList()));
@@ -176,8 +173,8 @@ class CliMemberRepository implements MemberRepository {
     return _members
         .where((m) =>
             m.name.toLowerCase().contains(q) ||
-            m.party.toLowerCase().contains(q) ||
-            m.district.toLowerCase().contains(q))
+            (m.party?.name.toLowerCase().contains(q) ?? false) ||
+            m.constituency.toLowerCase().contains(q))
         .toList();
   }
 
