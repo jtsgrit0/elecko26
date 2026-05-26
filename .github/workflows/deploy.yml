@@ -6,22 +6,24 @@ on:
       - main
 
 jobs:
-  build:
+  build_and_deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup FVM
-        uses: leoafarias/fvm-action@v1
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          flutter-version-file: .fvm/fvm_config.json
+          flutter-version: '3.19.6' # .fvm/fvm_config.json 와 동일한 버전
+          channel: 'stable'
+          cache: true
 
       - name: Install dependencies
-        run: fvm flutter pub get
+        run: flutter pub get
 
       - name: Build Web
-        run: fvm flutter build web --release --base-href /elecko26/
+        run: flutter build web --release --base-href /elecko26/
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
