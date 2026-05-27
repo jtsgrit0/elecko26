@@ -3,551 +3,598 @@ const cheerio = require('cheerio');
 const fs = require('fs');
 const path = require('path');
 
-// EventListener 제한 증가 (메모리 누수 방지)
 require('events').EventEmitter.defaultMaxListeners = 20;
 
-// 현재 등록된 후보자 ID 목록 (중복 방지)
-const existingCandidateIds = new Set();
+const BASE_URL = 'https://cpmadang.org';
+const LIST_PATH = '/people/list_of_candidates_2026?page=';
 
-// 기존 데이터 로드
-function loadExistingCandidates() {
-    try {
-        const existingData = JSON.parse(fs.readFileSync('./data/election_candidates.json', 'utf8'));
-        existingData.forEach(candidate => {
-            if (candidate.id) {
-                existingCandidateIds.add(candidate.id);
-            }
-        });
-        console.log(`✅ 기존 ${existingCandidateIds.size}명의 후보자 데이터 로드 완료`);
-        return existingData;
-    } catch (error) {
-        console.log('⚠️  기존 데이터가 없습니다. 새로 시작합니다.');
-        return [];
-    }
+const STRUCTURED_FILE = path.join(__dirname, 'assets', 'data', 'candidates_2026.json');
+const LEGACY_FILE = path.join(__dirname, 'data', 'election_candidates.json');
+const LEGACY_ASSET_FILE = path.join(__dirname, 'assets', 'data', 'election_candidates.json');
+
+const SYNC_LEGACY_ASSET = process.env.SYNC_LEGACY_ASSET === '1';
+const PAGE_TIMEOUT_MS = Number(process.env.CRAWL_PAGE_TIMEOUT_MS || 15000);
+const PAGE_DELAY_MS = Number(process.env.CRAWL_PAGE_DELAY_MS || 300);
+const MAX_CONSECUTIVE_EMPTY_PAGES = Number(process.env.CRAWL_EMPTY_LIMIT || 5);
+const DEFAULT_END_PAGE = Number(process.env.CRAWL_END_PAGE || 272);
+
+const PARTY_NAMES = [
+  '국민의힘',
+  '더불어민주당',
+  '정의당',
+  '무소속',
+  '자유와혁신당',
+  '조국혁신당',
+  '개혁신당',
+  '진보당',
+  '노동당',
+  '국민의당',
+  '기본소득당',
+  '한국국민당',
+  '신자유민주당',
+  '통일한국당',
+];
+
+const REGION_PREFIXES = [
+  ['서울', '서울특별시'],
+  ['부산', '부산광역시'],
+  ['대구', '대구광역시'],
+  ['인천', '인천광역시'],
+  ['광주', '광주광역시'],
+  ['대전', '대전광역시'],
+  ['울산', '울산광역시'],
+  ['세종', '세종특별자치시'],
+  ['경기', '경기도'],
+  ['강원', '강원특별자치도'],
+  ['충북', '충청북도'],
+  ['충남', '충청남도'],
+  ['전북', '전북특별자치도'],
+  ['전남', '전라남도'],
+  ['경북', '경상북도'],
+  ['경남', '경상남도'],
+  ['제주', '제주특별자치도'],
+];
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// 한글 이름 추출 함수 (개선된 버전)
-function extractKoreanName(text, context = '') {
-    // 한글 이름 패턴 (2-4글자) + 문맥 필터링
-    const namePattern = /[가-힣]{2,4}/g;
-    const matches = text.match(namePattern);
-    
-    if (!matches || matches.length === 0) return null;
-    
-    // 문맥에 따라 필터링
-    const commonMenuWords = ['진행', '전체', '오늘', '태그', '대선', '지방', '댓글', '인물', '단체', '리스트', '추천', '로그인', '가입', '비밀번호', '했습니다', '페이지', '시민정치', '후원내역', '취소', '사이트', '이용약관', '사업자', '판단', '마지막'];
-    const locationWords = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
-    
-    // 후보자 이름으로 추정되는 단어 찾기
-    const potentialNames = matches.filter(name => {
-        // 2-4글자인지 확인
-        if (name.length < 2 || name.length > 4) return false;
-        
-        // 흔한 메뉴 단어 제외
-        if (commonMenuWords.some(word => name.includes(word))) return false;
-        
-        // 지역명 제외
-        if (locationWords.includes(name)) return false;
-        
-        // 문맥에서 후보자로 보이는 경우
-        if (context.includes('후보') || context.includes('예비후보') || context.includes('출마')) {
-            return true;
-        }
-        
-        return true;
-    });
-    
-    if (potentialNames.length > 0) {
-        // 가장 긴 이름 선택 (보통 3글자 이름이 많음)
-        return potentialNames.sort((a, b) => b.length - a.length)[0];
+function normalizeText(value) {
+  return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function resolveUrl(url, baseUrl = BASE_URL) {
+  const normalized = normalizeText(url);
+  if (!normalized) return '';
+
+  try {
+    return new URL(normalized, baseUrl).href;
+  } catch (_) {
+    if (normalized.startsWith('http')) return normalized;
+    return `${baseUrl}${normalized.startsWith('/') ? '' : '/'}${normalized}`;
+  }
+}
+
+function ensureDirForFile(filePath) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+}
+
+function safeReadJson(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) {
+      return null;
     }
-    
+
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (error) {
+    console.warn(`⚠️  ${filePath} 읽기 실패: ${error.message}`);
     return null;
+  }
 }
 
-// 정당명 추출 함수
+function extractHanja(rawName) {
+  const normalized = normalizeText(rawName);
+  if (!normalized) return '';
+
+  const match = normalized.match(/\(([^)]+)\)/) || normalized.match(/（([^）]+)）/);
+  return match ? normalizeText(match[1]) : '';
+}
+
+function normalizeName(rawName) {
+  const stripped = normalizeText(rawName)
+    .replace(/\([^)]*\)/g, '')
+    .replace(/（[^）]*）/g, '');
+
+  const match = stripped.match(/[가-힣]{2,4}/);
+  return normalizeText(match ? match[0] : stripped);
+}
+
 function extractParty(text) {
-    const parties = [
-        '국민의힘', '더불어민주당', '정의당', '무소속', '자유와혁신당', 
-        '조국혁신당', '개혁신당', '진보당', '노동당', '국민의당',
-        '기본소득당', '한국국민당', '신자유민주당', '통일한국당'
-    ];
-    
-    for (const party of parties) {
-        if (text.includes(party)) {
-            return party;
-        }
-    }
-    
-    // 정당 키워드로 검색
-    if (text.includes('국민의')) return '국민의힘';
-    if (text.includes('더불어')) return '더불어민주당';
-    if (text.includes('정의')) return '정의당';
-    if (text.includes('혁신')) {
-        if (text.includes('자유')) return '자유와혁신당';
-        if (text.includes('조국')) return '조국혁신당';
-        if (text.includes('개혁')) return '개혁신당';
-    }
-    
-    return '무소속';
+  for (const party of PARTY_NAMES) {
+    if (text.includes(party)) return party;
+  }
+
+  if (text.includes('국민의')) return '국민의힘';
+  if (text.includes('더불어')) return '더불어민주당';
+  if (text.includes('정의')) return '정의당';
+  if (text.includes('혁신')) {
+    if (text.includes('자유')) return '자유와혁신당';
+    if (text.includes('조국')) return '조국혁신당';
+    if (text.includes('개혁')) return '개혁신당';
+  }
+
+  return '무소속';
 }
 
-// 지역구 추출 함수
-function extractDistrict(text) {
-    const districts = [
-        '서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', 
-        '대전광역시', '울산광역시', '세종특별자치시', '경기도', '강원특별자치도',
-        '충청북도', '충청남도', '전라북도', '전라남도', '경상북도', '경상남도', '제주특별자치도'
-    ];
-    
-    for (const district of districts) {
-        if (text.includes(district)) {
-            return district;
-        }
-    }
-    
-    // 축약어로도 검색
-    const shortDistricts = {
-        '서울': '서울특별시',
-        '부산': '부산광역시', 
-        '대구': '대구광역시',
-        '인천': '인천광역시',
-        '광주': '광주광역시',
-        '대전': '대전광역시', 
-        '울산': '울산광역시',
-        '세종': '세종특별자치시',
-        '경기': '경기도',
-        '강원': '강원특별자치도',
-        '충북': '충청북도',
-        '충남': '충청남도',
-        '전북': '전라북도',
-        '전남': '전라남도',
-        '경북': '경상북도',
-        '경남': '경상남도',
-        '제주': '제주특별자치도'
-    };
-    
-    for (const [short, full] of Object.entries(shortDistricts)) {
-        if (text.includes(short)) {
-            return full;
-        }
-    }
-    
-    return '미정';
+function extractElectionType(text) {
+  const electionTypes = [
+    '시·도지사선거',
+    '구·시·군의 장선거',
+    '시·도의회의원선거',
+    '구·시·군의회의원선거',
+    '광역의원비례대표선거',
+    '기초의원비례대표선거',
+    '교육감선거',
+    '국회의원선거',
+    '대통령선거',
+  ];
+
+  for (const type of electionTypes) {
+    if (text.includes(type)) return type;
+  }
+
+  return '기타 선거';
 }
 
-// 웹 페이지에서 후보자 정보 추출 (개선된 버전)
-async function extractCandidateInfo(url) {
+function resolveRegion(regionRaw = '', district = '') {
+  const haystack = `${normalizeText(regionRaw)} ${normalizeText(district)}`;
+
+  for (const [needle, value] of REGION_PREFIXES) {
+    if (haystack.includes(needle)) {
+      return value;
+    }
+  }
+
+  return normalizeText(regionRaw) || '전국';
+}
+
+function extractCandidateFromCard($, card, pageTitle) {
+  const nameNode = card.find('.info-name a').first();
+  const rawName = normalizeText(nameNode.text() || card.find('.info-name').first().text());
+  const name = normalizeName(rawName);
+
+  if (!name || name.length < 2 || name.length > 4) {
+    return null;
+  }
+
+  const party = normalizeText(card.find('.info-party a').first().text()) || extractParty(card.text());
+  const badgeRegion = normalizeText(card.find('.card-badge.badge-right a').first().text());
+  const metaLinks = card.find('.info-meta-line .meta-item a');
+
+  const district = normalizeText(metaLinks.eq(0).text()) || badgeRegion;
+  const electionType = normalizeText(metaLinks.eq(1).text()) || extractElectionType(pageTitle || card.text());
+  const status = normalizeText(metaLinks.eq(2).text()) || '예비후보';
+  const job = normalizeText(card.find('.occupation-text a').first().text());
+  const education = normalizeText(card.find('.flow-part.school').first().text());
+  const careerParts = card
+    .find('.flow-part')
+    .map((_, el) => normalizeText($(el).text()))
+    .get()
+    .filter(Boolean);
+  const career = careerParts.join(' | ');
+  const tags = card
+    .find('.footer-tags a')
+    .map((_, el) => normalizeText($(el).text()))
+    .get()
+    .filter(Boolean);
+
+  const imageUrl = resolveUrl(
+    card.find('.candidate-face img').first().attr('src') ||
+      card.find('.candidate-face img').first().attr('data-src') ||
+      '',
+  );
+  const sourceUrl = resolveUrl(
+    card.find('.candidate-face a').first().attr('href') ||
+      nameNode.attr('href') ||
+      '',
+  );
+
+  return {
+    party,
+    nameRaw: rawName,
+    name,
+    sourceUrl,
+    imageUrl,
+    region: badgeRegion,
+    district,
+    electionType,
+    status,
+    job,
+    education,
+    career,
+    tags,
+  };
+}
+
+function extractCandidatesFromHtml(html, pageUrl) {
+  const $ = cheerio.load(html);
+  const pageTitle = normalizeText($('title').text());
+  const cards = $('.candidate-card');
+  const candidates = [];
+
+  if (!cards.length) {
+    return { candidates, pageTitle, $ };
+  }
+
+  cards.each((_, element) => {
+    const candidate = extractCandidateFromCard($, $(element), pageTitle);
+    if (candidate) {
+      candidates.push(candidate);
+    }
+  });
+
+  return { candidates, pageTitle, $ };
+}
+
+function buildCandidateKey(candidate) {
+  if (candidate.sourceUrl) {
+    return `url:${candidate.sourceUrl}`.toLowerCase();
+  }
+
+  return [
+    `name:${candidate.name || ''}`,
+    `party:${candidate.party || ''}`,
+    `district:${candidate.district || ''}`,
+    `type:${candidate.electionType || ''}`,
+  ]
+    .map((value) => value.toLowerCase())
+    .join('|');
+}
+
+function parseCandidateIndex(id) {
+  const match = String(id || '').match(/^cpm_(\d+)$/);
+  return match ? Number(match[1]) : null;
+}
+
+function normalizeStoredCandidate(candidate) {
+  if (!candidate || typeof candidate !== 'object') {
+    return null;
+  }
+
+  const nameRaw = normalizeText(candidate.nameRaw || candidate.name || '');
+  const name = normalizeName(nameRaw);
+  if (!name) {
+    return null;
+  }
+
+  return {
+    ...candidate,
+    nameRaw,
+    name,
+    party: normalizeText(candidate.party || '무소속') || '무소속',
+    sourceUrl: normalizeText(candidate.sourceUrl || ''),
+    imageUrl: normalizeText(candidate.imageUrl || ''),
+    region: normalizeText(candidate.region || ''),
+    district: normalizeText(candidate.district || ''),
+    electionType: normalizeText(candidate.electionType || '기타 선거') || '기타 선거',
+    status: normalizeText(candidate.status || '예비후보') || '예비후보',
+    job: normalizeText(candidate.job || ''),
+    education: normalizeText(candidate.education || ''),
+    career: normalizeText(candidate.career || ''),
+    tags: Array.isArray(candidate.tags)
+      ? candidate.tags.map((tag) => normalizeText(tag)).filter(Boolean)
+      : [],
+  };
+}
+
+function loadStructuredDataset() {
+  const defaultMetadata = {
+    source: `${BASE_URL}${LIST_PATH}0`,
+    election: '2026년 제9회 전국동시지방선거',
+    totalCount: 0,
+    scrapedAt: '',
+  };
+
+  const raw = safeReadJson(STRUCTURED_FILE);
+  if (!raw) {
+    console.log(`⚠️  기존 구조화 데이터가 없습니다. 새로 시작합니다: ${STRUCTURED_FILE}`);
+    return { metadata: defaultMetadata, candidates: [] };
+  }
+
+  const metadata = {
+    ...defaultMetadata,
+    ...(raw.metadata || {}),
+  };
+
+  const rawCandidates = Array.isArray(raw) ? raw : Array.isArray(raw.candidates) ? raw.candidates : [];
+  const candidates = [];
+  const seenKeys = new Set();
+
+  for (const item of rawCandidates) {
+    const candidate = normalizeStoredCandidate(item);
+    if (!candidate) {
+      continue;
+    }
+
+    const key = buildCandidateKey(candidate);
+    if (seenKeys.has(key)) {
+      continue;
+    }
+
+    seenKeys.add(key);
+    candidates.push(candidate);
+  }
+
+  console.log(`✅ 기존 구조화 후보자 ${candidates.length}명 로드 완료`);
+  return { metadata, candidates };
+}
+
+function writeJsonWithBackup(filePath, payload) {
+  ensureDirForFile(filePath);
+
+  if (fs.existsSync(filePath)) {
+    const backupPath = path.join(
+      path.dirname(filePath),
+      `${path.basename(filePath, path.extname(filePath))}_backup_${Date.now()}${path.extname(filePath)}`,
+    );
+    fs.copyFileSync(filePath, backupPath);
+    console.log(`💾 백업 생성: ${backupPath}`);
+  }
+
+  fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), 'utf8');
+  console.log(`💾 저장 완료: ${filePath}`);
+}
+
+function sortCandidatesForStructuredOutput(a, b) {
+  const districtCmp = normalizeText(a.district).localeCompare(normalizeText(b.district), 'ko');
+  if (districtCmp !== 0) return districtCmp;
+
+  const partyCmp = normalizeText(a.party).localeCompare(normalizeText(b.party), 'ko');
+  if (partyCmp !== 0) return partyCmp;
+
+  return normalizeText(a.name).localeCompare(normalizeText(b.name), 'ko');
+}
+
+function sortMembersForLegacyOutput(a, b) {
+  const regionCmp = normalizeText(a.region).localeCompare(normalizeText(b.region), 'ko');
+  if (regionCmp !== 0) return regionCmp;
+
+  const partyCmp = normalizeText(a.party).localeCompare(normalizeText(b.party), 'ko');
+  if (partyCmp !== 0) return partyCmp;
+
+  return normalizeText(a.name).localeCompare(normalizeText(b.name), 'ko');
+}
+
+function buildLegacyMemberRecord(candidate) {
+  const nameHanja = extractHanja(candidate.nameRaw || candidate.name);
+  const tags = Array.isArray(candidate.tags) ? candidate.tags : [];
+  const electionPossibility =
+    typeof candidate.electionPossibility === 'number' ? candidate.electionPossibility : 0.5;
+
+  return {
+    id: candidate.id,
+    name: candidate.name,
+    nameHanja,
+    party: candidate.party || '무소속',
+    constituency: candidate.district || '',
+    district: candidate.district || '',
+    districtName: candidate.district || '',
+    region: resolveRegion(candidate.region || '', candidate.district || ''),
+    description: `[${candidate.status || '예비후보'}] ${candidate.electionType || '기타 선거'}${
+      candidate.district ? ` | ${candidate.district}` : ''
+    }`,
+    imageUrl: candidate.imageUrl || '',
+    gender: tags.includes('여성') ? '여성' : '',
+    birthdate: '',
+    address: '',
+    occupation: candidate.job || '',
+    education: candidate.education || '',
+    career: candidate.career || '',
+    criminalRecord: '',
+    electionType: candidate.electionType || '',
+    candidateStatus: candidate.status || '',
+    tags,
+    sourceUrl: candidate.sourceUrl || '',
+    achievementsList: [],
+    policies: [],
+    pressReports: [],
+    polls: [],
+    electionPossibility,
+    lastAnalysisDate: candidate.lastAnalysisDate || null,
+    improvementPoints: [],
+    socialContributions: [],
+    isFavorite: Boolean(candidate.isFavorite),
+    historical2018PartyRates: candidate.historical2018PartyRates || {},
+  };
+}
+
+function saveDebugSnapshot(url, pageTitle, $) {
+  const selectors = [
+    '.candidate-card',
+    '.info-name',
+    '.info-party',
+    '.info-meta-line',
+    '.card-badge',
+    '.occupation-text',
+    '.flow-part',
+  ];
+
+  const snapshot = {
+    url,
+    title: pageTitle,
+    bodyText: normalizeText($('body').text()).slice(0, 2000),
+    selectors: selectors.map((selector) => ({
+      selector,
+      count: $(selector).length,
+      sample: normalizeText($(selector).first().text()).slice(0, 150),
+    })),
+  };
+
+  const debugFile = `./debug_page_${Date.now()}.json`;
+  fs.writeFileSync(debugFile, JSON.stringify(snapshot, null, 2), 'utf8');
+  console.log(`  🔍 디버그 정보 저장됨: ${debugFile}`);
+}
+
+async function fetchPage(url, retries = 3) {
+  for (let attempt = 0; attempt < retries; attempt++) {
     try {
-        console.log(`🔍 ${url} 에서 데이터 추출 중...`);
-        
-        const response = await axios.get(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8',
-                'Accept-Encoding': 'gzip, deflate, br',
-                'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1'
-            },
-            timeout: 15000,
-            maxRedirects: 5
-        });
-        
-        const $ = cheerio.load(response.data);
-        const candidates = [];
-        
-        console.log(`📄 페이지 HTML 크기: ${response.data.length} bytes`);
-        console.log(`📄 페이지 제목: ${$('title').text().trim()}`);
-        
-        // 후보자 목록을 찾기 위한 다양한 선택자
-        const candidateSelectors = [
-            '.candidate-card',
-            '.people-item', 
-            '.candidate-item',
-            '.member-item',
-            '.profile-card',
-            '.list-item',
-            '.item',
-            'article',
-            '.card',
-            '.box',
-            'div[class*="candidate"]',
-            'div[class*="people"]',
-            'div[class*="member"]',
-            'div[class*="profile"]'
-        ];
-        
-        // 각 선택자로 시도
-        let totalCandidateCount = 0;
-        let foundAnyCandidates = false;
-        
-        for (const selector of candidateSelectors) {
-            const elements = $(selector);
-            if (elements.length > 0) {
-                console.log(`🔍 선택자 "${selector}"로 ${elements.length}개 요소 발견`);
-                
-                let foundCandidates = false;
-                let candidateCount = 0;
-                
-                elements.each((index, element) => {
-                    const $element = $(element);
-                    const elementText = $element.text().trim();
-                    
-                    // 이름 추출 (문맥 정보 포함)
-                    const name = extractKoreanName(elementText, elementText);
-                    
-                    if (name && name.length >= 2 && name.length <= 4) {
-                        // 정당 추출
-                        const party = extractParty(elementText);
-                        
-                        // 지역구 추출
-                        const district = extractDistrict(elementText);
-                        
-                        // 이미지 URL 찾기
-                        let imageUrl = '';
-                        const imgSelectors = [
-                            'img', 
-                            'img[src*="candidate"]', 
-                            'img[src*="people"]', 
-                            'img[src*="profile"]', 
-                            'img[src*="photo"]'
-                        ];
-                        
-                        for (const imgSelector of imgSelectors) {
-                            const img = $element.find(imgSelector).first();
-                            if (img.length > 0) {
-                                imageUrl = img.attr('src') || img.attr('data-src') || '';
-                                if (imageUrl) {
-                                    imageUrl = imageUrl.startsWith('http') ? imageUrl : `https://cpmadang.org${imageUrl}`;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        // 프로필 URL 찾기
-                        let profileUrl = '';
-                        const linkSelectors = [
-                            'a[href*="candidate"]', 
-                            'a[href*="people"]', 
-                            'a[href*="profile"]', 
-                            'a[href*="detail"]',
-                            'a'
-                        ];
-                        
-                        for (const linkSelector of linkSelectors) {
-                            const link = $element.find(linkSelector).first();
-                            if (link.length > 0) {
-                                profileUrl = link.attr('href') || '';
-                                if (profileUrl) {
-                                    profileUrl = profileUrl.startsWith('http') ? profileUrl : `https://cpmadang.org${profileUrl}`;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        const candidateId = `member_${name.replace(/\s+/g, '_').toLowerCase()}`;
-                        
-                        // 중복 확인
-                        if (!existingCandidateIds.has(candidateId)) {
-                            candidates.push({
-                                id: candidateId,
-                                name: name,
-                                party: party,
-                                district: district,
-                                imageUrl: imageUrl,
-                                bio: '',
-                                electionDate: '2026-06-03T00:00:00.000',
-                                term: 1,
-                                achievementsList: [],
-                                actions: [],
-                                policies: [],
-                                pressReports: [],
-                                sourceUrl: profileUrl || url,
-                                crawledDate: new Date().toISOString(),
-                                confidence: 0.8,
-                                rawText: elementText.substring(0, 200) // 디버깅용
-                            });
-                            
-                            existingCandidateIds.add(candidateId);
-                            candidateCount++;
-                            console.log(`  ✅ ${name} (${party}) - ${district}`);
-                            foundCandidates = true;
-                        }
-                    }
-                });
-                
-                if (foundCandidates) {
-                    foundAnyCandidates = true;
-                    totalCandidateCount += candidateCount;
-                    break;
-                }
-            }
-        }
-        
-        if (candidates.length === 0) {
-            console.log('  ℹ️  후보자 정보를 찾을 수 없습니다. 페이지 구조를 확인하세요.');
-            
-            // 페이지의 주요 텍스트 내용을 파일로 저장하여 분석
-            const pageContent = {
-                url: url,
-                title: $('title').text().trim(),
-                bodyText: $('body').text().trim().substring(0, 1000),
-                selectors: candidateSelectors.map(sel => ({
-                    selector: sel,
-                    count: $(sel).length,
-                    sample: $(sel).first().text().trim().substring(0, 100)
-                }))
-            };
-            
-            const debugFile = `./debug_page_${Date.now()}.json`;
-            fs.writeFileSync(debugFile, JSON.stringify(pageContent, null, 2));
-            console.log(`  🔍 디버그 정보 저장됨: ${debugFile}`);
-        } else {
-            console.log(`  📊 ${totalCandidateCount}명의 후보자 발견`);
-        }
-        
-        return candidates;
-        
+      const response = await axios.get(url, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8',
+        },
+        timeout: PAGE_TIMEOUT_MS,
+        maxRedirects: 5,
+      });
+
+      return response.data;
     } catch (error) {
-        console.error(`❌ ${url} 크롤링 실패:`, error.message);
-        if (error.response) {
-            console.error(`  📊 상태 코드: ${error.response.status}`);
-        }
-        return [];
+      const status = error.response?.status;
+      const suffix = status ? ` (HTTP ${status})` : '';
+      console.warn(`⚠️  페이지 요청 실패${suffix}: ${error.message}`);
+
+      if (attempt < retries - 1) {
+        await sleep(1500 * (attempt + 1));
+      }
     }
+  }
+
+  return null;
 }
 
-// SNS 및 추가 정보 수집 (개선된 버전)
-async function enrichCandidateData(candidate) {
-    try {
-        console.log(`🔍 ${candidate.name}의 추가 정보 수집 중...`);
-        
-        // 기본 바이오 정보 생성
-        candidate.bio = `${candidate.party} 소속 ${candidate.district} 지역 후보자입니다.`;
-        
-        // 프로필 URL이 있다면 상세 정보 수집
-        if (candidate.sourceUrl && candidate.sourceUrl.includes('cpmadang.org')) {
-            try {
-                const profileResponse = await axios.get(candidate.sourceUrl, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                    },
-                    timeout: 10000
-                });
-                
-                const $ = cheerio.load(profileResponse.data);
-                
-                // 상세 정보 추출
-                const bioSelectors = ['.bio', '.profile-text', '.description', '.intro', '.summary', '.content'];
-                for (const bioSelector of bioSelectors) {
-                    const bioText = $(bioSelector).text().trim();
-                    if (bioText && bioText.length > 10) {
-                        candidate.bio = bioText.substring(0, 500);
-                        break;
-                    }
-                }
-                
-                // 추가 이미지 찾기
-                if (!candidate.imageUrl) {
-                    const imgSelectors = ['.profile-img', '.candidate-img', '.main-img', '.photo'];
-                    for (const imgSelector of imgSelectors) {
-                        const img = $(imgSelector).first();
-                        if (img.length > 0) {
-                            const imgUrl = img.attr('src') || img.attr('data-src');
-                            if (imgUrl) {
-                                candidate.imageUrl = imgUrl.startsWith('http') ? imgUrl : `https://cpmadang.org${imgUrl}`;
-                                break;
-                            }
-                        }
-                    }
-                }
-                
-                // SNS 링크 찾기
-                const socialSelectors = ['a[href*="facebook"]', 'a[href*="twitter"]', 'a[href*="instagram"]', 'a[href*="youtube"]'];
-                const socialLinks = [];
-                
-                socialSelectors.forEach(selector => {
-                    const link = $(selector).attr('href');
-                    if (link) {
-                        socialLinks.push(link);
-                    }
-                });
-                
-                if (socialLinks.length > 0) {
-                    candidate.socialLinks = socialLinks;
-                }
-                
-            } catch (profileError) {
-                console.log(`  ⚠️  프로필 페이지 접근 실패: ${profileError.message}`);
-            }
-        }
-        
-        return candidate;
-    } catch (error) {
-        console.error(`❌ ${candidate.name} 정보 보강 실패:`, error.message);
-        return candidate;
+async function crawlCandidates(startPage = 0, endPage = DEFAULT_END_PAGE) {
+  console.log(`🚀 CPMadang.org 후보자 크롤링 시작 (${startPage} ~ ${endPage} 페이지)`);
+
+  const dataset = loadStructuredDataset();
+  const allCandidates = dataset.candidates;
+  const existingKeys = new Set();
+  let nextCandidateIndex = 0;
+
+  for (const candidate of allCandidates) {
+    existingKeys.add(buildCandidateKey(candidate));
+    const idx = parseCandidateIndex(candidate.id);
+    if (idx !== null && idx >= nextCandidateIndex) {
+      nextCandidateIndex = idx + 1;
     }
+  }
+
+  let totalNewCandidates = 0;
+  let consecutiveEmptyPages = 0;
+
+  for (let page = startPage; page <= endPage; page++) {
+    const url = `${BASE_URL}${LIST_PATH}${page}`;
+    console.log(`\n📄 페이지 ${page}/${endPage} 처리 중...`);
+
+    const html = await fetchPage(url);
+    if (!html) {
+      consecutiveEmptyPages++;
+      console.log('  ℹ️  페이지를 가져오지 못했습니다.');
+      if (consecutiveEmptyPages >= MAX_CONSECUTIVE_EMPTY_PAGES) {
+        console.log(`\n⚠️  연속 ${MAX_CONSECUTIVE_EMPTY_PAGES}페이지 실패로 크롤링을 중단합니다.`);
+        break;
+      }
+      continue;
+    }
+
+    const { candidates, pageTitle, $ } = extractCandidatesFromHtml(html, url);
+    console.log(`📄 페이지 제목: ${pageTitle}`);
+    console.log(`📄 후보 카드: ${candidates.length}개`);
+
+    if (candidates.length === 0) {
+      consecutiveEmptyPages++;
+      saveDebugSnapshot(url, pageTitle, $);
+
+      if (consecutiveEmptyPages >= MAX_CONSECUTIVE_EMPTY_PAGES) {
+        console.log(`\n⚠️  연속 ${MAX_CONSECUTIVE_EMPTY_PAGES}페이지가 비어 있어 크롤링을 중단합니다.`);
+        break;
+      }
+
+      await sleep(PAGE_DELAY_MS);
+      continue;
+    }
+
+    consecutiveEmptyPages = 0;
+
+    let pageNewCandidates = 0;
+    for (const candidate of candidates) {
+      const key = buildCandidateKey(candidate);
+      if (existingKeys.has(key)) {
+        continue;
+      }
+
+      candidate.id = `cpm_${String(nextCandidateIndex).padStart(5, '0')}`;
+      candidate.electionPossibility = 0.5;
+
+      allCandidates.push(candidate);
+      existingKeys.add(key);
+      nextCandidateIndex += 1;
+      pageNewCandidates += 1;
+      totalNewCandidates += 1;
+    }
+
+    console.log(`  ✅ 신규 후보자 ${pageNewCandidates}명 추가 (누적 ${allCandidates.length}명)`);
+
+    await sleep(PAGE_DELAY_MS);
+  }
+
+  allCandidates.sort(sortCandidatesForStructuredOutput);
+
+  const structuredOutput = {
+    metadata: {
+      ...dataset.metadata,
+      source: `${BASE_URL}${LIST_PATH}`,
+      election: dataset.metadata?.election || '2026년 제9회 전국동시지방선거',
+      totalCount: allCandidates.length,
+      scrapedAt: new Date().toISOString(),
+    },
+    candidates: allCandidates,
+  };
+
+  writeJsonWithBackup(STRUCTURED_FILE, structuredOutput);
+
+  const legacyMembers = allCandidates
+    .map((candidate) => buildLegacyMemberRecord(candidate))
+    .sort(sortMembersForLegacyOutput);
+
+  writeJsonWithBackup(LEGACY_FILE, legacyMembers);
+
+  if (SYNC_LEGACY_ASSET) {
+    ensureDirForFile(LEGACY_ASSET_FILE);
+    fs.writeFileSync(LEGACY_ASSET_FILE, JSON.stringify(legacyMembers, null, 2), 'utf8');
+    console.log(`📦 자산 동기화 완료: ${LEGACY_ASSET_FILE}`);
+  }
+
+  console.log(`\n✅ 크롤링 완료! 신규 ${totalNewCandidates}명 추가, 전체 ${allCandidates.length}명`);
+  return totalNewCandidates;
 }
 
-// 메인 크롤링 함수
-async function crawlCandidates(startPage = 0, endPage = 238) {
-    console.log(`🚀 CPMadang.org 후보자 크롤링 시작 (${startPage} ~ ${endPage} 페이지)`);
-    
-    const existingData = loadExistingCandidates();
-    
-    const allCandidates = [];
-    let totalNewCandidates = 0;
-    let consecutiveEmptyPages = 0;
-    const maxConsecutiveEmpty = 5; // 연속 5페이지가 비어있으면 중지
-    
-    for (let page = startPage; page <= endPage; page++) {
-        const url = `https://cpmadang.org/people/list_of_candidates_2026?page=${page}`;
-        
-        console.log(`\n📄 페이지 ${page}/${endPage} 처리 중...`);
-        
-        const pageCandidates = await extractCandidateInfo(url);
-        
-        if (pageCandidates.length > 0) {
-            consecutiveEmptyPages = 0; // 연속 빈 페이지 카운트 리셋
-            
-            // 추가 정보 보강
-            for (const candidate of pageCandidates) {
-                const enrichedCandidate = await enrichCandidateData(candidate);
-                allCandidates.push(enrichedCandidate);
-                totalNewCandidates++;
-            }
-            
-            console.log(`  📊 ${pageCandidates.length}명의 새로운 후보자 발견`);
-        } else {
-            consecutiveEmptyPages++;
-            console.log('  ℹ️  새로운 후보자 없음');
-            
-            // 연속으로 빈 페이지가 나오면 중지
-            if (consecutiveEmptyPages >= maxConsecutiveEmpty) {
-                console.log(`\n⚠️  연속 ${maxConsecutiveEmpty}페이지가 비어있어 크롤링을 중단합니다.`);
-                break;
-            }
-        }
-        
-        // Rate limiting - 페이지당 2초 대기
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // 진행률 표시
-        const progress = ((page - startPage + 1) / (endPage - startPage + 1) * 100).toFixed(1);
-        console.log(`\n📈 전체 진행률: ${progress}% (${totalNewCandidates}명 수집됨)`);
-        
-        // 중간 저장 (매 10페이지마다 또는 50명 수집시)
-        if ((page - startPage + 1) % 10 === 0 || allCandidates.length >= 50) {
-            await saveProgress(allCandidates);
-            allCandidates.length = 0; // 배열 비우기
-        }
-    }
-    
-    // 최종 저장
-    if (allCandidates.length > 0) {
-        await saveProgress(allCandidates);
-    }
-    
-    console.log(`\n✅ 크롤링 완료! 총 ${totalNewCandidates}명의 새로운 후보자 수집`);
-    
-    return totalNewCandidates;
-}
-
-// 중간 진행 상황 저장
-async function saveProgress(candidates) {
-    try {
-        // 기존 데이터와 병합
-        let existingData = [];
-        try {
-            existingData = JSON.parse(fs.readFileSync('./data/election_candidates.json', 'utf8'));
-        } catch (error) {
-            // 기존 파일이 없으면 새로 시작
-        }
-        
-        // 새로운 후보만 추가
-        const newCandidates = candidates.filter(candidate => 
-            !existingData.some(existing => existing.id === candidate.id)
-        );
-        
-        const mergedData = [...existingData, ...newCandidates];
-        
-        // 백업 생성
-        const backupFile = `./data/election_candidates_backup_${Date.now()}.json`;
-        if (fs.existsSync('./data/election_candidates.json')) {
-            fs.copyFileSync('./data/election_candidates.json', backupFile);
-            console.log(`  💾 백업 생성: ${backupFile}`);
-        }
-        
-        // 저장
-        fs.writeFileSync('./data/election_candidates.json', JSON.stringify(mergedData, null, 2));
-        console.log(`  💾 데이터 저장 완료: ${mergedData.length}명의 후보자 (신규: ${newCandidates.length}명)`);
-        
-        // Firebase에도 업데이트
-        await updateFirebaseWithNewCandidates(newCandidates);
-        
-    } catch (error) {
-        console.error('❌ 데이터 저장 실패:', error.message);
-    }
-}
-
-// Firebase에 새 후보자 업데이트
-async function updateFirebaseWithNewCandidates(newCandidates) {
-    if (newCandidates.length === 0) return;
-    
-    try {
-        const admin = require('firebase-admin');
-        
-        // Firebase 초기화 (이미 초기화되어 있지 않은 경우)
-        if (!admin.apps.length) {
-            const serviceAccount = require('./firebase-admin-key.json');
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount)
-            });
-        }
-        
-        const db = admin.firestore();
-        
-        console.log(`  🔥 Firebase에 ${newCandidates.length}명의 새 후보자 업로드 중...`);
-        
-        let successCount = 0;
-        for (const candidate of newCandidates) {
-            try {
-                await db.collection('members').doc(candidate.id).set(candidate);
-                successCount++;
-                process.stdout.write(`    ✅ ${candidate.name}\r`);
-            } catch (error) {
-                console.error(`    ❌ ${candidate.name} 업로드 실패:`, error.message);
-            }
-            
-            // API 제한 방지
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
-        console.log(`\n  ✅ Firebase 업로드 완료: ${successCount}/${newCandidates.length}명`);
-        
-    } catch (error) {
-        console.log(`  ⚠️  Firebase 업로드 실패: ${error.message}`);
-    }
-}
-
-// 프로그램 시작
 if (require.main === module) {
-    const startPage = parseInt(process.argv[2]) || 0;
-    const endPage = parseInt(process.argv[3]) || 238;
-    
-    console.log('🚀 CPMadang.org 후보자 크롤러 시작');
-    console.log(`📊 페이지 범위: ${startPage} ~ ${endPage}`);
-    console.log('⏰ 예상 소요시간: 페이지당 2초 기준, ' + 
-                `${Math.ceil((endPage - startPage + 1) * 2 / 60)}분 소요 예상`);
-    
-    crawlCandidates(startPage, endPage).then(total => {
-        console.log(`\n🎉 모든 작업 완료! 총 ${total}명의 새로운 후보자를 수집했습니다.`);
-        process.exit(0);
-    }).catch(error => {
-        console.error('❌ 크롤링 중 오류 발생:', error);
-        process.exit(1);
+  const startPage = Number.parseInt(process.argv[2] || '0', 10);
+  const endPage = Number.parseInt(process.argv[3] || String(DEFAULT_END_PAGE), 10);
+
+  console.log('🚀 CPMadang.org 후보자 크롤러 시작');
+  console.log(`📊 페이지 범위: ${startPage} ~ ${endPage}`);
+  console.log(
+    `⏰ 예상 소요시간: 페이지당 ${Math.round(PAGE_DELAY_MS / 1000)}초 기준, ` +
+      `${Math.ceil(((endPage - startPage + 1) * PAGE_DELAY_MS) / 60000)}분 예상`,
+  );
+
+  crawlCandidates(startPage, endPage)
+    .then((total) => {
+      console.log(`\n🎉 모든 작업 완료! 총 ${total}명의 새로운 후보자를 추가했습니다.`);
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('❌ 크롤링 중 오류 발생:', error);
+      process.exit(1);
     });
 }
 
-module.exports = { crawlCandidates, extractCandidateInfo };
+module.exports = {
+  crawlCandidates,
+  extractCandidatesFromHtml,
+  extractCandidateFromCard,
+  buildCandidateKey,
+};

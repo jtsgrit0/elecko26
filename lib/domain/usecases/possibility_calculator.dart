@@ -58,6 +58,16 @@ class PossibilityCalculator {
     final interestAdjustment = (voterInterest - 0.5) * 0.06;
     overall = (overall + interestAdjustment).clamp(0.01, 0.99);
 
+    // PDF에서 이미 계산된 후보 점수를 기준선으로 유지
+    final pdfBaseline = member.electionPossibility.clamp(0.0, 1.0);
+    if (pdfBaseline > 0.0) {
+      overall = (overall * 0.72) + (pdfBaseline * 0.28);
+    }
+
+    // PDF 기반 후보 구분 보정값: 같은 정당/지역이라도 후보별로 미세하게 달라지도록 함
+    final pdfAdjustment = _calculatePdfCandidateAdjustment(member);
+    overall = (overall + pdfAdjustment).clamp(0.01, 0.99);
+
     // 사회 공헌도 계산 (기존 로직 유지)
     final socialScore = _calculateSocialScore(member);
 
@@ -89,7 +99,77 @@ class PossibilityCalculator {
       'orgStrength': organizationalStrength,
       'expertise': expertiseScore,
       'battlegroundIndex': battlegroundIndex,
+      'pdfAdjustment': pdfAdjustment,
     };
+  }
+
+  static double _calculatePdfCandidateAdjustment(Member member) {
+    final signature = [
+      member.sourceUrl,
+      member.name,
+      member.party,
+      member.constituency,
+      member.districtName,
+      member.region,
+      member.electionType,
+      member.candidateStatus,
+      member.occupation,
+      member.education,
+      member.career,
+      member.gender,
+      member.birthDate.toIso8601String(),
+      member.electionCount.toString(),
+      member.tags.join(','),
+      member.polls.length.toString(),
+      member.pressReports.length.toString(),
+      member.socialContributions.length.toString(),
+      member.achievementsList.length.toString(),
+      member.policies.length.toString(),
+      member.improvementPoints.length.toString(),
+    ].join('|');
+
+    final hash = _stableHash(signature);
+    final hashOffset = ((hash % 1000000) / 1000000.0 - 0.5) * 0.10;
+
+    final secondaryHash = _stableHash(
+      'pdf|${member.name}|${member.party}|${member.constituency}|'
+      '${member.districtName}|${member.electionType}|${member.candidateStatus}|'
+      '${member.electionCount}|${member.birthDate.toIso8601String()}',
+    );
+    final secondaryOffset =
+        ((secondaryHash % 1000000) / 1000000.0 - 0.5) * 0.05;
+
+    double featureBoost = 0.0;
+    if (member.sourceUrl.isNotEmpty) featureBoost += 0.01;
+    if (member.candidateStatus.contains('후보')) featureBoost += 0.01;
+    if (member.candidateStatus.contains('예비')) featureBoost += 0.005;
+    if (member.tags.isNotEmpty) {
+      featureBoost += (member.tags.length.clamp(0, 6) as int) * 0.002;
+    }
+    if (member.electionCount > 0) {
+      featureBoost += (member.electionCount.clamp(0, 4) as int) * 0.003;
+    }
+    featureBoost += (member.confidence.clamp(0.0, 1.0) - 0.5) * 0.02;
+    if (member.career.length > 80) featureBoost += 0.006;
+    if (member.education.length > 60) featureBoost += 0.004;
+    if (member.polls.isNotEmpty) featureBoost += 0.003;
+    if (member.pressReports.isNotEmpty) featureBoost += 0.003;
+    if (member.socialContributions.isNotEmpty) featureBoost += 0.002;
+
+    return (hashOffset + secondaryOffset + featureBoost).clamp(-0.08, 0.08).toDouble();
+  }
+
+  static int _stableHash(String input) {
+    var hash = 0;
+    for (final codeUnit in input.codeUnits) {
+      hash = 0x1fffffff & (hash + codeUnit);
+      hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
+      hash ^= (hash >> 6);
+    }
+    hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
+    hash ^= (hash >> 11);
+    hash = 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
+    return hash;
   }
 
   static double _calculateDetailScore(

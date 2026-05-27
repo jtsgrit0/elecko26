@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:elecko26_new/domain/entities/election_data_export.dart';
 
@@ -76,7 +75,7 @@ class GitHubDataSource {
             'Failed to save to GitHub: ${response.statusCode} - ${response.body}');
       }
 
-      debugPrint('✓ Election data saved to GitHub: data/election_data.json');
+      print('✓ Election data saved to GitHub: data/election_data.json');
     } catch (e) {
       throw Exception('Error saving election data to GitHub: $e');
     }

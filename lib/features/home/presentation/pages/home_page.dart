@@ -283,8 +283,10 @@ class _HomePageState extends State<HomePage> {
             isLoading: isLoading,
             membersStream: _membersStream,
             cachedMembers: _cachedMembers,
-            cachedAnalysisResults: _analysisResults,
             userRegion: region,
+            onRefresh: () async {
+              await sl<MemberRepository>().refreshMembers();
+            },
             onMemberSelected: (m) => setState(() => _selectedMember = m),
             onNavigateToSearch: () => _selectedIndexNotifier.value = 1,
             onRegionChanged: (newRegion) async {
@@ -302,7 +304,6 @@ class _HomePageState extends State<HomePage> {
         builder: (context, region, _) => SearchView(
           membersStream: _membersStream,
           cachedMembers: _cachedMembers,
-          analysisResults: _analysisResults,
           userRegion: region,
           onMemberSelected: (m) => setState(() => _selectedMember = m),
         ),
@@ -333,8 +334,6 @@ class _HomePageState extends State<HomePage> {
         key: const ValueKey('favorites_view'),
         membersStream: _membersStream,
         cachedMembers: _cachedMembers,
-        analysisResults: _analysisResults,
-        analysisStream: _analysisStreamController!.stream,
         onMemberSelected: (m) => setState(() => _selectedMember = m),
       ),
       // 6: 지도

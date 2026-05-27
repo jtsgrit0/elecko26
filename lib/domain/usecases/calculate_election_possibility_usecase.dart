@@ -3,9 +3,9 @@ import 'dart:math' as math;
 import 'package:elecko26_new/domain/entities/analysis_result.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/entities/poll.dart';
+import 'package:elecko26_new/core/utils/utility_functions.dart';
 import 'package:elecko26_new/domain/usecases/possibility_calculator.dart';
 import 'package:elecko26_new/domain/repositories/member_repository.dart';
-import 'package:elecko26_new/core/utils/utility_functions.dart';
 import 'package:elecko26_new/domain/repositories/historical_election_repository.dart';
 
 /// 당선 가능성을 다각적으로 산정하는 UseCase
@@ -241,8 +241,10 @@ class CalculateElectionPossibilityUseCase {
     final overall = ((scores['overall'] as double) * 100).toStringAsFixed(1);
     final poll = ((scores['poll'] as double) * 100).toStringAsFixed(1);
     final hist = ((scores['historical'] as double) * 100).toStringAsFixed(1);
-    final achievement = ((scores['achievement'] as double) * 100).toStringAsFixed(1);
-    final social = ((scores['socialContribution'] as double) * 100).toStringAsFixed(1);
+    final achievement =
+        ((scores['achievement'] as double) * 100).toStringAsFixed(1);
+    final social =
+        ((scores['socialContribution'] as double) * 100).toStringAsFixed(1);
     final public = ((scores['publicImage'] as double) * 100).toStringAsFixed(1);
 
     final report = '''

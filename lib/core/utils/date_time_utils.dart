@@ -27,6 +27,19 @@ class DateTimeUtils {
     return '${date.year}년 ${date.month}월 ${date.day}일';
   }
 
+  /// 일반적인 날짜 표기 포맷
+  ///
+  /// 연도 정보가 비어 있거나 기본값(1900년대)인 경우에는 정보 없음으로 처리합니다.
+  static String formatDate(DateTime date) {
+    if (date.year <= 1900) {
+      return '정보 없음';
+    }
+    final y = date.year.toString().padLeft(4, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
   /// 날짜 차이 계산 (일 단위)
   static int daysDifference(DateTime from, DateTime to) {
     return to.difference(from).inDays;
@@ -208,36 +221,45 @@ bool districtMatchesRegion(String district, String region) {
 /// district 명칭에서 상위 광역 단위 지역명을 추출합니다.
 /// 예: "서울특별시장" -> "서울특별시", "연수구청장" -> "인천광역시"
 String getParentRegion(String district) {
-  // 매핑 테이블 (하위 지명 -> 상위 광역 단위)
-  const districtToRegion = <String, String>{
-    // 1순위: 광역 지자체명 (우선순위 높음)
-    '서울특별시': '서울특별시', '서울': '서울특별시',
-    '부산광역시': '부산광역시', '부산': '부산광역시',
-    '대구광역시': '대구광역시', '대구': '대구광역시',
-    '인천광역시': '인천광역시', '인천': '인천광역시',
-    '광주광역시': '광주광역시', '광주': '광주광역시',
-    '대전광역시': '대전광역시', '대전': '대전광역시',
-    '울산광역시': '울산광역시', '울산': '울산광역시',
-    '세종특별자치시': '세종특별자치시', '세종': '세종특별자치시',
-    '경기도': '경기도', '경기': '경기도',
+  final normalized = district.replaceAll(' ', '');
+  if (normalized.isEmpty) {
+    return '';
+  }
+
+  const regionAliases = <String, List<String>>{
+    '서울특별시': ['서울특별시', '서울'],
+    '부산광역시': ['부산광역시', '부산'],
+    '대구광역시': ['대구광역시', '대구'],
+    '인천광역시': ['인천광역시', '인천'],
+    '광주광역시': ['광주광역시', '광주'],
+    '대전광역시': ['대전광역시', '대전'],
+    '울산광역시': ['울산광역시', '울산'],
+    '세종특별자치시': ['세종특별자치시', '세종'],
+    '경기도': ['경기도', '경기'],
     '강원특별자치도': ['강원특별자치도', '강원도', '강원'],
     '충청북도': ['충청북도', '충북'],
     '충청남도': ['충청남도', '충남'],
-    '전라북도': ['전라북도', '전북'],
     '전북특별자치도': ['전북특별자치도', '전라북도', '전북'],
+    '전라북도': ['전라북도', '전북'],
     '전라남도': ['전라남도', '전남'],
     '경상북도': ['경상북도', '경북'],
     '경상남도': ['경상남도', '경남'],
     '제주특별자치도': ['제주특별자치도', '제주도', '제주'],
   };
 
-  final regionAliases = aliases[region];
-  if (regionAliases != null) return regionAliases;
+  for (final entry in regionAliases.entries) {
+    for (final alias in entry.value) {
+      if (normalized.contains(alias.replaceAll(' ', ''))) {
+        return entry.key;
+      }
+    }
+  }
 
-  // 알 수 없는 형식은 원문과 앞 2글자를 함께 비교
-  final fallback = <String>[region];
-  if (region.length >= 2) fallback.add(region.substring(0, 2));
-  return fallback;
+  if (normalized.contains('전국')) {
+    return '전국';
+  }
+
+  return district;
 }
 
 /// 선거구 명칭별 정렬 우선순위를 반환합니다. (낮을수록 상단)

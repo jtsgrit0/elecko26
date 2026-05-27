@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:elecko26_new/domain/entities/analysis_result.dart';
 import 'package:elecko26_new/domain/entities/election_data_export.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
@@ -37,11 +36,13 @@ class ExportElectionDataUseCase {
           final memberData = _createMemberElectionData(member, analysis);
           memberDataList.add(memberData);
 
-          totalPolls += member.polls.length;
           totalPossibility += analysis.electionPossibility;
-          partyCount[member.party] = (partyCount[member.party] ?? 0) + 1;
+          partyCount[member.party.isEmpty ? '무소속' : member.party] =
+              (partyCount[member.party.isEmpty ? '무소속' : member.party] ??
+                  0) +
+              1;
         } catch (e) {
-          debugPrint('Error analyzing member ${member.name}: $e');
+          print('Error analyzing member ${member.name}: $e');
           // 분석 실패한 멤버는 스킵
           continue;
         }
@@ -54,7 +55,7 @@ class ExportElectionDataUseCase {
         averageElectionPossibility: memberDataList.isEmpty
             ? 0
             : totalPossibility / memberDataList.length,
-        totalPolls: totalPolls,
+        totalPolls: totalPolls, // 0으로 유지
         dataSourcesCount: 3, // 여론조사, 언론보도, SNS
         membersByParty: partyCount,
       );
@@ -78,33 +79,10 @@ class ExportElectionDataUseCase {
     Member member,
     AnalysisResult analysis,
   ) {
-    // 언론 보도 감정 평균 계산
-    double sentimentAverage = 0.0;
-    if (member.pressReports.isNotEmpty) {
-      int positiveCount = 0;
-      for (final report in member.pressReports) {
-        if (report.sentiment == 'positive') {
-          positiveCount++;
-        }
-      }
-      sentimentAverage = positiveCount / member.pressReports.length;
-    }
-
     // 최근 추이 데이터 (최근 30일)
     final recentTrends = analysis.dailyTrends.length > 30
         ? analysis.dailyTrends.sublist(analysis.dailyTrends.length - 30)
         : analysis.dailyTrends;
-
-    // 여론조사 데이터 변환
-    final pollsExport = member.polls
-        .map((poll) => PollDataExport(
-              pollAgency: poll.pollAgency,
-              surveyDate: poll.surveyDate,
-              supportRate: poll.supportRate,
-              sampleSize: poll.sampleSize,
-              marginOfError: poll.marginOfError,
-            ))
-        .toList();
 
     // SNS 분석 데이터 변환
     SnsAnalysisExport? snsAnalysisExport;
@@ -124,8 +102,8 @@ class ExportElectionDataUseCase {
     return MemberElectionData(
       id: member.id,
       name: member.name,
-      party: member.party,
-      district: member.district,
+      party: member.party.isEmpty ? '무소속' : member.party,
+      district: member.constituency,
       electionPossibility: analysis.electionPossibility,
       possibilityChange: analysis.possibilityChange,
       analyzedAt: DateTime.now(),
@@ -134,10 +112,10 @@ class ExportElectionDataUseCase {
       policyScore: analysis.policyScore,
       publicImageScore: analysis.publicImageScore,
       pollScore: analysis.pollScore,
-      polls: pollsExport,
+      polls: const [],
       snsAnalysis: snsAnalysisExport,
-      pressReportsCount: member.pressReports.length,
-      sentimentAverage: sentimentAverage,
+      pressReportsCount: 0,
+      sentimentAverage: 0.0,
       recentTrends: recentTrends
           .map((trend) => DailyTrendExport(
                 date: trend.date,

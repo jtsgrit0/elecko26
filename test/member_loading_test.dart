@@ -15,7 +15,7 @@ class MockMemberRepository implements MemberRepository {
         id: 'test_id_$index',
         name: 'Test Member $index',
         party: 'Test Party',
-        district: 'Test District',
+        constituency: 'Test District',
         region: 'Test Region',
       ),
     );
@@ -34,6 +34,8 @@ class MockMemberRepository implements MemberRepository {
   Future<void> addMember(Member member) => throw UnimplementedError();
   @override
   Future<void> deleteMember(String memberId) => throw UnimplementedError();
+  @override
+  Future<void> clearAllMembers() => throw UnimplementedError();
   @override
   Future<List<Member>> getCachedMembers() => throw UnimplementedError();
   @override

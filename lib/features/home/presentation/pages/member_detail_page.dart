@@ -7,7 +7,9 @@ import 'package:elecko26_new/core/utils/image_utils.dart';
 import 'package:elecko26_new/core/utils/ui_utils.dart';
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/domain/entities/party.dart';
+import 'package:elecko26_new/domain/entities/party_support_rate.dart';
 import 'package:elecko26_new/domain/entities/poll.dart';
+import 'package:elecko26_new/domain/entities/vote_rate.dart';
 import 'package:elecko26_new/features/home/presentation/bloc/member_detail/member_detail_bloc.dart';
 import 'package:elecko26_new/features/home/presentation/bloc/member_detail/member_detail_event.dart';
 import 'package:elecko26_new/features/home/presentation/bloc/member_detail/member_detail_state.dart';
@@ -26,8 +28,9 @@ import 'package:url_launcher/url_launcher.dart' as url_launcher;
 
 class MemberDetailPage extends StatefulWidget {
   final Member member;
+  final VoidCallback? onBack;
 
-  const MemberDetailPage({super.key, required this.member});
+  const MemberDetailPage({super.key, required this.member, this.onBack});
 
   @override
   State<MemberDetailPage> createState() => _MemberDetailPageState();
@@ -62,6 +65,9 @@ class _MemberDetailPageState extends State<MemberDetailPage>
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.member.name),
+        leading: BackButton(
+          onPressed: widget.onBack ?? () => Navigator.of(context).pop(),
+        ),
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -100,16 +106,32 @@ class _MemberDetailPageState extends State<MemberDetailPage>
                 _buildHeader(member),
                 SizedBox(height: 20.h),
                 _buildSectionTitle('기본 정보'),
-                _buildInfoRow('소속 정당', member.party?.name ?? '무소속'),
+                _buildInfoRow('소속 정당', member.party.isEmpty ? '무소속' : member.party),
                 _buildInfoRow('지역구', member.constituency),
-                _buildInfoRow('당선 횟수', '${member.electionCount}회'),
-                _buildInfoRow('재임 기간',
-                    '${DateTimeUtils.formatDate(member.termStartDate)} ~ ${DateTimeUtils.formatDate(member.termEndDate)}'),
                 _buildInfoRow(
-                    '생년월일', DateTimeUtils.formatDate(member.birthDate)),
-                _buildInfoRow('성별', member.gender == 'M' ? '남성' : '여성'),
+                  '당선 횟수',
+                  member.electionCount > 0 ? '${member.electionCount}회' : '정보 없음',
+                ),
+                _buildInfoRow(
+                  '재임 기간',
+                  '${DateTimeUtils.formatDate(member.termStartDate)} ~ ${DateTimeUtils.formatDate(member.termEndDate)}',
+                ),
+                _buildInfoRow('생년월일', DateTimeUtils.formatDate(member.birthDate)),
+                _buildInfoRow(
+                  '성별',
+                  member.gender.isEmpty
+                      ? '정보 없음'
+                      : (member.gender == 'M' || member.gender == '남성'
+                          ? '남성'
+                          : member.gender == 'F' || member.gender == '여성'
+                              ? '여성'
+                              : member.gender),
+                ),
                 _buildInfoRow('학력', member.education),
                 _buildInfoRow('경력', member.career),
+                SizedBox(height: 20.h),
+                _buildSectionTitle('당선 가능성'),
+                _buildPossibilityMeter(member.electionPossibility),
                 SizedBox(height: 20.h),
                 _buildSectionTitle('SNS'),
                 _buildSnsLinks(member),
@@ -131,19 +153,29 @@ class _MemberDetailPageState extends State<MemberDetailPage>
   }
 
   Widget _buildHeader(Member member) {
+    final ImageProvider<Object> imageProvider;
+    if (member.imageUrl.isEmpty) {
+      imageProvider = const AssetImage('assets/images/avatar.png');
+    } else if (member.imageUrl.startsWith('assets/')) {
+      imageProvider = AssetImage(member.imageUrl);
+    } else {
+      imageProvider = NetworkImage(
+        ImageUtils.getProxyUrl(member.imageUrl, width: 120, height: 120),
+      );
+    }
+
     return Row(
       children: [
         CircleAvatar(
           radius: 40.w,
-          backgroundImage:
-              NetworkImage(ImageUtils.getMemberImageUrl(member.id)),
+          backgroundImage: imageProvider,
         ),
         SizedBox(width: 16.w),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(member.name, style: AppTextStyles.headline2),
-            Text(member.party?.name ?? '무소속', style: AppTextStyles.bodyText1),
+            Text(member.party.isEmpty ? '무소속' : member.party, style: AppTextStyles.bodyText1),
           ],
         ),
       ],
@@ -208,6 +240,33 @@ class _MemberDetailPageState extends State<MemberDetailPage>
           UiUtils.showSnackBar(context, '링크를 열 수 없습니다: $url');
         }
       },
+    );
+  }
+
+  Widget _buildPossibilityMeter(double rawPossibility) {
+    final possibility = rawPossibility > 1.0 ? rawPossibility / 100.0 : rawPossibility;
+    final clamped = possibility.clamp(0.0, 1.0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LinearProgressIndicator(
+          value: clamped,
+          minHeight: 8,
+          backgroundColor: AppColors.lightGrey,
+          valueColor: AlwaysStoppedAnimation(
+            clamped >= 0.6 ? AppColors.success : AppColors.warning,
+          ),
+        ),
+        SizedBox(height: 8.h),
+        Text(
+          '당선 가능성 ${(clamped * 100).toStringAsFixed(2)}%',
+          style: AppTextStyles.bodyText2.copyWith(
+            color: clamped >= 0.6 ? AppColors.success : AppColors.warning,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 

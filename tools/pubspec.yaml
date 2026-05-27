@@ -6,5 +6,12 @@ environment:
   sdk: '>=3.1.5 <4.0.0'
 
 dependencies:
+  flutter:
+    sdk: flutter
+  elecko26_new:
+    path: ..
   http: ^1.1.0
   path: ^1.9.0
+  html: ^0.15.4
+  firebase_core: ^2.15.0
+  syncfusion_flutter_pdf: ^26.1.35

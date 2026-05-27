@@ -95,12 +95,17 @@ class AppTextStyles {
     height: 1.5,
   );
 
+  // Legacy aliases kept for older widgets.
+  static const TextStyle bodyText1 = bodyLarge;
+
   static const TextStyle bodyMedium = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.normal,
     color: AppColors.darkGrey,
     height: 1.4,
   );
+
+  static const TextStyle bodyText2 = bodyMedium;
 
   static const TextStyle bodySmall = TextStyle(
     fontSize: 12,

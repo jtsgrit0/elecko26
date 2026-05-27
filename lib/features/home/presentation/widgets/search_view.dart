@@ -28,25 +28,22 @@ class _SearchViewState extends State<SearchView> {
   String _searchCategory = '전체';
   String _searchOffice = '전체';
 
-  static const List<String> _searchCategories = ['전체', '광역', '기초', '의회'];
+  // PDF 파일의 실제 선거 유형에 맞춘 카테고리
+  static const List<String> _searchCategories = [
+    '전체',
+    '광역단체장',
+    '기초단체장',
+    '광역의회의원',
+    '기초의회의원',
+    '비례대표'
+  ];
   static const Map<String, List<String>> _officeOptionsByCategory = {
-    '전체': [
-      '전체',
-      '도지사',
-      '광역시장',
-      '특별시장',
-      '특별자치도지사',
-      '시장',
-      '군수',
-      '구청장',
-      '도의원',
-      '시의원',
-      '구의원',
-      '군의원'
-    ],
-    '광역': ['전체', '도지사', '광역시장', '특별시장', '특별자치도지사'],
-    '기초': ['전체', '시장', '군수', '구청장'],
-    '의회': ['전체', '도의원', '시의원', '구의원', '군의원'],
+    '전체': ['전체', '시·도지사', '구·시·군의장', '시·도의회의원', '구·시·군의회의원', '기초의원비례대표'],
+    '광역단체장': ['전체', '시·도지사'],
+    '기초단체장': ['전체', '구·시·군의장'],
+    '광역의회의원': ['전체', '시·도의회의원'],
+    '기초의회의원': ['전체', '구·시·군의회의원'],
+    '비례대표': ['전체', '기초의원비례대표'],
   };
 
   @override
@@ -231,9 +228,11 @@ class _SearchViewState extends State<SearchView> {
         }
 
         final filteredMembers = allMembers.where((m) {
-          // 지역 필터링 먼저 적용
-          if (!districtMatchesRegion(m.district, widget.userRegion))
-            return false;
+          // PDF에서 추출한 constituency 필드 사용
+          final constituency = m.constituency;
+
+          // 지역 필터링 적용 (사용자 지역과 일치하는 선거구만 표시)
+          if (!constituency.contains(widget.userRegion)) return false;
 
           if (!_matchesSearchCategory(m)) return false;
           if (!_matchesSearchOffice(m)) return false;
@@ -241,7 +240,7 @@ class _SearchViewState extends State<SearchView> {
           final query = _searchQuery.toLowerCase();
           return m.name.toLowerCase().contains(query) ||
               m.party.toLowerCase().contains(query) ||
-              m.district.toLowerCase().contains(query) ||
+              constituency.toLowerCase().contains(query) ||
               m.description.toLowerCase().contains(query) ||
               m.policies.any((p) => p.toLowerCase().contains(query)) ||
               m.achievementsList.any((a) => a.toLowerCase().contains(query));
@@ -296,24 +295,19 @@ class _SearchViewState extends State<SearchView> {
       return true;
     }
 
-    final district = member.district;
+    // PDF에서 추출된 선거구 형식에 맞춘 매칭 로직
+    final constituency = member.constituency;
     switch (_searchCategory) {
-      case '광역':
-        return district.contains('도지사') ||
-            district.contains('광역시장') ||
-            district.contains('특별시장') ||
-            district.contains('특별자치도지사');
-      case '기초':
-        return (district.endsWith('시장') &&
-                !district.contains('광역시장') &&
-                !district.contains('특별시장')) ||
-            district.endsWith('군수') ||
-            district.endsWith('구청장');
-      case '의회':
-        return district.endsWith('도의원') ||
-            district.endsWith('시의원') ||
-            district.endsWith('구의원') ||
-            district.endsWith('군의원');
+      case '광역단체장':
+        return constituency.contains('시·도지사');
+      case '기초단체장':
+        return constituency.contains('구·시·군의장');
+      case '광역의회의원':
+        return constituency.contains('시·도의회의원');
+      case '기초의회의원':
+        return constituency.contains('구·시·군의회의원');
+      case '비례대표':
+        return constituency.contains('기초의원비례대표');
       default:
         return true;
     }
@@ -324,22 +318,20 @@ class _SearchViewState extends State<SearchView> {
       return true;
     }
 
-    final district = member.district;
+    final constituency = member.constituency;
     switch (_searchOffice) {
-      case '도지사':
-        return district.contains('도지사') && !district.contains('특별자치도지사');
-      case '광역시장':
-        return district.contains('광역시장');
-      case '특별시장':
-        return district.contains('특별시장');
-      case '특별자치도지사':
-        return district.contains('특별자치도지사');
-      case '시장':
-        return district.endsWith('시장') &&
-            !district.contains('광역시장') &&
-            !district.contains('특별시장');
+      case '시·도지사':
+        return constituency.contains('시·도지사');
+      case '구·시·군의장':
+        return constituency.contains('구·시·군의장');
+      case '시·도의회의원':
+        return constituency.contains('시·도의회의원');
+      case '구·시·군의회의원':
+        return constituency.contains('구·시·군의회의원');
+      case '기초의원비례대표':
+        return constituency.contains('기초의원비례대표');
       default:
-        return district.endsWith(_searchOffice);
+        return false;
     }
   }
 }

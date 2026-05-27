@@ -35,6 +35,9 @@ class AuthRepositoryImpl implements AuthRepository {
     if (user.providerData.isNotEmpty) {
       final providerId = user.providerData.first.providerId;
       if (providerId == 'google.com') provider = AuthProvider.google;
+      if (providerId == 'facebook.com') provider = AuthProvider.facebook;
+      if (providerId == 'kakao.com') provider = AuthProvider.kakao;
+      if (providerId == 'apple.com') provider = AuthProvider.apple;
     }
 
     return User(

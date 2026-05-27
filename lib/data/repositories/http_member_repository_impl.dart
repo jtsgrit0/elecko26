@@ -80,6 +80,11 @@ class HttpMemberRepositoryImpl implements MemberRepository {
   }
 
   @override
+  Future<void> clearAllMembers() async {
+    _members.clear();
+  }
+
+  @override
   Future<List<Member>> getCachedMembers() async {
     // HTTP 구현에서는 매번 네트워크에서 가져옵니다.
     return getAllMembers();

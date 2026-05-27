@@ -7,7 +7,7 @@ class NesdcPollDataSource {
     dynamic localStorageService,
   });
 
-  Future<List<NesdcPollEntry>> fetchLatest() async => [];
+  Future<List<NesdcPollEntry>> fetchLatest({int pages = 1}) async => [];
   Future<NesdcPollDetail?> fetchDetail(String url) async => null;
   NesdcPollDetail? getCachedDetail(String url) => null;
 }

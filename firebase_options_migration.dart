@@ -1,6 +1,5 @@
 // firebase_options_migration.dart
-import 'package:firebase_core_dart/firebase_core_dart.dart'
-    show FirebaseOptions;
+import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 
 class DefaultFirebaseOptionsMigration {
   static const FirebaseOptions web = FirebaseOptions(

@@ -38,9 +38,10 @@ class MemberRepositoryImpl implements MemberRepository {
     _initializer = Completer<void>();
 
     try {
-      // 항상 assets/data/election_candidates.json 파일을 로드하도록 수정
+      // 항상 PDF에서 추출한 assets/data/election_candidates.json 파일을 우선 로드
       final jsonStr =
           await rootBundle.loadString('assets/data/election_candidates.json');
+      debugPrint('[MemberRepo] PDF에서 추출한 election_candidates.json 로드 성공');
 
       // 백그라운드에서 JSON 파싱 및 객체 변환 수행
       _members = await compute(_parseMembers, jsonStr);

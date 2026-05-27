@@ -71,8 +71,28 @@ class MemberDetailBloc extends Bloc<MemberDetailEvent, MemberDetailState> {
       // TODO: Implement actual data fetching logic
       // For now, return dummy polls
       final dummyPolls = [
-        Poll(id: '1', question: '여론조사 1', dueDate: DateTime(2024, 12, 31)),
-        Poll(id: '2', question: '여론조사 2', dueDate: DateTime(2024, 11, 30)),
+        Poll(
+          id: '1',
+          pollAgency: '가상 여론조사 기관',
+          surveyDate: DateTime(2024, 12, 31),
+          supportRate: 0.45,
+          partyName: '더불어민주당',
+          sampleSize: 1000,
+          marginOfError: 3.1,
+          source: 'https://example.com/poll/1',
+          notes: '샘플 데이터',
+        ),
+        Poll(
+          id: '2',
+          pollAgency: '가상 여론조사 기관',
+          surveyDate: DateTime(2024, 11, 30),
+          supportRate: 0.41,
+          partyName: '국민의힘',
+          sampleSize: 950,
+          marginOfError: 3.2,
+          source: 'https://example.com/poll/2',
+          notes: '샘플 데이터',
+        ),
       ];
       emit(MemberPollsLoaded(dummyPolls));
     } catch (e) {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:elecko26_new/domain/entities/poll.dart'; // Assuming Poll entity exists
+import 'package:elecko26_new/domain/entities/poll.dart';
 
 class PollItem extends StatelessWidget {
   final Poll poll;
@@ -16,15 +16,39 @@ class PollItem extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              poll.question,
+              poll.pollAgency,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8.0),
             Text(
-              '마감일: ${poll.dueDate.toLocal().toString().split(' ')[0]}',
+              '조사일: ${poll.surveyDate.toLocal().toString().split(' ')[0]}',
               style: Theme.of(context).textTheme.bodySmall,
             ),
-            // TODO: Add more poll details and options if needed
+            const SizedBox(height: 6.0),
+            Text(
+              poll.supportRate != null
+                  ? '지지율: ${(poll.supportRate! * 100).toStringAsFixed(1)}%'
+                  : '지지율: 미공개',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            if (poll.sampleSize != null || poll.marginOfError != null) ...[
+              const SizedBox(height: 6.0),
+              Text(
+                [
+                  if (poll.sampleSize != null) '표본 ${poll.sampleSize}명',
+                  if (poll.marginOfError != null)
+                    '오차 ±${poll.marginOfError!.toStringAsFixed(1)}%',
+                ].join(' · '),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+            if (poll.notes != null && poll.notes!.isNotEmpty) ...[
+              const SizedBox(height: 6.0),
+              Text(
+                poll.notes!,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
           ],
         ),
       ),

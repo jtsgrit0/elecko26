@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' show parse;
 import 'package:elecko26_new/domain/entities/member.dart';
+import 'package:elecko26_new/domain/entities/press_report.dart';
 
 /// Naver 뉴스 검색을 통해 후보자 관련 뉴스를 수집하는 데이터소스
 class NewsCrawler {
