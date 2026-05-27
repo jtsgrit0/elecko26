@@ -15,32 +15,42 @@ import 'package:elecko26_new/data/datasources/local_storage_service.dart'
 import 'package:elecko26_new/features/home/presentation/pages/region_selection_screen.dart';
 import 'package:elecko26_new/features/home/presentation/widgets/splash_screen.dart';
 
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+
 class MyApp extends StatelessWidget {
   final List<Member> members;
   const MyApp({super.key, required this.members});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: '2026 당예기',
-      debugShowCheckedModeBanner: false,
-      scrollBehavior: const MaterialScrollBehavior().copyWith(
-        dragDevices: {
-          PointerDeviceKind.mouse,
-          PointerDeviceKind.touch,
-          PointerDeviceKind.stylus,
-          PointerDeviceKind.unknown
-        },
-      ),
-      theme: AppTheme.lightTheme.copyWith(
-        pageTransitionsTheme: const PageTransitionsTheme(
-          builders: {
-            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-          },
-        ),
-      ),
-      home: InitialScreen(members: members),
+    return ScreenUtilInit(
+      designSize: kIsWeb ? const Size(1440, 1024) : const Size(375, 812),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, child) {
+        return MaterialApp(
+          title: '2026 당예기',
+          debugShowCheckedModeBanner: false,
+          scrollBehavior: const MaterialScrollBehavior().copyWith(
+            dragDevices: {
+              PointerDeviceKind.mouse,
+              PointerDeviceKind.touch,
+              PointerDeviceKind.stylus,
+              PointerDeviceKind.unknown
+            },
+          ),
+          theme: AppTheme.lightTheme.copyWith(
+            pageTransitionsTheme: const PageTransitionsTheme(
+              builders: {
+                TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+              },
+            ),
+          ),
+          home: child,
+        );
+      },
+      child: InitialScreen(members: members),
     );
   }
 }
