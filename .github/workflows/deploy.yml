@@ -15,7 +15,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.6' # .fvm/fvm_config.json 와 동일한 버전
+          flutter-version: '3.22.2' # .fvm/fvm_config.json 와 동일한 버전
           channel: 'stable'
           cache: true
 
