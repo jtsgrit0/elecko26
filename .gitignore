@@ -65,3 +65,9 @@ data/*.json
 
 # FVM Version Cache
 .fvm/
+
+# Python virtual environment
+venv/
+
+# PDF에서 추출된 후보자 이미지 (서버 업로드 후 imageUrl로 관리)
+assets/images/candidates/*.png

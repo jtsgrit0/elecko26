@@ -1,6 +1,7 @@
 import os
 import json
 import re
+import base64
 import fitz  # PyMuPDF
 from PIL import Image
 import io
@@ -123,7 +124,7 @@ def parse_candidate_data(page, region, position, election_type):
                             pil_image = Image.open(io.BytesIO(base_image.tobytes()))
                             img_byte_arr = io.BytesIO()
                             pil_image.save(img_byte_arr, format='PNG')
-                            candidate_image_data = img_byte_arr.getvalue()
+                            candidate_image_data = 'data:image/png;base64,' + base64.b64encode(img_byte_arr.getvalue()).decode('utf-8')
                         except: pass
                         break
 
@@ -176,7 +177,18 @@ PARTY_NORMALIZATION = {
     '개혁신당': '개혁신당', '진보당': '진보당', '기본소득당': '기본소득당', '무소속': '무소속',
 }
 
-PARTY_BASE = {'더불어민주당': 0.24, '국민의힘': 0.23, '조국혁신당': 0.15, '개혁신당': 0.13, '진보당': 0.11, '정의당': 0.10, '기본소득당': 0.09, '무소속': 0.08}
+PARTY_BASE = {
+    '더불어민주당': 0.385,
+    '국민의힘': 0.342,
+    '조국혁신당': 0.118,
+    '개혁신당': 0.048,
+    '진보당': 0.025,
+    '정의당': 0.018,
+    '녹색정의당': 0.018,
+    '기본소득당': 0.010,
+    '자유통일당': 0.015,
+    '무소속': 0.075
+}
 ELECTION_BASE = {'시·도지사선거': 0.22, '구·시·군의 장선거': 0.20, '시·도의회의원선거': 0.18, '구·시·군의회의원선거': 0.17, '교육감선거': 0.16, '국회의원선거': 0.19}
 STATUS_BASE = {'예비후보': 0.05, '후보자': 0.08, '등록후보': 0.08, '본후보': 0.09}
 
@@ -287,7 +299,7 @@ def compute_election_possibility(candidate, competition_count):
     status = clean_text(candidate.get('candidateStatus') or candidate.get('status') or '예비후보')
     
     base = 0.10
-    base += PARTY_BASE.get(party, 0.08)
+    base += PARTY_BASE.get(party, 0.075)
     base += ELECTION_BASE.get(election_type, 0.14)
     base += STATUS_BASE.get(status, 0.03)
     
@@ -308,24 +320,69 @@ def compute_election_possibility(candidate, competition_count):
     competition_penalty = 1.0 - min(max(competition_count - 1, 0), 20) * 0.007
     base *= competition_penalty
 
+    # [지역구별 정당 적합도 프리미엄/패널티]
+    regional_premium = 0.0
+    constituency_lower = constituency.lower()
+    party_lower = party.lower()
+    
+    # 영남권 -> 국민의힘 강세
+    if any(x in constituency_lower for x in ['대구', '경북', '경상북도', '울산', '부산', '경남', '경상남도']):
+        if '국민의힘' in party_lower:
+            regional_premium = 0.155
+        elif any(x in party_lower for x in ['민주당', '혁신당', '진보당']):
+            regional_premium = -0.105
+    # 호남권 -> 야권 강세
+    elif any(x in constituency_lower for x in ['광주', '전남', '전라남', '전북', '전라북']):
+        if '민주당' in party_lower:
+            regional_premium = 0.165
+        elif '혁신당' in party_lower:
+            regional_premium = 0.085
+        elif '국민의힘' in party_lower:
+            regional_premium = -0.152
+    # 충청권 스윙벨트
+    elif any(x in constituency_lower for x in ['대전', '세종', '충청']):
+        regional_premium = 0.012
+
+    # [후보자 개인 나이 보정]
+    age = 50  # fallback
+    birthdate = clean_text(candidate.get('birthdate') or candidate.get('birthDate') or '')
+    age_match = re.search(r'(\d{4})', birthdate)
+    if age_match:
+        birth_year = int(age_match.group(1))
+        age = datetime.datetime.now().year - birth_year
+    
+    age_adjustment = 0.0
+    if age < 40:
+        age_adjustment = 0.025
+    elif age > 70:
+        age_adjustment = -0.015
+
+    # [후보자 약력 및 경력 분량 보정]
+    career = clean_text(candidate.get('career') or '')
+    career_lines = len(career.split('\n')) if career else 0
+    career_adjustment = min(career_lines * 0.003, 0.02)
+
+    # [후보 고유 해시 기반 초정밀 변별도 부여 - Jitter]
     signature = '|'.join([
         normalize_name_for_key(candidate.get('name') or candidate.get('nameRaw') or ''),
         party, normalize_district_for_key(constituency or region),
     ])
     hash_value = _stable_hash(signature)
-    hash_offset = ((hash_value % 1000000) / 1000000.0 - 0.5) * 0.10
+    hash_offset = ((hash_value % 50000) / 50000.0 - 0.5) * 0.07  # -3.5% ~ +3.5%
     
-    return min(0.99, max(0.01, base + hash_offset))
+    overall = base + regional_premium + age_adjustment + career_adjustment + hash_offset
+    return min(0.99, max(0.01, overall))
 
 def main():
     root_dir = Path(__file__).parent.parent
     asset_output = root_dir / 'assets' / 'data' / 'election_candidates.json'
     api_output = root_dir / 'web' / 'api' / 'members.json'
-    pdf_dir = root_dir / 'assets' / 'pdf'
+    pdf_dir = root_dir / 'assets' / 'elec_pdf'
     stats = Counter()
 
-    all_candidates = load_json_candidates(asset_output)
-    stats['loaded'] = len(all_candidates)
+    # Clean build: start with an empty list instead of loading legacy candidates
+    all_candidates = []
+    stats['loaded'] = 0
 
     pdf_files = list(pdf_dir.glob('*.pdf'))
     for pdf_file_path in pdf_files:

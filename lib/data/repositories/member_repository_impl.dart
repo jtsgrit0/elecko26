@@ -38,13 +38,29 @@ class MemberRepositoryImpl implements MemberRepository {
     _initializer = Completer<void>();
 
     try {
+      // assets/elec_pdf/ 내 PDF 파일명에서 유효 지역 키워드 집합 추출 (이중 안전 필터)
+      final Set<String> validRegionKeywords = await _loadPdfRegionKeywords();
+      debugPrint('[MemberRepo] elec_pdf 유효 지역 키워드: ${validRegionKeywords.length}개');
+
       // 항상 PDF에서 추출한 assets/data/election_candidates.json 파일을 우선 로드
       final jsonStr =
           await rootBundle.loadString('assets/data/election_candidates.json');
       debugPrint('[MemberRepo] PDF에서 추출한 election_candidates.json 로드 성공');
 
       // 백그라운드에서 JSON 파싱 및 객체 변환 수행
-      _members = await compute(_parseMembers, jsonStr);
+      final allMembers = await compute(_parseMembers, jsonStr);
+
+      // 이중 안전 필터: elec_pdf에 PDF가 없는 지역 후보 완전 차단
+      if (validRegionKeywords.isNotEmpty) {
+        _members = allMembers.where((m) {
+          final district = (m.district + ' ' + m.constituency).toLowerCase();
+          return validRegionKeywords.any((kw) => district.contains(kw));
+        }).toList();
+        debugPrint('[MemberRepo] 이중 필터 후 후보: ${_members.length}명 (전체 ${allMembers.length}명 중)');
+      } else {
+        _members = allMembers;
+        debugPrint('[MemberRepo] 필터 키워드 없음 - 전체 로드: ${_members.length}명');
+      }
 
       // 초기 데이터 로드 후 스트림에 추가
       _membersController.add(_members);
@@ -52,6 +68,43 @@ class MemberRepositoryImpl implements MemberRepository {
     } catch (e) {
       _initializer!.completeError(e);
       rethrow;
+    }
+  }
+
+  /// assets/elec_pdf/ 하위 PDF 파일명에서 지역 키워드 Set을 추출합니다.
+  /// 예: "[구·시·군의회의원선거][강원특별자치도][강릉시].pdf"
+  ///   → {'강원특별자치도', '강릉시', '강원', '강릉'}
+  Future<Set<String>> _loadPdfRegionKeywords() async {
+    try {
+      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+      final pdfAssets = manifest.listAssets()
+          .where((key) => key.startsWith('assets/elec_pdf/') && key.endsWith('.pdf'))
+          .toList();
+
+      final Set<String> keywords = {};
+      final bracketRegex = RegExp(r'\[([^\]]+)\]');
+
+      for (final assetKey in pdfAssets) {
+        final filename = assetKey.split('/').last;
+        for (final match in bracketRegex.allMatches(filename)) {
+          final part = match.group(1) ?? '';
+          // 선거 종류 구분자는 제외 (지역명만 수집)
+          if (part.contains('선거') || part.contains('제9회') || part.contains('후보자') || part.contains('명부')) continue;
+          // 원본 추가
+          keywords.add(part.toLowerCase());
+          // 도/시 등 행정 단위 앞 2글자도 추가 (부분 매칭용)
+          if (part.length >= 2) keywords.add(part.substring(0, 2).toLowerCase());
+          // 복합 선거구 (예: "군산시김제시부안군") 분리
+          final subParts = part.split(RegExp(r'(?<=[시군구도])'));
+          for (final sub in subParts) {
+            if (sub.length >= 2) keywords.add(sub.toLowerCase());
+          }
+        }
+      }
+      return keywords;
+    } catch (e) {
+      debugPrint('[MemberRepo] PDF 지역 키워드 로드 실패: $e');
+      return {};
     }
   }
 
