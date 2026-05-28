@@ -229,16 +229,18 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _handleBottomNavTap(int index) async {
-    // 투표탭(4)은 로그인 필수
-    if (index == 4) {
+    // 투표(4) 및 관심후보(5) 탭은 로그인 필수
+    if (index == 4 || index == 5) {
       if (_currentUser == null) {
-        await Navigator.of(context).push<bool>(
+        final success = await Navigator.of(context).push<bool>(
           MaterialPageRoute(builder: (_) => const AuthGate()),
         );
-        // 로그인 후 다시 확인 (인증 구독을 통해 _currentUser가 업데이트됨)
-        if (_currentUser != null) {
+        // AuthGate에서 로그인 성공 시 true를 반환.
+        // 사용자가 성공적으로 로그인하면 해당 탭으로 이동합니다.
+        if (success == true) {
           _selectedIndexNotifier.value = index;
         }
+        // 로그인하지 않았거나 실패한 경우, 탭 전환을 하지 않고 현재 탭에 머무릅니다.
         return;
       }
     }
