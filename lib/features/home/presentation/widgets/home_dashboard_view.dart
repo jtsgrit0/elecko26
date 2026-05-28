@@ -56,7 +56,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
     // 캐시된 데이터가 있으면 먼저 표시하고 계산 시작
     if (widget.cachedMembers.isNotEmpty) {
       _displayMembers = widget.cachedMembers;
-      // 비동기로 당선 가능성 계산 시작
+      // 비동기 계산 전에 raw 값으로 먼저 세팅 (정규화 적용)
+      _seedPossibilitiesFromRaw(widget.cachedMembers);
       _calculateMemberPossibilities(widget.cachedMembers);
     }
     
@@ -64,6 +65,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
     _subscription = widget.membersStream.listen((members) {
       if (mounted && members.isNotEmpty) {
         setState(() => _displayMembers = members);
+        // 스트림 데이터도 raw 값 먼저 세팅
+        _seedPossibilitiesFromRaw(members);
         _calculateMemberPossibilities(members);
       }
     });
@@ -86,6 +89,20 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
     return raw.clamp(0.0, 1.0);
   }
 
+  /// JSON raw electionPossibility 를 정규화하여 맵에 선저 세팅
+  /// (비동기 계산이 완료되기 전에도 올바른 값으로 정렬에 활용하기 위함)
+  void _seedPossibilitiesFromRaw(List<Member> members) {
+    final Map<String, double> seeded = {};
+    for (final m in members) {
+      if (!_memberPossibilities.containsKey(m.id)) {
+        seeded[m.id] = _normalizePossibility(m.electionPossibility);
+      }
+    }
+    if (seeded.isNotEmpty) {
+      _memberPossibilities.addAll(seeded);
+    }
+  }
+
   Future<void> _calculateMemberPossibilities(List<Member> members) async {
     if (members.isEmpty) return;
     setState(() => _isCalculatingPossibilities = true);
@@ -93,19 +110,18 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
     final Map<String, double> possibilities = {};
     final useCase = GetIt.instance<CalculateElectionPossibilityUseCase>();
     
-    // 현재 지역 필터에 해당하는 후보들만 선별하여 계산 속도 향상
-    List<Member> targetMembers = [];
+    // 현재 지역 필터에 해당하는 후보들만 선별
+    List<Member> targetMembers;
     if (widget.userRegion == '전국') {
+      // 전국: 여론조사 있는 후보 먼저, 최대 120명
       final withPolls = members.where((m) => m.polls.isNotEmpty).toList();
       final withoutPolls = members.where((m) => m.polls.isEmpty).toList();
-      targetMembers = [...withPolls, ...withoutPolls].take(80).toList();
+      targetMembers = [...withPolls, ...withoutPolls].take(120).toList();
     } else {
+      // 특정 지역: 해당 지역 후보 전체 (제한 없음)
       targetMembers = members
           .where((m) => districtMatchesRegion(m.district, widget.userRegion))
           .toList();
-      if (targetMembers.length > 80) {
-        targetMembers = targetMembers.take(80).toList();
-      }
     }
 
     for (final member in targetMembers) {
@@ -114,10 +130,12 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
         continue;
       }
       try {
-        final result = await useCase.call(member.id).timeout(const Duration(milliseconds: 500));
-        possibilities[member.id] = result.electionPossibility;
+        final result = await useCase.call(member.id).timeout(const Duration(milliseconds: 800));
+        final normalized = _normalizePossibility(result.electionPossibility);
+        possibilities[member.id] = normalized;
       } catch (e) {
-        possibilities[member.id] = member.electionPossibility;
+        // 계산 실패 시 JSON의 raw 값을 정규화해 사용
+        possibilities[member.id] = _normalizePossibility(member.electionPossibility);
       }
     }
     
@@ -137,19 +155,18 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
   @override
   void didUpdateWidget(HomeDashboardView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 캐시된 멤버가 있고 이전과 다른 경우에만 업데이트
-    if (widget.cachedMembers.isNotEmpty && 
+    if (widget.cachedMembers.isNotEmpty &&
         widget.cachedMembers != oldWidget.cachedMembers) {
       setState(() => _displayMembers = widget.cachedMembers);
+      _seedPossibilitiesFromRaw(widget.cachedMembers);
       _calculateMemberPossibilities(widget.cachedMembers);
-    }
-    // 현재 표시된 멤버가 없고 캐시된 데이터가 있으면 표시
-    else if (_displayMembers.isEmpty && widget.cachedMembers.isNotEmpty) {
+    } else if (_displayMembers.isEmpty && widget.cachedMembers.isNotEmpty) {
       setState(() => _displayMembers = widget.cachedMembers);
+      _seedPossibilitiesFromRaw(widget.cachedMembers);
       _calculateMemberPossibilities(widget.cachedMembers);
     }
-    // 지역 필터가 바뀌었을 때도 당선율 다시 계산
     if (widget.userRegion != oldWidget.userRegion && _displayMembers.isNotEmpty) {
+      _seedPossibilitiesFromRaw(_displayMembers);
       _calculateMemberPossibilities(_displayMembers);
     }
   }
@@ -496,6 +513,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
         : _displayMembers.where((member) => districtMatchesRegion(member.district, widget.userRegion)).toList();
 
     // 실제 계산된 당선 가능성을 사용하여 정렬
+    // (계산 미완료 후보는 JSON raw electionPossibility 를 정규화해 사용)
     final sortedMembers = List<Member>.from(filteredMembers)
       ..sort((a, b) {
         final aPossibility = _getMemberPossibility(a);
@@ -503,15 +521,15 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
         return bPossibility.compareTo(aPossibility);
       });
 
-    // 중복 후보 제거 (이름 + 정당 기준)
-    final uniqueTopMembers = <String, Member>{};
+    // 중복 후보 제거: 이름 + 정당이 같으면 동일인으로 처리 (선거구가 달라도)
+    final seenKeys = <String>{};
+    final deduplicatedMembers = <Member>[];
     for (final member in sortedMembers) {
       final key = '${member.name}_${member.party}';
-      if (!uniqueTopMembers.containsKey(key)) {
-        uniqueTopMembers[key] = member;
+      if (seenKeys.add(key)) {
+        deduplicatedMembers.add(member);
       }
     }
-    final deduplicatedMembers = uniqueTopMembers.values.toList();
 
     // TOP 3 추출 (중복 제거된 후보군에서)
     final top3 = deduplicatedMembers.take(3).toList();
@@ -519,8 +537,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
     // 당선 가능성이 높은 후보들만 표시 (TOP3 제외, 최소 5% 이상)
     final memberList = deduplicatedMembers
         .skip(3)
-        .where((member) => _getMemberPossibility(member) >= 0.05) // 5% 이상
-        .take(10) // 최대 10명
+        .where((member) => _getMemberPossibility(member) >= 0.05)
+        .take(10)
         .toList();
 
     // 통계 계산 - 실제 업데이트 시간 표시
