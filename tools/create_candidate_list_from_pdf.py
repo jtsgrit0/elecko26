@@ -114,19 +114,20 @@ def parse_candidate_data(page, region, position, election_type):
                 row_bbox = fitz.Rect()
                 for cell in row.cells: row_bbox.include_rect(cell)
 
+                # imageData를 None으로 설정하여 JSON에 포함되지 않도록 함
                 candidate_image_data = None
-                for img_info in images_info:
-                    img_bbox = fitz.Rect(img_info['bbox'])
-                    if row_bbox.intersects(img_bbox):
-                        xref = img_info['xref']
-                        try:
-                            base_image = fitz.Pixmap(page.parent, xref)
-                            pil_image = Image.open(io.BytesIO(base_image.tobytes()))
-                            img_byte_arr = io.BytesIO()
-                            pil_image.save(img_byte_arr, format='PNG')
-                            candidate_image_data = 'data:image/png;base64,' + base64.b64encode(img_byte_arr.getvalue()).decode('utf-8')
-                        except: pass
-                        break
+                # for img_info in images_info:
+                #     img_bbox = fitz.Rect(img_info['bbox'])
+                #     if row_bbox.intersects(img_bbox):
+                #         xref = img_info['xref']
+                #         try:
+                #             base_image = fitz.Pixmap(page.parent, xref)
+                #             pil_image = Image.open(io.BytesIO(base_image.tobytes()))
+                #             img_byte_arr = io.BytesIO()
+                #             pil_image.save(img_byte_arr, format='PNG')
+                #             candidate_image_data = 'data:image/png;base64,' + base64.b64encode(img_byte_arr.getvalue()).decode('utf-8')
+                #         except: pass
+                #         break
 
                 dist_col = idx.get('district', -1)
                 district_name = clean_text(row_data[dist_col]) if dist_col != -1 and dist_col < len(row_data) else ""
