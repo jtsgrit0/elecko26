@@ -4,13 +4,19 @@ import 'package:elecko26_new/domain/entities/policy.dart';
 import 'package:elecko26_new/domain/entities/poll.dart';
 import 'package:elecko26_new/domain/entities/party_support_rate.dart';
 import 'package:elecko26_new/domain/entities/vote_rate.dart';
+import 'package:elecko26_new/domain/usecases/member_usecases.dart';
+import 'package:elecko26_new/domain/usecases/calculate_election_possibility_usecase.dart';
 import 'package:elecko26_new/features/home/presentation/bloc/member_detail/member_detail_event.dart';
 import 'package:elecko26_new/features/home/presentation/bloc/member_detail/member_detail_state.dart';
 
 class MemberDetailBloc extends Bloc<MemberDetailEvent, MemberDetailState> {
-  // TODO: Add dependencies for use cases (e.g., GetMemberDetailUseCase)
+  final GetMemberByIdUseCase getMemberByIdUseCase;
+  final CalculateElectionPossibilityUseCase calculateElectionPossibilityUseCase;
 
-  MemberDetailBloc() : super(MemberDetailInitial()) {
+  MemberDetailBloc({
+    required this.getMemberByIdUseCase,
+    required this.calculateElectionPossibilityUseCase,
+  }) : super(MemberDetailInitial()) {
     on<GetMemberDetail>(_onGetMemberDetail);
     on<GetMemberPolicies>(_onGetMemberPolicies);
     on<GetMemberPolls>(_onGetMemberPolls);
@@ -24,21 +30,23 @@ class MemberDetailBloc extends Bloc<MemberDetailEvent, MemberDetailState> {
   ) async {
     emit(MemberDetailLoading());
     try {
-      // TODO: Implement actual data fetching logic
-      // For now, return a dummy member
-      final dummyMember = Member(
-        id: event.memberId,
-        name: '더미 의원',
-        constituency: '서울',
-        electionCount: 1,
-        termStartDate: DateTime(2020, 5, 30),
-        termEndDate: DateTime(2024, 5, 29),
-        birthDate: DateTime(1970, 1, 1),
-        gender: 'M',
-        education: '서울대학교',
-        career: '국회의원',
-      );
-      emit(MemberDetailLoaded(member: dummyMember));
+      final member = await getMemberByIdUseCase.call(event.memberId);
+      if (member == null) {
+        emit(const MemberDetailError('의원을 찾을 수 없습니다.'));
+        return;
+      }
+      
+      // 실시간 AI 당선율 계산 적용
+      double finalPossibility = member.electionPossibility;
+      try {
+        final analysis = await calculateElectionPossibilityUseCase.call(member.id).timeout(const Duration(seconds: 1));
+        finalPossibility = analysis.electionPossibility;
+      } catch (e) {
+        // 계산 실패 시 기본 값 유지
+      }
+      
+      final updatedMember = member.copyWith(electionPossibility: finalPossibility);
+      emit(MemberDetailLoaded(member: updatedMember));
     } catch (e) {
       emit(MemberDetailError(e.toString()));
     }
@@ -50,13 +58,20 @@ class MemberDetailBloc extends Bloc<MemberDetailEvent, MemberDetailState> {
   ) async {
     emit(MemberPoliciesLoading());
     try {
-      // TODO: Implement actual data fetching logic
-      // For now, return dummy policies
-      final dummyPolicies = [
-        Policy(id: '1', title: '정책 1', description: '정책 1 설명'),
-        Policy(id: '2', title: '정책 2', description: '정책 2 설명'),
-      ];
-      emit(MemberPoliciesLoaded(dummyPolicies));
+      final member = await getMemberByIdUseCase.call(event.memberId);
+      if (member == null) {
+        emit(const MemberDetailError('의원을 찾을 수 없습니다.'));
+        return;
+      }
+      
+      final policies = member.policies.asMap().entries.map((entry) {
+        return Policy(
+          id: entry.key.toString(),
+          title: '공약 ${entry.key + 1}',
+          description: entry.value,
+        );
+      }).toList();
+      emit(MemberPoliciesLoaded(policies));
     } catch (e) {
       emit(MemberDetailError(e.toString()));
     }
@@ -68,33 +83,12 @@ class MemberDetailBloc extends Bloc<MemberDetailEvent, MemberDetailState> {
   ) async {
     emit(MemberPollsLoading());
     try {
-      // TODO: Implement actual data fetching logic
-      // For now, return dummy polls
-      final dummyPolls = [
-        Poll(
-          id: '1',
-          pollAgency: '가상 여론조사 기관',
-          surveyDate: DateTime(2024, 12, 31),
-          supportRate: 0.45,
-          partyName: '더불어민주당',
-          sampleSize: 1000,
-          marginOfError: 3.1,
-          source: 'https://example.com/poll/1',
-          notes: '샘플 데이터',
-        ),
-        Poll(
-          id: '2',
-          pollAgency: '가상 여론조사 기관',
-          surveyDate: DateTime(2024, 11, 30),
-          supportRate: 0.41,
-          partyName: '국민의힘',
-          sampleSize: 950,
-          marginOfError: 3.2,
-          source: 'https://example.com/poll/2',
-          notes: '샘플 데이터',
-        ),
-      ];
-      emit(MemberPollsLoaded(dummyPolls));
+      final member = await getMemberByIdUseCase.call(event.memberId);
+      if (member == null) {
+        emit(const MemberDetailError('의원을 찾을 수 없습니다.'));
+        return;
+      }
+      emit(MemberPollsLoaded(member.polls));
     } catch (e) {
       emit(MemberDetailError(e.toString()));
     }
@@ -104,19 +98,31 @@ class MemberDetailBloc extends Bloc<MemberDetailEvent, MemberDetailState> {
     GetMemberPartySupportRates event,
     Emitter<MemberDetailState> emit,
   ) async {
-    // This event might update the MemberDetailLoaded state or emit a new state
-    // For simplicity, we'll assume it updates the existing loaded state
     if (state is MemberDetailLoaded) {
       final currentState = state as MemberDetailLoaded;
       try {
-        // TODO: Implement actual data fetching logic
-        final dummyRates = [
-          PartySupportRate(partyName: '국민의힘', rate: 35.5, year: 2023),
-          PartySupportRate(partyName: '더불어민주당', rate: 40.2, year: 2023),
-        ];
+        final member = await getMemberByIdUseCase.call(event.memberId);
+        if (member == null) {
+          emit(const MemberDetailError('의원을 찾을 수 없습니다.'));
+          return;
+        }
+        
+        final List<PartySupportRate> supportRates = [];
+        member.historical2018PartyRates.forEach((partyName, rate) {
+          supportRates.add(PartySupportRate(
+            partyName: partyName,
+            rate: rate,
+            year: 2018,
+          ));
+        });
+        
+        if (supportRates.isEmpty) {
+          supportRates.add(PartySupportRate(partyName: member.party, rate: 45.0, year: 2026));
+        }
+
         emit(MemberDetailLoaded(
           member: currentState.member,
-          partySupportRates: dummyRates,
+          partySupportRates: supportRates,
           voteRates: currentState.voteRates,
         ));
       } catch (e) {
@@ -129,19 +135,27 @@ class MemberDetailBloc extends Bloc<MemberDetailEvent, MemberDetailState> {
     GetMemberVoteRates event,
     Emitter<MemberDetailState> emit,
   ) async {
-    // Similar to party support rates, update the loaded state
     if (state is MemberDetailLoaded) {
       final currentState = state as MemberDetailLoaded;
       try {
-        // TODO: Implement actual data fetching logic
-        final dummyRates = [
-          VoteRate(year: 2020, rate: 55.0),
-          VoteRate(year: 2016, rate: 48.2),
-        ];
+        final member = await getMemberByIdUseCase.call(event.memberId);
+        if (member == null) {
+          emit(const MemberDetailError('의원을 찾을 수 없습니다.'));
+          return;
+        }
+        
+        final List<VoteRate> voteRates = [];
+        final partyRate = member.historical2018PartyRates[member.party];
+        if (partyRate != null) {
+          voteRates.add(VoteRate(year: 2018, rate: partyRate));
+        } else {
+          voteRates.add(VoteRate(year: 2018, rate: 50.0));
+        }
+
         emit(MemberDetailLoaded(
           member: currentState.member,
           partySupportRates: currentState.partySupportRates,
-          voteRates: dummyRates,
+          voteRates: voteRates,
         ));
       } catch (e) {
         emit(MemberDetailError(e.toString()));

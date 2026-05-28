@@ -79,32 +79,59 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
     });
   }
 
+  double _normalizePossibility(double raw) {
+    if (raw > 1.0) {
+      return raw / 100.0;
+    }
+    return raw.clamp(0.0, 1.0);
+  }
+
   Future<void> _calculateMemberPossibilities(List<Member> members) async {
+    if (members.isEmpty) return;
     setState(() => _isCalculatingPossibilities = true);
     
     final Map<String, double> possibilities = {};
     final useCase = GetIt.instance<CalculateElectionPossibilityUseCase>();
     
-    for (final member in members) {
+    // 현재 지역 필터에 해당하는 후보들만 선별하여 계산 속도 향상
+    List<Member> targetMembers = [];
+    if (widget.userRegion == '전국') {
+      final withPolls = members.where((m) => m.polls.isNotEmpty).toList();
+      final withoutPolls = members.where((m) => m.polls.isEmpty).toList();
+      targetMembers = [...withPolls, ...withoutPolls].take(80).toList();
+    } else {
+      targetMembers = members
+          .where((m) => districtMatchesRegion(m.district, widget.userRegion))
+          .toList();
+      if (targetMembers.length > 80) {
+        targetMembers = targetMembers.take(80).toList();
+      }
+    }
+
+    for (final member in targetMembers) {
+      if (_memberPossibilities.containsKey(member.id)) {
+        possibilities[member.id] = _memberPossibilities[member.id]!;
+        continue;
+      }
       try {
-        final result = await useCase.call(member.id).timeout(const Duration(seconds: 2));
+        final result = await useCase.call(member.id).timeout(const Duration(milliseconds: 500));
         possibilities[member.id] = result.electionPossibility;
       } catch (e) {
-        // 계산 실패 시 기존 값 사용
         possibilities[member.id] = member.electionPossibility;
       }
     }
     
     if (mounted) {
       setState(() {
-        _memberPossibilities = possibilities;
+        _memberPossibilities.addAll(possibilities);
         _isCalculatingPossibilities = false;
       });
     }
   }
 
   double _getMemberPossibility(Member member) {
-    return _memberPossibilities[member.id] ?? member.electionPossibility;
+    final raw = _memberPossibilities[member.id] ?? member.electionPossibility;
+    return _normalizePossibility(raw);
   }
 
   @override
@@ -114,10 +141,16 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
     if (widget.cachedMembers.isNotEmpty && 
         widget.cachedMembers != oldWidget.cachedMembers) {
       setState(() => _displayMembers = widget.cachedMembers);
+      _calculateMemberPossibilities(widget.cachedMembers);
     }
     // 현재 표시된 멤버가 없고 캐시된 데이터가 있으면 표시
     else if (_displayMembers.isEmpty && widget.cachedMembers.isNotEmpty) {
       setState(() => _displayMembers = widget.cachedMembers);
+      _calculateMemberPossibilities(widget.cachedMembers);
+    }
+    // 지역 필터가 바뀌었을 때도 당선율 다시 계산
+    if (widget.userRegion != oldWidget.userRegion && _displayMembers.isNotEmpty) {
+      _calculateMemberPossibilities(_displayMembers);
     }
   }
 
@@ -470,11 +503,21 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
         return bPossibility.compareTo(aPossibility);
       });
 
-    // TOP 3 추출
-    final top3 = sortedMembers.take(3).toList();
+    // 중복 후보 제거 (이름 + 정당 기준)
+    final uniqueTopMembers = <String, Member>{};
+    for (final member in sortedMembers) {
+      final key = '${member.name}_${member.party}';
+      if (!uniqueTopMembers.containsKey(key)) {
+        uniqueTopMembers[key] = member;
+      }
+    }
+    final deduplicatedMembers = uniqueTopMembers.values.toList();
+
+    // TOP 3 추출 (중복 제거된 후보군에서)
+    final top3 = deduplicatedMembers.take(3).toList();
 
     // 당선 가능성이 높은 후보들만 표시 (TOP3 제외, 최소 5% 이상)
-    final memberList = sortedMembers
+    final memberList = deduplicatedMembers
         .skip(3)
         .where((member) => _getMemberPossibility(member) >= 0.05) // 5% 이상
         .take(10) // 최대 10명

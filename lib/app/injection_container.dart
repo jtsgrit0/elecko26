@@ -28,6 +28,7 @@ import 'package:elecko26_new/features/voting/domain/repositories/poll_repository
 import 'package:elecko26_new/features/voting/domain/usecases/poll_usecases.dart';
 import 'package:flutter/foundation.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:elecko26_new/features/home/presentation/bloc/member_detail/member_detail_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -187,6 +188,14 @@ void _registerAll() {
   sl.registerSingleton<MapRepository>(map_repo_impl.MapRepositoryImpl());
   sl.registerSingleton<GetElectionMapDataUseCase>(
       GetElectionMapDataUseCase(sl<MapRepository>()));
+
+  // Member Detail Bloc (Factory)
+  sl.registerFactory<MemberDetailBloc>(
+    () => MemberDetailBloc(
+      getMemberByIdUseCase: sl<GetMemberByIdUseCase>(),
+      calculateElectionPossibilityUseCase: sl<CalculateElectionPossibilityUseCase>(),
+    ),
+  );
 }
 
 /// Fallback storage for cases where SharedPreferences is unavailable (e.g. CLI tools or failing Web)
