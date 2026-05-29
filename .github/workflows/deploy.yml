@@ -12,6 +12,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Debug directory structure
+        run: |
+          pwd
+          ls -la
+          ls -la assets/ || echo "assets/ not found"
+          ls -la assets/images/ || echo "assets/images/ not found"
+
       - name: Verify file names
         run: ls -R assets/images/candidates
 
