@@ -25,26 +25,47 @@ class SearchView extends StatefulWidget {
 class _SearchViewState extends State<SearchView> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  String _searchCategory = '전체';
-  String _searchOffice = '전체';
 
-  // PDF 파일의 실제 선거 유형에 맞춘 카테고리
-  static const List<String> _searchCategories = [
-    '전체',
-    '광역단체장',
-    '기초단체장',
-    '광역의회의원',
-    '기초의회의원',
-    '비례대표'
-  ];
-  static const Map<String, List<String>> _officeOptionsByCategory = {
-    '전체': ['전체', '시·도지사', '구·시·군의장', '시·도의회의원', '구·시·군의회의원', '기초의원비례대표'],
-    '광역단체장': ['전체', '시·도지사'],
-    '기초단체장': ['전체', '구·시·군의장'],
-    '광역의회의원': ['전체', '시·도의회의원'],
-    '기초의회의원': ['전체', '구·시·군의회의원'],
-    '비례대표': ['전체', '기초의원비례대표'],
+  List<String> _sidoOptions = ['전체'];
+  Map<String, List<String>> _sigunguOptions = {
+    '전체': ['전체']
   };
+  String _selectedSido = '전체';
+  String _selectedSigungu = '전체';
+
+  @override
+  void initState() {
+    super.initState();
+    _updateFilterOptions();
+  }
+
+  void _updateFilterOptions() {
+    final allMembers = widget.cachedMembers;
+    if (allMembers.isEmpty) return;
+
+    final sidos = <String>{'전체'};
+    final sigungus = <String, Set<String>>{
+      '전체': {'전체'}
+    };
+
+    for (final member in allMembers) {
+      if (member.sido.isNotEmpty) {
+        sidos.add(member.sido);
+        if (!sigungus.containsKey(member.sido)) {
+          sigungus[member.sido] = {'전체'};
+        }
+        if (member.sigungu.isNotEmpty) {
+          sigungus[member.sido]!.add(member.sigungu);
+        }
+      }
+    }
+
+    setState(() {
+      _sidoOptions = sidos.toList()..sort();
+      _sigunguOptions =
+          sigungus.map((key, value) => MapEntry(key, value.toList()..sort()));
+    });
+  }
 
   @override
   void dispose() {
@@ -52,13 +73,8 @@ class _SearchViewState extends State<SearchView> {
     super.dispose();
   }
 
-  List<Member> _getFilteredMembers(List<Member> members) {
-    return members
-        .where((m) => districtMatchesRegion(m.district, widget.userRegion))
-        .toList();
-  }
-
-  Widget _buildSearchPage() {
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: [
         _buildSearchField(),
@@ -110,8 +126,7 @@ class _SearchViewState extends State<SearchView> {
   }
 
   Widget _buildSearchFilters() {
-    final officeOptions = _officeOptionsByCategory[_searchCategory] ??
-        _officeOptionsByCategory['전체']!;
+    final sigunguOptions = _sigunguOptions[_selectedSido] ?? ['전체'];
 
     return Container(
       width: double.infinity,
@@ -120,7 +135,7 @@ class _SearchViewState extends State<SearchView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '후보 분류',
+            '시·도',
             style: AppTextStyles.labelSmall.copyWith(
               color: AppColors.grey,
               fontWeight: FontWeight.w700,
@@ -130,16 +145,16 @@ class _SearchViewState extends State<SearchView> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: _searchCategories.map((category) {
+              children: _sidoOptions.map((sido) {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: _buildFilterChip(
-                    label: category,
-                    isSelected: _searchCategory == category,
+                    label: sido,
+                    isSelected: _selectedSido == sido,
                     onTap: () {
                       setState(() {
-                        _searchCategory = category;
-                        _searchOffice = '전체';
+                        _selectedSido = sido;
+                        _selectedSigungu = '전체';
                       });
                     },
                   ),
@@ -149,7 +164,7 @@ class _SearchViewState extends State<SearchView> {
           ),
           const SizedBox(height: 14),
           Text(
-            '직위 필터',
+            '시·군·구',
             style: AppTextStyles.labelSmall.copyWith(
               color: AppColors.grey,
               fontWeight: FontWeight.w700,
@@ -159,15 +174,15 @@ class _SearchViewState extends State<SearchView> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: officeOptions.map((office) {
+              children: sigunguOptions.map((sigungu) {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: _buildFilterChip(
-                    label: office,
-                    isSelected: _searchOffice == office,
+                    label: sigungu,
+                    isSelected: _selectedSigungu == sigungu,
                     onTap: () {
                       setState(() {
-                        _searchOffice = office;
+                        _selectedSigungu = sigungu;
                       });
                     },
                   ),
@@ -228,22 +243,26 @@ class _SearchViewState extends State<SearchView> {
         }
 
         final filteredMembers = allMembers.where((m) {
-          // PDF에서 추출한 constituency 필드 사용
-          final constituency = m.constituency;
+          // 지역 필터링
+          if (_selectedSido != '전체' && m.sido != _selectedSido) {
+            return false;
+          }
+          if (_selectedSigungu != '전체' && m.sigungu != _selectedSigungu) {
+            return false;
+          }
 
-          // 지역 필터링 적용 (사용자 지역과 일치하는 선거구만 표시)
-          if (!constituency.contains(widget.userRegion)) return false;
-
-          if (!_matchesSearchCategory(m)) return false;
-          if (!_matchesSearchOffice(m)) return false;
-
+          // 검색어 필터링
           final query = _searchQuery.toLowerCase();
-          return m.name.toLowerCase().contains(query) ||
-              m.party.toLowerCase().contains(query) ||
-              constituency.toLowerCase().contains(query) ||
-              m.description.toLowerCase().contains(query) ||
-              m.policies.any((p) => p.toLowerCase().contains(query)) ||
-              m.achievementsList.any((a) => a.toLowerCase().contains(query));
+          if (query.isNotEmpty) {
+            return m.name.toLowerCase().contains(query) ||
+                m.party.toLowerCase().contains(query) ||
+                m.constituency.toLowerCase().contains(query) ||
+                m.description.toLowerCase().contains(query) ||
+                m.policies.any((p) => p.toLowerCase().contains(query)) ||
+                m.achievementsList.any((a) => a.toLowerCase().contains(query));
+          }
+
+          return true;
         }).toList();
 
         // 당선 가능성 높은 순으로 정렬
@@ -283,55 +302,5 @@ class _SearchViewState extends State<SearchView> {
         );
       },
     );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _buildSearchPage();
-  }
-
-  bool _matchesSearchCategory(Member member) {
-    if (_searchCategory == '전체') {
-      return true;
-    }
-
-    // PDF에서 추출된 선거구 형식에 맞춘 매칭 로직
-    final constituency = member.constituency;
-    switch (_searchCategory) {
-      case '광역단체장':
-        return constituency.contains('시·도지사');
-      case '기초단체장':
-        return constituency.contains('구·시·군의장');
-      case '광역의회의원':
-        return constituency.contains('시·도의회의원');
-      case '기초의회의원':
-        return constituency.contains('구·시·군의회의원');
-      case '비례대표':
-        return constituency.contains('기초의원비례대표');
-      default:
-        return true;
-    }
-  }
-
-  bool _matchesSearchOffice(Member member) {
-    if (_searchOffice == '전체') {
-      return true;
-    }
-
-    final constituency = member.constituency;
-    switch (_searchOffice) {
-      case '시·도지사':
-        return constituency.contains('시·도지사');
-      case '구·시·군의장':
-        return constituency.contains('구·시·군의장');
-      case '시·도의회의원':
-        return constituency.contains('시·도의회의원');
-      case '구·시·군의회의원':
-        return constituency.contains('구·시·군의회의원');
-      case '기초의원비례대표':
-        return constituency.contains('기초의원비례대표');
-      default:
-        return false;
-    }
   }
 }

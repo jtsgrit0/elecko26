@@ -10,6 +10,8 @@ class Member extends Equatable {
   final String constituency;
   final String districtName;
   final String region;
+  final String sido;
+  final String sigungu;
   final String nameHanja;
   final int electionCount;
   final DateTime termStartDate;
@@ -50,6 +52,8 @@ class Member extends Equatable {
     required this.constituency,
     this.districtName = '',
     this.region = '전국',
+    this.sido = '',
+    this.sigungu = '',
     this.nameHanja = '',
     this.electionCount = 0,
     DateTime? termStartDate,
@@ -96,6 +100,8 @@ class Member extends Equatable {
         constituency,
         districtName,
         region,
+        sido,
+        sigungu,
         nameHanja,
         electionCount,
         termStartDate,
@@ -138,6 +144,8 @@ class Member extends Equatable {
     String? district,
     String? districtName,
     String? region,
+    String? sido,
+    String? sigungu,
     String? nameHanja,
     int? electionCount,
     DateTime? termStartDate,
@@ -178,6 +186,8 @@ class Member extends Equatable {
       constituency: constituency ?? district ?? this.constituency,
       districtName: districtName ?? this.districtName,
       region: region ?? this.region,
+      sido: sido ?? this.sido,
+      sigungu: sigungu ?? this.sigungu,
       nameHanja: nameHanja ?? this.nameHanja,
       electionCount: electionCount ?? this.electionCount,
       termStartDate: termStartDate ?? this.termStartDate,
@@ -300,15 +310,13 @@ class Member extends Equatable {
     if (value is List) {
       return value
           .whereType<Map>()
-          .map((e) =>
-              SocialContribution.fromJson(Map<String, dynamic>.from(e)))
+          .map((e) => SocialContribution.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     }
     if (value is Map && value['data'] is List) {
       return (value['data'] as List)
           .whereType<Map>()
-          .map((e) =>
-              SocialContribution.fromJson(Map<String, dynamic>.from(e)))
+          .map((e) => SocialContribution.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     }
     return <SocialContribution>[];
@@ -320,6 +328,8 @@ class Member extends Equatable {
       fallback: '전국',
     );
     final region = _parseString(json['region'], fallback: '');
+    final sido = _parseString(json['sido'], fallback: '');
+    final sigungu = _parseString(json['sigungu'], fallback: '');
     return Member(
       id: _parseString(json['id'], fallback: ''),
       name: _parseString(json['name'], fallback: '알 수 없음'),
@@ -332,6 +342,8 @@ class Member extends Equatable {
         json['districtName'] ?? json['district'] ?? constituency,
       ),
       region: region.isNotEmpty ? region : constituency,
+      sido: sido,
+      sigungu: sigungu,
       nameHanja: _parseString(json['nameHanja']),
       electionCount: _parseInt(json['electionCount'] ?? json['term']),
       termStartDate: _parseDate(json['termStartDate'] ?? json['termStart']),
@@ -380,6 +392,8 @@ class Member extends Equatable {
       'district': district,
       'districtName': districtName,
       'region': region,
+      'sido': sido,
+      'sigungu': sigungu,
       'nameHanja': nameHanja,
       'electionCount': electionCount,
       'termStartDate': termStartDate.toIso8601String(),
@@ -412,7 +426,8 @@ class Member extends Equatable {
       'achievementsList': achievementsList,
       'policies': policies,
       'improvementPoints': improvementPoints,
-      'socialContributions': socialContributions.map((e) => e.toJson()).toList(),
+      'socialContributions':
+          socialContributions.map((e) => e.toJson()).toList(),
     };
   }
 }

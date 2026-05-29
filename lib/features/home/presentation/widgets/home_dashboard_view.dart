@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:elecko26_new/core/theme/app_theme.dart';
-import 'package:elecko26_new/core/utils/utility_functions.dart' show districtMatchesRegion;
+import 'package:elecko26_new/core/utils/utility_functions.dart'
+    show districtMatchesRegion;
 import 'package:elecko26_new/domain/entities/member.dart';
 import 'package:elecko26_new/core/widgets/app_network_image.dart';
 import 'package:elecko26_new/core/utils/image_util.dart';
@@ -35,24 +36,39 @@ class HomeDashboardView extends StatefulWidget {
   State<HomeDashboardView> createState() => _HomeDashboardViewState();
 }
 
-class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKeepAliveClientMixin {
+class _HomeDashboardViewState extends State<HomeDashboardView>
+    with AutomaticKeepAliveClientMixin {
   List<Member> _displayMembers = [];
   StreamSubscription<List<Member>>? _subscription;
   Map<String, double> _memberPossibilities = {}; // 멤버별 실제 당선 가능성 저장
   bool _isCalculatingPossibilities = false;
   Timer? _timer; // 실시간 시간 업데이트를 위한 타이머
-  
+
   final List<String> _regions = [
-    '전국', '서울특별시', '부산광역시', '대구광역시', '인천광역시',
-    '광주광역시', '대전광역시', '울산광역시', '세종특별자치시',
-    '경기도', '강원도', '충청북도', '충청남도', '전북특별자치도',
-    '전라남도', '경상북도', '경상남도', '제주특별자치도'
+    '전국',
+    '서울특별시',
+    '부산광역시',
+    '대구광역시',
+    '인천광역시',
+    '광주광역시',
+    '대전광역시',
+    '울산광역시',
+    '세종특별자치시',
+    '경기도',
+    '강원도',
+    '충청북도',
+    '충청남도',
+    '전북특별자치도',
+    '전라남도',
+    '경상북도',
+    '경상남도',
+    '제주특별자치도'
   ];
 
   @override
   void initState() {
     super.initState();
-    
+
     // 캐시된 데이터가 있으면 먼저 표시하고 계산 시작
     if (widget.cachedMembers.isNotEmpty) {
       _displayMembers = widget.cachedMembers;
@@ -60,7 +76,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
       _seedPossibilitiesFromRaw(widget.cachedMembers);
       _calculateMemberPossibilities(widget.cachedMembers);
     }
-    
+
     // 스트림 데이터가 도착하면 업데이트
     _subscription = widget.membersStream.listen((members) {
       if (mounted && members.isNotEmpty) {
@@ -70,7 +86,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
         _calculateMemberPossibilities(members);
       }
     });
-    
+
     // 실시간 시간 업데이트를 위한 타이머 시작 (3분마다 업데이트)
     _timer = Timer.periodic(const Duration(minutes: 3), (timer) {
       if (mounted) {
@@ -106,10 +122,10 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
   Future<void> _calculateMemberPossibilities(List<Member> members) async {
     if (members.isEmpty) return;
     setState(() => _isCalculatingPossibilities = true);
-    
+
     final Map<String, double> possibilities = {};
     final useCase = GetIt.instance<CalculateElectionPossibilityUseCase>();
-    
+
     // 현재 지역 필터에 해당하는 후보들만 선별
     List<Member> targetMembers;
     if (widget.userRegion == '전국') {
@@ -130,15 +146,18 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
         continue;
       }
       try {
-        final result = await useCase.call(member.id).timeout(const Duration(milliseconds: 800));
+        final result = await useCase
+            .call(member.id)
+            .timeout(const Duration(milliseconds: 800));
         final normalized = _normalizePossibility(result.electionPossibility);
         possibilities[member.id] = normalized;
       } catch (e) {
         // 계산 실패 시 JSON의 raw 값을 정규화해 사용
-        possibilities[member.id] = _normalizePossibility(member.electionPossibility);
+        possibilities[member.id] =
+            _normalizePossibility(member.electionPossibility);
       }
     }
-    
+
     if (mounted) {
       setState(() {
         _memberPossibilities.addAll(possibilities);
@@ -165,7 +184,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
       _seedPossibilitiesFromRaw(widget.cachedMembers);
       _calculateMemberPossibilities(widget.cachedMembers);
     }
-    if (widget.userRegion != oldWidget.userRegion && _displayMembers.isNotEmpty) {
+    if (widget.userRegion != oldWidget.userRegion &&
+        _displayMembers.isNotEmpty) {
       _seedPossibilitiesFromRaw(_displayMembers);
       _calculateMemberPossibilities(_displayMembers);
     }
@@ -212,7 +232,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
                     final region = _regions[index];
                     final isSelected = region == widget.userRegion;
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
+                      padding:
+                          const EdgeInsets.only(bottom: 8, left: 16, right: 16),
                       child: InkWell(
                         onTap: () {
                           Navigator.pop(context);
@@ -221,9 +242,13 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
                         child: Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.primary.withOpacity(0.1) : AppColors.surface,
+                            color: isSelected
+                                ? AppColors.primary.withOpacity(0.1)
+                                : AppColors.surface,
                             border: Border.all(
-                              color: isSelected ? AppColors.primary : AppColors.lightGray,
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.lightGray,
                               width: isSelected ? 2 : 1,
                             ),
                             borderRadius: BorderRadius.circular(12),
@@ -232,15 +257,21 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
                             children: [
                               Icon(
                                 Icons.location_on,
-                                color: isSelected ? AppColors.primary : AppColors.mediumGray,
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.mediumGray,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
                                   region,
                                   style: AppTextStyles.bodyLarge.copyWith(
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                    color: isSelected ? AppColors.primary : AppColors.darkGray,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    color: isSelected
+                                        ? AppColors.primary
+                                        : AppColors.darkGray,
                                   ),
                                 ),
                               ),
@@ -277,11 +308,11 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-              '당선 가능성 TOP 3',
-              style: AppTextStyles.headline4.copyWith(
-                fontWeight: FontWeight.bold,
+                '당선 가능성 TOP 3',
+                style: AppTextStyles.headline4.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
               GestureDetector(
                 onTap: () => _showRegionSelectionModal(),
                 child: Row(
@@ -309,9 +340,10 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
             children: List.generate(top3.length, (index) {
               final member = top3[index];
               final rank = index + 1;
-              final possibility = _getMemberPossibility(member);
+              final possibility = member.electionPossibility;
               return Padding(
-                padding: EdgeInsets.only(bottom: index < top3.length - 1 ? 12 : 0),
+                padding:
+                    EdgeInsets.only(bottom: index < top3.length - 1 ? 12 : 0),
                 child: GestureDetector(
                   onTap: () => widget.onMemberSelected(member),
                   child: Container(
@@ -322,96 +354,98 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
                     ),
                     child: Row(
                       children: [
-                      Text(
-                        '${rank}위',
-                        style: AppTextStyles.headline4.copyWith(
-                          color: AppColors.error,
-                          fontWeight: FontWeight.bold,
+                        Text(
+                          '${rank}위',
+                          style: AppTextStyles.headline4.copyWith(
+                            color: AppColors.error,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: SizedBox(
-                          width: 48,
-                          height: 48,
-                          child: member.imageUrl.isEmpty
-                              ? Container(
-                                  color: AppColors.lightGray,
-                                  child: Center(
-                                    child: Text(
-                                      member.name.substring(0, 1),
-                                      style: AppTextStyles.headline4.copyWith(
-                                        color: AppColors.mediumGray,
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              : AppNetworkImage(
-                                  imageUrl: member.imageUrl.contains('nesdc.go.kr')
-                                      ? member.imageUrl
-                                      : ImageUtil.getProxyUrl(member.imageUrl,
-                                          width: 100, height: 100),
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) => Container(
+                        const SizedBox(width: 16),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: SizedBox(
+                            width: 48,
+                            height: 48,
+                            child: member.imageUrl.isEmpty
+                                ? Container(
                                     color: AppColors.lightGray,
-                                  ),
-                                  errorWidget: (context, url, error) => Center(
-                                    child: Text(
-                                      member.name.substring(0, 1),
-                                      style: AppTextStyles.headline4.copyWith(
-                                        color: AppColors.mediumGray,
+                                    child: Center(
+                                      child: Text(
+                                        member.name.substring(0, 1),
+                                        style: AppTextStyles.headline4.copyWith(
+                                          color: AppColors.mediumGray,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : AppNetworkImage(
+                                    imageUrl: member.imageUrl
+                                            .contains('nesdc.go.kr')
+                                        ? member.imageUrl
+                                        : ImageUtil.getProxyUrl(member.imageUrl,
+                                            width: 100, height: 100),
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => Container(
+                                      color: AppColors.lightGray,
+                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        Center(
+                                      child: Text(
+                                        member.name.substring(0, 1),
+                                        style: AppTextStyles.headline4.copyWith(
+                                          color: AppColors.mediumGray,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                member.name,
+                                style: AppTextStyles.bodyLarge.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${member.party} · ${member.district}',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.mediumGray,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              member.name,
-                              style: AppTextStyles.bodyLarge.copyWith(
+                              '${(possibility * 100).toStringAsFixed(1)}%',
+                              style: AppTextStyles.headline4.copyWith(
+                                color: AppColors.primary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 2),
                             Text(
-                              '${member.party} · ${member.district}',
+                              '당선가능성',
                               style: AppTextStyles.bodyMedium.copyWith(
                                 color: AppColors.mediumGray,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            '${(possibility * 100).toStringAsFixed(1)}%',
-                            style: AppTextStyles.headline4.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '당선가능성',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.mediumGray,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
+              );
             }),
           ),
         ],
@@ -496,42 +530,41 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
     );
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     super.build(context); // AutomaticKeepAliveClientMixin 필요
-    
+
     // 캐시된 데이터가 있으면 바로 표시, 로딩 중이어도 기존 데이터 유지
-    if (widget.isLoading && _displayMembers.isEmpty && widget.cachedMembers.isEmpty) {
+    if (widget.isLoading &&
+        _displayMembers.isEmpty &&
+        widget.cachedMembers.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
     // 지역 필터링
     final filteredMembers = widget.userRegion == '전국'
         ? _displayMembers
-        : _displayMembers.where((member) => districtMatchesRegion(member.district, widget.userRegion)).toList();
+        : _displayMembers
+            .where((member) =>
+                districtMatchesRegion(member.district, widget.userRegion))
+            .toList();
 
-    // 실제 계산된 당선 가능성을 사용하여 정렬
-    // (계산 미완료 후보는 JSON raw electionPossibility 를 정규화해 사용)
+    // 당선 가능성을 기준으로 모든 멤버를 정렬합니다.
     final sortedMembers = List<Member>.from(filteredMembers)
-      ..sort((a, b) {
-        final aPossibility = _getMemberPossibility(a);
-        final bPossibility = _getMemberPossibility(b);
-        return bPossibility.compareTo(aPossibility);
-      });
+      ..sort((a, b) => b.electionPossibility.compareTo(a.electionPossibility));
 
-    // 중복 후보 제거: 이름 + 정당이 같으면 동일인으로 처리 (선거구가 달라도)
-    final seenKeys = <String>{};
-    final deduplicatedMembers = <Member>[];
-    for (final member in sortedMembers) {
-      final key = '${member.name}_${member.party}';
-      if (seenKeys.add(key)) {
-        deduplicatedMembers.add(member);
+    // 이름으로 중복을 제거하여 각 후보가 한 번만 나타나도록 합니다.
+    final uniqueNames = <String>{};
+    final deduplicatedMembers = sortedMembers.where((member) {
+      if (uniqueNames.contains(member.name)) {
+        return false;
+      } else {
+        uniqueNames.add(member.name);
+        return true;
       }
-    }
+    }).toList();
 
-    // TOP 3 추출 (중복 제거된 후보군에서)
+    // 중복 제거된 목록에서 상위 3명을 선택합니다.
     final top3 = deduplicatedMembers.take(3).toList();
 
     // 당선 가능성이 높은 후보들만 표시 (TOP3 제외, 최소 5% 이상)
@@ -545,19 +578,25 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
     final latestAnalysis = filteredMembers
         .map((m) => m.lastAnalysisDate)
         .whereType<DateTime>()
-        .fold<DateTime?>(null, (prev, curr) => (prev == null || curr.isAfter(prev)) ? curr : prev);
-    
+        .fold<DateTime?>(null,
+            (prev, curr) => (prev == null || curr.isAfter(prev)) ? curr : prev);
+
     // 실시간 업데이트 시간 표시 (형식: YYYY-MM-DD HH:MM)
-    final updateValue = latestAnalysis != null 
+    final updateValue = latestAnalysis != null
         ? '${latestAnalysis.year}-${latestAnalysis.month.toString().padLeft(2, '0')}-${latestAnalysis.day.toString().padLeft(2, '0')} ${latestAnalysis.hour.toString().padLeft(2, '0')}:${latestAnalysis.minute.toString().padLeft(2, '0')}'
-        : DateTime.now().year.toString() + '-' + 
-          DateTime.now().month.toString().padLeft(2, '0') + '-' + 
-          DateTime.now().day.toString().padLeft(2, '0') + ' ' +
-          DateTime.now().hour.toString().padLeft(2, '0') + ':' + 
-          DateTime.now().minute.toString().padLeft(2, '0');
+        : DateTime.now().year.toString() +
+            '-' +
+            DateTime.now().month.toString().padLeft(2, '0') +
+            '-' +
+            DateTime.now().day.toString().padLeft(2, '0') +
+            ' ' +
+            DateTime.now().hour.toString().padLeft(2, '0') +
+            ':' +
+            DateTime.now().minute.toString().padLeft(2, '0');
     final nesdcCount = filteredMembers.fold<int>(
         0,
-        (sum, member) => sum + member.polls.where((p) => p.id.startsWith('nesdc_')).length);
+        (sum, member) =>
+            sum + member.polls.where((p) => p.id.startsWith('nesdc_')).length);
 
     return RefreshIndicator(
       onRefresh: widget.onRefresh,
@@ -569,7 +608,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
             // 데이터가 있으면 항상 표시 (로딩 중이어도 기존 데이터 유지)
             if (filteredMembers.isNotEmpty) ...[
               // 통계 섹션 (분석의원, 여론조사심의회)
-              _buildStatisticsSection(filteredMembers.length, nesdcCount, updateValue),
+              _buildStatisticsSection(
+                  filteredMembers.length, nesdcCount, updateValue),
               const SizedBox(height: 24),
               _buildTop3Section(top3),
               _buildMemberList(memberList),
@@ -593,7 +633,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> with AutomaticKee
     );
   }
 
-  Widget _buildStatisticsSection(int memberCount, int nesdcCount, String updateValue) {
+  Widget _buildStatisticsSection(
+      int memberCount, int nesdcCount, String updateValue) {
     return Row(
       children: [
         Expanded(
@@ -652,12 +693,12 @@ class _StatisticCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-        Icon(icon, color: color, size: 24),
-     const SizedBox(height: 8),
-        Text(value, style: AppTextStyles.headline4.copyWith(color: color)),
-        Text(title, style: AppTextStyles.bodySmall),
-      ],
-     ),
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(value, style: AppTextStyles.headline4.copyWith(color: color)),
+          Text(title, style: AppTextStyles.bodySmall),
+        ],
+      ),
     );
   }
 }

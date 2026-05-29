@@ -87,7 +87,7 @@ def extract_info_from_pdf_text(doc):
     
     return election_type, region
 
-def parse_candidate_data(page, region, position, election_type):
+def parse_candidate_data(page, region, position, election_type, sido, sigungu):
     candidates = []
     images_info = page.get_image_info(xrefs=True)
     tabs = page.find_tables()
@@ -116,19 +116,7 @@ def parse_candidate_data(page, region, position, election_type):
 
                 # imageData를 None으로 설정하여 JSON에 포함되지 않도록 함
                 candidate_image_data = None
-                # for img_info in images_info:
-                #     img_bbox = fitz.Rect(img_info['bbox'])
-                #     if row_bbox.intersects(img_bbox):
-                #         xref = img_info['xref']
-                #         try:
-                #             base_image = fitz.Pixmap(page.parent, xref)
-                #             pil_image = Image.open(io.BytesIO(base_image.tobytes()))
-                #             img_byte_arr = io.BytesIO()
-                #             pil_image.save(img_byte_arr, format='PNG')
-                #             candidate_image_data = 'data:image/png;base64,' + base64.b64encode(img_byte_arr.getvalue()).decode('utf-8')
-                #         except: pass
-                #         break
-
+                
                 dist_col = idx.get('district', -1)
                 district_name = clean_text(row_data[dist_col]) if dist_col != -1 and dist_col < len(row_data) else ""
                 district_label = district_name if district_name else position
@@ -138,16 +126,23 @@ def parse_candidate_data(page, region, position, election_type):
                 if not constituency:
                     constituency = region or district_label or "전국"
 
+                candidate_id = generate_candidate_id(name_data, clean_text(row_data[idx['party']]), constituency)
+                image_url = f"assets/images/candidates/{candidate_id}.png"
+
                 candidates.append({
+                    "id": candidate_id,
                     "name": name_data, "party": clean_text(row_data[idx['party']]),
                     "region": region, "district": constituency, "constituency": constituency,
+                    "sido": sido, "sigungu": sigungu,
                     "districtName": district_label, "position": position,
                     "gender": clean_text(row_data[idx['gender']]) if idx['gender'] != -1 and idx['gender'] < len(row_data) else "",
                     "birthdate": clean_text(row_data[idx['birth']]) if idx['birth'] != -1 and idx['birth'] < len(row_data) else "",
                     "occupation": clean_text(row_data[idx['occupation']]) if idx['occupation'] != -1 and idx['occupation'] < len(row_data) else "",
                     "education": clean_text(row_data[idx['edu']]) if idx['edu'] != -1 and idx['edu'] < len(row_data) else "",
                     "career": clean_text(row_data[idx['career']]) if idx['career'] != -1 and idx['career'] < len(row_data) else "",
-                    "imageData": candidate_image_data, "electionType": election_type, "candidateStatus": "예비후보",
+                    "imageData": candidate_image_data, 
+                    "imageUrl": image_url,
+                    "electionType": election_type, "candidateStatus": "예비후보",
                 })
             except Exception:
                 continue
@@ -155,14 +150,37 @@ def parse_candidate_data(page, region, position, election_type):
 
 def get_info_from_filename(filename):
     filename = urllib.parse.unquote(filename)
-    election_type, region = "", ""
+    election_type, sido, sigungu = "", "", ""
     brackets = re.findall(r'\[([^\]]+)\]', filename)
+    
     e_types = [b for b in brackets if "선거" in b and "전국동시" not in b]
     if e_types: election_type = e_types[0]
     
     region_parts = [b for b in brackets if any(x in b for x in ["특별시", "광역시", "특별자치", "도", "시", "군", "구"]) and "선거" not in b and "제9회" not in b]
-    if region_parts: region = " ".join(region_parts)
-    return election_type, region
+    
+    if len(region_parts) > 0:
+        sido = region_parts[0]
+    if len(region_parts) > 1:
+        sigungu = " ".join(region_parts[1:])
+
+    # Fallback for sigungu if it's part of sido
+    if not sigungu and sido:
+        sido_parts = sido.split()
+        if len(sido_parts) > 1:
+            sido = sido_parts[0]
+            sigungu = " ".join(sido_parts[1:])
+
+    region = " ".join(part for part in [sido, sigungu] if part).strip()
+    
+    return election_type, region, sido, sigungu
+
+def generate_candidate_id(name, party, constituency):
+    """
+    후보자 이름, 정당, 선거구를 기반으로 고유 ID를 생성합니다.
+    """
+    id_string = f"{name}-{party}-{constituency}"
+    # SHA-1 해시를 사용하여 짧고 고유한 ID 생성
+    return hashlib.sha1(id_string.encode('utf-8')).hexdigest()[:10]
 
 REGION_ALIASES = [
     ('서울', '서울특별시'), ('부산', '부산광역시'), ('대구', '대구광역시'), ('인천', '인천광역시'),
@@ -391,11 +409,18 @@ def main():
             doc = fitz.open(pdf_file_path)
             filename = pdf_file_path.name
             
-            election_type, region = get_info_from_filename(filename)
+            election_type, region, sido, sigungu = get_info_from_filename(filename)
             if not election_type or not region:
                 text_election_type, text_region = extract_info_from_pdf_text(doc)
                 election_type = election_type or text_election_type
                 region = region or text_region
+                # If region was found from text, try to split it
+                if not sido and region:
+                    parts = region.split()
+                    sido = parts[0]
+                    if len(parts) > 1:
+                        sigungu = " ".join(parts[1:])
+
                 stats['pdf_text'] += 1
             else:
                 stats['filename'] += 1
@@ -406,7 +431,7 @@ def main():
 
             for i, page in enumerate(doc):
                 position = get_position_from_election_type(election_type, region)
-                parsed = parse_candidate_data(page, region, position, election_type)
+                parsed = parse_candidate_data(page, region, position, election_type, sido, sigungu)
                 for p in parsed:
                     all_candidates.append(normalize_candidate(p, pdf_file=filename, page_index=i))
                 stats['parsed'] += len(parsed)
