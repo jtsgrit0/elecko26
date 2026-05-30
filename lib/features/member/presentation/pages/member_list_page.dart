@@ -46,6 +46,16 @@ class _MemberListPageState extends State<MemberListPage> {
   void _applyFilters() {
     var members = List<Member>.from(_allMembers);
 
+    // 이미지 있는 후보만 필터링
+    members = members.where((m) => m.imageUrl.isNotEmpty).toList();
+
+    // 중복 후보 제거 (이름 기준)
+    final uniqueMembers = <String, Member>{};
+    for (final member in members) {
+      uniqueMembers.putIfAbsent(member.name, () => member);
+    }
+    members = uniqueMembers.values.toList();
+
     // 지역 필터링
     if (_userRegion != '전국') {
       members = members
@@ -58,7 +68,8 @@ class _MemberListPageState extends State<MemberListPage> {
       final query = _searchQuery.toLowerCase();
       members = members.where((m) {
         final searchStr = _searchIndex.putIfAbsent(m.id, () {
-          return '${m.name} ${m.party} ${m.district} ${m.policies.join(' ')} ${m.achievementsList.join(' ')}'.toLowerCase();
+          return '${m.name} ${m.party} ${m.district} ${m.policies.join(' ')} ${m.achievementsList.join(' ')}'
+              .toLowerCase();
         });
         return searchStr.contains(query);
       }).toList();
@@ -69,7 +80,8 @@ class _MemberListPageState extends State<MemberListPage> {
       members = members.where((m) {
         if (_filterParty == 'democratic') return m.party == '더불어민주당';
         if (_filterParty == 'power') return m.party == '국민의힘';
-        if (_filterParty == 'other') return m.party != '더불어민주당' && m.party != '국민의힘';
+        if (_filterParty == 'other')
+          return m.party != '더불어민주당' && m.party != '국민의힘';
         return true;
       }).toList();
     }
@@ -80,7 +92,8 @@ class _MemberListPageState extends State<MemberListPage> {
     } else if (_sortBy == 'party') {
       members.sort((a, b) => a.party.compareTo(b.party));
     } else if (_sortBy == 'possibility') {
-      members.sort((a, b) => b.electionPossibility.compareTo(a.electionPossibility));
+      members.sort(
+          (a, b) => b.electionPossibility.compareTo(a.electionPossibility));
     }
 
     _filteredMembers = members;
