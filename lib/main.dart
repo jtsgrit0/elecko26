@@ -11,11 +11,6 @@ void main() async {
   // Initialize dependency injection
   await di.initMinimal();
 
-  // 기존 후보자 데이터 삭제 (한 번만 실행 후 제거)
-  final memberRepository = di.sl<MemberRepository>();
-  await memberRepository.clearAllMembers();
-  print('모든 후보자 데이터가 성공적으로 삭제되었습니다.');
-
   // Initialize pdfrx
   // await pdfrxFlutterInitialize();
 
