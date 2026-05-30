@@ -46,24 +46,6 @@ class SignInWithGoogleUseCase extends AuthUseCase {
 
 /// 애플 로그인 유스케이스
 
-/// 페이스북 로그인 유스케이스
-class SignInWithFacebookUseCase extends AuthUseCase {
-  SignInWithFacebookUseCase(super.repository);
-
-  Future<AuthResult> execute() async {
-    return await repository.signInWithFacebook();
-  }
-}
-
-/// 카카오 로그인 유스케이스
-class SignInWithKakaoUseCase extends AuthUseCase {
-  SignInWithKakaoUseCase(super.repository);
-
-  Future<AuthResult> execute() async {
-    return await repository.signInWithKakao();
-  }
-}
-
 /// 로그아웃 유스케이스
 class SignOutUseCase extends AuthUseCase {
   SignOutUseCase(super.repository);

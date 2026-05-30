@@ -35,8 +35,6 @@ class AuthRepositoryImpl implements AuthRepository {
     if (user.providerData.isNotEmpty) {
       final providerId = user.providerData.first.providerId;
       if (providerId == 'google.com') provider = AuthProvider.google;
-      if (providerId == 'facebook.com') provider = AuthProvider.facebook;
-      if (providerId == 'kakao.com') provider = AuthProvider.kakao;
       if (providerId == 'apple.com') provider = AuthProvider.apple;
     }
 
@@ -133,16 +131,6 @@ class AuthRepositoryImpl implements AuthRepository {
     } catch (e) {
       return AuthResult.failure('구글 로그인 중 오류 발생: $e');
     }
-  }
-
-  @override
-  Future<AuthResult> signInWithFacebook() async {
-    return AuthResult.failure('현재 Facebook 로그인은 지원하지 않습니다.');
-  }
-
-  @override
-  Future<AuthResult> signInWithKakao() async {
-    return AuthResult.failure('현재 Kakao 로그인은 지원하지 않습니다.');
   }
 
   @override

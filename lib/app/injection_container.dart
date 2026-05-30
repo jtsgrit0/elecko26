@@ -113,10 +113,6 @@ void _registerAll() {
   sl.registerSingleton<SignInWithGoogleUseCase>(
       SignInWithGoogleUseCase(sl<AuthRepository>()));
 
-  sl.registerSingleton<SignInWithFacebookUseCase>(
-      SignInWithFacebookUseCase(sl<AuthRepository>()));
-  sl.registerSingleton<SignInWithKakaoUseCase>(
-      SignInWithKakaoUseCase(sl<AuthRepository>()));
   sl.registerSingleton<SignOutUseCase>(SignOutUseCase(sl<AuthRepository>()));
 
   // Repository
@@ -193,7 +189,8 @@ void _registerAll() {
   sl.registerFactory<MemberDetailBloc>(
     () => MemberDetailBloc(
       getMemberByIdUseCase: sl<GetMemberByIdUseCase>(),
-      calculateElectionPossibilityUseCase: sl<CalculateElectionPossibilityUseCase>(),
+      calculateElectionPossibilityUseCase:
+          sl<CalculateElectionPossibilityUseCase>(),
     ),
   );
 }
