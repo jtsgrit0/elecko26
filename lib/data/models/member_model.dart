@@ -45,6 +45,8 @@ class MemberModel extends Member {
     List<String> policies = const [],
     List<String> improvementPoints = const [],
     List<SocialContribution> socialContributions = const [],
+    String sido = '',
+    String sigungu = '',
   }) : super(
           id: id,
           name: name,
@@ -52,6 +54,8 @@ class MemberModel extends Member {
           constituency: constituency,
           districtName: districtName,
           region: region,
+          sido: sido,
+          sigungu: sigungu,
           nameHanja: nameHanja,
           electionCount: electionCount,
           termStartDate: termStartDate,
@@ -196,7 +200,12 @@ class MemberModel extends Member {
       fallback: '전국',
     );
     final regionRaw = _parseString(json['region']);
-    final region = regionRaw.isNotEmpty ? regionRaw : getParentRegion(constituency);
+    final region =
+        regionRaw.isNotEmpty ? regionRaw : getParentRegion(constituency);
+    final sido =
+        _parseString(json['sido'], fallback: getParentRegion(constituency));
+    final sigungu = _parseString(json['sigungu'],
+        fallback: getSigunguFromConstituency(constituency));
 
     return MemberModel(
       id: _parseString(json['id'], fallback: ''),
@@ -206,8 +215,11 @@ class MemberModel extends Member {
         fallback: '무소속',
       ),
       constituency: constituency,
-      districtName: _parseString(json['districtName'] ?? json['district'] ?? constituency),
+      districtName: _parseString(
+          json['districtName'] ?? json['district'] ?? constituency),
       region: region.isNotEmpty ? region : '전국',
+      sido: sido,
+      sigungu: sigungu,
       nameHanja: _parseString(json['nameHanja']),
       electionCount: _parseInt(json['electionCount'] ?? json['term']),
       termStartDate: _parseDate(json['termStartDate'] ?? json['termStart']),
@@ -253,7 +265,6 @@ class MemberModel extends Member {
     String? name,
     String? party,
     String? constituency,
-    String? district,
     String? districtName,
     String? region,
     String? nameHanja,
@@ -288,14 +299,18 @@ class MemberModel extends Member {
     List<String>? policies,
     List<String>? improvementPoints,
     List<SocialContribution>? socialContributions,
+    String? sido,
+    String? sigungu,
   }) {
     return MemberModel(
       id: id ?? this.id,
       name: name ?? this.name,
       party: party ?? this.party,
-      constituency: constituency ?? district ?? this.constituency,
+      constituency: constituency ?? this.constituency,
       districtName: districtName ?? this.districtName,
       region: region ?? this.region,
+      sido: sido ?? this.sido,
+      sigungu: sigungu ?? this.sigungu,
       nameHanja: nameHanja ?? this.nameHanja,
       electionCount: electionCount ?? this.electionCount,
       termStartDate: termStartDate ?? this.termStartDate,
@@ -347,9 +362,10 @@ class MemberModel extends Member {
       'name': name,
       'party': party,
       'constituency': constituency,
-      'district': district,
       'districtName': districtName,
       'region': region,
+      'sido': sido,
+      'sigungu': sigungu,
       'nameHanja': nameHanja,
       'electionCount': electionCount,
       'termStartDate': termStartDate.toIso8601String(),
@@ -382,7 +398,8 @@ class MemberModel extends Member {
       'achievementsList': achievementsList,
       'policies': policies,
       'improvementPoints': improvementPoints,
-      'socialContributions': socialContributions.map((e) => e.toJson()).toList(),
+      'socialContributions':
+          socialContributions.map((e) => e.toJson()).toList(),
     };
   }
 }
@@ -420,9 +437,8 @@ class PollModel extends Poll {
       sampleSize: sampleSizeValue == null
           ? null
           : MemberModel._parseInt(sampleSizeValue),
-      marginOfError: marginValue == null
-          ? null
-          : MemberModel._parseDouble(marginValue),
+      marginOfError:
+          marginValue == null ? null : MemberModel._parseDouble(marginValue),
       source: MemberModel._parseString(json['source']),
       notes: json['notes']?.toString(),
     );

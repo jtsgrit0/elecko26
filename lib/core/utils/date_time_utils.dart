@@ -262,6 +262,21 @@ String getParentRegion(String district) {
   return district;
 }
 
+String getSigunguFromConstituency(String constituency) {
+  final normalized = constituency.replaceAll(' ', '');
+  if (normalized.isEmpty) {
+    return '';
+  }
+
+  // Example: "수원시갑" -> "수원시"
+  final sigunguMatch = RegExp(r'([가-힣]+(시|군|구))').firstMatch(normalized);
+  if (sigunguMatch != null) {
+    return sigunguMatch.group(1) ?? '';
+  }
+
+  return '';
+}
+
 /// 선거구 명칭별 정렬 우선순위를 반환합니다. (낮을수록 상단)
 /// 사용 요청 순서: 도지사 > 시장 > 구의원 > 군수 > 군의원
 int getDistrictSortPriority(String district) {
