@@ -131,24 +131,6 @@ class _RegionalMemberVotingListState extends State<RegionalMemberVotingList>
       final votes = await localStorage.getAllVotes();
       final timestamps = await localStorage.getAllVoteTimestamps();
 
-      // 1단계: 캐시된 데이터를 먼저 즉시 표시 (블로킹 없음)
-      final cached = await sl<MemberRepository>().getCachedMembers();
-      if (cached.isNotEmpty) {
-        final filtered = cached.where((m) {
-          return districtMatchesRegion(m.district, widget.region);
-        }).toList();
-        if (mounted) {
-          setState(() {
-            _members = filtered;
-            _votes = votes;
-            _voteTimestamps = timestamps;
-            _isLoading = false;
-            _updateGroupedMembers();
-          });
-        }
-        return;
-      }
-
       // 2단계: 캐시 비어있을 때만 전체 로드 (최초 1회)
       final allMembers = await sl<MemberRepository>().getAllMembers();
       final filtered = allMembers.where((m) {

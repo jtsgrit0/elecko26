@@ -28,7 +28,8 @@ class _MapScreenState extends State<MapScreen> {
   String? _errorMessage = null;
   List<Marker> _cachedMarkers = [];
   RegionalPartyData? _selectedRegionData;
-  final DraggableScrollableController _sheetController = DraggableScrollableController();
+  final DraggableScrollableController _sheetController =
+      DraggableScrollableController();
 
   @override
   void initState() {
@@ -62,7 +63,7 @@ class _MapScreenState extends State<MapScreen> {
     return data.regions.map((region) {
       final isSeoul = region.region == '서울특별시';
       final center = _getRegionCenter(region.region);
-      
+
       return Marker(
         point: center,
         width: isSeoul ? 110 : 100,
@@ -81,7 +82,7 @@ class _MapScreenState extends State<MapScreen> {
                     color: _getPartyColor(region.dominantParty)
                         .withOpacity(isSeoul ? 0.95 : 0.9),
                     borderRadius: BorderRadius.circular(isSeoul ? 8 : 6),
-                    border: isSeoul 
+                    border: isSeoul
                         ? Border.all(color: Colors.yellowAccent, width: 2)
                         : null,
                     boxShadow: [
@@ -135,17 +136,28 @@ class _MapScreenState extends State<MapScreen> {
 
   Color _getPartyColor(String party) {
     switch (party) {
-      case '더불어민주당': return Colors.blue;
-      case '국민의힘': return Colors.red;
-      case '정의당': return Colors.orange;
-      case '기본소득당': return Colors.green;
-      case '진보당': return Colors.purple;
-      case '무소속': return Colors.grey;
-      case '민주당': return Colors.blue;
-      case '한나라당': return Colors.red;
-      case '자유선진당': return Colors.orange;
-      case '국민참여당': return Colors.green;
-      default: return Colors.grey;
+      case '더불어민주당':
+        return Colors.blue;
+      case '국민의힘':
+        return Colors.red;
+      case '정의당':
+        return Colors.orange;
+      case '기본소득당':
+        return Colors.green;
+      case '진보당':
+        return Colors.purple;
+      case '무소속':
+        return Colors.grey;
+      case '민주당':
+        return Colors.blue;
+      case '한나라당':
+        return Colors.red;
+      case '자유선진당':
+        return Colors.orange;
+      case '국민참여당':
+        return Colors.green;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -155,7 +167,7 @@ class _MapScreenState extends State<MapScreen> {
       valueListenable: widget.selectedIndexNotifier,
       builder: (context, currentIndex, _) {
         final bool isActive = currentIndex == widget.tabIndex;
-        
+
         return Visibility(
           visible: isActive,
           maintainState: true,
@@ -221,7 +233,8 @@ class _MapScreenState extends State<MapScreen> {
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.elecko26.app',
-                tileDisplay: const TileDisplay.fadeIn(duration: Duration(milliseconds: 1)),
+                tileDisplay: const TileDisplay.fadeIn(
+                    duration: Duration(milliseconds: 1)),
                 panBuffer: 1,
                 keepBuffer: 2,
               ),
@@ -300,11 +313,13 @@ class _MapScreenState extends State<MapScreen> {
                             child: const Icon(Icons.close, size: 20),
                           ),
                           onPressed: () {
-                            _sheetController.animateTo(
+                            _sheetController
+                                .animateTo(
                               0,
                               duration: const Duration(milliseconds: 200),
                               curve: Curves.easeIn,
-                            ).then((_) {
+                            )
+                                .then((_) {
                               setState(() {
                                 _selectedRegionData = null;
                               });
@@ -317,7 +332,18 @@ class _MapScreenState extends State<MapScreen> {
                     _buildInfoRow('우세 정당', _selectedRegionData!.dominantParty,
                         _getPartyColor(_selectedRegionData!.dominantParty)),
                     const SizedBox(height: 24),
-                    SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
+                    Text(
+                      '정당별 지지율',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildPartySupportChart(
+                        _selectedRegionData!.partyPercentages),
+                    SizedBox(
+                        height: MediaQuery.of(context).padding.bottom + 20),
                   ]),
                 ),
               ),
@@ -325,6 +351,60 @@ class _MapScreenState extends State<MapScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildPartySupportChart(Map<String, double> partySupport) {
+    final sortedParties = partySupport.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: sortedParties.map((entry) {
+        final party = entry.key;
+        final support = entry.value;
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6.0),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 80,
+                child: Text(
+                  party,
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w500),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    LinearProgressIndicator(
+                      value: support / 100,
+                      backgroundColor: Colors.grey[200],
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(_getPartyColor(party)),
+                      minHeight: 18,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 45,
+                child: Text(
+                  '${support.toStringAsFixed(1)}%',
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.right,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 

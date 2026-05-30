@@ -20,15 +20,29 @@ class HttpMemberRepositoryImpl implements MemberRepository {
       final response = await http.get(Uri.parse(_baseUrl));
 
       if (response.statusCode == 200) {
-        // UTF-8로 명시적으로 디코딩
         final List<dynamic> jsonData =
             json.decode(utf8.decode(response.bodyBytes));
         final prefs = await SharedPreferences.getInstance();
         final favoriteIds = prefs.getStringList(_favoritesKey) ?? [];
 
-        _members = jsonData.map((data) {
+        final uniqueMembers = <String, Member>{};
+        for (var data in jsonData) {
           final member = MemberModel.fromJson(data);
-          return member.copyWith(isFavorite: favoriteIds.contains(member.id));
+          final key = '${member.name}-${member.party}-${member.district}';
+
+          if (!uniqueMembers.containsKey(key)) {
+            uniqueMembers[key] = member;
+          } else {
+            final existingMember = uniqueMembers[key]!;
+            if (existingMember.imageUrl.isEmpty && member.imageUrl.isNotEmpty) {
+              uniqueMembers[key] = member;
+            }
+          }
+        }
+
+        _members = uniqueMembers.values.map((member) {
+          return (member as MemberModel)
+              .copyWith(isFavorite: favoriteIds.contains(member.id));
         }).toList();
 
         return _members;
