@@ -97,7 +97,7 @@ class _SearchViewState extends State<SearchView> {
           });
         },
         decoration: InputDecoration(
-          hintText: '후보자 이름, 정당, 지역 등으로 검색',
+          hintText: '후보자 이름으로 검색',
           prefixIcon: const Icon(Icons.search, color: AppColors.primary),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
@@ -251,15 +251,10 @@ class _SearchViewState extends State<SearchView> {
             return false;
           }
 
-          // 검색어 필터링
+          // 검색어 필터링 (오직 후보 이름으로만 검색)
           final query = _searchQuery.toLowerCase();
           if (query.isNotEmpty) {
-            return m.name.toLowerCase().contains(query) ||
-                m.party.toLowerCase().contains(query) ||
-                m.constituency.toLowerCase().contains(query) ||
-                m.description.toLowerCase().contains(query) ||
-                m.policies.any((p) => p.toLowerCase().contains(query)) ||
-                m.achievementsList.any((a) => a.toLowerCase().contains(query));
+            return m.name.toLowerCase().contains(query);
           }
 
           return true;
