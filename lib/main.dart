@@ -18,5 +18,6 @@ void main() async {
   final getMembersUseCase = di.sl<GetMembersUseCase>();
   final members = await getMembersUseCase.call();
 
+// Force clean checkout
   runApp(MyApp(members: members));
 }
