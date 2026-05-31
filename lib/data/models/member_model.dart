@@ -268,6 +268,8 @@ class MemberModel extends Member {
     String? district,
     String? districtName,
     String? region,
+    String? sido,
+    String? sigungu,
     String? nameHanja,
     int? electionCount,
     DateTime? termStartDate,
@@ -300,8 +302,6 @@ class MemberModel extends Member {
     List<String>? policies,
     List<String>? improvementPoints,
     List<SocialContribution>? socialContributions,
-    String? sido,
-    String? sigungu,
   }) {
     return MemberModel(
       id: id ?? this.id,
