@@ -23,14 +23,14 @@ class PossibilityCalculator {
     
     // 대구, 경북, 부산, 울산, 경남 (영남권) -> 국민의힘 강세
     if (d.contains('대구') || d.contains('경북') || d.contains('경상북도') || d.contains('울산') || d.contains('부산') || d.contains('경남') || d.contains('경상남도')) {
-      if (p.contains('국민의힘')) return 0.155;
-      if (p.contains('민주당') || p.contains('혁신당') || p.contains('진보당')) return -0.105;
+      if (p.contains('국민의힘')) return 0.0775;
+      if (p.contains('민주당') || p.contains('혁신당') || p.contains('진보당')) return -0.0525;
     }
     // 광주, 전남, 전북 (호남권) -> 야권 강세
     if (d.contains('광주') || d.contains('전남') || d.contains('전라남') || d.contains('전북') || d.contains('전라북')) {
-      if (p.contains('민주당')) return 0.165;
-      if (p.contains('혁신당')) return 0.085;
-      if (p.contains('국민의힘')) return -0.152;
+      if (p.contains('민주당')) return 0.0825;
+      if (p.contains('혁신당')) return 0.0425;
+      if (p.contains('국민의힘')) return -0.076;
     }
     // 대전, 세종, 충청 -> 스윙벨트 미세보정
     if (d.contains('대전') || d.contains('세종') || d.contains('충청')) {
@@ -90,16 +90,16 @@ class PossibilityCalculator {
     final age = DateTime.now().year - member.birthDate.year;
     double ageAdjustment = 0.0;
     if (age < 40) {
-      ageAdjustment = 0.025; // 청년 가점
+      ageAdjustment = 0.0125; // 청년 가점
     } else if (age > 70) {
-      ageAdjustment = -0.015; // 고령 감점
+      ageAdjustment = -0.0075; // 고령 감점
     }
     overall += ageAdjustment;
 
-    // [후보자 약력 및 경력 분량 보정]
-    final careerLinesCount = member.career.split('\n').length;
-    final careerScoreAdjustment = (careerLinesCount * 0.003).clamp(0.0, 0.02);
-    overall += careerScoreAdjustment;
+    // [후보자 약력 및 경력 분량 보정] 제거
+    // final careerLinesCount = member.career.split('\n').length;
+    // final careerScoreAdjustment = (careerLinesCount * 0.003).clamp(0.0, 0.02);
+    // overall += careerScoreAdjustment;
 
     // '나'번 후보 특수 로직: (민주당 1-나 등)
     if (member.districtName.contains('나') && partyScore > 0.45) {
@@ -108,23 +108,23 @@ class PossibilityCalculator {
 
     // 투표 관심도 조정
     final interestAdjustment = (voterInterest - 0.5) * 0.06;
-    overall = (overall + interestAdjustment).clamp(0.01, 0.99);
+    overall = (overall + interestAdjustment).clamp(0.01, 0.95); // 0.95로 상한선 조정
 
     // PDF에서 이미 계산된 후보 점수를 기준선으로 유지
-    final pdfBaseline = member.electionPossibility.clamp(0.0, 1.0);
+    final pdfBaseline = member.electionPossibility.clamp(0.0, 0.95); // 0.95로 상한선 조정
     if (pdfBaseline > 0.0) {
       overall = (overall * 0.72) + (pdfBaseline * 0.28);
     }
 
     // [후보 고유 해시 기반 초정밀 변별도 부여 - Jitter]
     final pdfAdjustment = _calculatePdfCandidateAdjustment(member);
-    overall = (overall + pdfAdjustment).clamp(0.01, 0.99);
+    overall = (overall + pdfAdjustment).clamp(0.01, 0.95); // 0.95로 상한선 조정
 
     // 모든 처리가 끝난 후 미세 Jitter(Jitter 해시값에 0.035 이내 부여) 추가 적용
     final uniqueSig = '${member.id}_${member.name}_${member.district}_sig';
     final jitterHash = _stableHash(uniqueSig);
     final jitterOffset = ((jitterHash % 50000) / 50000.0 - 0.5) * 0.07; // -3.5% ~ +3.5%
-    overall = (overall + jitterOffset).clamp(0.01, 0.99);
+    overall = (overall + jitterOffset).clamp(0.01, 0.95); // 0.95로 상한선 조정
 
     // 사회 공헌도 계산 (기존 로직 유지)
     final socialScore = _calculateSocialScore(member);
