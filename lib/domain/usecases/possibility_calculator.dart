@@ -103,28 +103,28 @@ class PossibilityCalculator {
 
     // '나'번 후보 특수 로직: (민주당 1-나 등)
     if (member.districtName.contains('나') && partyScore > 0.45) {
-      overall = overall.clamp(0.70, 0.95);
+      overall = overall.clamp(0.70, 0.85); // 상한선을 0.85로 조정
     }
 
     // 투표 관심도 조정
     final interestAdjustment = (voterInterest - 0.5) * 0.06;
-    overall = (overall + interestAdjustment).clamp(0.01, 0.95); // 0.95로 상한선 조정
+    overall = (overall + interestAdjustment).clamp(0.01, 0.85); // 0.85로 상한선 조정
 
     // PDF에서 이미 계산된 후보 점수를 기준선으로 유지
-    final pdfBaseline = member.electionPossibility.clamp(0.0, 0.95); // 0.95로 상한선 조정
+    final pdfBaseline = member.electionPossibility.clamp(0.0, 0.85); // 0.85로 상한선 조정
     if (pdfBaseline > 0.0) {
       overall = (overall * 0.72) + (pdfBaseline * 0.28);
     }
 
     // [후보 고유 해시 기반 초정밀 변별도 부여 - Jitter]
     final pdfAdjustment = _calculatePdfCandidateAdjustment(member);
-    overall = (overall + pdfAdjustment).clamp(0.01, 0.95); // 0.95로 상한선 조정
+    overall = (overall + pdfAdjustment).clamp(0.01, 0.85); // 0.85로 상한선 조정
 
     // 모든 처리가 끝난 후 미세 Jitter(Jitter 해시값에 0.035 이내 부여) 추가 적용
     final uniqueSig = '${member.id}_${member.name}_${member.district}_sig';
     final jitterHash = _stableHash(uniqueSig);
     final jitterOffset = ((jitterHash % 50000) / 50000.0 - 0.5) * 0.07; // -3.5% ~ +3.5%
-    overall = (overall + jitterOffset).clamp(0.01, 0.95); // 0.95로 상한선 조정
+    overall = (overall + jitterOffset).clamp(0.01, 0.85); // 0.85로 상한선 조정
 
     // 사회 공헌도 계산 (기존 로직 유지)
     final socialScore = _calculateSocialScore(member);

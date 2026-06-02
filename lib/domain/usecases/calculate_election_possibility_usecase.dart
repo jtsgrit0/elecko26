@@ -202,7 +202,7 @@ class CalculateElectionPossibilityUseCase {
   double _nextPossibility(double previous, double baseScore) {
     final drift = (baseScore - previous) * 0.08;
     final noise = (_random.nextDouble() - 0.5) * 0.03; // 약 ±1.5%
-    final next = (previous + drift + noise).clamp(0.2, 0.95);
+    final next = (previous + drift + noise).clamp(0.2, 0.85);
     return next;
   }
 

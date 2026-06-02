@@ -22,7 +22,7 @@ class CliMemberRepository implements MemberRepository {
     if (_loaded) return;
 
     final candidates = <File>[
-      File('assets/data/election_candidates.json'),
+      File('assets/data/candidates_2026.json'),
       File('data/election_candidates.json'),
       File('api/members.json'),
     ];
