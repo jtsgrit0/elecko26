@@ -14,6 +14,13 @@ const _commonHeaders = {
 // 유효한 이미지인지 확인 (플레이스홀더, 아이콘, 로고 등 제외)
 bool isValidImage(String url) {
   final lower = url.toLowerCase();
+
+  // Check for local asset paths
+  if (lower.startsWith('assets/images/candidates/')) {
+    final file = File(url);
+    return file.existsSync(); // Return true only if the local file exists
+  }
+
   if (lower.contains('ssl.pstatic.net/sstatic/search/common/og'))
     return false; // 네이버 검색 기본 이미지
   if (lower.contains('daum_og.png')) return false; // 다음 검색 기본 이미지
@@ -264,7 +271,7 @@ Future<String?> resolveImage(String name,
 }
 
 void main() async {
-  final file = File('data/election_candidates.json');
+  final file = File('assets/data/election_candidates.json');
   if (!await file.exists()) {
     print('File not found: ${file.path}');
     return;
